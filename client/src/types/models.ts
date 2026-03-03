@@ -31,10 +31,13 @@ export type Domain = {
   sortOrder: number;
 };
 
+export type PersonaCategory = "BUYER" | "USER" | "NONE";
+
 export type Persona = {
   id: string;
   name: string;
   icon?: string | null;
+  category: PersonaCategory;
 };
 
 export type RevenueStream = {

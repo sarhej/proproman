@@ -5,15 +5,18 @@ import type {
   CampaignLink,
   Decision,
   Demand,
+  Domain,
   Feature,
   GanttTask,
   Initiative,
   InitiativeAssignment,
   Partner,
+  Persona,
   Product,
   ProductWithHierarchy,
   MetaPayload,
   CalendarItem,
+  RevenueStream,
   Requirement,
   Risk,
   User,
@@ -182,5 +185,26 @@ export const api = {
   getAuditLog: async (params?: URLSearchParams) =>
     request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
       `/api/admin/audit${params ? `?${params.toString()}` : ""}`
-    )
+    ),
+
+  getDomains: async () => request<{ domains: Domain[] }>("/api/domains"),
+  createDomain: async (body: unknown) =>
+    request<{ domain: Domain }>("/api/domains", { method: "POST", body: JSON.stringify(body) }),
+  updateDomain: async (id: string, body: unknown) =>
+    request<{ domain: Domain }>(`/api/domains/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteDomain: async (id: string) => request<void>(`/api/domains/${id}`, { method: "DELETE" }),
+
+  getPersonas: async () => request<{ personas: Persona[] }>("/api/personas"),
+  createPersona: async (body: unknown) =>
+    request<{ persona: Persona }>("/api/personas", { method: "POST", body: JSON.stringify(body) }),
+  updatePersona: async (id: string, body: unknown) =>
+    request<{ persona: Persona }>(`/api/personas/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deletePersona: async (id: string) => request<void>(`/api/personas/${id}`, { method: "DELETE" }),
+
+  getRevenueStreams: async () => request<{ revenueStreams: RevenueStream[] }>("/api/revenue-streams"),
+  createRevenueStream: async (body: unknown) =>
+    request<{ revenueStream: RevenueStream }>("/api/revenue-streams", { method: "POST", body: JSON.stringify(body) }),
+  updateRevenueStream: async (id: string, body: unknown) =>
+    request<{ revenueStream: RevenueStream }>(`/api/revenue-streams/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteRevenueStream: async (id: string) => request<void>(`/api/revenue-streams/${id}`, { method: "DELETE" })
 };

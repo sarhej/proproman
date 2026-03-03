@@ -34,4 +34,7 @@ COPY --from=builder /app/client/package.json ./client/package.json
 ENV NODE_ENV=production
 EXPOSE 8080
 
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=server/prisma/schema.prisma && npm run start"]
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+CMD ["./docker-entrypoint.sh"]

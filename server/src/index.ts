@@ -26,6 +26,9 @@ import { campaignsRouter } from "./routes/campaigns.js";
 import { assetsRouter } from "./routes/assets.js";
 import { campaignLinksRouter } from "./routes/campaign-links.js";
 import { adminRouter } from "./routes/admin.js";
+import { domainsRouter } from "./routes/domains.js";
+import { personasRouter } from "./routes/personas.js";
+import { revenueStreamsRouter } from "./routes/revenue-streams.js";
 import { prisma } from "./db.js";
 
 const app = express();
@@ -89,6 +92,9 @@ app.use("/api/campaigns", campaignsRouter);
 app.use("/api/assets", assetsRouter);
 app.use("/api/campaign-links", campaignLinksRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/domains", domainsRouter);
+app.use("/api/personas", personasRouter);
+app.use("/api/revenue-streams", revenueStreamsRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({

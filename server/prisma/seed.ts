@@ -13,6 +13,7 @@ import {
   DateConfidence,
   Horizon,
   InitiativeStatus,
+  PersonaCategory,
   Priority,
   PrismaClient,
   StrategicTier,
@@ -127,12 +128,12 @@ async function main() {
 
   const personas = await Promise.all(
     [
-      { name: "Patient", icon: "user" },
-      { name: "Doctor", icon: "stethoscope" },
-      { name: "Employer", icon: "building" },
-      { name: "Insurer", icon: "shield" },
-      { name: "B2B Admin", icon: "briefcase" },
-      { name: "Regulator", icon: "scale" }
+      { name: "Patient", icon: "user", category: PersonaCategory.USER },
+      { name: "Doctor", icon: "stethoscope", category: PersonaCategory.USER },
+      { name: "Employer", icon: "building", category: PersonaCategory.BUYER },
+      { name: "Insurer", icon: "shield", category: PersonaCategory.BUYER },
+      { name: "B2B Admin", icon: "briefcase", category: PersonaCategory.BUYER },
+      { name: "Regulator", icon: "scale", category: PersonaCategory.BUYER }
     ].map((p) =>
       prisma.persona.create({
         data: p
