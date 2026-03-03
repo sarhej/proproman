@@ -4,7 +4,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 (async () => {
   try {
-    // Check if the isActive column exists
+    // Check if the RBAC column exists
     const colCheck = await pool.query(
       "SELECT 1 FROM information_schema.columns WHERE table_name = 'User' AND column_name = 'isActive'"
     );
@@ -67,16 +67,35 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
         END $$;
       `);
 
-      // Mark migration as applied so prisma doesn't try again
-      await pool.query(`
-        INSERT INTO "_prisma_migrations" (id, checksum, migration_name, finished_at, applied_steps_count)
-        VALUES (gen_random_uuid(), 'manual-repair', '20260303192316_rbac_audit', NOW(), 1)
-        ON CONFLICT DO NOTHING;
-      `);
-
       console.log("RBAC migration applied successfully via direct SQL.");
     } else {
       console.log("isActive column exists. No repair needed.");
+    }
+
+    // Check if Persona.category from 20260303213715_add_persona_category exists
+    const personaCategoryCheck = await pool.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'Persona' AND column_name = 'category'"
+    );
+
+    if (personaCategoryCheck.rowCount === 0) {
+      console.log("Persona.category missing. Applying persona category migration directly...");
+
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PersonaCategory') THEN
+            CREATE TYPE "PersonaCategory" AS ENUM ('BUYER', 'USER', 'NONE');
+          END IF;
+        END $$;
+      `);
+
+      await pool.query(`
+        ALTER TABLE "Persona"
+        ADD COLUMN IF NOT EXISTS "category" "PersonaCategory" NOT NULL DEFAULT 'NONE';
+      `);
+
+      console.log("Persona category migration applied successfully via direct SQL.");
+    } else {
+      console.log("Persona.category exists. No repair needed.");
     }
   } catch (e) {
     console.error("Repair failed:", e.message);
