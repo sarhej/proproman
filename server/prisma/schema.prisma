@@ -193,12 +193,19 @@ model Domain {
   initiatives Initiative[]
 }
 
+enum PersonaCategory {
+  BUYER
+  USER
+  NONE
+}
+
 model Persona {
-  id      String                    @id @default(cuid())
-  name    String                    @unique
-  icon    String?
-  impacts InitiativePersonaImpact[]
-  assets  Asset[]
+  id       String                    @id @default(cuid())
+  name     String                    @unique
+  icon     String?
+  category PersonaCategory           @default(NONE)
+  impacts  InitiativePersonaImpact[]
+  assets   Asset[]
 }
 
 model RevenueStream {

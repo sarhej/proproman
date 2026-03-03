@@ -1,17 +1,13 @@
 -- CreateEnum
 CREATE TYPE "AuditAction" AS ENUM ('CREATED', 'UPDATED', 'DELETED', 'STATUS_CHANGED', 'ROLE_CHANGED', 'LOGIN');
 
--- AlterEnum
--- This migration adds more than one value to an enum.
--- With PostgreSQL versions 11 and earlier, this is not possible
--- in a single migration. This can be worked around by creating
--- multiple migrations, each migration adding only one value to
--- the enum.
-
-
-ALTER TYPE "UserRole" ADD VALUE 'SUPER_ADMIN';
-ALTER TYPE "UserRole" ADD VALUE 'EDITOR';
-ALTER TYPE "UserRole" ADD VALUE 'MARKETING';
+-- AlterEnum: safe approach that works inside a transaction
+ALTER TYPE "UserRole" RENAME TO "UserRole_old";
+CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'EDITOR', 'MARKETING', 'VIEWER');
+ALTER TABLE "User" ALTER COLUMN "role" DROP DEFAULT;
+ALTER TABLE "User" ALTER COLUMN "role" TYPE "UserRole" USING ("role"::text::"UserRole");
+ALTER TABLE "User" ALTER COLUMN "role" SET DEFAULT 'VIEWER';
+DROP TYPE "UserRole_old";
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "isActive" BOOLEAN NOT NULL DEFAULT true,
