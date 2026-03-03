@@ -22,6 +22,9 @@ function App() {
   const board = useBoardData();
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [devLoginLoading, setDevLoginLoading] = useState(false);
+  const [devLoginError, setDevLoginError] = useState<string | null>(null);
+  const showDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
 
   const isAdmin = user?.role === "ADMIN";
 
@@ -42,9 +45,32 @@ function App() {
           <p className="mb-4 text-sm text-slate-600">
             Sign in with Google to manage domain priorities, persona impact, and B2B2C backlog planning.
           </p>
-          <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
-            Continue with Google
-          </Button>
+          <div className="grid gap-2">
+            <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
+              Continue with Google
+            </Button>
+            {showDevLogin ? (
+              <Button
+                variant="secondary"
+                disabled={devLoginLoading}
+                onClick={async () => {
+                  try {
+                    setDevLoginLoading(true);
+                    setDevLoginError(null);
+                    await api.devLogin();
+                    window.location.reload();
+                  } catch (error) {
+                    setDevLoginError((error as Error).message);
+                  } finally {
+                    setDevLoginLoading(false);
+                  }
+                }}
+              >
+                {devLoginLoading ? "Signing in..." : "Temporary local dev login"}
+              </Button>
+            ) : null}
+            {devLoginError ? <p className="text-xs text-red-600">{devLoginError}</p> : null}
+          </div>
         </Card>
       </div>
     );

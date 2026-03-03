@@ -25,25 +25,37 @@ cp server/.env.example server/.env
 ```
 
 3. Configure `DATABASE_URL`, Google OAuth credentials and callback URL.
+   - Temporary local fallback (optional): set `ALLOW_DEV_AUTH=true` in `server/.env`.
+4. Copy frontend env values:
 
-4. Generate Prisma client and apply schema:
+```bash
+cp client/.env.example client/.env
+```
+
+5. If you use temporary local fallback, also set `VITE_ENABLE_DEV_LOGIN=true` in `client/.env`.
+
+6. Generate Prisma client and apply schema:
 
 ```bash
 npm run db:generate
 npm run db:migrate --workspace server -- --name init
 ```
 
-5. Seed data from CIO + spreadsheet:
+7. Seed data from CIO + spreadsheet:
 
 ```bash
 npm run db:seed
 ```
 
-6. Start app:
+8. Start app:
 
 ```bash
 npm run dev
 ```
+
+9. Temporary local fallback login (development only):
+   - Click `Temporary local dev login` on the sign-in screen.
+   - This route is blocked in production and disabled unless `ALLOW_DEV_AUTH=true`.
 
 ## Railway deploy
 

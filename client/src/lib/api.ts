@@ -30,6 +30,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getMe: async () => request<{ user: User | null }>("/api/auth/me"),
+  devLogin: async () => request<{ user: User }>("/api/auth/dev-login", { method: "POST" }),
   logout: async () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   getMeta: async () => request<MetaPayload>("/api/meta"),
   getInitiatives: async (query: URLSearchParams) =>
