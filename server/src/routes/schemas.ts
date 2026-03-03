@@ -1,8 +1,9 @@
-import { CommercialType, Horizon, InitiativeStatus, Priority } from "@prisma/client";
+import { CommercialType, DateConfidence, DealStage, Horizon, InitiativeStatus, Priority, StrategicTier } from "@prisma/client";
 import { z } from "zod";
 
 export const initiativeInputSchema = z.object({
   title: z.string().min(1),
+  productId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   domainId: z.string().min(1),
   ownerId: z.string().nullable().optional(),
@@ -11,7 +12,14 @@ export const initiativeInputSchema = z.object({
   status: z.nativeEnum(InitiativeStatus),
   commercialType: z.nativeEnum(CommercialType),
   isGap: z.boolean().default(false),
+  startDate: z.string().datetime().nullable().optional(),
   targetDate: z.string().datetime().nullable().optional(),
+  milestoneDate: z.string().datetime().nullable().optional(),
+  dateConfidence: z.nativeEnum(DateConfidence).nullable().optional(),
+  arrImpact: z.number().nullable().optional(),
+  renewalDate: z.string().datetime().nullable().optional(),
+  dealStage: z.nativeEnum(DealStage).nullable().optional(),
+  strategicTier: z.nativeEnum(StrategicTier).nullable().optional(),
   notes: z.string().nullable().optional(),
   sortOrder: z.number().int().default(0),
   personaImpacts: z
@@ -27,6 +35,23 @@ export const initiativeInputSchema = z.object({
       z.object({
         revenueStreamId: z.string(),
         weight: z.number().int().min(0).max(100)
+      })
+    )
+    .optional(),
+  demandLinks: z
+    .array(
+      z.object({
+        demandId: z.string(),
+        featureId: z.string().nullable().optional()
+      })
+    )
+    .optional(),
+  assignments: z
+    .array(
+      z.object({
+        userId: z.string(),
+        role: z.enum(["ACCOUNTABLE", "IMPLEMENTER", "CONSULTED", "INFORMED"]),
+        allocation: z.number().int().min(0).max(100).nullable().optional()
       })
     )
     .optional()

@@ -10,6 +10,7 @@ type Props = {
     priority?: string;
     horizon?: string;
     isGap?: boolean;
+    quick?: string;
   };
   onChange: (patch: Partial<Props["filters"]>) => void;
 };
@@ -61,8 +62,9 @@ export function FiltersBar({ domains, users, filters, onChange }: Props) {
       <div className="col-span-2">
         <Label>Quick filter</Label>
         <Input
-          placeholder="Type 'gap' to focus missing priorities"
-          onChange={(e) => onChange({ isGap: e.target.value.toLowerCase().includes("gap") ? true : undefined })}
+          value={filters.quick || ""}
+          placeholder="Search title, notes, owner, domain..."
+          onChange={(e) => onChange({ quick: e.target.value || undefined })}
         />
       </div>
     </div>

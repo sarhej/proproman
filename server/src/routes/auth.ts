@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { UserRole } from "@prisma/client";
 import passport from "passport";
+import { z } from "zod";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 
@@ -28,16 +30,22 @@ authRouter.post("/dev-login", async (req, res, next) => {
     return;
   }
   try {
+    const parsed = z
+      .object({
+        role: z.nativeEnum(UserRole).optional()
+      })
+      .safeParse(req.body ?? {});
+    const role = parsed.success ? parsed.data.role ?? env.DEV_AUTH_ROLE : env.DEV_AUTH_ROLE;
     const user = await prisma.user.upsert({
       where: { email: env.DEV_AUTH_EMAIL },
       create: {
         email: env.DEV_AUTH_EMAIL,
         name: env.DEV_AUTH_NAME,
-        role: env.DEV_AUTH_ROLE
+        role
       },
       update: {
         name: env.DEV_AUTH_NAME,
-        role: env.DEV_AUTH_ROLE
+        role
       }
     });
     req.login(user, (err) => {

@@ -15,6 +15,15 @@ import { OwnerBoardPage } from "./pages/OwnerBoardPage";
 import { HeatmapPage } from "./pages/HeatmapPage";
 import { BuyerUserPage } from "./pages/BuyerUserPage";
 import { GapsPage } from "./pages/GapsPage";
+import { StatusKanbanPage } from "./pages/StatusKanbanPage";
+import { PeopleKanbanPage } from "./pages/PeopleKanbanPage";
+import { ProductExplorerPage } from "./pages/ProductExplorerPage";
+import { AccountsPage } from "./pages/AccountsPage";
+import { DemandsPage } from "./pages/DemandsPage";
+import { PartnersPage } from "./pages/PartnersPage";
+import { CalendarPage } from "./pages/CalendarPage";
+import { GanttPage } from "./pages/GanttPage";
+import { CampaignsPage } from "./pages/CampaignsPage";
 import type { Initiative } from "./types/models";
 
 function App() {
@@ -50,24 +59,44 @@ function App() {
               Continue with Google
             </Button>
             {showDevLogin ? (
-              <Button
-                variant="secondary"
-                disabled={devLoginLoading}
-                onClick={async () => {
-                  try {
-                    setDevLoginLoading(true);
-                    setDevLoginError(null);
-                    await api.devLogin();
-                    window.location.reload();
-                  } catch (error) {
-                    setDevLoginError((error as Error).message);
-                  } finally {
-                    setDevLoginLoading(false);
-                  }
-                }}
-              >
-                {devLoginLoading ? "Signing in..." : "Temporary local dev login"}
-              </Button>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  variant="secondary"
+                  disabled={devLoginLoading}
+                  onClick={async () => {
+                    try {
+                      setDevLoginLoading(true);
+                      setDevLoginError(null);
+                      await api.devLogin("ADMIN");
+                      window.location.reload();
+                    } catch (error) {
+                      setDevLoginError((error as Error).message);
+                    } finally {
+                      setDevLoginLoading(false);
+                    }
+                  }}
+                >
+                  {devLoginLoading ? "Signing in..." : "Dev login (Admin)"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={devLoginLoading}
+                  onClick={async () => {
+                    try {
+                      setDevLoginLoading(true);
+                      setDevLoginError(null);
+                      await api.devLogin("VIEWER");
+                      window.location.reload();
+                    } catch (error) {
+                      setDevLoginError((error as Error).message);
+                    } finally {
+                      setDevLoginLoading(false);
+                    }
+                  }}
+                >
+                  {devLoginLoading ? "Signing in..." : "Dev login (Viewer)"}
+                </Button>
+              </div>
             ) : null}
             {devLoginError ? <p className="text-xs text-red-600">{devLoginError}</p> : null}
           </div>
@@ -87,6 +116,7 @@ function App() {
   return (
     <AppShell
       user={user}
+      canCreate={isAdmin}
       onLogout={async () => {
         await api.logout();
         window.location.reload();
@@ -129,9 +159,76 @@ function App() {
             path="/owner"
             element={<OwnerBoardPage users={board.meta.users} initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />}
           />
+          <Route
+            path="/status-kanban"
+            element={
+              <StatusKanbanPage
+                initiatives={board.initiatives}
+                onOpen={(i) => setSelected(i)}
+                onMove={async (initiative, nextStatus) => {
+                  await api.updateInitiative(initiative.id, { status: nextStatus });
+                  await board.refresh();
+                }}
+              />
+            }
+          />
+          <Route
+            path="/people-kanban"
+            element={
+              <PeopleKanbanPage
+                initiatives={board.initiatives}
+                users={board.meta.users}
+                onOpen={(i) => setSelected(i)}
+                onReassign={async (initiative, userId) => {
+                  await api.updateInitiative(initiative.id, { ownerId: userId });
+                  await board.refresh();
+                }}
+              />
+            }
+          />
           <Route path="/heatmap" element={<HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />} />
-          <Route path="/buyer-user" element={<BuyerUserPage initiatives={board.initiatives} />} />
+          <Route path="/buyer-user" element={<BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           <Route path="/gaps" element={<GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
+          <Route
+            path="/product-explorer"
+            element={<ProductExplorerPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} />}
+          />
+          <Route
+            path="/accounts"
+            element={<AccountsPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />}
+          />
+          <Route
+            path="/demands"
+            element={
+              <DemandsPage
+                isAdmin={isAdmin}
+                accounts={board.meta.accounts}
+                partners={board.meta.partners}
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+              />
+            }
+          />
+          <Route
+            path="/partners"
+            element={<PartnersPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />}
+          />
+          <Route
+            path="/campaigns"
+            element={
+              <CampaignsPage
+                isAdmin={isAdmin}
+                users={board.meta.users}
+                accounts={board.meta.accounts}
+                partners={board.meta.partners}
+                personas={board.meta.personas}
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+              />
+            }
+          />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/gantt" element={<GanttPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
@@ -146,6 +243,7 @@ function App() {
               </Button>
             </div>
             <InitiativeForm
+              products={board.meta.products}
               domains={board.meta.domains}
               users={board.meta.users}
               personas={board.meta.personas}
@@ -169,6 +267,7 @@ function App() {
         initiative={selectedFresh ?? null}
         allInitiatives={board.initiatives}
         users={board.meta.users}
+        products={board.meta.products}
         personas={board.meta.personas}
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}

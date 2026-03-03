@@ -55,6 +55,92 @@ enum RiskLevel {
   HIGH
 }
 
+enum AccountType {
+  B2B2C
+  B2G2C
+  INSURER
+  EMPLOYER
+  PUBLIC
+}
+
+enum DemandSourceType {
+  ACCOUNT
+  PARTNER
+  INTERNAL
+  COMPLIANCE
+}
+
+enum DemandStatus {
+  NEW
+  VALIDATING
+  APPROVED
+  PLANNED
+  SHIPPED
+  REJECTED
+}
+
+enum AssignmentRole {
+  ACCOUNTABLE
+  IMPLEMENTER
+  CONSULTED
+  INFORMED
+}
+
+enum DateConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DealStage {
+  DISCOVERY
+  PILOT
+  CONTRACTING
+  ACTIVE
+  RENEWAL
+}
+
+enum StrategicTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum CampaignType {
+  PARTNER_COBRANDING
+  PRODUCT_LAUNCH
+  SEASONAL
+  EVENT
+  WEBINAR
+  REFERRAL
+}
+
+enum AssetType {
+  LANDING_PAGE
+  LEAFLET
+  EMAIL_TEMPLATE
+  BANNER
+  VIDEO
+  PRESENTATION
+  SOCIAL_POST
+}
+
+enum AssetStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id               String       @id @default(cuid())
   email            String       @unique
@@ -65,8 +151,23 @@ model User {
   initiatives      Initiative[] @relation("InitiativeOwner")
   features         Feature[]    @relation("FeatureOwner")
   risks            Risk[]       @relation("RiskOwner")
+  assignments      InitiativeAssignment[]
+  accountsOwned    Account[]    @relation("AccountOwner")
+  partnersOwned    Partner[]    @relation("PartnerOwner")
+  demandsOwned     Demand[]     @relation("DemandOwner")
+  campaignsOwned   Campaign[]   @relation("CampaignOwner")
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  sortOrder   Int          @default(0)
+  initiatives Initiative[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Domain {
@@ -82,6 +183,7 @@ model Persona {
   name    String                    @unique
   icon    String?
   impacts InitiativePersonaImpact[]
+  assets  Asset[]
 }
 
 model RevenueStream {
@@ -93,6 +195,7 @@ model RevenueStream {
 
 model Initiative {
   id             String                    @id @default(cuid())
+  productId      String?
   title          String
   description    String?
   domainId       String
@@ -103,8 +206,16 @@ model Initiative {
   commercialType CommercialType
   isGap          Boolean                   @default(false)
   targetDate     DateTime?
+  startDate      DateTime?
+  milestoneDate  DateTime?
+  dateConfidence DateConfidence?
+  arrImpact      Float?
+  renewalDate    DateTime?
+  dealStage      DealStage?
+  strategicTier  StrategicTier?
   notes          String?
   sortOrder      Int                       @default(0)
+  product        Product?                  @relation(fields: [productId], references: [id], onDelete: SetNull)
   domain         Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
   owner          User?                     @relation("InitiativeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   personaImpacts InitiativePersonaImpact[]
@@ -112,6 +223,9 @@ model Initiative {
   features       Feature[]
   decisions      Decision[]
   risks          Risk[]
+  demandLinks    DemandLink[]
+  campaignLinks  CampaignLink[]
+  assignments    InitiativeAssignment[]
   outgoingDeps   Dependency[]              @relation("FromInitiative")
   incomingDeps   Dependency[]              @relation("ToInitiative")
   createdAt      DateTime                  @default(now())
@@ -145,11 +259,30 @@ model Feature {
   initiativeId String
   ownerId      String?
   status       FeatureStatus @default(IDEA)
+  startDate      DateTime?
+  targetDate     DateTime?
+  milestoneDate  DateTime?
+  dateConfidence DateConfidence?
   sortOrder    Int          @default(0)
   initiative   Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   owner        User?        @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  requirements  Requirement[]
+  demandLinks   DemandLink[]
+  campaignLinks CampaignLink[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Requirement {
+  id          String   @id @default(cuid())
+  featureId   String
+  title       String
+  description String?
+  isDone      Boolean  @default(false)
+  priority    Priority @default(P2)
+  feature     Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Decision {
@@ -184,4 +317,128 @@ model Dependency {
   toInitiative     Initiative @relation("ToInitiative", fields: [toInitiativeId], references: [id], onDelete: Cascade)
 
   @@id([fromInitiativeId, toInitiativeId])
+}
+
+model Account {
+  id            String        @id @default(cuid())
+  name          String
+  type          AccountType
+  segment       String?
+  ownerId       String?
+  arrImpact     Float?
+  renewalDate   DateTime?
+  dealStage     DealStage?
+  strategicTier StrategicTier?
+  owner         User?         @relation("AccountOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  demands       Demand[]
+  campaignLinks CampaignLink[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Partner {
+  id            String   @id @default(cuid())
+  name          String
+  kind          String
+  ownerId       String?
+  owner         User?    @relation("PartnerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  demands       Demand[]
+  campaignLinks CampaignLink[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Demand {
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  sourceType    DemandSourceType
+  status        DemandStatus     @default(NEW)
+  urgency       Int              @default(3)
+  accountId     String?
+  partnerId     String?
+  ownerId       String?
+  account       Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  partner       Partner?         @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  owner         User?            @relation("DemandOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  demandLinks   DemandLink[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model DemandLink {
+  id            String     @id @default(cuid())
+  demandId      String
+  initiativeId  String?
+  featureId     String?
+  demand        Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  initiative    Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  feature       Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@index([demandId])
+  @@index([initiativeId])
+  @@index([featureId])
+}
+
+model InitiativeAssignment {
+  initiativeId String
+  userId       String
+  role         AssignmentRole
+  allocation   Int?
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([initiativeId, userId, role])
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  type        CampaignType
+  status      CampaignStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Float?
+  ownerId     String?
+  owner       User?          @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  assets      Asset[]
+  links       CampaignLink[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Asset {
+  id          String      @id @default(cuid())
+  campaignId  String
+  name        String
+  description String?
+  type        AssetType
+  status      AssetStatus @default(DRAFT)
+  url         String?
+  personaId   String?
+  partnerId   String?
+  accountId   String?
+  campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  persona     Persona?    @relation(fields: [personaId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  @@index([campaignId])
+}
+
+model CampaignLink {
+  id           String      @id @default(cuid())
+  campaignId   String
+  initiativeId String?
+  featureId    String?
+  accountId    String?
+  partnerId    String?
+  campaign     Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  initiative   Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  feature      Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  account      Account?    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  partner      Partner?    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  @@index([campaignId])
+  @@index([initiativeId])
+  @@index([accountId])
+  @@index([partnerId])
 }

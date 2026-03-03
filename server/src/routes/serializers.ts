@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export const initiativeInclude = {
+  product: true,
   domain: true,
   owner: true,
   personaImpacts: {
@@ -15,7 +16,18 @@ export const initiativeInclude = {
   },
   features: {
     include: {
-      owner: true
+      owner: true,
+      requirements: true,
+      demandLinks: {
+        include: {
+          demand: {
+            include: {
+              account: true,
+              partner: true
+            }
+          }
+        }
+      }
     },
     orderBy: {
       sortOrder: "asc" as const
@@ -25,6 +37,22 @@ export const initiativeInclude = {
   risks: {
     include: {
       owner: true
+    }
+  },
+  assignments: {
+    include: {
+      user: true
+    }
+  },
+  demandLinks: {
+    include: {
+      demand: {
+        include: {
+          account: true,
+          partner: true
+        }
+      },
+      feature: true
     }
   },
   outgoingDeps: true,

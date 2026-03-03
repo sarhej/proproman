@@ -15,6 +15,16 @@ import { featuresRouter } from "./routes/features.js";
 import { decisionsRouter } from "./routes/decisions.js";
 import { risksRouter } from "./routes/risks.js";
 import { dependenciesRouter } from "./routes/dependencies.js";
+import { productsRouter } from "./routes/products.js";
+import { accountsRouter } from "./routes/accounts.js";
+import { partnersRouter } from "./routes/partners.js";
+import { demandsRouter } from "./routes/demands.js";
+import { requirementsRouter } from "./routes/requirements.js";
+import { assignmentsRouter } from "./routes/assignments.js";
+import { timelineRouter } from "./routes/timeline.js";
+import { campaignsRouter } from "./routes/campaigns.js";
+import { assetsRouter } from "./routes/assets.js";
+import { campaignLinksRouter } from "./routes/campaign-links.js";
 import { prisma } from "./db.js";
 
 const app = express();
@@ -38,7 +48,8 @@ app.use(
   session({
     store: new PgStore({
       pool,
-      tableName: "session"
+      tableName: "session",
+      createTableIfMissing: true
     }),
     name: "dd.sid",
     secret: env.SESSION_SECRET,
@@ -66,6 +77,16 @@ app.use("/api/features", featuresRouter);
 app.use("/api/decisions", decisionsRouter);
 app.use("/api/risks", risksRouter);
 app.use("/api/dependencies", dependenciesRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/accounts", accountsRouter);
+app.use("/api/partners", partnersRouter);
+app.use("/api/demands", demandsRouter);
+app.use("/api/requirements", requirementsRouter);
+app.use("/api/assignments", assignmentsRouter);
+app.use("/api/timeline", timelineRouter);
+app.use("/api/campaigns", campaignsRouter);
+app.use("/api/assets", assetsRouter);
+app.use("/api/campaign-links", campaignLinksRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({

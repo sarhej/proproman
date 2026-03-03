@@ -8,6 +8,7 @@ type Filters = {
   priority?: string;
   horizon?: string;
   isGap?: boolean;
+  quick?: string;
 };
 
 export function useBoardData() {
@@ -48,9 +49,31 @@ export function useBoardData() {
     refresh();
   }, [refresh]);
 
+  const filteredInitiatives = useMemo(() => {
+    const quick = filters.quick?.trim().toLowerCase();
+    if (!quick) return initiatives;
+
+    const wantsGap = quick.includes("gap");
+    return initiatives.filter((initiative) => {
+      if (wantsGap && !initiative.isGap) return false;
+      const haystack = [
+        initiative.title,
+        initiative.description ?? "",
+        initiative.notes ?? "",
+        initiative.domain?.name ?? "",
+        initiative.owner?.name ?? "",
+        initiative.product?.name ?? "",
+        ...initiative.features.map((f) => f.title)
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(quick);
+    });
+  }, [filters.quick, initiatives]);
+
   return {
     meta,
-    initiatives,
+    initiatives: filteredInitiatives,
     filters,
     setFilters,
     setInitiatives,

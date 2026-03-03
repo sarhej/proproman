@@ -1,0 +1,106 @@
+import { CampaignStatus, CampaignType, UserRole } from "@prisma/client";
+import { Router } from "express";
+import { z } from "zod";
+import { prisma } from "../db.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
+
+const campaignSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable().optional(),
+  type: z.nativeEnum(CampaignType),
+  status: z.nativeEnum(CampaignStatus).default(CampaignStatus.DRAFT),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  budget: z.number().nullable().optional(),
+  ownerId: z.string().nullable().optional()
+});
+
+const campaignInclude = {
+  owner: true,
+  assets: {
+    include: { persona: true },
+    orderBy: { createdAt: "asc" as const }
+  },
+  links: {
+    include: {
+      initiative: { include: { domain: true } },
+      feature: true,
+      account: true,
+      partner: true
+    }
+  }
+};
+
+export const campaignsRouter = Router();
+campaignsRouter.use(requireAuth);
+
+campaignsRouter.get("/", async (_req, res) => {
+  const campaigns = await prisma.campaign.findMany({
+    include: campaignInclude,
+    orderBy: { createdAt: "desc" }
+  });
+  res.json({ campaigns });
+});
+
+campaignsRouter.get("/:id", async (req, res) => {
+  const id = String(req.params.id);
+  const campaign = await prisma.campaign.findUnique({
+    where: { id },
+    include: campaignInclude
+  });
+  if (!campaign) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json({ campaign });
+});
+
+campaignsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+  const parsed = campaignSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { startDate, endDate, ...rest } = parsed.data;
+  const campaign = await prisma.campaign.create({
+    data: {
+      ...rest,
+      description: rest.description ?? null,
+      ownerId: rest.ownerId ?? null,
+      budget: rest.budget ?? null,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null
+    },
+    include: campaignInclude
+  });
+  res.status(201).json({ campaign });
+});
+
+campaignsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+  const id = String(req.params.id);
+  const parsed = campaignSchema.partial().safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { startDate, endDate, ...rest } = parsed.data;
+  const campaign = await prisma.campaign.update({
+    where: { id },
+    data: {
+      ...rest,
+      description: rest.description ?? undefined,
+      ownerId: rest.ownerId ?? undefined,
+      budget: rest.budget ?? undefined,
+      startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
+      endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined
+    },
+    include: campaignInclude
+  });
+  res.json({ campaign });
+});
+
+campaignsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+  const id = String(req.params.id);
+  await prisma.campaign.delete({ where: { id } });
+  res.status(204).send();
+});

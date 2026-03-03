@@ -13,11 +13,19 @@ metaRouter.get("/", async (_req, res) => {
     prisma.revenueStream.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findMany({ orderBy: { name: "asc" } })
   ]);
+  const [products, accounts, partners] = await Promise.all([
+    prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.account.findMany({ orderBy: { name: "asc" } }),
+    prisma.partner.findMany({ orderBy: { name: "asc" } })
+  ]);
 
   res.json({
     domains,
     personas,
     revenueStreams,
-    users
+    users,
+    products,
+    accounts,
+    partners
   });
 });

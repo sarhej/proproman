@@ -57,6 +57,7 @@ initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   const initiative = await prisma.initiative.create({
     data: {
       title: payload.title,
+      productId: payload.productId ?? null,
       description: payload.description ?? null,
       domainId: payload.domainId,
       ownerId: payload.ownerId ?? null,
@@ -65,7 +66,14 @@ initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
       status: payload.status,
       commercialType: payload.commercialType,
       isGap: payload.isGap,
+      startDate: payload.startDate ? new Date(payload.startDate) : null,
       targetDate: payload.targetDate ? new Date(payload.targetDate) : null,
+      milestoneDate: payload.milestoneDate ? new Date(payload.milestoneDate) : null,
+      dateConfidence: payload.dateConfidence ?? null,
+      arrImpact: payload.arrImpact ?? null,
+      renewalDate: payload.renewalDate ? new Date(payload.renewalDate) : null,
+      dealStage: payload.dealStage ?? null,
+      strategicTier: payload.strategicTier ?? null,
       notes: payload.notes ?? null,
       sortOrder: payload.sortOrder,
       personaImpacts: payload.personaImpacts
@@ -79,6 +87,27 @@ initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
         ? {
             createMany: {
               data: payload.revenueWeights
+            }
+          }
+        : undefined,
+      demandLinks: payload.demandLinks
+        ? {
+            createMany: {
+              data: payload.demandLinks.map((d) => ({
+                demandId: d.demandId,
+                featureId: d.featureId ?? null
+              }))
+            }
+          }
+        : undefined,
+      assignments: payload.assignments
+        ? {
+            createMany: {
+              data: payload.assignments.map((a) => ({
+                userId: a.userId,
+                role: a.role,
+                allocation: a.allocation ?? null
+              }))
             }
           }
         : undefined
@@ -126,10 +155,32 @@ initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
         }))
       });
     }
+    if (payload.demandLinks) {
+      await tx.demandLink.deleteMany({ where: { initiativeId: id } });
+      await tx.demandLink.createMany({
+        data: payload.demandLinks.map((d) => ({
+          demandId: d.demandId,
+          initiativeId: id,
+          featureId: d.featureId ?? null
+        }))
+      });
+    }
+    if (payload.assignments) {
+      await tx.initiativeAssignment.deleteMany({ where: { initiativeId: id } });
+      await tx.initiativeAssignment.createMany({
+        data: payload.assignments.map((a) => ({
+          initiativeId: id,
+          userId: a.userId,
+          role: a.role,
+          allocation: a.allocation ?? null
+        }))
+      });
+    }
     await tx.initiative.update({
       where: { id },
       data: {
         title: payload.title,
+        productId: payload.productId ?? undefined,
         description: payload.description ?? undefined,
         domainId: payload.domainId,
         ownerId: payload.ownerId ?? undefined,
@@ -138,7 +189,14 @@ initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
         status: payload.status,
         commercialType: payload.commercialType,
         isGap: payload.isGap,
+        startDate: payload.startDate ? new Date(payload.startDate) : payload.startDate,
         targetDate: payload.targetDate ? new Date(payload.targetDate) : payload.targetDate,
+        milestoneDate: payload.milestoneDate ? new Date(payload.milestoneDate) : payload.milestoneDate,
+        dateConfidence: payload.dateConfidence ?? undefined,
+        arrImpact: payload.arrImpact ?? undefined,
+        renewalDate: payload.renewalDate ? new Date(payload.renewalDate) : payload.renewalDate,
+        dealStage: payload.dealStage ?? undefined,
+        strategicTier: payload.strategicTier ?? undefined,
         notes: payload.notes ?? undefined,
         sortOrder: payload.sortOrder
       }
