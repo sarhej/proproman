@@ -1,5 +1,10 @@
-import { ChevronDown, ChevronRight, CheckCircle2, Circle, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import {
+  DndContext, type DragEndEvent, type DragStartEvent,
+  PointerSensor, useSensor, useSensors,
+  useDraggable, useDroppable, DragOverlay
+} from "@dnd-kit/core";
 import type { Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
 import { api } from "../../lib/api";
 
@@ -373,22 +378,41 @@ function InitiativeRow({
   users,
   isAdmin,
   onOpen,
-  onRefresh
+  onRefresh,
+  isDragOverlay
 }: {
   initiative: Initiative;
   users: User[];
   isAdmin: boolean;
   onOpen: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
+  isDragOverlay?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const impact = avgImpact(initiative);
   const progress = reqProgress(initiative.features);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: initiative.id,
+    data: { initiative },
+    disabled: !isAdmin
+  });
 
   return (
     <>
-      <tr className="group/row border-t border-slate-200 text-sm hover:bg-slate-50">
+      <tr
+        ref={!isDragOverlay ? setNodeRef : undefined}
+        className={`group/row border-t border-slate-200 text-sm hover:bg-slate-50 ${isDragging && !isDragOverlay ? "opacity-30" : ""} ${isDragOverlay ? "bg-white shadow-lg" : ""}`}
+      >
         <td className="py-2 pl-8 pr-2">
+          {isAdmin ? (
+            <span
+              {...attributes}
+              {...listeners}
+              className="mr-1 inline-flex cursor-grab items-center text-slate-400 hover:text-slate-600 active:cursor-grabbing"
+            >
+              <GripVertical size={14} />
+            </span>
+          ) : null}
           <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
             {initiative.features.length > 0 ? (
               open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
@@ -492,6 +516,7 @@ function ProductRow({
   onRefresh: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(true);
+  const { setNodeRef, isOver } = useDroppable({ id: `product-${product.id}` });
   const allImpacts = product.initiatives.flatMap((i) => i.personaImpacts?.map((p) => p.impact) ?? []);
   const avgProductImpact = allImpacts.length ? +(allImpacts.reduce((a, b) => a + b, 0) / allImpacts.length).toFixed(1) : 0;
   const allDemandLinks = product.initiatives.flatMap((i) => i.demandLinks ?? []);
@@ -505,7 +530,10 @@ function ProductRow({
 
   return (
     <>
-      <tr className="group/row border-t-2 border-slate-300 bg-slate-50 text-sm font-semibold">
+      <tr
+        ref={setNodeRef}
+        className={`group/row border-t-2 border-slate-300 text-sm font-semibold transition-colors ${isOver ? "bg-sky-100" : "bg-slate-50"}`}
+      >
         <td className="py-2.5 pl-2 pr-2">
           <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -552,40 +580,92 @@ function ProductRow({
   );
 }
 
-export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefresh }: Props) {
+export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
+  const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const allInitiatives = products.flatMap((p) => p.initiatives);
+
+  function handleDragStart(event: DragStartEvent) {
+    const initiative = event.active.data.current?.initiative as Initiative | undefined;
+    setDraggingInitiative(initiative ?? null);
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setDraggingInitiative(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const overId = String(over.id);
+    if (!overId.startsWith("product-")) return;
+
+    const targetProductId = overId.replace("product-", "");
+    const initiative = allInitiatives.find((i) => i.id === active.id);
+    if (!initiative || initiative.productId === targetProductId) return;
+
+    await api.updateInitiative(initiative.id, { productId: targetProductId });
+    await onRefresh();
+  }
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-      <table className="w-full min-w-[900px] text-left">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500">
-            <th className="px-2 py-2">Name</th>
-            <th className="px-2 py-2 text-center">Impact</th>
-            <th className="px-2 py-2 text-center">Progress</th>
-            <th className="px-2 py-2">Demands</th>
-            <th className="px-2 py-2 text-center">Owner</th>
-            <th className="px-2 py-2 text-center">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <ProductRow
-              key={product.id}
-              product={product}
-              users={users}
-              isAdmin={isAdmin}
-              onOpenInitiative={onOpenInitiative}
-              onRefresh={onRefresh}
-            />
-          ))}
-          {products.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
-                No products found. Create one to get started.
-              </td>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-[900px] text-left">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500">
+              <th className="px-2 py-2">Name</th>
+              <th className="px-2 py-2 text-center">Impact</th>
+              <th className="px-2 py-2 text-center">Progress</th>
+              <th className="px-2 py-2">Demands</th>
+              <th className="px-2 py-2 text-center">Owner</th>
+              <th className="px-2 py-2 text-center">Status</th>
             </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <ProductRow
+                key={product.id}
+                product={product}
+                users={users}
+                isAdmin={isAdmin}
+                onOpenInitiative={onOpenInitiative}
+                onRefresh={onRefresh}
+              />
+            ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
+                  No products / assets found. Create one to get started.
+                </td>
+              </tr>
+            )}
+            {isAdmin && onAddProduct ? (
+              <tr className="border-t border-slate-200">
+                <td className="py-2 pl-2 pr-2">
+                  <InlineAdd placeholder="Add product / asset" onAdd={onAddProduct} />
+                </td>
+                <td colSpan={5} />
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+      <DragOverlay>
+        {draggingInitiative ? (
+          <table className="w-full text-left">
+            <tbody>
+              <InitiativeRow
+                initiative={draggingInitiative}
+                users={users}
+                isAdmin={false}
+                onOpen={() => {}}
+                onRefresh={async () => {}}
+                isDragOverlay
+              />
+            </tbody>
+          </table>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

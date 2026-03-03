@@ -1,24 +1,37 @@
 import { NextFunction, Request, Response } from "express";
 import { UserRole } from "@prisma/client";
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  if (req.isAuthenticated()) {
-    next();
-    return;
+function checkAuth(req: Request, res: Response): boolean {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
   }
-  res.status(401).json({ error: "Unauthorized" });
+  if (!req.user.isActive) {
+    res.status(403).json({ error: "Account deactivated" });
+    return false;
+  }
+  return true;
 }
 
-export function requireRole(role: UserRole) {
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  if (checkAuth(req, res)) next();
+}
+
+export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.isAuthenticated() || !req.user) {
-      res.status(401).json({ error: "Unauthorized" });
+    if (!checkAuth(req, res)) return;
+    if (req.user!.role === UserRole.SUPER_ADMIN || roles.includes(req.user!.role)) {
+      next();
       return;
     }
-    if (req.user.role !== role) {
-      res.status(403).json({ error: "Forbidden" });
-      return;
-    }
-    next();
+    res.status(403).json({ error: "Forbidden" });
   };
+}
+
+export function requireWriteAccess() {
+  return requireRole(UserRole.ADMIN, UserRole.EDITOR);
+}
+
+export function requireMarketingAccess() {
+  return requireRole(UserRole.ADMIN, UserRole.MARKETING);
 }

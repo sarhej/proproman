@@ -25,10 +25,10 @@ export function ProductsPage({ isAdmin }: Props) {
 
   return (
     <Card className="p-4">
-      <h2 className="mb-3 text-lg font-semibold">Products</h2>
+      <h2 className="mb-3 text-lg font-semibold">Products / Assets</h2>
       {isAdmin ? (
         <div className="mb-3 flex gap-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New product name" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New product / asset name" />
           <Button
             onClick={async () => {
               if (!name.trim()) return;

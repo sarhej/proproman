@@ -9,7 +9,6 @@ import {
   FileText, Globe, Mail, Image, Video, Presentation, Share2, Megaphone, Link2
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Field";
 
 type Props = {
   isAdmin: boolean;
@@ -19,6 +18,7 @@ type Props = {
   personas: Persona[];
   initiatives: Initiative[];
   onOpenInitiative: (initiative: Initiative) => void;
+  quickFilter?: string;
 };
 
 const CAMPAIGN_STATUSES: CampaignStatus[] = ["DRAFT", "ACTIVE", "PAUSED", "COMPLETED", "ARCHIVED"];
@@ -280,10 +280,9 @@ function CampaignRow({
   );
 }
 
-export function CampaignsPage({ isAdmin, users, accounts, partners, personas, initiatives, onOpenInitiative }: Props) {
+export function CampaignsPage({ isAdmin, users, accounts, partners, personas, initiatives, onOpenInitiative, quickFilter }: Props) {
   void personas; // available for future persona-based filtering
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
   async function load() {
@@ -296,9 +295,10 @@ export function CampaignsPage({ isAdmin, users, accounts, partners, personas, in
 
   const filtered = campaigns.filter((c) => {
     if (statusFilter && c.status !== statusFilter) return false;
-    if (search.trim()) {
-      const hay = [c.name, c.description ?? "", c.owner?.name ?? "", ...c.assets.map((a) => a.name)].join(" ").toLowerCase();
-      return hay.includes(search.trim().toLowerCase());
+    const q = quickFilter?.trim().toLowerCase();
+    if (q) {
+      const hay = [c.name, c.description ?? "", c.owner?.name ?? "", c.type, c.status, ...c.assets.map((a) => a.name)].join(" ").toLowerCase();
+      return hay.includes(q);
     }
     return true;
   });
@@ -306,9 +306,7 @@ export function CampaignsPage({ isAdmin, users, accounts, partners, personas, in
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-end gap-2">
-        <div className="flex-1">
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search campaigns, assets..." />
-        </div>
+        <div className="flex-1" />
         <select className="rounded border border-slate-200 px-2 py-1.5 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">All statuses</option>
           {CAMPAIGN_STATUSES.map((s) => <option key={s} value={s}>{s.replaceAll("_", " ")}</option>)}

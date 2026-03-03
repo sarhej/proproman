@@ -13,7 +13,7 @@ const dependencySchema = z.object({
 export const dependenciesRouter = Router();
 dependenciesRouter.use(requireAuth);
 
-dependenciesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+dependenciesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = dependencySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -30,7 +30,7 @@ dependenciesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ dependency: dep });
 });
 
-dependenciesRouter.delete("/", requireRole(UserRole.ADMIN), async (req, res) => {
+dependenciesRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = dependencySchema.pick({ fromInitiativeId: true, toInitiativeId: true }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });

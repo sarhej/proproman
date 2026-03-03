@@ -35,7 +35,7 @@ accountsRouter.get("/", async (_req, res) => {
   res.json({ accounts });
 });
 
-accountsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+accountsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = accountSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -55,7 +55,7 @@ accountsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ account });
 });
 
-accountsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+accountsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   const parsed = accountSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -78,7 +78,7 @@ accountsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
   res.json({ account });
 });
 
-accountsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+accountsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   await prisma.account.delete({ where: { id } });
   res.status(204).send();

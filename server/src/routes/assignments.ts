@@ -27,12 +27,19 @@ assignmentsRouter.get("/", async (req, res) => {
   res.json({ assignments });
 });
 
-assignmentsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = assignmentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+
+  if (parsed.data.role === AssignmentRole.ACCOUNTABLE) {
+    await prisma.initiativeAssignment.deleteMany({
+      where: { initiativeId: parsed.data.initiativeId, role: AssignmentRole.ACCOUNTABLE }
+    });
+  }
+
   const assignment = await prisma.initiativeAssignment.upsert({
     where: {
       initiativeId_userId_role: {
@@ -52,10 +59,18 @@ assignmentsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
     },
     include: { user: true }
   });
+
+  if (parsed.data.role === AssignmentRole.ACCOUNTABLE) {
+    await prisma.initiative.update({
+      where: { id: parsed.data.initiativeId },
+      data: { ownerId: parsed.data.userId }
+    });
+  }
+
   res.status(201).json({ assignment });
 });
 
-assignmentsRouter.delete("/", requireRole(UserRole.ADMIN), async (req, res) => {
+assignmentsRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = z
     .object({
       initiativeId: z.string(),
@@ -72,5 +87,13 @@ assignmentsRouter.delete("/", requireRole(UserRole.ADMIN), async (req, res) => {
       initiativeId_userId_role: parsed.data
     }
   });
+
+  if (parsed.data.role === AssignmentRole.ACCOUNTABLE) {
+    await prisma.initiative.update({
+      where: { id: parsed.data.initiativeId },
+      data: { ownerId: null }
+    });
+  }
+
   res.status(204).send();
 });

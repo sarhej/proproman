@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import type { Campaign, Demand, Initiative, Partner } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -19,9 +19,10 @@ type Props = {
   isAdmin: boolean;
   onOpenInitiative?: (initiative: Initiative) => void;
   initiatives?: Initiative[];
+  quickFilter?: string;
 };
 
-export function PartnersPage({ isAdmin, onOpenInitiative, initiatives }: Props) {
+export function PartnersPage({ isAdmin, onOpenInitiative, initiatives, quickFilter }: Props) {
   const [partners, setPartners] = useState<PartnerWithDemands[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("");
@@ -37,7 +38,16 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
-  const detail = partners.find((p) => p.id === selected);
+  const filteredPartners = useMemo(() => {
+    const q = quickFilter?.trim().toLowerCase();
+    if (!q) return partners;
+    return partners.filter((p) => {
+      const hay = [p.name, p.kind, ...p.demands.map((d) => d.title)].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [quickFilter, partners]);
+
+  const detail = filteredPartners.find((p) => p.id === selected) ?? (selected ? partners.find((p) => p.id === selected) : undefined);
 
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
@@ -61,7 +71,7 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
           </div>
         ) : null}
         <div className="grid gap-1">
-          {partners.map((p) => (
+          {filteredPartners.map((p) => (
             <button
               key={p.id}
               type="button"

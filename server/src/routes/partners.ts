@@ -30,7 +30,7 @@ partnersRouter.get("/", async (_req, res) => {
   res.json({ partners });
 });
 
-partnersRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+partnersRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = partnerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -45,7 +45,7 @@ partnersRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ partner });
 });
 
-partnersRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+partnersRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   const parsed = partnerSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -63,7 +63,7 @@ partnersRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
   res.json({ partner });
 });
 
-partnersRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+partnersRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   await prisma.partner.delete({ where: { id } });
   res.status(204).send();

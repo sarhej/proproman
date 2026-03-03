@@ -1,4 +1,6 @@
-export type UserRole = "ADMIN" | "VIEWER";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "MARKETING" | "VIEWER";
+
+export type AuditAction = "CREATED" | "UPDATED" | "DELETED" | "STATUS_CHANGED" | "ROLE_CHANGED" | "LOGIN";
 
 export type User = {
   id: string;
@@ -6,6 +8,20 @@ export type User = {
   email: string;
   avatarUrl?: string | null;
   role: UserRole;
+  isActive?: boolean;
+  lastLoginAt?: string | null;
+  googleId?: string | null;
+};
+
+export type AuditEntry = {
+  id: string;
+  userId: string;
+  action: AuditAction;
+  entityType: string;
+  entityId?: string | null;
+  details?: Record<string, unknown> | null;
+  user: Pick<User, "id" | "name" | "email" | "avatarUrl">;
+  createdAt: string;
 };
 
 export type Domain = {

@@ -1,8 +1,9 @@
-import { FeatureStatus, UserRole } from "@prisma/client";
+import { FeatureStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const featureSchema = z.object({
   title: z.string().min(1),
@@ -15,7 +16,7 @@ const featureSchema = z.object({
 export const featuresRouter = Router();
 featuresRouter.use(requireAuth);
 
-featuresRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, res) => {
+featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = featureSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -31,10 +32,11 @@ featuresRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, r
     },
     include: { owner: true }
   });
+  await logAudit(req.user!.id, "CREATED", "FEATURE", feature.id, { title: feature.title });
   res.status(201).json({ feature });
 });
 
-featuresRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = featureSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -50,11 +52,13 @@ featuresRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
     },
     include: { owner: true }
   });
+  await logAudit(req.user!.id, "UPDATED", "FEATURE", feature.id);
   res.json({ feature });
 });
 
-featuresRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+featuresRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.feature.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "FEATURE", id);
   res.status(204).send();
 });

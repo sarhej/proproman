@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type {
   CommercialType,
   DateConfidence,
@@ -51,6 +51,11 @@ type Props = {
   readOnly: boolean;
   onSubmit: (value: unknown) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
+};
+
+export type InitiativeFormHandle = {
+  save: () => Promise<void>;
 };
 
 function toInitial(
@@ -96,7 +101,7 @@ function toInitial(
   };
 }
 
-export function InitiativeForm({
+export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function InitiativeForm({
   initiative,
   products,
   domains,
@@ -105,12 +110,18 @@ export function InitiativeForm({
   revenueStreams,
   onSubmit,
   onDelete,
+  onDirtyChange,
   readOnly
-}: Props) {
+}, ref) {
   const [form, setForm] = useState<FormValue>(() => toInitial(initiative, products, domains, personas, revenueStreams));
   const [saving, setSaving] = useState(false);
+  const initialRef = useRef<string>(JSON.stringify(toInitial(initiative, products, domains, personas, revenueStreams)));
 
   const canSubmit = useMemo(() => form.title.trim().length > 0 && form.domainId, [form.domainId, form.title]);
+
+  useEffect(() => {
+    onDirtyChange?.(JSON.stringify(form) !== initialRef.current);
+  }, [form, onDirtyChange]);
 
   async function handleSave() {
     if (!canSubmit || readOnly) return;
@@ -147,6 +158,8 @@ export function InitiativeForm({
     }
   }
 
+  useImperativeHandle(ref, () => ({ save: handleSave }));
+
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -164,9 +177,9 @@ export function InitiativeForm({
           />
         </div>
         <div>
-          <Label>Product</Label>
+          <Label>Product / Asset</Label>
           <Select value={form.productId} onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))} disabled={readOnly}>
-            <option value="">No product</option>
+            <option value="">No product / asset</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -385,4 +398,4 @@ export function InitiativeForm({
       </div>
     </div>
   );
-}
+});

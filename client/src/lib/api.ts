@@ -1,5 +1,6 @@
 import type {
   Asset,
+  AuditEntry,
   Campaign,
   CampaignLink,
   Decision,
@@ -16,6 +17,7 @@ import type {
   Requirement,
   Risk,
   User,
+  UserRole,
   Account
 } from "../types/models";
 
@@ -42,7 +44,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getMe: async () => request<{ user: User | null }>("/api/auth/me"),
-  devLogin: async (role?: "ADMIN" | "VIEWER") =>
+  devLogin: async (role?: UserRole) =>
     request<{ user: User }>("/api/auth/dev-login", { method: "POST", body: JSON.stringify(role ? { role } : {}) }),
   logout: async () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   getMeta: async () => request<MetaPayload>("/api/meta"),
@@ -170,5 +172,15 @@ export const api = {
     request<{ links: CampaignLink[] }>(`/api/campaign-links${campaignId ? `?campaignId=${campaignId}` : ""}`),
   createCampaignLink: async (body: unknown) =>
     request<{ link: CampaignLink }>("/api/campaign-links", { method: "POST", body: JSON.stringify(body) }),
-  deleteCampaignLink: async (id: string) => request<void>(`/api/campaign-links/${id}`, { method: "DELETE" })
+  deleteCampaignLink: async (id: string) => request<void>(`/api/campaign-links/${id}`, { method: "DELETE" }),
+
+  getUsers: async () => request<{ users: User[] }>("/api/admin/users"),
+  updateUser: async (id: string, body: unknown) =>
+    request<{ user: User }>(`/api/admin/users/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  createUser: async (body: { email: string; name: string; role: UserRole }) =>
+    request<{ user: User }>("/api/admin/users", { method: "POST", body: JSON.stringify(body) }),
+  getAuditLog: async (params?: URLSearchParams) =>
+    request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
+      `/api/admin/audit${params ? `?${params.toString()}` : ""}`
+    )
 };

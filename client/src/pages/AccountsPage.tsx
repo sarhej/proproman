@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import type { Account, Campaign, Demand, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -19,9 +19,10 @@ type Props = {
   isAdmin: boolean;
   onOpenInitiative?: (initiative: Initiative) => void;
   initiatives?: Initiative[];
+  quickFilter?: string;
 };
 
-export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) {
+export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilter }: Props) {
   const [accounts, setAccounts] = useState<AccountWithDemands[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("");
@@ -37,7 +38,16 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
-  const detail = accounts.find((a) => a.id === selected);
+  const filteredAccounts = useMemo(() => {
+    const q = quickFilter?.trim().toLowerCase();
+    if (!q) return accounts;
+    return accounts.filter((a) => {
+      const hay = [a.name, a.type, a.segment ?? "", a.dealStage ?? "", a.strategicTier ?? "", ...a.demands.map((d) => d.title)].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [quickFilter, accounts]);
+
+  const detail = filteredAccounts.find((a) => a.id === selected) ?? (selected ? accounts.find((a) => a.id === selected) : undefined);
 
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
@@ -66,7 +76,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
           </div>
         ) : null}
         <div className="grid gap-1">
-          {accounts.map((a) => (
+          {filteredAccounts.map((a) => (
             <button
               key={a.id}
               type="button"

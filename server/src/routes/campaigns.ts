@@ -1,8 +1,9 @@
-import { CampaignStatus, CampaignType, UserRole } from "@prisma/client";
+import { CampaignStatus, CampaignType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const campaignSchema = z.object({
   name: z.string().min(1),
@@ -55,7 +56,7 @@ campaignsRouter.get("/:id", async (req, res) => {
   res.json({ campaign });
 });
 
-campaignsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+campaignsRouter.post("/", requireMarketingAccess(), async (req, res) => {
   const parsed = campaignSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -73,10 +74,11 @@ campaignsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
     },
     include: campaignInclude
   });
+  await logAudit(req.user!.id, "CREATED", "CAMPAIGN", campaign.id, { name: campaign.name });
   res.status(201).json({ campaign });
 });
 
-campaignsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+campaignsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = campaignSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -96,11 +98,13 @@ campaignsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
     },
     include: campaignInclude
   });
+  await logAudit(req.user!.id, "UPDATED", "CAMPAIGN", campaign.id);
   res.json({ campaign });
 });
 
-campaignsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+campaignsRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.campaign.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "CAMPAIGN", id);
   res.status(204).send();
 });

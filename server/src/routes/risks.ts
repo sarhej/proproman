@@ -1,8 +1,8 @@
-import { RiskLevel, UserRole } from "@prisma/client";
+import { RiskLevel } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 
 const riskSchema = z.object({
   title: z.string().min(1),
@@ -15,7 +15,7 @@ const riskSchema = z.object({
 export const risksRouter = Router();
 risksRouter.use(requireAuth);
 
-risksRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, res) => {
+risksRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = riskSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -36,7 +36,7 @@ risksRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, res)
   res.status(201).json({ risk });
 });
 
-risksRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+risksRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.risk.delete({ where: { id } });
   res.status(204).send();

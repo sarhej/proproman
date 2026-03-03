@@ -34,6 +34,7 @@ type SeedInitiative = {
 };
 
 async function main() {
+  await prisma.auditEntry.deleteMany();
   await prisma.campaignLink.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.campaign.deleteMany();
@@ -71,6 +72,14 @@ async function main() {
     "Jakub"
   ];
 
+  function seedRole(idx: number): UserRole {
+    if (idx === 0) return UserRole.SUPER_ADMIN;
+    if (idx < 3) return UserRole.ADMIN;
+    if (idx < 8) return UserRole.EDITOR;
+    if (idx < 10) return UserRole.MARKETING;
+    return UserRole.VIEWER;
+  }
+
   const users = await Promise.all(
     teamNames.map((name, idx) =>
       prisma.user.upsert({
@@ -78,10 +87,12 @@ async function main() {
         create: {
           name,
           email: `${name.toLowerCase()}@doctordigital.local`,
-          role: idx < 6 ? UserRole.ADMIN : UserRole.VIEWER
+          role: seedRole(idx),
+          isActive: true
         },
         update: {
-          role: idx < 6 ? UserRole.ADMIN : UserRole.VIEWER
+          role: seedRole(idx),
+          isActive: true
         }
       })
     )

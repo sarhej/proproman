@@ -41,7 +41,7 @@ demandsRouter.get("/", async (_req, res) => {
   res.json({ demands });
 });
 
-demandsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+demandsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = demandSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -79,7 +79,7 @@ demandsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ demand });
 });
 
-demandsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+demandsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   const parsed = demandSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -124,7 +124,7 @@ demandsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
   res.json({ demand });
 });
 
-demandsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+demandsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   await prisma.demand.delete({ where: { id } });
   res.status(204).send();

@@ -25,6 +25,7 @@ import { timelineRouter } from "./routes/timeline.js";
 import { campaignsRouter } from "./routes/campaigns.js";
 import { assetsRouter } from "./routes/assets.js";
 import { campaignLinksRouter } from "./routes/campaign-links.js";
+import { adminRouter } from "./routes/admin.js";
 import { prisma } from "./db.js";
 
 const app = express();
@@ -87,6 +88,7 @@ app.use("/api/timeline", timelineRouter);
 app.use("/api/campaigns", campaignsRouter);
 app.use("/api/assets", assetsRouter);
 app.use("/api/campaign-links", campaignLinksRouter);
+app.use("/api/admin", adminRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({

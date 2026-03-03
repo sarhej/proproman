@@ -19,3 +19,69 @@ body {
   min-width: 320px;
   background: #f8fafc;
 }
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  [data-print-content] {
+    display: block !important;
+    grid-column: 1 / -1 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  [data-print-layout] {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  body {
+    background: white !important;
+    min-width: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table {
+    font-size: 9px !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  table th,
+  table td {
+    padding: 3px 4px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  .sticky {
+    position: static !important;
+  }
+
+  .fixed {
+    display: none !important;
+  }
+
+  .min-h-screen {
+    min-height: 0 !important;
+  }
+}

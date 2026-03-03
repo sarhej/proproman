@@ -1,8 +1,7 @@
-import { UserRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 
 const decisionSchema = z.object({
   title: z.string().min(1),
@@ -14,7 +13,7 @@ const decisionSchema = z.object({
 export const decisionsRouter = Router();
 decisionsRouter.use(requireAuth);
 
-decisionsRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, res) => {
+decisionsRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = decisionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -33,7 +32,7 @@ decisionsRouter.post("/:initiativeId", requireRole(UserRole.ADMIN), async (req, 
   res.status(201).json({ decision });
 });
 
-decisionsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+decisionsRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.decision.delete({ where: { id } });
   res.status(204).send();

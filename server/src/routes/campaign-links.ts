@@ -1,8 +1,7 @@
-import { UserRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
 
 const linkSchema = z.object({
   campaignId: z.string().min(1),
@@ -31,7 +30,7 @@ campaignLinksRouter.get("/", async (req, res) => {
   res.json({ links });
 });
 
-campaignLinksRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+campaignLinksRouter.post("/", requireMarketingAccess(), async (req, res) => {
   const parsed = linkSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -56,7 +55,7 @@ campaignLinksRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ link });
 });
 
-campaignLinksRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+campaignLinksRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.campaignLink.delete({ where: { id } });
   res.status(204).send();

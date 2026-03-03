@@ -1,7 +1,8 @@
 import { Horizon, Prisma, Priority, UserRole } from "@prisma/client";
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireRole, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 import { initiativeInclude } from "./serializers.js";
 import { initiativeInputSchema, updatePositionsSchema } from "./schemas.js";
 
@@ -46,7 +47,7 @@ initiativesRouter.get("/:id", async (req, res) => {
   res.json({ initiative });
 });
 
-initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = initiativeInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -54,13 +55,16 @@ initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   }
   const payload = parsed.data;
 
+  const accountableUser = payload.assignments?.find((a) => a.role === "ACCOUNTABLE");
+  const effectiveOwnerId = accountableUser ? accountableUser.userId : (payload.ownerId ?? null);
+
   const initiative = await prisma.initiative.create({
     data: {
       title: payload.title,
       productId: payload.productId ?? null,
       description: payload.description ?? null,
       domainId: payload.domainId,
-      ownerId: payload.ownerId ?? null,
+      ownerId: effectiveOwnerId,
       priority: payload.priority,
       horizon: payload.horizon,
       status: payload.status,
@@ -115,10 +119,11 @@ initiativesRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
     include: initiativeInclude
   });
 
+  await logAudit(req.user!.id, "CREATED", "INITIATIVE", initiative.id, { title: initiative.title });
   res.status(201).json({ initiative });
 });
 
-initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = initiativeInputSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -176,6 +181,11 @@ initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
         }))
       });
     }
+    const accountableFromAssignments = payload.assignments?.find((a) => a.role === "ACCOUNTABLE");
+    const ownerIdUpdate = payload.assignments !== undefined
+      ? (accountableFromAssignments ? accountableFromAssignments.userId : null)
+      : (payload.ownerId ?? undefined);
+
     await tx.initiative.update({
       where: { id },
       data: {
@@ -183,7 +193,7 @@ initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
         productId: payload.productId ?? undefined,
         description: payload.description ?? undefined,
         domainId: payload.domainId,
-        ownerId: payload.ownerId ?? undefined,
+        ownerId: ownerIdUpdate,
         priority: payload.priority,
         horizon: payload.horizon,
         status: payload.status,
@@ -207,10 +217,15 @@ initiativesRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
     where: { id },
     include: initiativeInclude
   });
+  if (payload.status && payload.status !== existing.status) {
+    await logAudit(req.user!.id, "STATUS_CHANGED", "INITIATIVE", id, { old: existing.status, new: payload.status });
+  } else {
+    await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id);
+  }
   res.json({ initiative });
 });
 
-initiativesRouter.post("/reorder", requireRole(UserRole.ADMIN), async (req, res) => {
+initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   const parsed = updatePositionsSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -231,10 +246,10 @@ initiativesRouter.post("/reorder", requireRole(UserRole.ADMIN), async (req, res)
   res.json({ ok: true });
 });
 
-initiativesRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+initiativesRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
-  await prisma.initiative.delete({
-    where: { id }
-  });
+  const existing = await prisma.initiative.findUnique({ where: { id } });
+  await prisma.initiative.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "INITIATIVE", id, { title: existing?.title });
   res.status(204).send();
 });

@@ -1,11 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import type { Demand, Domain, Initiative, Persona, Product, RevenueStream, User } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Input, Label, Select } from "../ui/Field";
-import { InitiativeForm } from "./InitiativeForm";
+import { InitiativeForm, type InitiativeFormHandle } from "./InitiativeForm";
+
+function ShareButton({ initiativeId }: { initiativeId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/?initiative=${initiativeId}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [initiativeId]);
+
+  return (
+    <Button variant="secondary" onClick={handleShare}>
+      {copied ? (
+        <span className="inline-flex items-center gap-1 text-green-700">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+          </svg>
+          Copied!
+        </span>
+      ) : "Share"}
+    </Button>
+  );
+}
 
 type Props = {
   initiative: Initiative | null;
@@ -39,6 +63,32 @@ export function InitiativeDetailPanel({
   const [selectedId, setSelectedId] = useState("");
   const [selectedFeatureId, setSelectedFeatureId] = useState("");
   const [selectedDemandId, setSelectedDemandId] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const formRef = useRef<InitiativeFormHandle>(null);
+
+  const tryClose = useCallback(() => {
+    if (isDirty) {
+      setShowUnsavedDialog(true);
+    } else {
+      onClose();
+    }
+  }, [isDirty, onClose]);
+
+  useEffect(() => {
+    if (!initiative) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (showUnsavedDialog) {
+          setShowUnsavedDialog(false);
+        } else {
+          tryClose();
+        }
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [initiative, tryClose, showUnsavedDialog]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [assignmentRole, setAssignmentRole] = useState<"ACCOUNTABLE" | "IMPLEMENTER" | "CONSULTED" | "INFORMED">("IMPLEMENTER");
   const [timelineStart, setTimelineStart] = useState("");
@@ -53,6 +103,8 @@ export function InitiativeDetailPanel({
 
   useEffect(() => {
     if (!initiative) return;
+    setIsDirty(false);
+    setShowUnsavedDialog(false);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedFeatureId(initiative.features[0]?.id ?? "");
     setTimelineStart(initiative.startDate ? initiative.startDate.slice(0, 10) : "");
@@ -93,13 +145,52 @@ export function InitiativeDetailPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex justify-end bg-black/30">
-      <div className="h-full w-full max-w-[780px] overflow-y-auto bg-white p-4 md:p-6">
+    <div className="fixed inset-0 z-30 flex justify-end bg-black/30" onClick={tryClose}>
+      <div className="h-full w-full max-w-[780px] overflow-y-auto bg-white p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
+
+        {showUnsavedDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+              <h3 className="mb-2 text-base font-semibold">Unsaved changes</h3>
+              <p className="mb-5 text-sm text-slate-600">
+                You have unsaved changes. What would you like to do?
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowUnsavedDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setShowUnsavedDialog(false);
+                    setIsDirty(false);
+                    onClose();
+                  }}
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setShowUnsavedDialog(false);
+                    await formRef.current?.save();
+                    onClose();
+                  }}
+                >
+                  Save & Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Initiative Detail</h2>
-          <Button variant="ghost" onClick={onClose}>
-            Close
-          </Button>
+          <div className="flex items-center gap-2">
+            <ShareButton initiativeId={initiative.id} />
+            <Button variant="ghost" onClick={tryClose}>
+              Close
+            </Button>
+          </div>
         </div>
         <div className="mb-4 flex flex-wrap gap-2">
           {(["details", "features", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"] as Tab[]).map((item) => (
@@ -113,6 +204,7 @@ export function InitiativeDetailPanel({
           <div className="grid gap-4">
             <Card className="p-3">
               <InitiativeForm
+                ref={formRef}
                 initiative={initiative}
                 products={products}
                 domains={domains}
@@ -120,8 +212,10 @@ export function InitiativeDetailPanel({
                 personas={personas}
                 revenueStreams={revenueStreams}
                 readOnly={readOnly}
+                onDirtyChange={setIsDirty}
                 onSubmit={async (payload) => {
                   await api.updateInitiative(initiative.id, payload);
+                  setIsDirty(false);
                   await onSaved();
                 }}
                 onDelete={

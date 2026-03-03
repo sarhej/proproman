@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
 import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetailPanel";
@@ -8,10 +8,11 @@ import { Button } from "./components/ui/Button";
 import { Card } from "./components/ui/Card";
 import { useAuth } from "./hooks/useAuth";
 import { useBoardData } from "./hooks/useBoardData";
+import { usePermissions } from "./hooks/usePermissions";
 import { api } from "./lib/api";
 import { DomainBoardPage } from "./pages/DomainBoardPage";
 import { PriorityGridPage } from "./pages/PriorityGridPage";
-import { OwnerBoardPage } from "./pages/OwnerBoardPage";
+import { RaciMatrixPage } from "./pages/RaciMatrixPage";
 import { HeatmapPage } from "./pages/HeatmapPage";
 import { BuyerUserPage } from "./pages/BuyerUserPage";
 import { GapsPage } from "./pages/GapsPage";
@@ -24,23 +25,38 @@ import { PartnersPage } from "./pages/PartnersPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
-import type { Initiative } from "./types/models";
+import { AdminPage } from "./pages/AdminPage";
+import type { Initiative, UserRole } from "./types/models";
+
+const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const board = useBoardData();
+  const perms = usePermissions(user);
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
   const showDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
 
-  const isAdmin = user?.role === "ADMIN";
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,
     [board.initiatives, selected]
   );
+
+  useEffect(() => {
+    const initiativeId = searchParams.get("initiative");
+    if (initiativeId && board.initiatives.length > 0 && !selected) {
+      const found = board.initiatives.find((i) => i.id === initiativeId);
+      if (found) {
+        setSelected(found);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, board.initiatives, selected, setSearchParams]);
 
   if (authLoading) {
     return <div className="p-8">Loading authentication...</div>;
@@ -50,7 +66,10 @@ function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6">
-          <h1 className="mb-2 text-xl font-semibold">DD Product Board</h1>
+          <div className="mb-4 flex items-center gap-3">
+            <img src="/logo.png" alt="Dr. Digital" className="h-8" />
+            <span className="text-lg font-semibold text-slate-500">DrD Hub</span>
+          </div>
           <p className="mb-4 text-sm text-slate-600">
             Sign in with Google to manage domain priorities, persona impact, and B2B2C backlog planning.
           </p>
@@ -59,43 +78,28 @@ function App() {
               Continue with Google
             </Button>
             {showDevLogin ? (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  variant="secondary"
-                  disabled={devLoginLoading}
-                  onClick={async () => {
-                    try {
-                      setDevLoginLoading(true);
-                      setDevLoginError(null);
-                      await api.devLogin("ADMIN");
-                      window.location.reload();
-                    } catch (error) {
-                      setDevLoginError((error as Error).message);
-                    } finally {
-                      setDevLoginLoading(false);
-                    }
-                  }}
-                >
-                  {devLoginLoading ? "Signing in..." : "Dev login (Admin)"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={devLoginLoading}
-                  onClick={async () => {
-                    try {
-                      setDevLoginLoading(true);
-                      setDevLoginError(null);
-                      await api.devLogin("VIEWER");
-                      window.location.reload();
-                    } catch (error) {
-                      setDevLoginError((error as Error).message);
-                    } finally {
-                      setDevLoginLoading(false);
-                    }
-                  }}
-                >
-                  {devLoginLoading ? "Signing in..." : "Dev login (Viewer)"}
-                </Button>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {DEV_ROLES.map((role) => (
+                  <Button
+                    key={role}
+                    variant="secondary"
+                    disabled={devLoginLoading}
+                    onClick={async () => {
+                      try {
+                        setDevLoginLoading(true);
+                        setDevLoginError(null);
+                        await api.devLogin(role);
+                        window.location.reload();
+                      } catch (error) {
+                        setDevLoginError((error as Error).message);
+                      } finally {
+                        setDevLoginLoading(false);
+                      }
+                    }}
+                  >
+                    {devLoginLoading ? "..." : `Dev ${role}`}
+                  </Button>
+                ))}
               </div>
             ) : null}
             {devLoginError ? <p className="text-xs text-red-600">{devLoginError}</p> : null}
@@ -116,7 +120,7 @@ function App() {
   return (
     <AppShell
       user={user}
-      canCreate={isAdmin}
+      permissions={perms}
       onLogout={async () => {
         await api.logout();
         window.location.reload();
@@ -128,12 +132,14 @@ function App() {
         window.print();
       }}
     >
-      <FiltersBar
-        domains={board.meta.domains}
-        users={board.meta.users}
-        filters={board.filters}
-        onChange={(patch) => board.setFilters((prev) => ({ ...prev, ...patch }))}
-      />
+      <div data-print-hide>
+        <FiltersBar
+          domains={board.meta.domains}
+          users={board.meta.users}
+          filters={board.filters}
+          onChange={(patch) => board.setFilters((prev) => ({ ...prev, ...patch }))}
+        />
+      </div>
       {board.error ? <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{board.error}</div> : null}
       {board.loading ? (
         <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">Loading initiatives...</div>
@@ -156,8 +162,16 @@ function App() {
           />
           <Route path="/priority" element={<PriorityGridPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           <Route
-            path="/owner"
-            element={<OwnerBoardPage users={board.meta.users} initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />}
+            path="/raci"
+            element={
+              <RaciMatrixPage
+                initiatives={board.initiatives}
+                users={board.meta.users}
+                readOnly={!perms.canEditStructure}
+                onOpen={(i) => setSelected(i)}
+                onChanged={() => board.refresh()}
+              />
+            }
           />
           <Route
             path="/status-kanban"
@@ -173,14 +187,28 @@ function App() {
             }
           />
           <Route
-            path="/people-kanban"
+            path="/accountability"
             element={
               <PeopleKanbanPage
                 initiatives={board.initiatives}
                 users={board.meta.users}
                 onOpen={(i) => setSelected(i)}
-                onReassign={async (initiative, userId) => {
-                  await api.updateInitiative(initiative.id, { ownerId: userId });
+                onReassignAccountable={async (initiative, userId) => {
+                  const oldAccountable = initiative.assignments.find((a) => a.role === "ACCOUNTABLE");
+                  if (oldAccountable) {
+                    await api.removeAssignment({
+                      initiativeId: initiative.id,
+                      userId: oldAccountable.userId,
+                      role: "ACCOUNTABLE"
+                    });
+                  }
+                  if (userId) {
+                    await api.addAssignment({
+                      initiativeId: initiative.id,
+                      userId,
+                      role: "ACCOUNTABLE"
+                    });
+                  }
                   await board.refresh();
                 }}
               />
@@ -191,49 +219,54 @@ function App() {
           <Route path="/gaps" element={<GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           <Route
             path="/product-explorer"
-            element={<ProductExplorerPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} />}
+            element={<ProductExplorerPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} quickFilter={board.filters.quick} />}
           />
           <Route
             path="/accounts"
-            element={<AccountsPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />}
+            element={<AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />}
           />
           <Route
             path="/demands"
             element={
               <DemandsPage
-                isAdmin={isAdmin}
+                isAdmin={perms.canEditStructure}
                 accounts={board.meta.accounts}
                 partners={board.meta.partners}
                 initiatives={board.initiatives}
                 onOpenInitiative={(i) => setSelected(i)}
+                quickFilter={board.filters.quick}
               />
             }
           />
           <Route
             path="/partners"
-            element={<PartnersPage isAdmin={isAdmin} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />}
+            element={<PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />}
           />
           <Route
             path="/campaigns"
             element={
               <CampaignsPage
-                isAdmin={isAdmin}
+                isAdmin={perms.canEditMarketing}
                 users={board.meta.users}
                 accounts={board.meta.accounts}
                 partners={board.meta.partners}
                 personas={board.meta.personas}
                 initiatives={board.initiatives}
                 onOpenInitiative={(i) => setSelected(i)}
+                quickFilter={board.filters.quick}
               />
             }
           />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/gantt" element={<GanttPage />} />
+          <Route path="/calendar" element={<CalendarPage quickFilter={board.filters.quick} />} />
+          <Route path="/gantt" element={<GanttPage quickFilter={board.filters.quick} />} />
+          {perms.canManageUsers && (
+            <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} />} />
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
 
-      {showCreate && isAdmin ? (
+      {showCreate && perms.canCreate ? (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4">
           <Card className="max-h-[95vh] w-full max-w-4xl overflow-y-auto p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -248,7 +281,7 @@ function App() {
               users={board.meta.users}
               personas={board.meta.personas}
               revenueStreams={board.meta.revenueStreams}
-              readOnly={!isAdmin}
+              readOnly={!perms.canCreate}
               onSubmit={async (payload) => {
                 await api.createInitiative(payload);
                 setShowCreate(false);
@@ -259,10 +292,6 @@ function App() {
         </div>
       ) : null}
 
-      <div className="fixed bottom-4 right-4">
-        {isAdmin ? <Button onClick={() => setShowCreate(true)}>+ New initiative</Button> : null}
-      </div>
-
       <InitiativeDetailPanel
         initiative={selectedFresh ?? null}
         allInitiatives={board.initiatives}
@@ -271,7 +300,7 @@ function App() {
         personas={board.meta.personas}
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
-        readOnly={!isAdmin}
+        readOnly={!perms.canEditContent}
         onClose={() => setSelected(null)}
         onSaved={refreshAndClose}
       />

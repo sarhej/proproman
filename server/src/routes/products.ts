@@ -1,8 +1,8 @@
-import { UserRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { UserRole } from "@prisma/client";
 
 const productSchema = z.object({
   name: z.string().min(1),
@@ -51,7 +51,7 @@ productsRouter.get("/", async (_req, res) => {
   res.json({ products });
 });
 
-productsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
+productsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const parsed = productSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -66,7 +66,7 @@ productsRouter.post("/", requireRole(UserRole.ADMIN), async (req, res) => {
   res.status(201).json({ product });
 });
 
-productsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+productsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   const parsed = productSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -84,7 +84,7 @@ productsRouter.put("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
   res.json({ product });
 });
 
-productsRouter.delete("/:id", requireRole(UserRole.ADMIN), async (req, res) => {
+productsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
   await prisma.product.delete({ where: { id } });
   res.status(204).send();

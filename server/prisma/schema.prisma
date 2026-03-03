@@ -8,8 +8,20 @@ datasource db {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
+  EDITOR
+  MARKETING
   VIEWER
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  ROLE_CHANGED
+  LOGIN
 }
 
 enum Priority {
@@ -147,6 +159,8 @@ model User {
   name             String
   avatarUrl        String?
   role             UserRole     @default(VIEWER)
+  isActive         Boolean      @default(true)
+  lastLoginAt      DateTime?
   googleId         String?      @unique
   initiatives      Initiative[] @relation("InitiativeOwner")
   features         Feature[]    @relation("FeatureOwner")
@@ -156,6 +170,7 @@ model User {
   partnersOwned    Partner[]    @relation("PartnerOwner")
   demandsOwned     Demand[]     @relation("DemandOwner")
   campaignsOwned   Campaign[]   @relation("CampaignOwner")
+  auditEntries     AuditEntry[]
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }
@@ -441,4 +456,18 @@ model CampaignLink {
   @@index([initiativeId])
   @@index([accountId])
   @@index([partnerId])
+}
+
+model AuditEntry {
+  id         String      @id @default(cuid())
+  userId     String
+  action     AuditAction
+  entityType String
+  entityId   String?
+  details    Json?
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

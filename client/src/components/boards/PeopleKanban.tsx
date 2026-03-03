@@ -8,11 +8,15 @@ import type { Initiative, User } from "../../types/models";
 import { InitiativeCard } from "../initiatives/InitiativeCard";
 import { Card } from "../ui/Card";
 
+function getAccountableUserId(initiative: Initiative): string | null {
+  return initiative.assignments.find((a) => a.role === "ACCOUNTABLE")?.userId ?? null;
+}
+
 type Props = {
   initiatives: Initiative[];
   users: User[];
   onOpen: (initiative: Initiative) => void;
-  onReassign: (initiative: Initiative, userId: string | null) => Promise<void>;
+  onReassignAccountable: (initiative: Initiative, userId: string | null) => Promise<void>;
 };
 
 function DraggableCard({ initiative, onOpen }: { initiative: Initiative; onOpen: (i: Initiative) => void }) {
@@ -36,7 +40,7 @@ function DroppableColumn({ laneId, children }: { laneId: string; children: React
   );
 }
 
-export function PeopleKanban({ initiatives, users, onOpen, onReassign }: Props) {
+export function PeopleKanban({ initiatives, users, onOpen, onReassignAccountable }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -54,18 +58,22 @@ export function PeopleKanban({ initiatives, users, onOpen, onReassign }: Props) 
     const initiative = initiatives.find((i) => i.id === String(active.id));
     if (!initiative) return;
 
+    const currentAccountable = getAccountableUserId(initiative);
     const overId = String(over.id);
 
     if (overId.startsWith("lane-")) {
       const targetLaneId = overId.replace("lane-", "");
       const targetUserId = targetLaneId === "unassigned" ? null : targetLaneId;
-      if (initiative.ownerId !== targetUserId) {
-        await onReassign(initiative, targetUserId);
+      if (currentAccountable !== targetUserId) {
+        await onReassignAccountable(initiative, targetUserId);
       }
     } else {
       const overInitiative = initiatives.find((i) => i.id === overId);
-      if (overInitiative && initiative.ownerId !== overInitiative.ownerId) {
-        await onReassign(initiative, overInitiative.ownerId ?? null);
+      if (overInitiative) {
+        const overAccountable = getAccountableUserId(overInitiative);
+        if (currentAccountable !== overAccountable) {
+          await onReassignAccountable(initiative, overAccountable);
+        }
       }
     }
   }
@@ -74,9 +82,14 @@ export function PeopleKanban({ initiatives, users, onOpen, onReassign }: Props) 
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <h2 className="mb-3 text-lg font-semibold">Accountability Board</h2>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         {lanes.map((lane) => {
-          const items = initiatives.filter((i) => (lane.id === "unassigned" ? !i.ownerId : i.ownerId === lane.id));
+          const items = initiatives.filter((i) =>
+            lane.id === "unassigned"
+              ? getAccountableUserId(i) === null
+              : getAccountableUserId(i) === lane.id
+          );
           return (
             <DroppableColumn key={lane.id} laneId={lane.id}>
               <div className="mb-2 flex items-center justify-between px-1">
