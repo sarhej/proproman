@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VIEWER
+}
+
+enum Priority {
+  P0
+  P1
+  P2
+  P3
+}
+
+enum Horizon {
+  NOW
+  NEXT
+  LATER
+}
+
+enum InitiativeStatus {
+  IDEA
+  PLANNED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum FeatureStatus {
+  IDEA
+  PLANNED
+  IN_PROGRESS
+  DONE
+}
+
+enum CommercialType {
+  CONTRACT_ENABLER
+  CHURN_PREVENTER
+  UPSELL_DRIVER
+  COMPLIANCE_GATE
+  CARE_QUALITY
+  COST_REDUCER
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  name             String
+  avatarUrl        String?
+  role             UserRole     @default(VIEWER)
+  googleId         String?      @unique
+  initiatives      Initiative[] @relation("InitiativeOwner")
+  features         Feature[]    @relation("FeatureOwner")
+  risks            Risk[]       @relation("RiskOwner")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Domain {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  color       String
+  sortOrder   Int
+  initiatives Initiative[]
+}
+
+model Persona {
+  id      String                    @id @default(cuid())
+  name    String                    @unique
+  icon    String?
+  impacts InitiativePersonaImpact[]
+}
+
+model RevenueStream {
+  id      String                    @id @default(cuid())
+  name    String                    @unique
+  color   String
+  weights InitiativeRevenueStream[]
+}
+
+model Initiative {
+  id             String                    @id @default(cuid())
+  title          String
+  description    String?
+  domainId       String
+  ownerId        String?
+  priority       Priority
+  horizon        Horizon
+  status         InitiativeStatus
+  commercialType CommercialType
+  isGap          Boolean                   @default(false)
+  targetDate     DateTime?
+  notes          String?
+  sortOrder      Int                       @default(0)
+  domain         Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  owner          User?                     @relation("InitiativeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  personaImpacts InitiativePersonaImpact[]
+  revenueWeights InitiativeRevenueStream[]
+  features       Feature[]
+  decisions      Decision[]
+  risks          Risk[]
+  outgoingDeps   Dependency[]              @relation("FromInitiative")
+  incomingDeps   Dependency[]              @relation("ToInitiative")
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+}
+
+model InitiativePersonaImpact {
+  initiativeId String
+  personaId    String
+  impact       Int
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  persona      Persona    @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@id([initiativeId, personaId])
+}
+
+model InitiativeRevenueStream {
+  initiativeId   String
+  revenueStreamId String
+  weight         Int
+  initiative     Initiative    @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  revenueStream  RevenueStream @relation(fields: [revenueStreamId], references: [id], onDelete: Cascade)
+
+  @@id([initiativeId, revenueStreamId])
+}
+
+model Feature {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  initiativeId String
+  ownerId      String?
+  status       FeatureStatus @default(IDEA)
+  sortOrder    Int          @default(0)
+  initiative   Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  owner        User?        @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Decision {
+  id           String     @id @default(cuid())
+  title        String
+  rationale    String?
+  impactedTeams String?
+  initiativeId String
+  decidedAt    DateTime?
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+}
+
+model Risk {
+  id           String     @id @default(cuid())
+  title        String
+  probability  RiskLevel
+  impact       RiskLevel
+  mitigation   String?
+  ownerId      String?
+  initiativeId String
+  owner        User?      @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+}
+
+model Dependency {
+  fromInitiativeId String
+  toInitiativeId   String
+  description      String?
+  fromInitiative   Initiative @relation("FromInitiative", fields: [fromInitiativeId], references: [id], onDelete: Cascade)
+  toInitiative     Initiative @relation("ToInitiative", fields: [toInitiativeId], references: [id], onDelete: Cascade)
+
+  @@id([fromInitiativeId, toInitiativeId])
+}
