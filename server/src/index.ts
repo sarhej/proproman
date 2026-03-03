@@ -30,7 +30,7 @@ import { prisma } from "./db.js";
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientDist = path.resolve(__dirname, "../../client/dist");
+const clientDist = path.resolve(__dirname, "../../../client/dist");
 
 const PgStore = connectPgSimple(session);
 const pool = new Pool({ connectionString: env.DATABASE_URL });
