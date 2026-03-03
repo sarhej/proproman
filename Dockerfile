@@ -28,13 +28,11 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/package.json ./server/package.json
 COPY --from=builder /app/server/prisma ./server/prisma
+COPY --from=builder /app/server/scripts ./server/scripts
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/package.json ./client/package.json
 
 ENV NODE_ENV=production
 EXPOSE 8080
 
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
-CMD ["./docker-entrypoint.sh"]
+CMD ["npm", "run", "start"]
