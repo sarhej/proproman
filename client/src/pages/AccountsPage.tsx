@@ -52,7 +52,10 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
       <Card className="p-4">
-        <h2 className="mb-3 text-lg font-semibold">Accounts</h2>
+        <h2 className="mb-1 text-lg font-semibold">Accounts</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Not a CRM — tracks account dependencies on products, assets, initiatives and requirements only.
+        </p>
         {isAdmin ? (
           <div className="mb-3 grid grid-cols-1 gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Account name" />

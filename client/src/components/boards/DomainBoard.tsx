@@ -143,9 +143,12 @@ export function DomainBoard({ domains, initiatives, onOpen, onReorder }: Props) 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
         {grouped.map(({ domain, items }) => (
           <DroppableDomainColumn key={domain.id} domain={domain}>
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-sm font-semibold">{domain.name}</p>
-              <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{items.length}</span>
+            <div className="mb-2 rounded-t px-1">
+              <div className="mb-1 h-1 rounded-full" style={{ background: domain.color }} />
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">{domain.name}</p>
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{items.length}</span>
+              </div>
             </div>
             <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
               <div className="grid gap-2">

@@ -7,6 +7,7 @@ import {
 } from "@dnd-kit/core";
 import type { Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
 import { api } from "../../lib/api";
+import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
   products: ProductWithHierarchy[];
@@ -427,8 +428,8 @@ function InitiativeRow({
           >
             {initiative.title}
           </button>
-          <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-            {initiative.domain.name}
+          <span className="ml-2 rounded px-1.5 py-0.5 text-[10px]" style={{ background: `${initiative.domain.color}18` }}>
+            <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
           </span>
           {isAdmin ? (
             <DeleteBtn label={initiative.title} onDelete={async () => { await api.deleteInitiative(initiative.id); await onRefresh(); }} />

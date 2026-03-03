@@ -76,7 +76,10 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
 
   return (
     <Card className="p-4">
-      <h2 className="mb-3 text-lg font-semibold">Demands</h2>
+      <h2 className="mb-1 text-lg font-semibold">Demands</h2>
+      <p className="mb-3 text-xs text-gray-500">
+        Maps demands from accounts and partners to initiatives — the bridge between external requests and your product roadmap.
+      </p>
       {isAdmin ? (
         <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-5">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Demand title" />

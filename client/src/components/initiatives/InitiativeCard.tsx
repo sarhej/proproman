@@ -1,5 +1,6 @@
 import type { Initiative } from "../../types/models";
 import { Card } from "../ui/Card";
+import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
   initiative: Initiative;
@@ -30,7 +31,12 @@ export function InitiativeCard({ initiative, onClick }: Props) {
         <span className="rounded bg-slate-100 px-2 py-0.5">{initiative.horizon}</span>
         <span className="rounded bg-slate-100 px-2 py-0.5">{initiative.status}</span>
       </div>
-      <p className="mt-2 text-xs text-slate-500">{initiative.owner?.name || "Unassigned"}</p>
+      {initiative.domain?.color && (
+        <div className="mt-1.5">
+          <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
+        </div>
+      )}
+      <p className="mt-1 text-xs text-slate-500">{initiative.owner?.name || "Unassigned"}</p>
     </Card>
   );
 }

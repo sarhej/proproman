@@ -298,6 +298,8 @@ export type CalendarItem = {
   targetDate?: string | null;
   milestoneDate?: string | null;
   domain: string;
+  domainId: string;
+  domainColor: string;
   owner?: string | null;
   dateConfidence?: DateConfidence | null;
 };
@@ -307,6 +309,9 @@ export type GanttTask = {
   title: string;
   startDate?: string | null;
   targetDate?: string | null;
+  domain: string;
+  domainColor: string;
+  owner?: string | null;
   progress: number;
   dependencies: string[];
 };

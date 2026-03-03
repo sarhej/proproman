@@ -1,5 +1,6 @@
 import type { Initiative } from "../../types/models";
 import { formatCommercial, formatHorizon, formatStatus } from "../../lib/format";
+import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
   initiatives: Initiative[];
@@ -27,7 +28,9 @@ export function PriorityGrid({ initiatives, onOpen }: Props) {
           {sorted.map((initiative) => (
             <tr key={initiative.id} className="cursor-pointer border-t hover:bg-slate-50" onClick={() => onOpen(initiative)}>
               <td className="px-3 py-2 font-medium">{initiative.title}</td>
-              <td className="px-3 py-2">{initiative.domain.name}</td>
+              <td className="px-3 py-2">
+                <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
+              </td>
               <td className="px-3 py-2">{initiative.owner?.name || "Unassigned"}</td>
               <td className="px-3 py-2">{initiative.priority}</td>
               <td className="px-3 py-2">{formatHorizon(initiative.horizon)}</td>

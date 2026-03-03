@@ -31,7 +31,12 @@ export function StakeholderHeatmap({ initiatives, personas }: Props) {
         <tbody>
           {initiatives.map((initiative) => (
             <tr key={initiative.id} className="border-b">
-              <td className="px-3 py-2 font-medium">{initiative.title}</td>
+              <td className="px-3 py-2 font-medium">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: initiative.domain?.color }} />
+                  {initiative.title}
+                </div>
+              </td>
               {personas.map((persona) => {
                 const hit = initiative.personaImpacts.find((i) => i.personaId === persona.id);
                 const impact = hit?.impact ?? 0;

@@ -20,6 +20,8 @@ timelineRouter.get("/calendar", async (_req, res) => {
     targetDate: i.targetDate,
     milestoneDate: i.milestoneDate,
     domain: i.domain.name,
+    domainId: i.domainId,
+    domainColor: i.domain.color,
     owner: i.owner?.name ?? null,
     dateConfidence: i.dateConfidence
   }));
@@ -29,6 +31,8 @@ timelineRouter.get("/calendar", async (_req, res) => {
 timelineRouter.get("/gantt", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({
     include: {
+      domain: true,
+      owner: true,
       outgoingDeps: true
     },
     orderBy: { startDate: "asc" }
@@ -38,6 +42,9 @@ timelineRouter.get("/gantt", async (_req, res) => {
     title: i.title,
     startDate: i.startDate,
     targetDate: i.targetDate,
+    domain: i.domain.name,
+    domainColor: i.domain.color,
+    owner: i.owner?.name ?? null,
     progress:
       i.status === "DONE"
         ? 100

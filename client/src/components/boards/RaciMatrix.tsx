@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Initiative, AssignmentRole, InitiativeAssignment, User } from "../../types/models";
 import { api } from "../../lib/api";
+import { DomainBadge } from "../ui/DomainBadge";
 
 const RACI_ROLES: { key: AssignmentRole; label: string; short: string }[] = [
   { key: "ACCOUNTABLE", label: "Accountable", short: "A" },
@@ -256,7 +257,9 @@ export function RaciMatrix({ initiatives, users, readOnly, onOpen, onChanged }: 
                       {initiative.title}
                     </div>
                   </td>
-                  <td className="py-2 px-3 text-xs text-slate-500">{initiative.domain.name}</td>
+                  <td className="py-2 px-3 text-xs text-slate-500">
+                    <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
+                  </td>
                   {RACI_ROLES.map((r) => (
                     <RaciCell
                       key={r.key}

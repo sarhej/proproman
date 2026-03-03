@@ -147,6 +147,7 @@ export function InitiativeDetailPanel({
   return (
     <div className="fixed inset-0 z-30 flex justify-end bg-black/30" onClick={tryClose}>
       <div className="h-full w-full max-w-[780px] overflow-y-auto bg-white p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="h-1 w-full rounded-t" style={{ background: initiative.domain?.color || "#94a3b8" }} />
 
         {showUnsavedDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => e.stopPropagation()}>

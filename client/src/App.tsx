@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
 import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetailPanel";
@@ -41,6 +41,8 @@ function App() {
   const showDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const hideFilters = location.pathname === "/gantt";
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,
@@ -132,14 +134,16 @@ function App() {
         window.print();
       }}
     >
-      <div data-print-hide>
-        <FiltersBar
-          domains={board.meta.domains}
-          users={board.meta.users}
-          filters={board.filters}
-          onChange={(patch) => board.setFilters((prev) => ({ ...prev, ...patch }))}
-        />
-      </div>
+      {!hideFilters && (
+        <div data-print-hide>
+          <FiltersBar
+            domains={board.meta.domains}
+            users={board.meta.users}
+            filters={board.filters}
+            onChange={(patch) => board.setFilters((prev) => ({ ...prev, ...patch }))}
+          />
+        </div>
+      )}
       {board.error ? <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{board.error}</div> : null}
       {board.loading ? (
         <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">Loading initiatives...</div>
@@ -258,7 +262,7 @@ function App() {
             }
           />
           <Route path="/calendar" element={<CalendarPage quickFilter={board.filters.quick} />} />
-          <Route path="/gantt" element={<GanttPage quickFilter={board.filters.quick} />} />
+          <Route path="/gantt" element={<GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           {perms.canManageUsers && (
             <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} onMetaChanged={() => board.refresh()} />} />
           )}

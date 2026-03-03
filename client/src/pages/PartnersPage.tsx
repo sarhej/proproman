@@ -52,7 +52,10 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
       <Card className="p-4">
-        <h2 className="mb-3 text-lg font-semibold">Partners</h2>
+        <h2 className="mb-1 text-lg font-semibold">Partners</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Not a partner management tool — tracks partner-driven feature demands and their link to initiatives.
+        </p>
         {isAdmin ? (
           <div className="mb-3 grid grid-cols-1 gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Partner name" />

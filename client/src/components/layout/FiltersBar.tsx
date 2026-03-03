@@ -16,18 +16,32 @@ type Props = {
 };
 
 export function FiltersBar({ domains, users, filters, onChange }: Props) {
+  const selectedDomain = filters.domainId ? domains.find((d) => d.id === filters.domainId) : null;
+
   return (
     <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-6">
       <div>
         <Label>Domain</Label>
-        <Select value={filters.domainId || ""} onChange={(e) => onChange({ domainId: e.target.value || undefined })}>
-          <option value="">All</option>
-          {domains.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </Select>
+        <div className="relative">
+          {selectedDomain && (
+            <span
+              className="pointer-events-none absolute left-2.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
+              style={{ background: selectedDomain.color }}
+            />
+          )}
+          <Select
+            value={filters.domainId || ""}
+            onChange={(e) => onChange({ domainId: e.target.value || undefined })}
+            className={selectedDomain ? "pl-7" : ""}
+          >
+            <option value="">All</option>
+            {domains.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
       <div>
         <Label>Owner</Label>

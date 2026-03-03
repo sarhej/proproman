@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CartesianGrid, Label, ReferenceArea, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Cell, Label, ReferenceArea, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { Initiative } from "../../types/models";
 import { avg } from "../../lib/format";
 
@@ -16,6 +16,7 @@ type BuyerUserPoint = {
   buyer: number;
   user: number;
   domain: string;
+  domainColor: string;
   owner: string;
 };
 
@@ -80,6 +81,7 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
         user: Number(user.toFixed(2)),
         name: initiative.title,
         domain: initiative.domain.name,
+        domainColor: initiative.domain.color || "#0284c7",
         owner: initiative.owner?.name ?? "Unassigned"
       };
     });
@@ -131,7 +133,11 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
               );
             }}
           />
-          <Scatter data={data} fill="#0284c7" onClick={openByPoint} style={{ cursor: "pointer" }} />
+          <Scatter data={data} fill="#0284c7" onClick={openByPoint} style={{ cursor: "pointer" }}>
+            {data.map((entry) => (
+              <Cell key={entry.id} fill={entry.domainColor} stroke="#fff" strokeWidth={1.5} cursor="pointer" />
+            ))}
+          </Scatter>
         </ScatterChart>
       </ResponsiveContainer>
     </div>

@@ -189,13 +189,26 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div>
           <Label>Domain</Label>
-          <Select value={form.domainId} onChange={(e) => setForm((prev) => ({ ...prev, domainId: e.target.value }))} disabled={readOnly}>
-            {domains.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </Select>
+          <div className="relative">
+            {form.domainId && (
+              <span
+                className="pointer-events-none absolute left-2.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
+                style={{ background: domains.find((d) => d.id === form.domainId)?.color }}
+              />
+            )}
+            <Select
+              value={form.domainId}
+              onChange={(e) => setForm((prev) => ({ ...prev, domainId: e.target.value }))}
+              disabled={readOnly}
+              className={form.domainId ? "pl-7" : ""}
+            >
+              {domains.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
         <div>
           <Label>Owner</Label>
@@ -365,7 +378,10 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {revenueStreams.map((r) => (
             <div key={r.id}>
-              <Label>{r.name}</Label>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: r.color }} />
+                {r.name}
+              </label>
               <Input
                 type="number"
                 min={0}
