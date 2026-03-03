@@ -206,5 +206,16 @@ export const api = {
     request<{ revenueStream: RevenueStream }>("/api/revenue-streams", { method: "POST", body: JSON.stringify(body) }),
   updateRevenueStream: async (id: string, body: unknown) =>
     request<{ revenueStream: RevenueStream }>(`/api/revenue-streams/${id}`, { method: "PUT", body: JSON.stringify(body) }),
-  deleteRevenueStream: async (id: string) => request<void>(`/api/revenue-streams/${id}`, { method: "DELETE" })
+  deleteRevenueStream: async (id: string) => request<void>(`/api/revenue-streams/${id}`, { method: "DELETE" }),
+
+  exportData: async () => {
+    const response = await fetch(`${baseUrl}/api/admin/export`, { credentials: "include" });
+    if (!response.ok) throw new Error(`Export failed: ${response.status}`);
+    return response.json();
+  },
+  importData: async (payload: unknown) =>
+    request<{ ok: boolean; counts: Record<string, number> }>("/api/admin/import", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

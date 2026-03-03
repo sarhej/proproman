@@ -30,6 +30,7 @@ import { adminRouter } from "./routes/admin.js";
 import { domainsRouter } from "./routes/domains.js";
 import { personasRouter } from "./routes/personas.js";
 import { revenueStreamsRouter } from "./routes/revenue-streams.js";
+import { importExportRouter } from "./routes/import-export.js";
 import { prisma } from "./db.js";
 
 const app = express();
@@ -46,7 +47,7 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.set("trust proxy", 1);
 app.use(
@@ -93,6 +94,7 @@ app.use("/api/campaigns", campaignsRouter);
 app.use("/api/assets", assetsRouter);
 app.use("/api/campaign-links", campaignLinksRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/admin", importExportRouter);
 app.use("/api/domains", domainsRouter);
 app.use("/api/personas", personasRouter);
 app.use("/api/revenue-streams", revenueStreamsRouter);

@@ -352,7 +352,7 @@ async function main() {
         title: item.title,
         description: item.notes ?? null,
         domainId: domainByName.get(item.domain)!.id,
-        ownerId: item.owner ? userByName.get(item.owner)?.id : null,
+        ownerId: (item.owner ? userByName.get(item.owner) : userByName.get("Kuba"))?.id ?? null,
         priority: item.priority,
         horizon: item.horizon,
         status: item.status,
@@ -577,6 +577,33 @@ async function main() {
         featureId: initiative.features[0]?.id
       }
     });
+  }
+
+  // --- Dependencies between initiatives ---
+  const eReceptInitiative = seededInitiatives.find((i) => i.title === "E-Recept + E-Zadanky integration");
+  const eGovInitiative = seededInitiatives.find((i) => i.title === "Czech eGovernment integration");
+  const b2bZoneInitiative = seededInitiatives.find((i) => i.title === "B2B client zone (employer/local government portal)");
+  const lpObchodInitiative = seededInitiatives.find((i) => i.title === "LP pro obchod a klienty");
+  const analytikaInitiative = seededInitiatives.find((i) => i.title === "Analytika (klient i partner B2B)");
+  const uhradyInitiative = seededInitiatives.find((i) => i.title === "Uhrady z pojistoven");
+
+  const depPairs: { from: typeof eReceptInitiative; to: typeof eReceptInitiative; desc: string }[] = [
+    { from: eReceptInitiative, to: eGovInitiative, desc: "E-Recept depends on eGov APIs" },
+    { from: b2bZoneInitiative, to: analytikaInitiative, desc: "B2B portal needs analytics engine" },
+    { from: lpObchodInitiative, to: b2bZoneInitiative, desc: "Landing pages feed into client zone" },
+    { from: uhradyInitiative, to: eReceptInitiative, desc: "Insurance payments require prescription integration" },
+  ];
+
+  for (const dep of depPairs) {
+    if (dep.from && dep.to) {
+      await prisma.dependency.create({
+        data: {
+          fromInitiativeId: dep.from.id,
+          toInitiativeId: dep.to.id,
+          description: dep.desc,
+        },
+      });
+    }
   }
 
   // --- Marketing: Campaigns, Assets, CampaignLinks ---

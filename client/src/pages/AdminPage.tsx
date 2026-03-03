@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
 
@@ -16,7 +16,7 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
-type Tab = "users" | "activity" | "settings";
+type Tab = "users" | "activity" | "settings" | "data";
 
 export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
   const [tab, setTab] = useState<Tab>("users");
@@ -24,6 +24,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "Users" },
     { key: "settings", label: "Settings" },
+    { key: "data", label: "Data" },
     { key: "activity", label: "Activity" }
   ];
 
@@ -42,6 +43,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
       </div>
       {tab === "users" && <UsersTab currentUser={currentUser} quickFilter={quickFilter} />}
       {tab === "settings" && <SettingsTab onMetaChanged={onMetaChanged} />}
+      {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
     </div>
   );
@@ -621,6 +623,150 @@ function PersonasSection({ onChanged }: { onChanged?: () => void }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ── Data Tab (Import / Export) ───────────────────────────────────── */
+
+function DataTab() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; message: string; counts?: Record<string, number> } | null>(null);
+  const [confirmPayload, setConfirmPayload] = useState<unknown>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setResult(null);
+    try {
+      const data = await api.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dd-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setResult({ ok: true, message: "Export downloaded successfully." });
+    } catch {
+      setResult({ ok: false, message: "Export failed. Check the console for details." });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleFileSelect = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (parsed.version !== 1) {
+        setResult({ ok: false, message: "Invalid file: expected version 1." });
+        return;
+      }
+      setConfirmPayload(parsed);
+      setResult(null);
+    } catch {
+      setResult({ ok: false, message: "Failed to parse JSON file." });
+    }
+  };
+
+  const handleImport = async () => {
+    if (!confirmPayload) return;
+    setImporting(true);
+    setResult(null);
+    try {
+      const { counts } = await api.importData(confirmPayload);
+      setResult({ ok: true, message: "Import completed successfully. The page will reload so you can re-authenticate.", counts });
+      setConfirmPayload(null);
+      if (fileRef.current) fileRef.current.value = "";
+      setTimeout(() => window.location.reload(), 3000);
+    } catch {
+      setResult({ ok: false, message: "Import failed. Transaction was rolled back. No data was changed." });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-white p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">Export</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Download all application data (users, products, domains, initiatives, features, etc.) as a single JSON file.
+          Use this to back up data or transfer it to another environment.
+        </p>
+        <button
+          className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+          onClick={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? "Exporting..." : "Export All Data"}
+        </button>
+      </div>
+
+      <div className="rounded-lg border bg-white p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">Import</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Upload a previously exported JSON file to replace all existing data.
+          This is a destructive operation — all current data will be wiped and replaced.
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json"
+            className="text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+            onChange={handleFileSelect}
+          />
+        </div>
+
+        {confirmPayload != null && (
+          <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-4">
+            <p className="text-sm font-medium text-amber-800 mb-2">
+              Are you sure you want to import this data?
+            </p>
+            <p className="text-xs text-amber-700 mb-3">
+              This will permanently delete all existing data (users, initiatives, features, campaigns, etc.)
+              and replace it with the contents of the uploaded file. This action cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                onClick={handleImport}
+                disabled={importing}
+              >
+                {importing ? "Importing..." : "Yes, Replace All Data"}
+              </button>
+              <button
+                className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => { setConfirmPayload(null); if (fileRef.current) fileRef.current.value = ""; }}
+                disabled={importing}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {result && (
+        <div className={`rounded-lg border p-4 ${result.ok ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+          <p className={`text-sm font-medium ${result.ok ? "text-green-800" : "text-red-800"}`}>{result.message}</p>
+          {result.counts && (
+            <div className="mt-2 grid grid-cols-3 gap-x-6 gap-y-1 text-xs text-green-700">
+              {Object.entries(result.counts).map(([key, count]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize">{key}</span>
+                  <span className="font-mono">{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
