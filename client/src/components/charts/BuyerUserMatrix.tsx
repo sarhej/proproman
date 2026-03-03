@@ -64,11 +64,13 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
     const raw = initiatives.map((initiative) => {
       const buyer = avg(
         initiative.personaImpacts
-          .filter((p) => ["Employer", "Insurer", "B2B Admin", "Regulator"].includes(p.persona.name))
+          .filter((p) => p.persona.category === "BUYER")
           .map((p) => p.impact)
       );
       const user = avg(
-        initiative.personaImpacts.filter((p) => ["Patient", "Doctor"].includes(p.persona.name)).map((p) => p.impact)
+        initiative.personaImpacts
+          .filter((p) => p.persona.category === "USER")
+          .map((p) => p.impact)
       );
       return {
         id: initiative.id,

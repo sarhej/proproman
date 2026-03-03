@@ -260,7 +260,7 @@ function App() {
           <Route path="/calendar" element={<CalendarPage quickFilter={board.filters.quick} />} />
           <Route path="/gantt" element={<GanttPage quickFilter={board.filters.quick} />} />
           {perms.canManageUsers && (
-            <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} />} />
+            <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} onMetaChanged={() => board.refresh()} />} />
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

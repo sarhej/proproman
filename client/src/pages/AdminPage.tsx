@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
-import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
+import type { AuditEntry, User, UserRole } from "../types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 const ROLE_COLORS: Record<UserRole, string> = {
@@ -16,26 +16,33 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function AdminPage({ currentUser, quickFilter }: { currentUser: User; quickFilter?: string }) {
-  const [tab, setTab] = useState<"users" | "activity">("users");
+type Tab = "users" | "activity" | "settings";
+
+export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
+  const [tab, setTab] = useState<Tab>("users");
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "users", label: "Users" },
+    { key: "settings", label: "Settings" },
+    { key: "activity", label: "Activity" }
+  ];
 
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b">
-        <button
-          className={`px-4 py-2 -mb-px text-sm font-medium ${tab === "users" ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
-          onClick={() => setTab("users")}
-        >
-          Users
-        </button>
-        <button
-          className={`px-4 py-2 -mb-px text-sm font-medium ${tab === "activity" ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
-          onClick={() => setTab("activity")}
-        >
-          Activity
-        </button>
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            className={`px-4 py-2 -mb-px text-sm font-medium ${tab === t.key ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
-      {tab === "users" ? <UsersTab currentUser={currentUser} quickFilter={quickFilter} /> : <ActivityTab quickFilter={quickFilter} />}
+      {tab === "users" && <UsersTab currentUser={currentUser} quickFilter={quickFilter} />}
+      {tab === "settings" && <SettingsTab onMetaChanged={onMetaChanged} />}
+      {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
     </div>
   );
 }
@@ -316,6 +323,418 @@ function ActivityTab({ quickFilter }: { quickFilter?: string }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Settings Tab ─────────────────────────────────────────────────── */
+
+const PERSONA_CATEGORIES: PersonaCategory[] = ["BUYER", "USER", "NONE"];
+const PERSONA_CAT_COLORS: Record<PersonaCategory, string> = {
+  BUYER: "bg-amber-100 text-amber-800",
+  USER: "bg-sky-100 text-sky-800",
+  NONE: "bg-gray-100 text-gray-600"
+};
+
+function SettingsTab({ onMetaChanged }: { onMetaChanged?: () => void }) {
+  const [section, setSection] = useState<"domains" | "personas" | "revenue">("domains");
+  const sections: { key: typeof section; label: string }[] = [
+    { key: "domains", label: "Domains" },
+    { key: "personas", label: "Personas" },
+    { key: "revenue", label: "Revenue Streams" }
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {sections.map((s) => (
+          <button
+            key={s.key}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${section === s.key ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            onClick={() => setSection(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {section === "domains" && <DomainsSection onChanged={onMetaChanged} />}
+      {section === "personas" && <PersonasSection onChanged={onMetaChanged} />}
+      {section === "revenue" && <RevenueStreamsSection onChanged={onMetaChanged} />}
+    </div>
+  );
+}
+
+/* ── Domains Section ──────────────────────────────────────────────── */
+
+function DomainsSection({ onChanged }: { onChanged?: () => void }) {
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [editSort, setEditSort] = useState(0);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("#6366f1");
+  const [newSort, setNewSort] = useState(0);
+
+  const load = useCallback(async () => {
+    try {
+      const { domains } = await api.getDomains();
+      setDomains(domains);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = (d: Domain) => {
+    setEditId(d.id);
+    setEditName(d.name);
+    setEditColor(d.color);
+    setEditSort(d.sortOrder);
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    const { domain } = await api.updateDomain(editId, { name: editName, color: editColor, sortOrder: editSort });
+    setDomains((prev) => prev.map((d) => (d.id === editId ? domain : d)));
+    setEditId(null);
+    onChanged?.();
+  };
+
+  const add = async () => {
+    if (!newName) return;
+    const { domain } = await api.createDomain({ name: newName, color: newColor, sortOrder: newSort });
+    setDomains((prev) => [...prev, domain]);
+    setShowAdd(false);
+    setNewName("");
+    setNewColor("#6366f1");
+    setNewSort(0);
+    onChanged?.();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this domain? Initiatives using it will lose their domain.")) return;
+    await api.deleteDomain(id);
+    setDomains((prev) => prev.filter((d) => d.id !== id));
+    onChanged?.();
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading domains...</p>;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-gray-700">Domains</h3>
+        <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
+          {showAdd ? "Cancel" : "+ Add"}
+        </button>
+      </div>
+      {showAdd && (
+        <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Color</label>
+            <input type="color" className="h-8 w-10 cursor-pointer rounded border" value={newColor} onChange={(e) => setNewColor(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Sort</label>
+            <input type="number" className="rounded border px-2 py-1 text-sm w-16" value={newSort} onChange={(e) => setNewSort(Number(e.target.value))} />
+          </div>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+        </div>
+      )}
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+            <th className="py-2 px-3">Color</th>
+            <th className="py-2 px-3">Name</th>
+            <th className="py-2 px-3">Sort</th>
+            <th className="py-2 px-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {domains.map((d) => (
+            <tr key={d.id} className="border-b hover:bg-gray-50">
+              {editId === d.id ? (
+                <>
+                  <td className="py-2 px-3"><input type="color" className="h-6 w-8 rounded border cursor-pointer" value={editColor} onChange={(e) => setEditColor(e.target.value)} /></td>
+                  <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} /></td>
+                  <td className="py-2 px-3"><input type="number" className="rounded border px-2 py-0.5 text-sm w-16" value={editSort} onChange={(e) => setEditSort(Number(e.target.value))} /></td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="py-2 px-3"><span className="inline-block h-4 w-4 rounded" style={{ backgroundColor: d.color }} /></td>
+                  <td className="py-2 px-3">{d.name}</td>
+                  <td className="py-2 px-3 text-gray-500">{d.sortOrder}</td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(d)}>Edit</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(d.id)}>Delete</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Personas Section ─────────────────────────────────────────────── */
+
+function PersonasSection({ onChanged }: { onChanged?: () => void }) {
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+  const [editCategory, setEditCategory] = useState<PersonaCategory>("NONE");
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newIcon, setNewIcon] = useState("");
+  const [newCategory, setNewCategory] = useState<PersonaCategory>("NONE");
+
+  const load = useCallback(async () => {
+    try {
+      const { personas } = await api.getPersonas();
+      setPersonas(personas);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = (p: Persona) => {
+    setEditId(p.id);
+    setEditName(p.name);
+    setEditIcon(p.icon ?? "");
+    setEditCategory(p.category);
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    const { persona } = await api.updatePersona(editId, { name: editName, icon: editIcon || null, category: editCategory });
+    setPersonas((prev) => prev.map((p) => (p.id === editId ? persona : p)));
+    setEditId(null);
+    onChanged?.();
+  };
+
+  const add = async () => {
+    if (!newName) return;
+    const { persona } = await api.createPersona({ name: newName, icon: newIcon || null, category: newCategory });
+    setPersonas((prev) => [...prev, persona]);
+    setShowAdd(false);
+    setNewName("");
+    setNewIcon("");
+    setNewCategory("NONE");
+    onChanged?.();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this persona? Impact data using it will be removed.")) return;
+    await api.deletePersona(id);
+    setPersonas((prev) => prev.filter((p) => p.id !== id));
+    onChanged?.();
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading personas...</p>;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-gray-700">Personas</h3>
+        <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
+          {showAdd ? "Cancel" : "+ Add"}
+        </button>
+      </div>
+      <p className="text-xs text-gray-500">
+        Category determines grouping in the Buyer x User chart. <strong>BUYER</strong> = horizontal axis, <strong>USER</strong> = vertical axis, <strong>NONE</strong> = excluded from chart.
+      </p>
+      {showAdd && (
+        <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Icon</label>
+            <input className="rounded border px-2 py-1 text-sm w-24" value={newIcon} onChange={(e) => setNewIcon(e.target.value)} placeholder="e.g. heart" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Category</label>
+            <select className="rounded border px-2 py-1 text-sm" value={newCategory} onChange={(e) => setNewCategory(e.target.value as PersonaCategory)}>
+              {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+        </div>
+      )}
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+            <th className="py-2 px-3">Name</th>
+            <th className="py-2 px-3">Icon</th>
+            <th className="py-2 px-3">Category</th>
+            <th className="py-2 px-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {personas.map((p) => (
+            <tr key={p.id} className="border-b hover:bg-gray-50">
+              {editId === p.id ? (
+                <>
+                  <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} /></td>
+                  <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-24" value={editIcon} onChange={(e) => setEditIcon(e.target.value)} /></td>
+                  <td className="py-2 px-3">
+                    <select className="rounded border px-2 py-0.5 text-sm" value={editCategory} onChange={(e) => setEditCategory(e.target.value as PersonaCategory)}>
+                      {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="py-2 px-3">{p.name}</td>
+                  <td className="py-2 px-3 text-gray-500">{p.icon ?? "—"}</td>
+                  <td className="py-2 px-3">
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${PERSONA_CAT_COLORS[p.category]}`}>{p.category}</span>
+                  </td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(p)}>Edit</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(p.id)}>Delete</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Revenue Streams Section ──────────────────────────────────────── */
+
+function RevenueStreamsSection({ onChanged }: { onChanged?: () => void }) {
+  const [streams, setStreams] = useState<RevenueStream[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("#10b981");
+
+  const load = useCallback(async () => {
+    try {
+      const { revenueStreams } = await api.getRevenueStreams();
+      setStreams(revenueStreams);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = (s: RevenueStream) => {
+    setEditId(s.id);
+    setEditName(s.name);
+    setEditColor(s.color);
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    const { revenueStream } = await api.updateRevenueStream(editId, { name: editName, color: editColor });
+    setStreams((prev) => prev.map((s) => (s.id === editId ? revenueStream : s)));
+    setEditId(null);
+    onChanged?.();
+  };
+
+  const add = async () => {
+    if (!newName) return;
+    const { revenueStream } = await api.createRevenueStream({ name: newName, color: newColor });
+    setStreams((prev) => [...prev, revenueStream]);
+    setShowAdd(false);
+    setNewName("");
+    setNewColor("#10b981");
+    onChanged?.();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this revenue stream?")) return;
+    await api.deleteRevenueStream(id);
+    setStreams((prev) => prev.filter((s) => s.id !== id));
+    onChanged?.();
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading revenue streams...</p>;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-gray-700">Revenue Streams</h3>
+        <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
+          {showAdd ? "Cancel" : "+ Add"}
+        </button>
+      </div>
+      {showAdd && (
+        <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Color</label>
+            <input type="color" className="h-8 w-10 cursor-pointer rounded border" value={newColor} onChange={(e) => setNewColor(e.target.value)} />
+          </div>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+        </div>
+      )}
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+            <th className="py-2 px-3">Color</th>
+            <th className="py-2 px-3">Name</th>
+            <th className="py-2 px-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {streams.map((s) => (
+            <tr key={s.id} className="border-b hover:bg-gray-50">
+              {editId === s.id ? (
+                <>
+                  <td className="py-2 px-3"><input type="color" className="h-6 w-8 rounded border cursor-pointer" value={editColor} onChange={(e) => setEditColor(e.target.value)} /></td>
+                  <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} /></td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="py-2 px-3"><span className="inline-block h-4 w-4 rounded" style={{ backgroundColor: s.color }} /></td>
+                  <td className="py-2 px-3">{s.name}</td>
+                  <td className="py-2 px-3 text-right space-x-2">
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(s)}>Edit</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(s.id)}>Delete</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
