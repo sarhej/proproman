@@ -633,6 +633,8 @@ function DataTab() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string; counts?: Record<string, number> } | null>(null);
   const [confirmPayload, setConfirmPayload] = useState<unknown>(null);
 
@@ -690,6 +692,21 @@ function DataTab() {
     }
   };
 
+  const handleClear = async () => {
+    setClearing(true);
+    setResult(null);
+    try {
+      const data = await api.clearData();
+      setResult({ ok: true, message: data.message + " The page will reload." });
+      setShowClearConfirm(false);
+      setTimeout(() => window.location.reload(), 2000);
+    } catch {
+      setResult({ ok: false, message: "Clear failed. Transaction was rolled back." });
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-5">
@@ -744,6 +761,44 @@ function DataTab() {
                 className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                 onClick={() => { setConfirmPayload(null); if (fileRef.current) fileRef.current.value = ""; }}
                 disabled={importing}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-red-200 bg-white p-5">
+        <h3 className="text-sm font-semibold text-red-700 mb-1">Clear All Data</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Delete all application data (initiatives, features, campaigns, accounts, etc.) and start fresh.
+          Your own user account will be preserved so you stay logged in.
+        </p>
+        {!showClearConfirm ? (
+          <button
+            className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+            onClick={() => { setShowClearConfirm(true); setResult(null); }}
+          >
+            Clear All Data...
+          </button>
+        ) : (
+          <div className="rounded border border-red-300 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800 mb-2">
+              This will permanently delete everything except your user account.
+            </p>
+            <div className="flex gap-2">
+              <button
+                className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                onClick={handleClear}
+                disabled={clearing}
+              >
+                {clearing ? "Clearing..." : "Yes, Delete Everything"}
+              </button>
+              <button
+                className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearing}
               >
                 Cancel
               </button>

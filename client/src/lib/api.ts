@@ -218,4 +218,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  clearData: async () =>
+    request<{ ok: boolean; message: string }>("/api/admin/clear", { method: "POST" }),
 };

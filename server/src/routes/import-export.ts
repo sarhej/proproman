@@ -464,6 +464,46 @@ importExportRouter.post("/import", async (req, res) => {
   }
 });
 
+/* ── Clear All Data ────────────────────────────────────────────────── */
+
+importExportRouter.post("/clear", async (req, res) => {
+  const currentUserId = req.user!.id;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.auditEntry.deleteMany();
+      await tx.campaignLink.deleteMany();
+      await tx.asset.deleteMany();
+      await tx.campaign.deleteMany();
+      await tx.initiativeAssignment.deleteMany();
+      await tx.demandLink.deleteMany();
+      await tx.demand.deleteMany();
+      await tx.account.deleteMany();
+      await tx.partner.deleteMany();
+      await tx.dependency.deleteMany();
+      await tx.risk.deleteMany();
+      await tx.decision.deleteMany();
+      await tx.requirement.deleteMany();
+      await tx.feature.deleteMany();
+      await tx.initiativeRevenueStream.deleteMany();
+      await tx.initiativePersonaImpact.deleteMany();
+      await tx.initiative.deleteMany();
+      await tx.product.deleteMany();
+      await tx.domain.deleteMany();
+      await tx.persona.deleteMany();
+      await tx.revenueStream.deleteMany();
+      await tx.user.deleteMany({ where: { id: { not: currentUserId } } });
+    }, { timeout: 30_000 });
+
+    await logAudit(currentUserId, "DELETED", "ALL_DATA", undefined, { action: "clear" });
+
+    res.json({ ok: true, message: "All data cleared. Your user account was preserved." });
+  } catch (err) {
+    console.error("Clear failed:", err);
+    res.status(500).json({ error: "Clear failed. Transaction rolled back." });
+  }
+});
+
 function mapId(idMap: Map<string, string>, oldId: string | null | undefined): string | null {
   if (!oldId) return null;
   return idMap.get(oldId) ?? null;
