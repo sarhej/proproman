@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
-import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserEmail, UserRole } from "../types/models";
+import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER", "PENDING"];
 const ROLE_COLORS: Record<UserRole, string> = {
