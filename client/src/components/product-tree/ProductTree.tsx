@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
 import type { Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
@@ -593,7 +593,10 @@ function ProductRow({
 export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
 
   const allInitiatives = products.flatMap((p) => p.initiatives);
 

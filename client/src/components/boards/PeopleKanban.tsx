@@ -1,6 +1,6 @@
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
 import { useState } from "react";
@@ -43,7 +43,10 @@ function DroppableColumn({ laneId, children }: { laneId: string; children: React
 
 export function PeopleKanban({ initiatives, users, onOpen, onReassignAccountable }: Props) {
   const { t } = useTranslation();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const lanes = [...users.map((u) => ({ id: u.id, name: u.name })), { id: "unassigned", name: t("peopleKanban.unassigned") }];

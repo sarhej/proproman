@@ -33,11 +33,11 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-2 overflow-x-auto border-b lg:overflow-x-visible">
         {tabs.map((t) => (
           <button
             key={t.key}
-            className={`px-4 py-2 -mb-px text-sm font-medium ${tab === t.key ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
+            className={`shrink-0 px-4 py-2 -mb-px text-sm font-medium ${tab === t.key ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setTab(t.key)}
           >
             {t.label}
@@ -215,7 +215,94 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
         </div>
       )}
 
-      <div className="overflow-x-auto text-sm">
+      {/* Mobile card view */}
+      <div className="grid gap-3 lg:hidden">
+        {filteredUsers.map((u) => {
+          const aliases = (u.emails ?? []).filter((e) => !e.isPrimary);
+          const isExpanded = expandedUser === u.id;
+          return (
+            <div key={u.id} className={`rounded-lg border p-3 ${u.role === "PENDING" ? "border-amber-300 bg-amber-50/40" : "border-slate-200 bg-white"}`}>
+              <div className="flex items-center gap-3 mb-2">
+                {u.avatarUrl ? (
+                  <img src={u.avatarUrl} alt="" className="h-10 w-10 rounded-full" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
+                    {u.name.charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-sm truncate">{u.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <select
+                  className={`rounded px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[u.role]}`}
+                  value={u.role}
+                  onChange={(e) => updateField(u.id, { role: e.target.value as UserRole })}
+                  disabled={u.id === currentUser.id || (!["SUPER_ADMIN"].includes(currentUser.role) && u.role === "SUPER_ADMIN")}
+                >
+                  {availableRoles.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <button
+                  className={`rounded px-2 py-0.5 text-xs font-medium ${u.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                  onClick={() => updateField(u.id, { isActive: !(u.isActive !== false) })}
+                  disabled={u.id === currentUser.id}
+                >
+                  {u.isActive !== false ? t("common.active") : t("common.inactive")}
+                </button>
+                {u.googleId ? (
+                  <span className="text-green-600 text-xs font-medium">Google &#10003;</span>
+                ) : (
+                  <span className="text-amber-500 text-xs font-medium">Unlinked</span>
+                )}
+              </div>
+              {aliases.length > 0 && (
+                <button
+                  className="text-xs text-indigo-600"
+                  onClick={() => { setExpandedUser(isExpanded ? null : u.id); setAliasInput(""); }}
+                >
+                  {isExpanded ? "▲" : "▼"} {aliases.length} {t("admin.aliases")}
+                </button>
+              )}
+              {isExpanded && (
+                <div className="mt-2 border-t pt-2">
+                  <div className="space-y-1.5">
+                    {(u.emails ?? []).map((alias) => (
+                      <div key={alias.id} className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-700">{alias.email}</span>
+                        {alias.isPrimary && <span className="rounded bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">{t("common.primary")}</span>}
+                        {!alias.isPrimary && (
+                          <button className="text-red-500 text-[10px]" onClick={() => removeAlias(u.id, alias.id)}>
+                            {t("common.remove")}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      className="rounded border px-2 py-1 text-xs flex-1"
+                      value={aliasInput}
+                      onChange={(e) => setAliasInput(e.target.value)}
+                      placeholder={t("admin.aliasPlaceholder")}
+                      onKeyDown={(e) => { if (e.key === "Enter") addAlias(u.id); }}
+                    />
+                    <button className="rounded bg-indigo-600 px-2 py-1 text-xs text-white" onClick={() => addAlias(u.id)}>
+                      {t("common.add")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden lg:block overflow-x-auto text-sm">
         <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
           <div className="py-2 px-3">{t("common.name")}</div>
           <div className="py-2 px-3">{t("common.email")}</div>

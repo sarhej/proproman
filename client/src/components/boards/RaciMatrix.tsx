@@ -219,7 +219,53 @@ export function RaciMatrix({ initiatives, users, readOnly, onOpen, onChanged }: 
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+      {/* Mobile card view */}
+      <div className="grid gap-3 lg:hidden">
+        {filtered.map((initiative) => {
+          const hasAccountable = initiative.assignments.some((a) => a.role === "ACCOUNTABLE");
+          return (
+            <div
+              key={initiative.id}
+              className={`cursor-pointer rounded-lg border border-slate-200 bg-white p-3 active:bg-slate-50 ${!hasAccountable ? "border-amber-300 bg-amber-50/40" : ""}`}
+              onClick={() => onOpen(initiative)}
+            >
+              <div className="mb-1 flex items-center gap-2">
+                {!hasAccountable && (
+                  <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">!</span>
+                )}
+                <span className="font-medium text-sm">{initiative.title}</span>
+              </div>
+              <div className="mb-2">
+                <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
+              </div>
+              <div className="grid gap-1.5 text-xs">
+                {RACI_ROLES.map((r) => {
+                  const roleAssignments = initiative.assignments.filter((a) => a.role === r.key);
+                  if (roleAssignments.length === 0) return null;
+                  return (
+                    <div key={r.key} className="flex items-center gap-2">
+                      <span className="w-4 font-semibold text-slate-500">{r.short}:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {roleAssignments.map((a) => (
+                          <span key={`${a.userId}-${a.role}`} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">
+                            {a.user.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="py-8 text-center text-sm text-slate-400">{t("raci.noInitiatives")}</div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden lg:block overflow-x-auto rounded border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronDown } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Demand, Domain, Initiative, Persona, Product, RevenueStream, User } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
@@ -8,16 +9,26 @@ import { Card } from "../ui/Card";
 import { Input, Label, Select } from "../ui/Field";
 import { InitiativeForm, type InitiativeFormHandle } from "./InitiativeForm";
 
-function ShareButton({ initiativeId }: { initiativeId: string }) {
+function ShareButton({ initiativeId, title }: { initiativeId: string; title: string }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/?initiative=${initiativeId}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [initiativeId]);
+  }, [initiativeId, title]);
 
   return (
     <Button variant="secondary" onClick={handleShare}>
@@ -59,6 +70,61 @@ const TAB_KEYS: Record<Tab, string> = {
   raci: "tabs.raci",
   timeline: "tabs.timeline",
 };
+
+const ALL_TABS: Tab[] = ["details", "features", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"];
+
+function TabPicker({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div className="mb-4">
+      {/* Mobile/tablet: dropdown picker */}
+      <div className="lg:hidden relative" ref={ref}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex w-full items-center justify-between rounded-lg bg-sky-600 px-4 py-3 text-sm font-medium text-white shadow-sm active:bg-sky-700"
+        >
+          <span>{t(TAB_KEYS[tab])}</span>
+          <ChevronDown size={16} className={`text-sky-200 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+            {ALL_TABS.map((item) => (
+              <button
+                key={item}
+                onClick={() => { onTabChange(item); setOpen(false); }}
+                className={`flex w-full items-center px-4 py-2.5 text-sm ${
+                  tab === item ? "bg-sky-50 font-medium text-sky-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {t(TAB_KEYS[item])}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Desktop: horizontal button row */}
+      <div className="hidden lg:flex flex-wrap gap-2">
+        {ALL_TABS.map((item) => (
+          <Button key={item} variant={tab === item ? "primary" : "secondary"} onClick={() => onTabChange(item)}>
+            {t(TAB_KEYS[item])}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function InitiativeDetailPanel({
   initiative,
@@ -161,7 +227,7 @@ export function InitiativeDetailPanel({
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end bg-black/30" onClick={tryClose}>
-      <div className="h-full w-full max-w-[780px] overflow-y-auto bg-white p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="h-full w-full max-w-full lg:max-w-[780px] overflow-y-auto bg-white p-4 lg:p-6" onClick={(e) => e.stopPropagation()}>
         <div className="h-1 w-full rounded-t" style={{ background: initiative.domain?.color || "#94a3b8" }} />
 
         {showUnsavedDialog && (
@@ -202,19 +268,13 @@ export function InitiativeDetailPanel({
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("initiative.detail")}</h2>
           <div className="flex items-center gap-2">
-            <ShareButton initiativeId={initiative.id} />
+            <ShareButton initiativeId={initiative.id} title={initiative.title} />
             <Button variant="ghost" onClick={tryClose}>
               {t("app.close")}
             </Button>
           </div>
         </div>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {(["details", "features", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"] as Tab[]).map((item) => (
-            <Button key={item} variant={tab === item ? "primary" : "secondary"} onClick={() => setTab(item)}>
-              {t(TAB_KEYS[item])}
-            </Button>
-          ))}
-        </div>
+        <TabPicker tab={tab} onTabChange={setTab} />
 
         {tab === "details" ? (
           <div className="grid gap-4">

@@ -186,19 +186,21 @@ export function GanttPage({ initiatives, onOpen }: Props) {
           {t("gantt.empty")}
         </div>
       ) : (
-        <Gantt
-          tasks={ganttTasks}
-          viewMode={viewMode}
-          viewDate={today}
-          onClick={handleClick}
-          TooltipContent={CustomTooltip}
-          columnWidth={columnWidth}
-          rowHeight={42}
-          barFill={60}
-          headerHeight={50}
-          listCellWidth=""
-          ganttHeight={Math.min(600, ganttTasks.length * 42 + 60)}
-        />
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: "touch" }}>
+          <Gantt
+            tasks={ganttTasks}
+            viewMode={viewMode}
+            viewDate={today}
+            onClick={handleClick}
+            TooltipContent={CustomTooltip}
+            columnWidth={columnWidth}
+            rowHeight={42}
+            barFill={60}
+            headerHeight={50}
+            listCellWidth=""
+            ganttHeight={Math.min(600, ganttTasks.length * 42 + 60)}
+          />
+        </div>
       )}
     </Card>
   );

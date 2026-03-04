@@ -1,6 +1,6 @@
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
 import { useState } from "react";
@@ -40,7 +40,10 @@ function DroppableColumn({ status, children }: { status: string; children: React
 
 export function StatusKanban({ initiatives, onOpen, onMove }: Props) {
   const { t } = useTranslation();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   function onDragStart(event: DragStartEvent) {

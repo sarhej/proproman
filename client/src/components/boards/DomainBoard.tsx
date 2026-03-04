@@ -5,6 +5,7 @@ import {
   type DragStartEvent,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -76,7 +77,10 @@ function DroppableDomainColumn({
 }
 
 export function DomainBoard({ domains, initiatives, onOpen, onReorder }: Props) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const grouped = groupByDomain(domains, initiatives);

@@ -44,7 +44,9 @@ const MAX_PILLS_PER_CELL = 3;
 export function CalendarPage({ quickFilter }: Props) {
   const { t } = useTranslation();
   const [items, setItems] = useState<CalendarItem[]>([]);
-  const [view, setView] = useState<ViewMode>("calendar");
+  const [view, setView] = useState<ViewMode>(() =>
+    window.matchMedia("(max-width: 1023px)").matches ? "agenda" : "calendar"
+  );
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };

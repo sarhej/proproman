@@ -100,7 +100,7 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
   }
 
   return (
-    <div className="h-[480px] rounded-lg border border-slate-200 bg-white p-3">
+    <div className="h-[300px] lg:h-[480px] rounded-lg border border-slate-200 bg-white p-3">
       <ResponsiveContainer width="100%" height="100%">
         <ScatterChart margin={{ top: 20, right: 20, left: 10, bottom: 30 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

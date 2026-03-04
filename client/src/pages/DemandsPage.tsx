@@ -119,7 +119,53 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
           </Button>
         </div>
       ) : null}
-      <div className="overflow-x-auto">
+      {/* Mobile card view */}
+      <div className="grid gap-3 lg:hidden">
+        {filteredDemands.map((d) => {
+          const sourceName =
+            d.sourceType === "ACCOUNT" && d.account ? d.account.name :
+            d.sourceType === "PARTNER" && d.partner ? d.partner.name :
+            t(`demandSource.${d.sourceType}`);
+          return (
+            <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="mb-1 font-medium text-sm">{d.title}</div>
+              <div className="mb-2 text-xs text-slate-500">{t("demands.source")}: {sourceName}</div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                  {t(`demandStatus.${d.status}`)}
+                </span>
+                <span className="text-xs text-slate-500">{t("demands.urgency")} {d.urgency}</span>
+                {d.demandLinks.map((link) => {
+                  const initiativeMatch = link.initiative && initiatives.find((i) => i.id === link.initiative?.id);
+                  return (
+                    <span key={link.id}>
+                      {initiativeMatch && onOpenInitiative ? (
+                        <button
+                          type="button"
+                          className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800"
+                          onClick={() => onOpenInitiative(initiativeMatch)}
+                        >
+                          {link.initiative?.title}
+                        </button>
+                      ) : (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                          {link.initiative?.title ?? t("common.unlinked")}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
+                {d.demandLinks.length === 0 && (
+                  <span className="text-xs text-slate-400">{t("demands.notLinked")}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full min-w-[700px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
