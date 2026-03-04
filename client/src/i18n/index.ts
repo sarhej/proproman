@@ -10,7 +10,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources: { en: { translation: en }, cs: { translation: cs }, sk: { translation: sk } },
-    fallbackLng: "en",
+    fallbackLng: "cs",
+    lng: localStorage.getItem("lang") || "cs",
     interpolation: { escapeValue: false },
     detection: {
       order: ["localStorage", "navigator"],
