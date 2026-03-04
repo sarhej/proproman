@@ -211,26 +211,22 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-              <th className="py-2 px-3">Name</th>
-              <th className="py-2 px-3">Email</th>
-              <th className="py-2 px-3">Role</th>
-              <th className="py-2 px-3 text-center">Active</th>
-              <th className="py-2 px-3">Last Login</th>
-              <th className="py-2 px-3 text-center">Google</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="overflow-x-auto text-sm">
+        <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+          <div className="py-2 px-3">Name</div>
+          <div className="py-2 px-3">Email</div>
+          <div className="py-2 px-3">Role</div>
+          <div className="py-2 px-3 text-center">Active</div>
+          <div className="py-2 px-3">Last Login</div>
+          <div className="py-2 px-3 text-center">Google</div>
+        </div>
+        <div>
             {filteredUsers.map((u) => {
               const aliases = (u.emails ?? []).filter((e) => !e.isPrimary);
               const isExpanded = expandedUser === u.id;
               return (
-                <tr key={u.id} className="border-b hover:bg-gray-50">
-                  <td colSpan={6} className="p-0">
-                    <div className={`grid grid-cols-[1fr_1fr_auto_auto_auto_auto] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
+                <div key={u.id} className="border-b hover:bg-gray-50">
+                    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
                       <div className="py-2 px-3 flex items-center gap-2">
                         {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
                         <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
@@ -323,12 +319,10 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                         </div>
                       </div>
                     )}
-                  </td>
-                </tr>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+        </div>
       </div>
     </div>
   );
