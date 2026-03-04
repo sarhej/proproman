@@ -115,6 +115,57 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       console.log("Added PENDING enum value to UserRole.");
     }
 
+    // Ensure UserEmail table exists (from add_user_email_aliases migration)
+    const userEmailCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'UserEmail'"
+    );
+    if (userEmailCheck.rowCount === 0) {
+      console.log("UserEmail table missing. Creating it directly...");
+
+      await pool.query(`
+        CREATE TABLE "UserEmail" (
+          "id" TEXT NOT NULL,
+          "email" TEXT NOT NULL,
+          "userId" TEXT NOT NULL,
+          "isPrimary" BOOLEAN NOT NULL DEFAULT false,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "UserEmail_pkey" PRIMARY KEY ("id")
+        );
+        CREATE UNIQUE INDEX "UserEmail_email_key" ON "UserEmail"("email");
+        CREATE INDEX "UserEmail_userId_idx" ON "UserEmail"("userId");
+      `);
+
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'UserEmail_userId_fkey') THEN
+            ALTER TABLE "UserEmail" ADD CONSTRAINT "UserEmail_userId_fkey"
+              FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+          END IF;
+        END $$;
+      `);
+
+      // Populate from existing User records
+      await pool.query(`
+        INSERT INTO "UserEmail" ("id", "email", "userId", "isPrimary", "createdAt")
+        SELECT 'ue_' || "id", "email", "id", true, NOW()
+        FROM "User"
+        ON CONFLICT ("email") DO NOTHING;
+      `);
+
+      // Mark the migration as applied so prisma migrate deploy doesn't re-run it
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260304132311_add_user_email_aliases', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260304132311_add_user_email_aliases'
+        );
+      `);
+
+      console.log("UserEmail table created and populated successfully.");
+    } else {
+      console.log("UserEmail table exists. No repair needed.");
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);
