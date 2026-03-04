@@ -87,16 +87,22 @@ importExportRouter.post("/import", async (req, res) => {
 
   const mode: "replace" | "merge" = data.mode === "merge" ? "merge" : "replace";
 
+  // For replace mode, check that at least one entity array is provided
   if (mode === "replace") {
-    const required = [
+    const entityKeys = [
       "users", "products", "domains", "personas", "revenueStreams",
       "accounts", "partners", "initiatives", "features", "requirements",
       "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
-    ] as const;
-
-    for (const key of required) {
-      if (!Array.isArray(data[key])) {
-        res.status(400).json({ error: `Missing or invalid array: "${key}"` });
+    ];
+    const hasAny = entityKeys.some((k) => Array.isArray(data[k]));
+    if (!hasAny) {
+      res.status(400).json({ error: "No entity arrays found in payload." });
+      return;
+    }
+    // Validate that provided keys are actually arrays
+    for (const key of entityKeys) {
+      if (data[key] !== undefined && !Array.isArray(data[key])) {
+        res.status(400).json({ error: `Invalid value for "${key}": expected array.` });
         return;
       }
     }
@@ -119,114 +125,157 @@ importExportRouter.post("/import", async (req, res) => {
 /* ── Replace import (original behavior) ───────────────────────────── */
 
 async function replaceImport(data: any) {
-  return prisma.$transaction(async (tx) => {
-    await tx.auditEntry.deleteMany();
-    await tx.campaignLink.deleteMany();
-    await tx.asset.deleteMany();
-    await tx.campaign.deleteMany();
-    await tx.initiativeAssignment.deleteMany();
-    await tx.demandLink.deleteMany();
-    await tx.demand.deleteMany();
-    await tx.account.deleteMany();
-    await tx.partner.deleteMany();
-    await tx.dependency.deleteMany();
-    await tx.risk.deleteMany();
-    await tx.decision.deleteMany();
-    await tx.requirement.deleteMany();
-    await tx.feature.deleteMany();
-    await tx.initiativeRevenueStream.deleteMany();
-    await tx.initiativePersonaImpact.deleteMany();
-    await tx.initiative.deleteMany();
-    await tx.product.deleteMany();
-    await tx.domain.deleteMany();
-    await tx.persona.deleteMany();
-    await tx.revenueStream.deleteMany();
-    await tx.userEmail.deleteMany();
-    await tx.user.deleteMany();
+  const has = (key: string) => Array.isArray(data[key]);
 
+  return prisma.$transaction(async (tx) => {
+    // Pre-load existing IDs for entities NOT being replaced so FK refs resolve
     const idMap = new Map<string, string>();
 
-    for (const u of data.users) {
-      const created = await tx.user.create({
-        data: {
-          email: u.email,
-          name: u.name,
-          avatarUrl: u.avatarUrl ?? null,
-          role: u.role,
-          isActive: u.isActive ?? true,
-          googleId: u.googleId ?? null,
-        },
-      });
-      idMap.set(u.id, created.id);
-      // Create email aliases
-      await tx.userEmail.create({ data: { email: u.email, userId: created.id, isPrimary: true } });
-      if (Array.isArray(u.emails)) {
-        for (const e of u.emails) {
-          if (e.email !== u.email) {
-            await tx.userEmail.create({ data: { email: e.email, userId: created.id, isPrimary: false } });
+    if (!has("users")) {
+      for (const u of await tx.user.findMany()) idMap.set(u.id, u.id);
+    }
+    if (!has("products")) {
+      for (const p of await tx.product.findMany()) idMap.set(p.id, p.id);
+    }
+    if (!has("domains")) {
+      for (const d of await tx.domain.findMany()) idMap.set(d.id, d.id);
+    }
+    if (!has("personas")) {
+      for (const p of await tx.persona.findMany()) idMap.set(p.id, p.id);
+    }
+    if (!has("revenueStreams")) {
+      for (const s of await tx.revenueStream.findMany()) idMap.set(s.id, s.id);
+    }
+    if (!has("accounts")) {
+      for (const a of await tx.account.findMany()) idMap.set(a.id, a.id);
+    }
+    if (!has("partners")) {
+      for (const p of await tx.partner.findMany()) idMap.set(p.id, p.id);
+    }
+    if (!has("initiatives")) {
+      for (const i of await tx.initiative.findMany()) idMap.set(i.id, i.id);
+    }
+    if (!has("features")) {
+      for (const f of await tx.feature.findMany()) idMap.set(f.id, f.id);
+    }
+    if (!has("demands")) {
+      for (const d of await tx.demand.findMany()) idMap.set(d.id, d.id);
+    }
+    if (!has("campaigns")) {
+      for (const c of await tx.campaign.findMany()) idMap.set(c.id, c.id);
+    }
+
+    // Delete only the entities being replaced (in FK-safe order)
+    if (has("campaignLinks")) await tx.campaignLink.deleteMany();
+    if (has("assets")) await tx.asset.deleteMany();
+    if (has("campaigns")) { await tx.campaignLink.deleteMany(); await tx.asset.deleteMany(); await tx.campaign.deleteMany(); }
+    if (has("demandLinks")) await tx.demandLink.deleteMany();
+    if (has("demands")) { await tx.demandLink.deleteMany(); await tx.demand.deleteMany(); }
+    if (has("dependencies")) await tx.dependency.deleteMany();
+    if (has("risks")) await tx.risk.deleteMany();
+    if (has("decisions")) await tx.decision.deleteMany();
+    if (has("requirements")) await tx.requirement.deleteMany();
+    if (has("features")) { await tx.requirement.deleteMany(); await tx.feature.deleteMany(); }
+    if (has("initiatives")) {
+      await tx.initiativeAssignment.deleteMany();
+      await tx.initiativeRevenueStream.deleteMany();
+      await tx.initiativePersonaImpact.deleteMany();
+      await tx.dependency.deleteMany();
+      await tx.risk.deleteMany();
+      await tx.decision.deleteMany();
+      await tx.requirement.deleteMany();
+      await tx.feature.deleteMany();
+      await tx.initiative.deleteMany();
+    }
+    if (has("accounts")) { await tx.account.deleteMany(); }
+    if (has("partners")) { await tx.partner.deleteMany(); }
+    if (has("products")) await tx.product.deleteMany();
+    if (has("domains")) await tx.domain.deleteMany();
+    if (has("personas")) await tx.persona.deleteMany();
+    if (has("revenueStreams")) await tx.revenueStream.deleteMany();
+    if (has("users")) { await tx.userEmail.deleteMany(); await tx.user.deleteMany(); }
+
+    // Re-create provided entities
+    if (has("users")) {
+      for (const u of data.users) {
+        const created = await tx.user.create({
+          data: {
+            email: u.email, name: u.name, avatarUrl: u.avatarUrl ?? null,
+            role: u.role, isActive: u.isActive ?? true, googleId: u.googleId ?? null,
+          },
+        });
+        idMap.set(u.id, created.id);
+        await tx.userEmail.create({ data: { email: u.email, userId: created.id, isPrimary: true } });
+        if (Array.isArray(u.emails)) {
+          for (const e of u.emails) {
+            if (e.email !== u.email) {
+              await tx.userEmail.create({ data: { email: e.email, userId: created.id, isPrimary: false } });
+            }
           }
         }
       }
     }
 
-    for (const p of data.products) {
-      const created = await tx.product.create({
-        data: { name: p.name, description: p.description ?? null, sortOrder: p.sortOrder ?? 0 },
-      });
-      idMap.set(p.id, created.id);
+    if (has("products")) {
+      for (const p of data.products) {
+        const created = await tx.product.create({ data: { name: p.name, description: p.description ?? null, sortOrder: p.sortOrder ?? 0 } });
+        idMap.set(p.id, created.id);
+      }
     }
 
-    for (const d of data.domains) {
-      const created = await tx.domain.create({
-        data: { name: d.name, color: d.color, sortOrder: d.sortOrder ?? 0 },
-      });
-      idMap.set(d.id, created.id);
+    if (has("domains")) {
+      for (const d of data.domains) {
+        const created = await tx.domain.create({ data: { name: d.name, color: d.color, sortOrder: d.sortOrder ?? 0 } });
+        idMap.set(d.id, created.id);
+      }
     }
 
-    for (const p of data.personas) {
-      const created = await tx.persona.create({
-        data: { name: p.name, icon: p.icon ?? null, category: p.category ?? "NONE" },
-      });
-      idMap.set(p.id, created.id);
+    if (has("personas")) {
+      for (const p of data.personas) {
+        const created = await tx.persona.create({ data: { name: p.name, icon: p.icon ?? null, category: p.category ?? "NONE" } });
+        idMap.set(p.id, created.id);
+      }
     }
 
-    for (const s of data.revenueStreams) {
-      const created = await tx.revenueStream.create({
-        data: { name: s.name, color: s.color },
-      });
-      idMap.set(s.id, created.id);
+    if (has("revenueStreams")) {
+      for (const s of data.revenueStreams) {
+        const created = await tx.revenueStream.create({ data: { name: s.name, color: s.color } });
+        idMap.set(s.id, created.id);
+      }
     }
 
-    for (const a of data.accounts) {
-      const created = await tx.account.create({
-        data: {
-          name: a.name, type: a.type, segment: a.segment ?? null,
-          ownerId: mapId(idMap, a.ownerId), arrImpact: a.arrImpact ?? null,
-          renewalDate: a.renewalDate ? new Date(a.renewalDate) : null,
-          dealStage: a.dealStage ?? null, strategicTier: a.strategicTier ?? null,
-        },
-      });
-      idMap.set(a.id, created.id);
+    if (has("accounts")) {
+      for (const a of data.accounts) {
+        const created = await tx.account.create({
+          data: {
+            name: a.name, type: a.type, segment: a.segment ?? null,
+            ownerId: mapId(idMap, a.ownerId), arrImpact: a.arrImpact ?? null,
+            renewalDate: a.renewalDate ? new Date(a.renewalDate) : null,
+            dealStage: a.dealStage ?? null, strategicTier: a.strategicTier ?? null,
+          },
+        });
+        idMap.set(a.id, created.id);
+      }
     }
 
-    for (const p of data.partners) {
-      const created = await tx.partner.create({
-        data: { name: p.name, kind: p.kind, ownerId: mapId(idMap, p.ownerId) },
-      });
-      idMap.set(p.id, created.id);
+    if (has("partners")) {
+      for (const p of data.partners) {
+        const created = await tx.partner.create({ data: { name: p.name, kind: p.kind, ownerId: mapId(idMap, p.ownerId) } });
+        idMap.set(p.id, created.id);
+      }
     }
 
-    await importInitiatives(tx, data.initiatives, idMap);
-    await importFeatures(tx, data.features, idMap);
-    await importRequirements(tx, data.requirements, idMap);
-    await importDecisions(tx, data.decisions, idMap);
-    await importRisks(tx, data.risks, idMap);
-    await importDemands(tx, data.demands, idMap);
-    await importDemandLinks(tx, data.demandLinks, idMap);
-    await importDependencies(tx, data.dependencies, idMap);
-    await importCampaigns(tx, data.campaigns, idMap);
-    await importAssets(tx, data.assets, idMap);
-    await importCampaignLinks(tx, data.campaignLinks, idMap);
+    if (has("initiatives")) await importInitiatives(tx, data.initiatives, idMap);
+    if (has("features")) await importFeatures(tx, data.features, idMap);
+    if (has("requirements")) await importRequirements(tx, data.requirements, idMap);
+    if (has("decisions")) await importDecisions(tx, data.decisions, idMap);
+    if (has("risks")) await importRisks(tx, data.risks, idMap);
+    if (has("demands")) await importDemands(tx, data.demands, idMap);
+    if (has("demandLinks")) await importDemandLinks(tx, data.demandLinks, idMap);
+    if (has("dependencies")) await importDependencies(tx, data.dependencies, idMap);
+    if (has("campaigns")) await importCampaigns(tx, data.campaigns, idMap);
+    if (has("assets")) await importAssets(tx, data.assets, idMap);
+    if (has("campaignLinks")) await importCampaignLinks(tx, data.campaignLinks, idMap);
 
     return buildCounts(data);
   }, { timeout: 60_000 });
