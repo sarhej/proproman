@@ -44,22 +44,23 @@ async function main() {
   await prisma.domain.deleteMany();
   await prisma.persona.deleteMany();
   await prisma.revenueStream.deleteMany();
+  await prisma.userEmail.deleteMany();
 
   // ─── Users ──────────────────────────────────────────────────────
-  const teamDefs: { name: string; email: string; role: UserRole }[] = [
-    { name: "Sergei", email: "s@strt.vc", role: UserRole.SUPER_ADMIN },
-    { name: "Ondra", email: "ondrej.svoboda@drdigital.care", role: UserRole.SUPER_ADMIN },
+  const teamDefs: { name: string; email: string; aliases?: string[]; role: UserRole }[] = [
+    { name: "Sergei", email: "s@strt.vc", aliases: ["sarhej@gmail.com"], role: UserRole.SUPER_ADMIN },
+    { name: "Ondra", email: "ondrej.svoboda@drdigital.care", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
     { name: "Jilka", email: "jitka.projektak@gmail.com", role: UserRole.SUPER_ADMIN },
+    { name: "Nelca", email: "nela.mataseje@drdigital.care", role: UserRole.ADMIN },
+    { name: "Vasek", email: "vaclav.cerny@drdigital.care", role: UserRole.EDITOR },
+    { name: "Kuba", email: "jakub.justra@drdigital.care", role: UserRole.ADMIN },
+    { name: "Adela", email: "adela.hlouskova@drdigital.care", role: UserRole.EDITOR },
+    { name: "Zdenek", email: "zdenek.trtil@drdigital.care", role: UserRole.MARKETING },
+    { name: "Ales", email: "ales.zarsky@gmail.com", role: UserRole.VIEWER },
+    { name: "Michael", email: "michael.mladek@drdigital.care", role: UserRole.EDITOR },
     { name: "David", email: "david.hrdina@drdigital.care", role: UserRole.ADMIN },
-    { name: "Kuba", email: "jakub.novak@drdigital.care", role: UserRole.ADMIN },
-    { name: "Nelca", email: "nela.cervena@drdigital.care", role: UserRole.ADMIN },
-    { name: "Vasek", email: "vaclav.dvorak@drdigital.care", role: UserRole.EDITOR },
-    { name: "Adela", email: "adela.mala@drdigital.care", role: UserRole.EDITOR },
     { name: "Pavel", email: "pavel.kratky@drdigital.care", role: UserRole.MARKETING },
-    { name: "Martina", email: "martina.nova@drdigital.care", role: UserRole.MARKETING },
-    { name: "Nela", email: "nela.pokorny@drdigital.care", role: UserRole.VIEWER },
-    { name: "Juraj", email: "juraj.hajek@drdigital.care", role: UserRole.VIEWER },
-    { name: "Jakub", email: "jakub.fiala@drdigital.care", role: UserRole.VIEWER },
+    { name: "Martina", email: "martina.nova@drdigital.care", role: UserRole.VIEWER },
   ];
 
   const users = await Promise.all(
@@ -71,6 +72,17 @@ async function main() {
       })
     )
   );
+
+  // Create UserEmail records (primary + aliases)
+  for (let i = 0; i < teamDefs.length; i++) {
+    const def = teamDefs[i];
+    const user = users[i];
+    await prisma.userEmail.create({ data: { email: def.email, userId: user.id, isPrimary: true } });
+    for (const alias of def.aliases ?? []) {
+      await prisma.userEmail.create({ data: { email: alias, userId: user.id, isPrimary: false } });
+    }
+  }
+
   const u = Object.fromEntries(users.map((x) => [x.name, x]));
 
   // ─── Products ───────────────────────────────────────────────────

@@ -10,6 +10,7 @@ adminRouter.use(requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN));
 
 adminRouter.get("/users", async (_req, res) => {
   const users = await prisma.user.findMany({
+    include: { emails: { orderBy: { isPrimary: "desc" } } },
     orderBy: { createdAt: "asc" }
   });
   res.json({ users });
@@ -50,7 +51,27 @@ adminRouter.put("/users/:id", async (req, res) => {
     return;
   }
 
-  const user = await prisma.user.update({ where: { id }, data });
+  // When changing primary email, also update the UserEmail table
+  if (data.email && data.email !== existing.email) {
+    const taken = await prisma.userEmail.findUnique({ where: { email: data.email } });
+    if (taken && taken.userId !== id) {
+      res.status(409).json({ error: "This email is already used by another user" });
+      return;
+    }
+    // Update or create primary alias
+    const primaryAlias = await prisma.userEmail.findFirst({ where: { userId: id, isPrimary: true } });
+    if (primaryAlias) {
+      await prisma.userEmail.update({ where: { id: primaryAlias.id }, data: { email: data.email } });
+    } else {
+      await prisma.userEmail.create({ data: { email: data.email, userId: id, isPrimary: true } });
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data,
+    include: { emails: { orderBy: { isPrimary: "desc" } } }
+  });
 
   if (data.name && data.name !== existing.name) {
     await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "name", old: existing.name, new: data.name });
@@ -88,16 +109,75 @@ adminRouter.post("/users", async (req, res) => {
     return;
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  const existingAlias = await prisma.userEmail.findUnique({ where: { email } });
+  const existingUser = existingAlias || await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
     res.status(409).json({ error: "A user with this email already exists" });
     return;
   }
 
-  const user = await prisma.user.create({ data: { email, name, role } });
+  const user = await prisma.user.create({
+    data: {
+      email, name, role,
+      emails: { create: { email, isPrimary: true } }
+    },
+    include: { emails: { orderBy: { isPrimary: "desc" } } }
+  });
   await logAudit(req.user!.id, "CREATED", "USER", user.id, { email, role });
   res.status(201).json({ user });
 });
+
+/* ── User Email Aliases ───────────────────────────────────────────── */
+
+const addEmailSchema = z.object({ email: z.string().email() });
+
+adminRouter.post("/users/:id/emails", async (req, res) => {
+  const userId = String(req.params.id);
+  const parsed = addEmailSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const taken = await prisma.userEmail.findUnique({ where: { email: parsed.data.email } });
+  if (taken) {
+    res.status(409).json({ error: "This email is already registered" });
+    return;
+  }
+
+  const alias = await prisma.userEmail.create({
+    data: { email: parsed.data.email, userId, isPrimary: false }
+  });
+  await logAudit(req.user!.id, "UPDATED", "USER", userId, { action: "add_alias", email: parsed.data.email });
+  res.status(201).json({ email: alias });
+});
+
+adminRouter.delete("/users/:id/emails/:emailId", async (req, res) => {
+  const userId = String(req.params.id);
+  const emailId = String(req.params.emailId);
+
+  const alias = await prisma.userEmail.findUnique({ where: { id: emailId } });
+  if (!alias || alias.userId !== userId) {
+    res.status(404).json({ error: "Email alias not found" });
+    return;
+  }
+  if (alias.isPrimary) {
+    res.status(400).json({ error: "Cannot delete primary email" });
+    return;
+  }
+
+  await prisma.userEmail.delete({ where: { id: emailId } });
+  await logAudit(req.user!.id, "UPDATED", "USER", userId, { action: "remove_alias", email: alias.email });
+  res.json({ ok: true });
+});
+
+/* ── Audit Log ────────────────────────────────────────────────────── */
 
 adminRouter.get("/audit", async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);

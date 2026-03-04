@@ -55,9 +55,13 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
             return done(null, existingByGoogle);
           }
 
-          const existingByEmail = await prisma.user.findUnique({
-            where: { email }
+          // Look up by email alias table first, then fall back to User.email
+          const alias = await prisma.userEmail.findUnique({
+            where: { email },
+            include: { user: true }
           });
+          const existingByEmail = alias?.user
+            ?? await prisma.user.findUnique({ where: { email } });
 
           if (existingByEmail) {
             if (!existingByEmail.isActive) {
@@ -71,6 +75,13 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
                 lastLoginAt: new Date()
               }
             });
+            // Ensure this email exists in the alias table
+            const hasAlias = await prisma.userEmail.findUnique({ where: { email } });
+            if (!hasAlias) {
+              await prisma.userEmail.create({
+                data: { email, userId: linked.id, isPrimary: linked.email === email }
+              });
+            }
             await logAudit(linked.id, "LOGIN", "USER", linked.id);
             return done(null, linked);
           }
@@ -84,7 +95,8 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
               avatarUrl: profile.photos?.[0]?.value,
               googleId: profile.id,
               role: autoRole,
-              lastLoginAt: new Date()
+              lastLoginAt: new Date(),
+              emails: { create: { email, isPrimary: true } }
             }
           });
 

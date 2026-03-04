@@ -2,6 +2,14 @@ export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "MARKETING" | "VIEWE
 
 export type AuditAction = "CREATED" | "UPDATED" | "DELETED" | "STATUS_CHANGED" | "ROLE_CHANGED" | "LOGIN";
 
+export type UserEmail = {
+  id: string;
+  email: string;
+  userId: string;
+  isPrimary: boolean;
+  createdAt: string;
+};
+
 export type User = {
   id: string;
   name: string;
@@ -11,6 +19,7 @@ export type User = {
   isActive?: boolean;
   lastLoginAt?: string | null;
   googleId?: string | null;
+  emails?: UserEmail[];
 };
 
 export type AuditEntry = {

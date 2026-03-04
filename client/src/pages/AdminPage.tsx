@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
-import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
+import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserEmail, UserRole } from "../types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER", "PENDING"];
 const ROLE_COLORS: Record<UserRole, string> = {
@@ -99,6 +99,8 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("VIEWER");
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [aliasInput, setAliasInput] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -138,6 +140,26 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
     }
   };
 
+  const addAlias = async (userId: string) => {
+    if (!aliasInput.trim()) return;
+    try {
+      await api.addUserEmail(userId, aliasInput.trim());
+      setAliasInput("");
+      load();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const removeAlias = async (userId: string, emailId: string) => {
+    try {
+      await api.removeUserEmail(userId, emailId);
+      load();
+    } catch {
+      /* ignore */
+    }
+  };
+
   const availableRoles = currentUser.role === "SUPER_ADMIN" ? ROLES : ROLES.filter((r) => r !== "SUPER_ADMIN");
 
   const filteredUsers = useMemo(() => {
@@ -145,7 +167,8 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
     const q = quickFilter?.trim().toLowerCase();
     if (q) {
       list = list.filter((u) => {
-        const hay = [u.name, u.email, u.role].join(" ").toLowerCase();
+        const aliases = (u.emails ?? []).map((e) => e.email).join(" ");
+        const hay = [u.name, u.email, u.role, aliases].join(" ").toLowerCase();
         return hay.includes(q);
       });
     }
@@ -201,51 +224,109 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((u) => (
-              <tr key={u.id} className={`border-b hover:bg-gray-50 ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
-                <td className="py-2 px-3 flex items-center gap-2">
-                  {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
-                  <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
-                  {u.role === "PENDING" && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">New - no access</span>}
-                </td>
-                <td className="py-2 px-3 text-gray-600">
-                  {u.googleId ? (
-                    <span title="Email is locked after Google login">{u.email}</span>
-                  ) : (
-                    <InlineEdit value={u.email} onSave={(v) => updateField(u.id, { email: v })} />
-                  )}
-                </td>
-                <td className="py-2 px-3">
-                  <select
-                    className={`rounded px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[u.role]}`}
-                    value={u.role}
-                    onChange={(e) => updateField(u.id, { role: e.target.value as UserRole })}
-                    disabled={u.id === currentUser.id || (!["SUPER_ADMIN"].includes(currentUser.role) && u.role === "SUPER_ADMIN")}
-                  >
-                    {availableRoles.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-2 px-3 text-center">
-                  <button
-                    className={`rounded px-2 py-0.5 text-xs font-medium ${u.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-                    onClick={() => updateField(u.id, { isActive: !(u.isActive !== false) })}
-                    disabled={u.id === currentUser.id}
-                  >
-                    {u.isActive !== false ? "Active" : "Inactive"}
-                  </button>
-                </td>
-                <td className="py-2 px-3 text-gray-500 text-xs">{formatDate(u.lastLoginAt)}</td>
-                <td className="py-2 px-3 text-center">
-                  {u.googleId ? (
-                    <span className="text-green-600 text-xs font-medium">Linked</span>
-                  ) : (
-                    <span className="text-amber-500 text-xs font-medium">Unlinked</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {filteredUsers.map((u) => {
+              const aliases = (u.emails ?? []).filter((e) => !e.isPrimary);
+              const isExpanded = expandedUser === u.id;
+              return (
+                <tr key={u.id} className="border-b hover:bg-gray-50">
+                  <td colSpan={6} className="p-0">
+                    <div className={`grid grid-cols-[1fr_1fr_auto_auto_auto_auto] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
+                      <div className="py-2 px-3 flex items-center gap-2">
+                        {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
+                        <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
+                        {u.role === "PENDING" && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">New - no access</span>}
+                      </div>
+                      <div className="py-2 px-3 text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                          {u.googleId ? (
+                            <span title="Email is locked after Google login">{u.email}</span>
+                          ) : (
+                            <InlineEdit value={u.email} onSave={(v) => updateField(u.id, { email: v })} />
+                          )}
+                          {aliases.length > 0 && (
+                            <span className="rounded-full bg-indigo-100 text-indigo-700 px-1.5 py-0 text-[10px] font-medium">
+                              +{aliases.length}
+                            </span>
+                          )}
+                          <button
+                            className="ml-1 text-gray-400 hover:text-indigo-600 text-xs"
+                            onClick={() => { setExpandedUser(isExpanded ? null : u.id); setAliasInput(""); }}
+                            title="Manage email aliases"
+                          >
+                            {isExpanded ? "▲" : "▼"}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="py-2 px-3">
+                        <select
+                          className={`rounded px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[u.role]}`}
+                          value={u.role}
+                          onChange={(e) => updateField(u.id, { role: e.target.value as UserRole })}
+                          disabled={u.id === currentUser.id || (!["SUPER_ADMIN"].includes(currentUser.role) && u.role === "SUPER_ADMIN")}
+                        >
+                          {availableRoles.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="py-2 px-3 text-center">
+                        <button
+                          className={`rounded px-2 py-0.5 text-xs font-medium ${u.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                          onClick={() => updateField(u.id, { isActive: !(u.isActive !== false) })}
+                          disabled={u.id === currentUser.id}
+                        >
+                          {u.isActive !== false ? "Active" : "Inactive"}
+                        </button>
+                      </div>
+                      <div className="py-2 px-3 text-gray-500 text-xs">{formatDate(u.lastLoginAt)}</div>
+                      <div className="py-2 px-3 text-center">
+                        {u.googleId ? (
+                          <span className="text-green-600 text-xs font-medium">Linked</span>
+                        ) : (
+                          <span className="text-amber-500 text-xs font-medium">Unlinked</span>
+                        )}
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="bg-gray-50 border-t px-6 py-3">
+                        <p className="text-xs text-gray-500 font-medium mb-2">Login aliases (any of these emails can be used to log in):</p>
+                        <div className="space-y-1.5">
+                          {(u.emails ?? []).map((alias) => (
+                            <div key={alias.id} className="flex items-center gap-2 text-xs">
+                              <span className="text-gray-700">{alias.email}</span>
+                              {alias.isPrimary && <span className="rounded bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">primary</span>}
+                              {!alias.isPrimary && (
+                                <button
+                                  className="text-red-500 hover:text-red-700 text-[10px]"
+                                  onClick={() => removeAlias(u.id, alias.id)}
+                                >
+                                  remove
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            className="rounded border px-2 py-1 text-xs w-60"
+                            value={aliasInput}
+                            onChange={(e) => setAliasInput(e.target.value)}
+                            placeholder="Add alias email..."
+                            onKeyDown={(e) => { if (e.key === "Enter") addAlias(u.id); }}
+                          />
+                          <button
+                            className="rounded bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
+                            onClick={() => addAlias(u.id)}
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -686,6 +767,14 @@ function PersonasSection({ onChanged }: { onChanged?: () => void }) {
 
 /* ── Data Tab (Import / Export) ───────────────────────────────────── */
 
+const EXPORT_ENTITY_GROUPS: { label: string; keys: string[] }[] = [
+  { label: "Core", keys: ["users", "products", "domains", "personas", "revenueStreams"] },
+  { label: "Business", keys: ["accounts", "partners", "demands", "demandLinks"] },
+  { label: "Product", keys: ["initiatives", "features", "requirements", "decisions", "risks", "dependencies"] },
+  { label: "Marketing", keys: ["campaigns", "assets", "campaignLinks"] },
+];
+const ALL_EXPORT_KEYS = EXPORT_ENTITY_GROUPS.flatMap((g) => g.keys);
+
 function DataTab() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -693,13 +782,40 @@ function DataTab() {
   const [clearing, setClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string; counts?: Record<string, number> } | null>(null);
-  const [confirmPayload, setConfirmPayload] = useState<unknown>(null);
+  const [confirmPayload, setConfirmPayload] = useState<Record<string, unknown> | null>(null);
+  const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
+  const [exportEntities, setExportEntities] = useState<Set<string>>(new Set(ALL_EXPORT_KEYS));
+
+  const toggleExportEntity = (key: string) => {
+    setExportEntities((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleExportGroup = (keys: string[]) => {
+    setExportEntities((prev) => {
+      const next = new Set(prev);
+      const allSelected = keys.every((k) => next.has(k));
+      for (const k of keys) {
+        if (allSelected) next.delete(k);
+        else next.add(k);
+      }
+      return next;
+    });
+  };
+
+  const isAllSelected = exportEntities.size === ALL_EXPORT_KEYS.length;
 
   const handleExport = async () => {
+    if (exportEntities.size === 0) return;
     setExporting(true);
     setResult(null);
     try {
-      const data = await api.exportData();
+      const entities = isAllSelected ? undefined : [...exportEntities];
+      const data = await api.exportData(entities);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -707,7 +823,8 @@ function DataTab() {
       a.download = `dd-export-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      setResult({ ok: true, message: "Export downloaded successfully." });
+      const label = isAllSelected ? "all data" : `${exportEntities.size} entity types`;
+      setResult({ ok: true, message: `Export of ${label} downloaded successfully.` });
     } catch {
       setResult({ ok: false, message: "Export failed. Check the console for details." });
     } finally {
@@ -737,11 +854,15 @@ function DataTab() {
     setImporting(true);
     setResult(null);
     try {
-      const { counts } = await api.importData(confirmPayload);
-      setResult({ ok: true, message: "Import completed successfully. The page will reload so you can re-authenticate.", counts });
+      const res = await api.importData(confirmPayload, importMode);
+      const modeLabel = importMode === "merge" ? "Merge" : "Replace";
+      const reloadMsg = importMode === "replace" ? " The page will reload so you can re-authenticate." : "";
+      setResult({ ok: true, message: `${modeLabel} import completed successfully.${reloadMsg}`, counts: res.counts });
       setConfirmPayload(null);
       if (fileRef.current) fileRef.current.value = "";
-      setTimeout(() => window.location.reload(), 3000);
+      if (importMode === "replace") {
+        setTimeout(() => window.location.reload(), 3000);
+      }
     } catch {
       setResult({ ok: false, message: "Import failed. Transaction was rolled back. No data was changed." });
     } finally {
@@ -764,30 +885,87 @@ function DataTab() {
     }
   };
 
+  const payloadSummary = useMemo(() => {
+    if (!confirmPayload) return null;
+    const keys = [
+      "users", "products", "domains", "personas", "revenueStreams", "accounts", "partners",
+      "initiatives", "features", "requirements", "decisions", "risks",
+      "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
+    ];
+    const present: { key: string; count: number }[] = [];
+    for (const k of keys) {
+      if (Array.isArray(confirmPayload[k])) {
+        present.push({ key: k, count: (confirmPayload[k] as unknown[]).length });
+      }
+    }
+    return present;
+  }, [confirmPayload]);
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-700 mb-1">Export</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Download all application data (users, products, domains, initiatives, features, etc.) as a single JSON file.
-          Use this to back up data or transfer it to another environment.
+          Download application data as a JSON file. Select which entity types to include, or export everything.
         </p>
+        <div className="mb-3 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={() => setExportEntities(isAllSelected ? new Set() : new Set(ALL_EXPORT_KEYS))}
+                className="rounded"
+              />
+              All
+            </label>
+          </div>
+          {EXPORT_ENTITY_GROUPS.map((group) => {
+            const allGroupSelected = group.keys.every((k) => exportEntities.has(k));
+            const someGroupSelected = group.keys.some((k) => exportEntities.has(k));
+            return (
+              <div key={group.label} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 w-20 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allGroupSelected}
+                    ref={(el) => { if (el) el.indeterminate = someGroupSelected && !allGroupSelected; }}
+                    onChange={() => toggleExportGroup(group.keys)}
+                    className="rounded"
+                  />
+                  {group.label}
+                </label>
+                {group.keys.map((k) => (
+                  <label key={k} className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportEntities.has(k)}
+                      onChange={() => toggleExportEntity(k)}
+                      className="rounded"
+                    />
+                    <span className="capitalize">{k}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+        </div>
         <button
           className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
           onClick={handleExport}
-          disabled={exporting}
+          disabled={exporting || exportEntities.size === 0}
         >
-          {exporting ? "Exporting..." : "Export All Data"}
+          {exporting ? "Exporting..." : isAllSelected ? "Export All Data" : `Export ${exportEntities.size} Entity Types`}
         </button>
       </div>
 
       <div className="rounded-lg border bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-700 mb-1">Import</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Upload a previously exported JSON file to replace all existing data.
-          This is a destructive operation — all current data will be wiped and replaced.
+          Upload a previously exported JSON file. Choose <strong>Merge</strong> to add/update only the entities present in the file,
+          or <strong>Replace</strong> to wipe everything and import fresh.
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <input
             ref={fileRef}
             type="file"
@@ -798,29 +976,60 @@ function DataTab() {
         </div>
 
         {confirmPayload != null && (
-          <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-4">
-            <p className="text-sm font-medium text-amber-800 mb-2">
-              Are you sure you want to import this data?
-            </p>
-            <p className="text-xs text-amber-700 mb-3">
-              This will permanently delete all existing data (users, initiatives, features, campaigns, etc.)
-              and replace it with the contents of the uploaded file. This action cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <button
-                className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
-                onClick={handleImport}
-                disabled={importing}
-              >
-                {importing ? "Importing..." : "Yes, Replace All Data"}
-              </button>
-              <button
-                className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-                onClick={() => { setConfirmPayload(null); if (fileRef.current) fileRef.current.value = ""; }}
-                disabled={importing}
-              >
-                Cancel
-              </button>
+          <div className="mt-4 space-y-4">
+            {payloadSummary && payloadSummary.length > 0 && (
+              <div className="rounded border bg-gray-50 p-3">
+                <p className="text-xs font-medium text-gray-600 mb-2">File contains:</p>
+                <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
+                  {payloadSummary.map(({ key, count }) => (
+                    <div key={key} className="flex justify-between">
+                      <span className="capitalize">{key}</span>
+                      <span className="font-mono">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <label className={`flex items-center gap-2 rounded border px-4 py-3 cursor-pointer text-sm ${importMode === "merge" ? "border-indigo-400 bg-indigo-50" : "border-gray-200"}`}>
+                <input type="radio" name="importMode" value="merge" checked={importMode === "merge"} onChange={() => setImportMode("merge")} />
+                <div>
+                  <span className="font-medium">Merge</span>
+                  <p className="text-xs text-gray-500">Add new & update existing records by name. Entities not in the file stay untouched.</p>
+                </div>
+              </label>
+              <label className={`flex items-center gap-2 rounded border px-4 py-3 cursor-pointer text-sm ${importMode === "replace" ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
+                <input type="radio" name="importMode" value="replace" checked={importMode === "replace"} onChange={() => setImportMode("replace")} />
+                <div>
+                  <span className="font-medium text-red-700">Replace</span>
+                  <p className="text-xs text-gray-500">Delete all existing data and import from scratch. Destructive &mdash; cannot be undone.</p>
+                </div>
+              </label>
+            </div>
+
+            <div className={`rounded border p-4 ${importMode === "replace" ? "border-red-300 bg-red-50" : "border-indigo-300 bg-indigo-50"}`}>
+              <p className={`text-sm font-medium mb-2 ${importMode === "replace" ? "text-red-800" : "text-indigo-800"}`}>
+                {importMode === "replace"
+                  ? "This will permanently delete all existing data and replace it. This action cannot be undone."
+                  : "This will merge the file contents into your existing data. Matching records (by name/title) will be updated."}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  className={`rounded px-4 py-2 text-sm text-white disabled:opacity-50 ${importMode === "replace" ? "bg-red-600 hover:bg-red-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                  onClick={handleImport}
+                  disabled={importing}
+                >
+                  {importing ? "Importing..." : importMode === "replace" ? "Yes, Replace All Data" : "Yes, Merge Data"}
+                </button>
+                <button
+                  className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                  onClick={() => { setConfirmPayload(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  disabled={importing}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}

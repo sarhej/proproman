@@ -20,6 +20,7 @@ import type {
   Requirement,
   Risk,
   User,
+  UserEmail,
   UserRole,
   Account
 } from "../types/models";
@@ -182,6 +183,10 @@ export const api = {
     request<{ user: User }>(`/api/admin/users/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   createUser: async (body: { email: string; name: string; role: UserRole }) =>
     request<{ user: User }>("/api/admin/users", { method: "POST", body: JSON.stringify(body) }),
+  addUserEmail: async (userId: string, email: string) =>
+    request<{ email: UserEmail }>(`/api/admin/users/${userId}/emails`, { method: "POST", body: JSON.stringify({ email }) }),
+  removeUserEmail: async (userId: string, emailId: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${userId}/emails/${emailId}`, { method: "DELETE" }),
   getAuditLog: async (params?: URLSearchParams) =>
     request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
       `/api/admin/audit${params ? `?${params.toString()}` : ""}`
@@ -208,15 +213,16 @@ export const api = {
     request<{ revenueStream: RevenueStream }>(`/api/revenue-streams/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteRevenueStream: async (id: string) => request<void>(`/api/revenue-streams/${id}`, { method: "DELETE" }),
 
-  exportData: async () => {
-    const response = await fetch(`${baseUrl}/api/admin/export`, { credentials: "include" });
+  exportData: async (entities?: string[]) => {
+    const params = entities && entities.length > 0 ? `?entities=${entities.join(",")}` : "";
+    const response = await fetch(`${baseUrl}/api/admin/export${params}`, { credentials: "include" });
     if (!response.ok) throw new Error(`Export failed: ${response.status}`);
     return response.json();
   },
-  importData: async (payload: unknown) =>
-    request<{ ok: boolean; counts: Record<string, number> }>("/api/admin/import", {
+  importData: async (payload: unknown, mode: "replace" | "merge" = "replace") =>
+    request<{ ok: boolean; mode: string; counts: Record<string, number> }>("/api/admin/import", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...(payload as Record<string, unknown>), mode }),
     }),
   clearData: async () =>
     request<{ ok: boolean; message: string }>("/api/admin/clear", { method: "POST" }),
