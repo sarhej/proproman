@@ -97,6 +97,24 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     } else {
       console.log("Persona.category exists. No repair needed.");
     }
+    // Drop stale `session` table that causes Prisma drift detection to fail
+    const sessionCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'session'"
+    );
+    if (sessionCheck.rowCount > 0) {
+      await pool.query('DROP TABLE IF EXISTS "session" CASCADE');
+      console.log("Dropped stale session table to fix Prisma drift.");
+    }
+
+    // Ensure PENDING enum value exists in UserRole
+    const pendingCheck = await pool.query(
+      "SELECT 1 FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'UserRole' AND enumlabel = 'PENDING'"
+    );
+    if (pendingCheck.rowCount === 0) {
+      await pool.query("ALTER TYPE \"UserRole\" ADD VALUE 'PENDING'");
+      console.log("Added PENDING enum value to UserRole.");
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);
