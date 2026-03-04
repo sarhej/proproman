@@ -1,4 +1,4 @@
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "MARKETING" | "VIEWER";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "MARKETING" | "VIEWER" | "PENDING";
 
 export type AuditAction = "CREATED" | "UPDATED" | "DELETED" | "STATUS_CHANGED" | "ROLE_CHANGED" | "LOGIN";
 

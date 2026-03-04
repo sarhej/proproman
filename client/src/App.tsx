@@ -111,6 +111,43 @@ function App() {
     );
   }
 
+  if (user.role === "PENDING") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <Card className="max-w-md p-6 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <img src="/logo.png" alt="Dr. Digital" className="h-8" />
+            <span className="text-lg font-semibold text-slate-500">DrD Hub</span>
+          </div>
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </div>
+          </div>
+          <h2 className="mb-2 text-lg font-semibold text-slate-800">Registration request sent</h2>
+          <p className="mb-1 text-sm text-slate-600">
+            Your account <span className="font-medium">{user.email}</span> has been registered.
+          </p>
+          <p className="mb-6 text-sm text-slate-500">
+            An administrator needs to approve your access before you can use the application.
+            You will be able to log in once your role has been updated.
+          </p>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              await api.logout();
+              window.location.reload();
+            }}
+          >
+            Sign out
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (!board.meta) {
     return <div className="p-8">Loading data...</div>;
   }

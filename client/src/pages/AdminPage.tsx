@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
 
-const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
+const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER", "PENDING"];
 const ROLE_COLORS: Record<UserRole, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-800",
   ADMIN: "bg-blue-100 text-blue-800",
   EDITOR: "bg-green-100 text-green-800",
   MARKETING: "bg-orange-100 text-orange-800",
-  VIEWER: "bg-gray-100 text-gray-700"
+  VIEWER: "bg-gray-100 text-gray-700",
+  PENDING: "bg-amber-100 text-amber-800",
 };
 
 function formatDate(d?: string | null) {
@@ -46,6 +47,48 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
       {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
     </div>
+  );
+}
+
+function InlineEdit({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onSave(trimmed);
+    else setDraft(value);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        className="text-left hover:underline hover:text-indigo-600 cursor-pointer"
+        onClick={() => setEditing(true)}
+        title="Click to edit"
+      >
+        {value}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      className="rounded border border-indigo-300 px-1.5 py-0.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-indigo-400"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") { setDraft(value); setEditing(false); }
+      }}
+    />
   );
 }
 
@@ -98,11 +141,18 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
   const availableRoles = currentUser.role === "SUPER_ADMIN" ? ROLES : ROLES.filter((r) => r !== "SUPER_ADMIN");
 
   const filteredUsers = useMemo(() => {
+    let list = users;
     const q = quickFilter?.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) => {
-      const hay = [u.name, u.email, u.role].join(" ").toLowerCase();
-      return hay.includes(q);
+    if (q) {
+      list = list.filter((u) => {
+        const hay = [u.name, u.email, u.role].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    return [...list].sort((a, b) => {
+      if (a.role === "PENDING" && b.role !== "PENDING") return -1;
+      if (a.role !== "PENDING" && b.role === "PENDING") return 1;
+      return 0;
     });
   }, [quickFilter, users]);
 
@@ -152,12 +202,19 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
           </thead>
           <tbody>
             {filteredUsers.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
+              <tr key={u.id} className={`border-b hover:bg-gray-50 ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
                 <td className="py-2 px-3 flex items-center gap-2">
                   {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
-                  <span>{u.name}</span>
+                  <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
+                  {u.role === "PENDING" && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">New - no access</span>}
                 </td>
-                <td className="py-2 px-3 text-gray-600">{u.email}</td>
+                <td className="py-2 px-3 text-gray-600">
+                  {u.googleId ? (
+                    <span title="Email is locked after Google login">{u.email}</span>
+                  ) : (
+                    <InlineEdit value={u.email} onSave={(v) => updateField(u.id, { email: v })} />
+                  )}
+                </td>
                 <td className="py-2 px-3">
                   <select
                     className={`rounded px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[u.role]}`}

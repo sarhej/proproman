@@ -13,6 +13,7 @@ enum UserRole {
   EDITOR
   MARKETING
   VIEWER
+  PENDING
 }
 
 enum AuditAction {

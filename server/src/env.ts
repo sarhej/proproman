@@ -22,9 +22,9 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value === "true"),
-  DEV_AUTH_EMAIL: z.string().default("local-admin@doctordigital.local"),
-  DEV_AUTH_NAME: z.string().default("Local Admin"),
-  DEV_AUTH_ROLE: z.nativeEnum(UserRole).default(UserRole.ADMIN)
+  DEV_AUTH_EMAIL: z.string().default("s@strt.vc"),
+  DEV_AUTH_NAME: z.string().default("Sergei"),
+  DEV_AUTH_ROLE: z.nativeEnum(UserRole).default(UserRole.SUPER_ADMIN)
 });
 
 export const env = envSchema

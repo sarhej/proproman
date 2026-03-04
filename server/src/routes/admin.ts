@@ -45,17 +45,24 @@ adminRouter.put("/users/:id", async (req, res) => {
     return;
   }
 
+  if (data.email && existing.googleId) {
+    res.status(400).json({ error: "Cannot change email after Google account is linked" });
+    return;
+  }
+
   const user = await prisma.user.update({ where: { id }, data });
 
+  if (data.name && data.name !== existing.name) {
+    await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "name", old: existing.name, new: data.name });
+  }
+  if (data.email && data.email !== existing.email) {
+    await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "email", old: existing.email, new: data.email });
+  }
   if (data.role && data.role !== existing.role) {
     await logAudit(req.user!.id, "ROLE_CHANGED", "USER", id, { old: existing.role, new: data.role });
   }
   if (data.isActive !== undefined && data.isActive !== existing.isActive) {
-    await logAudit(req.user!.id, data.isActive ? "UPDATED" : "UPDATED", "USER", id, {
-      field: "isActive",
-      old: existing.isActive,
-      new: data.isActive
-    });
+    await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "isActive", old: existing.isActive, new: data.isActive });
   }
 
   res.json({ user });

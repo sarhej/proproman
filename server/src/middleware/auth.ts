@@ -10,6 +10,10 @@ function checkAuth(req: Request, res: Response): boolean {
     res.status(403).json({ error: "Account deactivated" });
     return false;
   }
+  if (req.user.role === UserRole.PENDING) {
+    res.status(403).json({ error: "PENDING_APPROVAL" });
+    return false;
+  }
   return true;
 }
 

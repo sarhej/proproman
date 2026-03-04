@@ -75,10 +75,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
             return done(null, linked);
           }
 
-          const autoRole = roleForEmail(email);
-          if (!autoRole) {
-            return done(new Error("Your email is not authorized. Ask an admin to add you first."));
-          }
+          const autoRole = roleForEmail(email) ?? UserRole.PENDING;
 
           const created = await prisma.user.create({
             data: {
@@ -91,7 +88,11 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
             }
           });
 
-          await logAudit(created.id, "LOGIN", "USER", created.id, { firstLogin: true });
+          await logAudit(created.id, "CREATED", "USER", created.id, {
+            firstLogin: true,
+            autoRole: autoRole,
+            pending: autoRole === UserRole.PENDING,
+          });
           return done(null, created);
         } catch (error) {
           return done(error as Error);
