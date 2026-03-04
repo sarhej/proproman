@@ -1,4 +1,4 @@
-// DrD Hub v1.0.2
+// DrD Hub v1.1.0
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
