@@ -45,22 +45,20 @@ async function main() {
   await prisma.persona.deleteMany();
   await prisma.revenueStream.deleteMany();
   await prisma.userEmail.deleteMany();
+  await prisma.user.deleteMany();
 
   // ─── Users ──────────────────────────────────────────────────────
   const teamDefs: { name: string; email: string; aliases?: string[]; role: UserRole }[] = [
-    { name: "Sergei", email: "s@strt.vc", aliases: ["sarhej@gmail.com"], role: UserRole.SUPER_ADMIN },
-    { name: "Ondra", email: "ondrej.svoboda@drdigital.care", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
-    { name: "Jilka", email: "jitka.projektak@gmail.com", role: UserRole.SUPER_ADMIN },
-    { name: "Nelca", email: "nela.mataseje@drdigital.care", role: UserRole.ADMIN },
-    { name: "Vasek", email: "vaclav.cerny@drdigital.care", role: UserRole.EDITOR },
-    { name: "Kuba", email: "jakub.justra@drdigital.care", role: UserRole.ADMIN },
-    { name: "Adela", email: "adela.hlouskova@drdigital.care", role: UserRole.EDITOR },
-    { name: "Zdenek", email: "zdenek.trtil@drdigital.care", role: UserRole.MARKETING },
-    { name: "Ales", email: "ales.zarsky@gmail.com", role: UserRole.VIEWER },
-    { name: "Michael", email: "michael.mladek@drdigital.care", role: UserRole.EDITOR },
-    { name: "David", email: "david.hrdina@drdigital.care", role: UserRole.ADMIN },
-    { name: "Pavel", email: "pavel.kratky@drdigital.care", role: UserRole.MARKETING },
-    { name: "Martina", email: "martina.nova@drdigital.care", role: UserRole.VIEWER },
+    { name: "Ondrej Svoboda", email: "ondrej.svoboda@drdigital.care", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
+    { name: "Sergej Fedorovic", email: "s@strt.vc", aliases: ["sarhej@gmail.com"], role: UserRole.SUPER_ADMIN },
+    { name: "Nela Mataseje", email: "nela.mataseje@drdigital.care", role: UserRole.EDITOR },
+    { name: "Vaclav Cerny", email: "vaclav.cerny@drdigital.care", role: UserRole.EDITOR },
+    { name: "Michael Mladek", email: "michael.mladek@drdigital.care", role: UserRole.EDITOR },
+    { name: "Jakub Justra", email: "jakub.justra@drdigital.care", role: UserRole.EDITOR },
+    { name: "Adela Hlouskova", email: "adela.hlouskova@drdigital.care", role: UserRole.EDITOR },
+    { name: "Zdenek Trtil", email: "zdenek.trtil@drdigital.care", role: UserRole.EDITOR },
+    { name: "Ales Zarsky", email: "ales.zarsky@gmail.com", role: UserRole.VIEWER },
+    { name: "Jitka Pekarkova", email: "jitka.projektak@gmail.com", role: UserRole.SUPER_ADMIN },
   ];
 
   const users = await Promise.all(
@@ -68,7 +66,7 @@ async function main() {
       prisma.user.upsert({
         where: { email: t.email },
         create: { name: t.name, email: t.email, role: t.role, isActive: true },
-        update: { role: t.role, isActive: true },
+        update: { name: t.name, role: t.role, isActive: true },
       })
     )
   );
@@ -83,7 +81,24 @@ async function main() {
     }
   }
 
-  const u = Object.fromEntries(users.map((x) => [x.name, x]));
+  const byName = Object.fromEntries(users.map((x) => [x.name, x]));
+  // Short aliases for referencing in seed data
+  // David/Pavel/Martina were removed from the team; remap to existing members
+  const u: Record<string, typeof users[0]> = {
+    Ondra: byName["Ondrej Svoboda"],
+    Sergei: byName["Sergej Fedorovic"],
+    Nelca: byName["Nela Mataseje"],
+    Vasek: byName["Vaclav Cerny"],
+    Michael: byName["Michael Mladek"],
+    Kuba: byName["Jakub Justra"],
+    Adela: byName["Adela Hlouskova"],
+    Zdenek: byName["Zdenek Trtil"],
+    Ales: byName["Ales Zarsky"],
+    Jilka: byName["Jitka Pekarkova"],
+    David: byName["Vaclav Cerny"],
+    Pavel: byName["Zdenek Trtil"],
+    Martina: byName["Nela Mataseje"],
+  };
 
   // ─── Products ───────────────────────────────────────────────────
   const products = await Promise.all(
@@ -488,13 +503,20 @@ async function main() {
       })),
     });
 
-    // RACI assignments
-    const assignments = [
+    // RACI assignments (deduplicate in case remapped aliases collide)
+    const rawAssignments = [
       { userId: u[def.raci.accountable].id, role: AssignmentRole.ACCOUNTABLE, allocation: 30 },
       { userId: u[def.raci.implementer].id, role: AssignmentRole.IMPLEMENTER, allocation: 50 },
       ...def.raci.consulted.map((n) => ({ userId: u[n].id, role: AssignmentRole.CONSULTED as AssignmentRole, allocation: null as number | null })),
       ...def.raci.informed.map((n) => ({ userId: u[n].id, role: AssignmentRole.INFORMED as AssignmentRole, allocation: null as number | null })),
     ];
+    const seen = new Set<string>();
+    const assignments = rawAssignments.filter((a) => {
+      const key = `${a.userId}:${a.role}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     await prisma.initiativeAssignment.createMany({
       data: assignments.map((a) => ({ initiativeId: initiative.id, ...a })),
     });
