@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
 import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetailPanel";
@@ -31,6 +32,7 @@ import type { Initiative, UserRole } from "./types/models";
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
 function App() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const board = useBoardData();
   const perms = usePermissions(user);
@@ -61,7 +63,7 @@ function App() {
   }, [searchParams, board.initiatives, selected, setSearchParams]);
 
   if (authLoading) {
-    return <div className="p-8">Loading authentication...</div>;
+    return <div className="p-8">{t("app.loadingAuth")}</div>;
   }
 
   if (!user) {
@@ -70,14 +72,14 @@ function App() {
         <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
             <img src="/logo.png" alt="Dr. Digital" className="h-8" />
-            <span className="text-lg font-semibold text-slate-500">DrD Hub</span>
+            <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <p className="mb-4 text-sm text-slate-600">
-            Sign in with Google to manage domain priorities, persona impact, and B2B2C backlog planning.
+            {t("app.signInDesc")}
           </p>
           <div className="grid gap-2">
             <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
-              Continue with Google
+              {t("app.continueGoogle")}
             </Button>
             {showDevLogin ? (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -117,7 +119,7 @@ function App() {
         <Card className="max-w-md p-6 text-center">
           <div className="mb-4 flex items-center justify-center gap-3">
             <img src="/logo.png" alt="Dr. Digital" className="h-8" />
-            <span className="text-lg font-semibold text-slate-500">DrD Hub</span>
+            <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <div className="mb-4 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
@@ -126,13 +128,12 @@ function App() {
               </svg>
             </div>
           </div>
-          <h2 className="mb-2 text-lg font-semibold text-slate-800">Registration request sent</h2>
+          <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("app.pendingTitle")}</h2>
           <p className="mb-1 text-sm text-slate-600">
-            Your account <span className="font-medium">{user.email}</span> has been registered.
+            {t("app.pendingMsg", { email: user.email })}
           </p>
           <p className="mb-6 text-sm text-slate-500">
-            An administrator needs to approve your access before you can use the application.
-            You will be able to log in once your role has been updated.
+            {t("app.pendingDesc")}
           </p>
           <Button
             variant="secondary"
@@ -141,7 +142,7 @@ function App() {
               window.location.reload();
             }}
           >
-            Sign out
+            {t("app.signOut")}
           </Button>
         </Card>
       </div>
@@ -149,7 +150,7 @@ function App() {
   }
 
   if (!board.meta) {
-    return <div className="p-8">Loading data...</div>;
+    return <div className="p-8">{t("app.loadingData")}</div>;
   }
 
   async function refreshAndClose() {
@@ -183,7 +184,7 @@ function App() {
       )}
       {board.error ? <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{board.error}</div> : null}
       {board.loading ? (
-        <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">Loading initiatives...</div>
+        <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">{t("app.loadingInitiatives")}</div>
       ) : (
         <Routes>
           <Route
@@ -311,9 +312,9 @@ function App() {
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4">
           <Card className="max-h-[95vh] w-full max-w-4xl overflow-y-auto p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Create initiative</h2>
+              <h2 className="text-lg font-semibold">{t("app.createInitiative")}</h2>
               <Button variant="ghost" onClick={() => setShowCreate(false)}>
-                Close
+                {t("app.close")}
               </Button>
             </div>
             <InitiativeForm

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import type { Account, Campaign, Demand, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilter }: Props) {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState<AccountWithDemands[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("");
@@ -52,19 +54,19 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
       <Card className="p-4">
-        <h2 className="mb-1 text-lg font-semibold">Accounts</h2>
+        <h2 className="mb-1 text-lg font-semibold">{t("accounts.title")}</h2>
         <p className="mb-3 text-xs text-gray-500">
-          Not a CRM — tracks account dependencies on products, assets, initiatives and requirements only.
+          {t("accounts.description")}
         </p>
         {isAdmin ? (
           <div className="mb-3 grid grid-cols-1 gap-2">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Account name" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("accounts.placeholder")} />
             <Select value={type} onChange={(e) => setType(e.target.value as Account["type"])}>
-              <option value="B2B2C">B2B2C</option>
-              <option value="B2G2C">B2G2C</option>
-              <option value="INSURER">Insurer</option>
-              <option value="EMPLOYER">Employer</option>
-              <option value="PUBLIC">Public</option>
+              <option value="B2B2C">{t("accountType.B2B2C")}</option>
+              <option value="B2G2C">{t("accountType.B2G2C")}</option>
+              <option value="INSURER">{t("accountType.INSURER")}</option>
+              <option value="EMPLOYER">{t("accountType.EMPLOYER")}</option>
+              <option value="PUBLIC">{t("accountType.PUBLIC")}</option>
             </Select>
             <Button
               onClick={async () => {
@@ -74,7 +76,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
                 await load();
               }}
             >
-              Add
+              {t("common.add")}
             </Button>
           </div>
         ) : null}
@@ -102,23 +104,23 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
           <div>
             <h3 className="mb-1 text-lg font-semibold">{detail.name}</h3>
             <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500">
-              <span>Type: {detail.type}</span>
-              {detail.segment ? <span>Segment: {detail.segment}</span> : null}
-              {detail.arrImpact ? <span>ARR: {detail.arrImpact.toLocaleString()}</span> : null}
-              {detail.dealStage ? <span>Deal: {detail.dealStage}</span> : null}
-              {detail.strategicTier ? <span>Tier: {detail.strategicTier}</span> : null}
+              <span>{t("accounts.type")} {t(`accountType.${detail.type}`)}</span>
+              {detail.segment ? <span>{t("accounts.segment")} {detail.segment}</span> : null}
+              {detail.arrImpact ? <span>{t("accounts.arr")} {detail.arrImpact.toLocaleString()}</span> : null}
+              {detail.dealStage ? <span>{t("accounts.deal")} {detail.dealStage}</span> : null}
+              {detail.strategicTier ? <span>{t("accounts.tier")} {detail.strategicTier}</span> : null}
             </div>
 
-            <h4 className="mb-2 text-sm font-semibold">Demands ({detail.demands.length})</h4>
+            <h4 className="mb-2 text-sm font-semibold">{t("accounts.demands", { count: detail.demands.length })}</h4>
             {detail.demands.length === 0 ? (
-              <p className="text-sm text-slate-400">No demands from this account.</p>
+              <p className="text-sm text-slate-400">{t("accounts.noDemands")}</p>
             ) : (
               <div className="grid gap-2">
                 {detail.demands.map((demand) => (
                   <div key={demand.id} className="rounded border border-slate-200 p-2 text-sm">
                     <div className="font-medium">{demand.title}</div>
                     <div className="text-xs text-slate-500">
-                      {demand.status} - urgency {demand.urgency}
+                      {demand.status} - {t("accounts.urgency", { n: demand.urgency })}
                     </div>
                     {demand.demandLinks.length > 0 ? (
                       <div className="mt-1 flex flex-wrap gap-1">
@@ -137,7 +139,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
                                 </button>
                               ) : (
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
-                                  {link.initiative?.title ?? "Unlinked"}
+                                  {link.initiative?.title ?? t("common.unlinked")}
                                 </span>
                               )}
                               {link.feature ? (
@@ -159,7 +161,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
               const linked = campaigns.filter((c) => c.links.some((l) => l.accountId === detail.id));
               return linked.length > 0 ? (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-semibold">Campaigns ({linked.length})</h4>
+                  <h4 className="mb-2 text-sm font-semibold">{t("accounts.campaigns", { count: linked.length })}</h4>
                   <div className="grid gap-2">
                     {linked.map((c) => (
                       <div key={c.id} className="flex items-center gap-2 rounded border border-slate-200 p-2 text-sm">
@@ -167,9 +169,9 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
                         <div>
                           <span className="font-medium">{c.name}</span>
                           <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium ${c.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"}`}>
-                            {c.status}
+                            {t(`campaignStatus.${c.status}`)}
                           </span>
-                          <div className="text-xs text-slate-500">{c.type.replaceAll("_", " ")} · {c.assets.length} assets</div>
+                          <div className="text-xs text-slate-500">{t(`campaignType.${c.type}`)} · {t("accounts.assets", { count: c.assets.length })}</div>
                         </div>
                       </div>
                     ))}
@@ -179,7 +181,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
             })()}
           </div>
         ) : (
-          <p className="py-8 text-center text-sm text-slate-400">Select an account to see details</p>
+          <p className="py-8 text-center text-sm text-slate-400">{t("accounts.selectAccount")}</p>
         )}
       </Card>
     </div>

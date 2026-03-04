@@ -4,6 +4,7 @@ import {
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Initiative, InitiativeStatus } from "../../types/models";
 import { InitiativeCard } from "../initiatives/InitiativeCard";
 import { Card } from "../ui/Card";
@@ -38,6 +39,7 @@ function DroppableColumn({ status, children }: { status: string; children: React
 }
 
 export function StatusKanban({ initiatives, onOpen, onMove }: Props) {
+  const { t } = useTranslation();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -78,7 +80,7 @@ export function StatusKanban({ initiatives, onOpen, onMove }: Props) {
           return (
             <DroppableColumn key={status} status={status}>
               <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-sm font-semibold">{status.replaceAll("_", " ")}</p>
+                <p className="text-sm font-semibold">{t(`status.${status}`)}</p>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{items.length}</span>
               </div>
               <div className="grid gap-2">

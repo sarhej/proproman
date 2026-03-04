@@ -4,6 +4,7 @@ import {
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Initiative, User } from "../../types/models";
 import { InitiativeCard } from "../initiatives/InitiativeCard";
 import { Card } from "../ui/Card";
@@ -41,10 +42,11 @@ function DroppableColumn({ laneId, children }: { laneId: string; children: React
 }
 
 export function PeopleKanban({ initiatives, users, onOpen, onReassignAccountable }: Props) {
+  const { t } = useTranslation();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const lanes = [...users.map((u) => ({ id: u.id, name: u.name })), { id: "unassigned", name: "Unassigned" }];
+  const lanes = [...users.map((u) => ({ id: u.id, name: u.name })), { id: "unassigned", name: t("peopleKanban.unassigned") }];
 
   function onDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
@@ -82,7 +84,7 @@ export function PeopleKanban({ initiatives, users, onOpen, onReassignAccountable
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <h2 className="mb-3 text-lg font-semibold">Accountability Board</h2>
+      <h2 className="mb-3 text-lg font-semibold">{t("peopleKanban.title")}</h2>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         {lanes.map((lane) => {
           const items = initiatives.filter((i) =>

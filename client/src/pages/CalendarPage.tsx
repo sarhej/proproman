@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import type { CalendarItem } from "../types/models";
 import { Card } from "../components/ui/Card";
@@ -41,6 +42,7 @@ function getMonthGrid(year: number, month: number) {
 const MAX_PILLS_PER_CELL = 3;
 
 export function CalendarPage({ quickFilter }: Props) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [view, setView] = useState<ViewMode>("calendar");
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -137,19 +139,19 @@ export function CalendarPage({ quickFilter }: Props) {
   return (
     <Card className="p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Calendar</h2>
+        <h2 className="text-lg font-semibold">{t("calendar.title")}</h2>
         <div className="flex gap-1 rounded-lg border p-0.5">
           <button
             className={`rounded px-3 py-1 text-xs font-medium transition-colors ${view === "calendar" ? "bg-indigo-100 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setView("calendar")}
           >
-            Calendar
+            {t("calendar.calendarView")}
           </button>
           <button
             className={`rounded px-3 py-1 text-xs font-medium transition-colors ${view === "agenda" ? "bg-indigo-100 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setView("agenda")}
           >
-            Agenda
+            {t("calendar.agendaView")}
           </button>
         </div>
       </div>
@@ -159,20 +161,20 @@ export function CalendarPage({ quickFilter }: Props) {
       ) : (
         <div>
           <div className="mb-3 flex items-center gap-3">
-            <button onClick={prevMonth} className="rounded p-1 hover:bg-gray-100" aria-label="Previous month">
+            <button onClick={prevMonth} className="rounded p-1 hover:bg-gray-100" aria-label={t("calendar.prevMonth")}>
               <ChevronLeft className="h-5 w-5 text-gray-600" />
             </button>
             <span className="min-w-[160px] text-center text-sm font-semibold">{monthLabel}</span>
-            <button onClick={nextMonth} className="rounded p-1 hover:bg-gray-100" aria-label="Next month">
+            <button onClick={nextMonth} className="rounded p-1 hover:bg-gray-100" aria-label={t("calendar.nextMonth")}>
               <ChevronRight className="h-5 w-5 text-gray-600" />
             </button>
             <button onClick={goToday} className="ml-1 rounded border px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50">
-              Today
+              {t("common.today")}
             </button>
           </div>
 
           <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-500 border-b pb-1 mb-1">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+            {[t("calendar.mon"), t("calendar.tue"), t("calendar.wed"), t("calendar.thu"), t("calendar.fri"), t("calendar.sat"), t("calendar.sun")].map((d) => (
               <div key={d}>{d}</div>
             ))}
           </div>
@@ -207,21 +209,21 @@ export function CalendarPage({ quickFilter }: Props) {
                         {item.title}
                         <div className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-48 rounded-md border bg-white p-2 text-xs shadow-lg group-hover:block">
                           <p className="font-semibold text-gray-900">{item.title}</p>
-                          <p className="text-gray-500">Domain: {item.domain}</p>
-                          <p className="text-gray-500">Owner: {item.owner ?? "Unassigned"}</p>
+                          <p className="text-gray-500">{t("calendar.domain")} {item.domain}</p>
+                          <p className="text-gray-500">{t("calendar.owner")} {item.owner ?? t("common.unassigned")}</p>
                           {item.startDate && (
-                            <p className="text-gray-500">Start: {new Date(item.startDate).toLocaleDateString()}</p>
+                            <p className="text-gray-500">{t("calendar.start")} {new Date(item.startDate).toLocaleDateString()}</p>
                           )}
                           {item.targetDate && (
-                            <p className="text-gray-500">Target: {new Date(item.targetDate).toLocaleDateString()}</p>
+                            <p className="text-gray-500">{t("calendar.target")} {new Date(item.targetDate).toLocaleDateString()}</p>
                           )}
                           {isMilestone && item.milestoneDate && (
                             <p className="text-amber-600 font-medium">
-                              ◆ Milestone: {new Date(item.milestoneDate).toLocaleDateString()}
+                              {t("calendar.milestone")} {new Date(item.milestoneDate).toLocaleDateString()}
                             </p>
                           )}
                           {item.dateConfidence && (
-                            <p className="text-gray-400">Confidence: {item.dateConfidence}</p>
+                            <p className="text-gray-400">{t("calendar.confidence")} {item.dateConfidence}</p>
                           )}
                         </div>
                       </div>
@@ -245,7 +247,7 @@ export function CalendarPage({ quickFilter }: Props) {
                   </span>
                 )
               )}
-              <span className="flex items-center gap-1 text-gray-500">◆ = milestone</span>
+              <span className="flex items-center gap-1 text-gray-500">{t("calendar.milestoneLegend")}</span>
             </div>
           )}
         </div>
@@ -255,9 +257,10 @@ export function CalendarPage({ quickFilter }: Props) {
 }
 
 function AgendaView({ items }: { items: CalendarItem[] }) {
+  const { t } = useTranslation();
   return (
     <div className="grid gap-2">
-      {items.length === 0 && <p className="text-sm text-gray-500">No items with dates.</p>}
+      {items.length === 0 && <p className="text-sm text-gray-500">{t("calendar.noItems")}</p>}
       {items.map((item) => (
         <div
           key={item.id}
@@ -271,13 +274,13 @@ function AgendaView({ items }: { items: CalendarItem[] }) {
           <div className="min-w-0 flex-1">
             <div className="font-medium">{item.title}</div>
             <div className="text-slate-500">
-              Start: {item.startDate ? new Date(item.startDate).toLocaleDateString() : "–"} · Target:{" "}
-              {item.targetDate ? new Date(item.targetDate).toLocaleDateString() : "–"} · Milestone:{" "}
+              {t("calendar.startLabel")} {item.startDate ? new Date(item.startDate).toLocaleDateString() : "–"} · {t("calendar.targetLabel")}{" "}
+              {item.targetDate ? new Date(item.targetDate).toLocaleDateString() : "–"} · {t("calendar.milestoneLabel")}{" "}
               {item.milestoneDate ? new Date(item.milestoneDate).toLocaleDateString() : "–"}
             </div>
             <div className="mt-0.5 text-xs text-slate-400">
-              {item.domain} · {item.owner ?? "Unassigned"}
-              {item.dateConfidence && ` · Confidence: ${item.dateConfidence}`}
+              {item.domain} · {item.owner ?? t("common.unassigned")}
+              {item.dateConfidence && ` · ${t("calendar.confidence")} ${item.dateConfidence}`}
             </div>
           </div>
         </div>

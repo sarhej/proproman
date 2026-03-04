@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
   PointerSensor, useSensor, useSensors,
@@ -63,10 +64,12 @@ function DemandBadges({ links }: { links: Initiative["demandLinks"] }) {
   );
 }
 
-function StatusBadge({ status, color }: { status: string; color: string }) {
+function StatusBadge({ status, color, statusType }: { status: string; color: string; statusType?: "feature" | "initiative" }) {
+  const { t } = useTranslation();
+  const label = statusType === "feature" ? t(`featureStatus.${status}`) : statusType === "initiative" ? t(`status.${status}`) : status.replaceAll("_", " ");
   return (
     <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${color}`}>
-      {status.replaceAll("_", " ")}
+      {label}
     </span>
   );
 }
@@ -82,6 +85,7 @@ function statusColor(status: string): string {
 }
 
 function InlineAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (title: string) => Promise<void> }) {
+  const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [value, setValue] = useState("");
 
@@ -122,7 +126,7 @@ function InlineAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (title:
         className="text-[10px] text-slate-400 hover:text-slate-600"
         onClick={() => { setValue(""); setAdding(false); }}
       >
-        cancel
+        {t("common.cancel")}
       </button>
     </span>
   );
@@ -137,6 +141,7 @@ function EditableTitle({
   onSave: (newTitle: string) => Promise<void>;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
 
@@ -145,7 +150,7 @@ function EditableTitle({
       <span
         className={`cursor-text ${className ?? ""}`}
         onDoubleClick={() => setEditing(true)}
-        title="Double-click to edit"
+        title={t("common.doubleClickToEdit")}
       >
         {title}
       </span>
@@ -181,6 +186,7 @@ function EditableTitle({
 }
 
 function DeleteBtn({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -188,7 +194,7 @@ function DeleteBtn({ onDelete, label }: { onDelete: () => Promise<void>; label: 
       title={`Delete ${label}`}
       onClick={async (e) => {
         e.stopPropagation();
-        if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+        if (!window.confirm(t("productTree.deleteConfirm", { name: label }))) return;
         await onDelete();
       }}
     >
@@ -206,6 +212,7 @@ function RequirementRow({
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   return (
     <tr className="group/row border-t border-slate-100 text-xs">
       <td className="py-1.5 pl-16 pr-2">
@@ -262,7 +269,7 @@ function RequirementRow({
         )}
       </td>
       <td />
-      <td className="px-2 text-center">{requirement.isDone ? "Done" : "Open"}</td>
+      <td className="px-2 text-center">{requirement.isDone ? t("common.done") : t("common.open")}</td>
     </tr>
   );
 }
@@ -278,6 +285,7 @@ function FeatureRow({
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const reqs = feature.requirements ?? [];
   const done = reqs.filter((r) => r.isDone).length;
@@ -324,7 +332,7 @@ function FeatureRow({
                 await onRefresh();
               }}
             >
-              <option value="">— none —</option>
+              <option value="">{t("common.none")}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
@@ -343,13 +351,13 @@ function FeatureRow({
                 await onRefresh();
               }}
             >
-              <option value="IDEA">IDEA</option>
-              <option value="PLANNED">PLANNED</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="DONE">DONE</option>
+              <option value="IDEA">{t("featureStatus.IDEA")}</option>
+              <option value="PLANNED">{t("featureStatus.PLANNED")}</option>
+              <option value="IN_PROGRESS">{t("featureStatus.IN_PROGRESS")}</option>
+              <option value="DONE">{t("featureStatus.DONE")}</option>
             </select>
           ) : (
-            <StatusBadge status={feature.status} color={statusColor(feature.status)} />
+            <StatusBadge status={feature.status} color={statusColor(feature.status)} statusType="feature" />
           )}
         </td>
       </tr>
@@ -360,7 +368,7 @@ function FeatureRow({
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-16 pr-2">
             <InlineAdd
-              placeholder="Add requirement"
+              placeholder={t("productTree.addRequirement")}
               onAdd={async (title) => {
                 await api.createRequirement({ featureId: feature.id, title, isDone: false, priority: "P2" });
                 await onRefresh();
@@ -389,6 +397,7 @@ function InitiativeRow({
   onRefresh: () => Promise<void>;
   isDragOverlay?: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const impact = avgImpact(initiative);
   const progress = reqProgress(initiative.features);
@@ -452,7 +461,7 @@ function InitiativeRow({
                 await onRefresh();
               }}
             >
-              <option value="">— none —</option>
+              <option value="">{t("common.none")}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
@@ -471,14 +480,14 @@ function InitiativeRow({
                 await onRefresh();
               }}
             >
-              <option value="IDEA">IDEA</option>
-              <option value="PLANNED">PLANNED</option>
-              <option value="IN_PROGRESS">IN PROGRESS</option>
-              <option value="DONE">DONE</option>
-              <option value="BLOCKED">BLOCKED</option>
+              <option value="IDEA">{t("status.IDEA")}</option>
+              <option value="PLANNED">{t("status.PLANNED")}</option>
+              <option value="IN_PROGRESS">{t("status.IN_PROGRESS")}</option>
+              <option value="DONE">{t("status.DONE")}</option>
+              <option value="BLOCKED">{t("status.BLOCKED")}</option>
             </select>
           ) : (
-            <StatusBadge status={initiative.status} color={statusColor(initiative.status)} />
+            <StatusBadge status={initiative.status} color={statusColor(initiative.status)} statusType="initiative" />
           )}
         </td>
       </tr>
@@ -489,7 +498,7 @@ function InitiativeRow({
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-12 pr-2">
             <InlineAdd
-              placeholder="Add feature"
+              placeholder={t("productTree.addFeature")}
               onAdd={async (title) => {
                 await api.createFeature(initiative.id, { title, status: "IDEA" });
                 await onRefresh();
@@ -582,6 +591,7 @@ function ProductRow({
 }
 
 export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
+  const { t } = useTranslation();
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -614,12 +624,12 @@ export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefr
         <table className="w-full min-w-[900px] text-left">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500">
-              <th className="px-2 py-2">Name</th>
-              <th className="px-2 py-2 text-center">Impact</th>
-              <th className="px-2 py-2 text-center">Progress</th>
-              <th className="px-2 py-2">Demands</th>
-              <th className="px-2 py-2 text-center">Owner</th>
-              <th className="px-2 py-2 text-center">Status</th>
+              <th className="px-2 py-2">{t("common.name")}</th>
+              <th className="px-2 py-2 text-center">{t("productTree.impact")}</th>
+              <th className="px-2 py-2 text-center">{t("productTree.progress")}</th>
+              <th className="px-2 py-2">{t("demands.title")}</th>
+              <th className="px-2 py-2 text-center">{t("initiative.owner")}</th>
+              <th className="px-2 py-2 text-center">{t("common.status")}</th>
             </tr>
           </thead>
           <tbody>
@@ -636,14 +646,14 @@ export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefr
             {products.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
-                  No products / assets found. Create one to get started.
+                  {t("productTree.empty")}
                 </td>
               </tr>
             )}
             {isAdmin && onAddProduct ? (
               <tr className="border-t border-slate-200">
                 <td className="py-2 pl-2 pr-2">
-                  <InlineAdd placeholder="Add product / asset" onAdd={onAddProduct} />
+                  <InlineAdd placeholder={t("productTree.addProduct")} onAdd={onAddProduct} />
                 </td>
                 <td colSpan={5} />
               </tr>

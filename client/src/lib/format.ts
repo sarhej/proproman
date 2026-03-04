@@ -1,19 +1,20 @@
+import i18n from "../i18n";
 import type { CommercialType, Horizon, InitiativeStatus, Priority } from "../types/models";
 
 export function formatPriority(priority: Priority): string {
-  return priority;
+  return i18n.t(`priority.${priority}`) ?? priority;
 }
 
 export function formatHorizon(horizon: Horizon): string {
-  return horizon === "NOW" ? "Now" : horizon === "NEXT" ? "Next" : "Later";
+  return i18n.t(`horizon.${horizon}`) ?? horizon;
 }
 
 export function formatStatus(status: InitiativeStatus): string {
-  return status.replaceAll("_", " ").toLowerCase();
+  return i18n.t(`status.${status}`) ?? status.replaceAll("_", " ").toLowerCase();
 }
 
 export function formatCommercial(type: CommercialType): string {
-  return type.replaceAll("_", " ").toLowerCase();
+  return i18n.t(`commercialType.${type}`) ?? type.replaceAll("_", " ").toLowerCase();
 }
 
 export function avg(nums: number[]): number {

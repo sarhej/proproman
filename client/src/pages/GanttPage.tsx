@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Gantt, ViewMode } from "gantt-task-react";
 import type { Task } from "gantt-task-react";
 import "gantt-task-react/dist/index.css";
@@ -11,11 +12,11 @@ type Props = {
   onOpen?: (initiative: Initiative) => void;
 };
 
-const VIEW_OPTIONS: { label: string; value: ViewMode }[] = [
-  { label: "Day", value: ViewMode.Day },
-  { label: "Week", value: ViewMode.Week },
-  { label: "Month", value: ViewMode.Month },
-  { label: "Year", value: ViewMode.Year },
+const VIEW_OPTIONS: { labelKey: string; value: ViewMode }[] = [
+  { labelKey: "gantt.day", value: ViewMode.Day },
+  { labelKey: "gantt.week", value: ViewMode.Week },
+  { labelKey: "gantt.month", value: ViewMode.Month },
+  { labelKey: "gantt.year", value: ViewMode.Year },
 ];
 
 function lighten(hex: string, amount = 0.25): string {
@@ -90,6 +91,7 @@ function CustomTooltip({ task }: { task: Task; fontSize: string; fontFamily: str
 }
 
 export function GanttPage({ initiatives, onOpen }: Props) {
+  const { t } = useTranslation();
   const [raw, setRaw] = useState<GanttTask[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
   const today = useMemo(() => new Date(), []);
@@ -139,12 +141,12 @@ export function GanttPage({ initiatives, onOpen }: Props) {
     <Card className="p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Gantt Timeline</h2>
+          <h2 className="text-lg font-semibold">{t("gantt.title")}</h2>
           <p className="text-sm text-slate-500">
-            {ganttTasks.length} initiative{ganttTasks.length !== 1 ? "s" : ""} with dates
+            {t("gantt.subtitle", { count: ganttTasks.length })}
             {skipped > 0 && (
               <span className="ml-1 text-amber-600">
-                ({skipped} hidden &mdash; missing dates)
+                {t("gantt.hidden", { count: skipped })}
               </span>
             )}
           </p>
@@ -161,7 +163,7 @@ export function GanttPage({ initiatives, onOpen }: Props) {
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
@@ -169,11 +171,11 @@ export function GanttPage({ initiatives, onOpen }: Props) {
 
       {domains.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          <span className="font-medium">Domains:</span>
+          <span className="font-medium">{t("gantt.domains")}</span>
           {domains.map(([name, color]) => (
             <span key={name} className="flex items-center gap-1">
               <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: color }} />
-              {name}
+              {name === "Unassigned" ? t("common.unassigned") : name}
             </span>
           ))}
         </div>
@@ -181,7 +183,7 @@ export function GanttPage({ initiatives, onOpen }: Props) {
 
       {ganttTasks.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">
-          No initiatives with start and target dates to display.
+          {t("gantt.empty")}
         </div>
       ) : (
         <Gantt

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import type { Demand, Domain, Initiative, Persona, Product, RevenueStream, User } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
@@ -8,6 +9,7 @@ import { Input, Label, Select } from "../ui/Field";
 import { InitiativeForm, type InitiativeFormHandle } from "./InitiativeForm";
 
 function ShareButton({ initiativeId }: { initiativeId: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
@@ -24,9 +26,9 @@ function ShareButton({ initiativeId }: { initiativeId: string }) {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
           </svg>
-          Copied!
+          {t("initiative.copied")}
         </span>
-      ) : "Share"}
+      ) : t("initiative.share")}
     </Button>
   );
 }
@@ -46,6 +48,18 @@ type Props = {
 
 type Tab = "details" | "features" | "requirements" | "decisions" | "risks" | "dependencies" | "demand-links" | "raci" | "timeline";
 
+const TAB_KEYS: Record<Tab, string> = {
+  details: "tabs.details",
+  features: "tabs.features",
+  requirements: "tabs.requirements",
+  decisions: "tabs.decisions",
+  risks: "tabs.risks",
+  dependencies: "tabs.dependencies",
+  "demand-links": "tabs.demandLinks",
+  raci: "tabs.raci",
+  timeline: "tabs.timeline",
+};
+
 export function InitiativeDetailPanel({
   initiative,
   allInitiatives,
@@ -58,6 +72,7 @@ export function InitiativeDetailPanel({
   onClose,
   onSaved
 }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("details");
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -152,13 +167,13 @@ export function InitiativeDetailPanel({
         {showUnsavedDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => e.stopPropagation()}>
             <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-              <h3 className="mb-2 text-base font-semibold">Unsaved changes</h3>
+              <h3 className="mb-2 text-base font-semibold">{t("initiative.unsavedTitle")}</h3>
               <p className="mb-5 text-sm text-slate-600">
-                You have unsaved changes. What would you like to do?
+                {t("initiative.unsavedMsg")}
               </p>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setShowUnsavedDialog(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant="danger"
@@ -168,7 +183,7 @@ export function InitiativeDetailPanel({
                     onClose();
                   }}
                 >
-                  Discard
+                  {t("initiative.discard")}
                 </Button>
                 <Button
                   onClick={async () => {
@@ -177,7 +192,7 @@ export function InitiativeDetailPanel({
                     onClose();
                   }}
                 >
-                  Save & Close
+                  {t("initiative.saveAndClose")}
                 </Button>
               </div>
             </div>
@@ -185,18 +200,18 @@ export function InitiativeDetailPanel({
         )}
 
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Initiative Detail</h2>
+          <h2 className="text-lg font-semibold">{t("initiative.detail")}</h2>
           <div className="flex items-center gap-2">
             <ShareButton initiativeId={initiative.id} />
             <Button variant="ghost" onClick={tryClose}>
-              Close
+              {t("app.close")}
             </Button>
           </div>
         </div>
         <div className="mb-4 flex flex-wrap gap-2">
           {(["details", "features", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"] as Tab[]).map((item) => (
             <Button key={item} variant={tab === item ? "primary" : "secondary"} onClick={() => setTab(item)}>
-              {item}
+              {t(TAB_KEYS[item])}
             </Button>
           ))}
         </div>
@@ -231,7 +246,7 @@ export function InitiativeDetailPanel({
               />
             </Card>
             <Card className="p-3">
-              <p className="mb-2 text-sm font-semibold">Persona Radar</p>
+              <p className="mb-2 text-sm font-semibold">{t("initiative.personaRadar")}</p>
               <PersonaRadar initiative={initiative} personas={personas} />
             </Card>
           </div>
@@ -253,15 +268,15 @@ export function InitiativeDetailPanel({
                     await onSaved();
                   }}
                 >
-                  Save
+                  {t("common.save")}
                 </Button>
               </div>
             ) : tab === "dependencies" ? (
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_2fr_auto]">
                 <div>
-                  <Label>Depends on</Label>
+                  <Label>{t("initiative.dependsOn")}</Label>
                   <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} disabled={readOnly}>
-                    <option value="">Select initiative</option>
+                    <option value="">{t("initiative.selectInitiative")}</option>
                     {availableDependencies.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.title}
@@ -270,39 +285,39 @@ export function InitiativeDetailPanel({
                   </Select>
                 </div>
                 <div>
-                  <Label>Description</Label>
+                  <Label>{t("common.description")}</Label>
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Why this dependency exists"
+                    placeholder={t("initiative.dependencyReason")}
                     disabled={readOnly}
                   />
                 </div>
                 <div className="self-end">
                   <Button onClick={createByTab} disabled={readOnly || !selectedId}>
-                    Add
+                    {t("common.add")}
                   </Button>
                 </div>
               </div>
             ) : tab === "requirements" ? (
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_2fr_auto]">
                 <Select value={selectedFeatureId} onChange={(e) => setSelectedFeatureId(e.target.value)} disabled={readOnly}>
-                  <option value="">Select feature</option>
+                  <option value="">{t("initiative.selectFeature")}</option>
                   {current.features.map((feature) => (
                     <option key={feature.id} value={feature.id}>
                       {feature.title}
                     </option>
                   ))}
                 </Select>
-                <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Requirement title" disabled={readOnly} />
+                <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("initiative.requirementTitle")} disabled={readOnly} />
                 <Button onClick={createByTab} disabled={readOnly || !selectedFeatureId || !input.trim()}>
-                  Add
+                  {t("common.add")}
                 </Button>
               </div>
             ) : tab === "demand-links" ? (
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto]">
                 <Select value={selectedDemandId} onChange={(e) => setSelectedDemandId(e.target.value)} disabled={readOnly}>
-                  <option value="">Select demand</option>
+                  <option value="">{t("initiative.selectDemand")}</option>
                   {demands.map((demand) => (
                     <option key={demand.id} value={demand.id}>
                       {demand.title}
@@ -310,7 +325,7 @@ export function InitiativeDetailPanel({
                   ))}
                 </Select>
                 <Select value={selectedFeatureId} onChange={(e) => setSelectedFeatureId(e.target.value)} disabled={readOnly}>
-                  <option value="">Optional feature</option>
+                  <option value="">{t("initiative.optionalFeature")}</option>
                   {current.features.map((feature) => (
                     <option key={feature.id} value={feature.id}>
                       {feature.title}
@@ -318,13 +333,13 @@ export function InitiativeDetailPanel({
                   ))}
                 </Select>
                 <Button onClick={createByTab} disabled={readOnly || !selectedDemandId}>
-                  Link
+                  {t("common.link")}
                 </Button>
               </div>
             ) : tab === "raci" ? (
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto]">
                 <Select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)} disabled={readOnly}>
-                  <option value="">Select user</option>
+                  <option value="">{t("initiative.selectUser")}</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -332,13 +347,12 @@ export function InitiativeDetailPanel({
                   ))}
                 </Select>
                 <Select value={assignmentRole} onChange={(e) => setAssignmentRole(e.target.value as typeof assignmentRole)} disabled={readOnly}>
-                  <option value="ACCOUNTABLE">ACCOUNTABLE</option>
-                  <option value="IMPLEMENTER">IMPLEMENTER</option>
-                  <option value="CONSULTED">CONSULTED</option>
-                  <option value="INFORMED">INFORMED</option>
+                  {(["ACCOUNTABLE", "IMPLEMENTER", "CONSULTED", "INFORMED"] as const).map((r) => (
+                    <option key={r} value={r}>{t(`assignmentRole.${r}`)}</option>
+                  ))}
                 </Select>
                 <Button onClick={createByTab} disabled={readOnly || !selectedUserId}>
-                  Add role
+                  {t("initiative.addRole")}
                 </Button>
               </div>
             ) : (
@@ -346,11 +360,11 @@ export function InitiativeDetailPanel({
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={`Add ${tab.slice(0, -1)}...`}
+                  placeholder={`${t("common.add")} ${t(TAB_KEYS[tab]).toLowerCase()}...`}
                   disabled={readOnly}
                 />
                 <Button onClick={createByTab} disabled={readOnly || !input.trim()}>
-                  Add
+                  {t("common.add")}
                 </Button>
               </div>
             )}
@@ -376,7 +390,7 @@ export function InitiativeDetailPanel({
                   (feature.requirements ?? []).map((requirement) => (
                     <Row
                       key={requirement.id}
-                      label={`${requirement.title} (${requirement.isDone ? "done" : "open"})`}
+                      label={`${requirement.title} (${requirement.isDone ? t("common.done") : t("common.open")})`}
                       onDelete={
                         readOnly
                           ? undefined
@@ -425,7 +439,7 @@ export function InitiativeDetailPanel({
                     return (
                   <Row
                     key={`${dep.fromInitiativeId}-${dep.toInitiativeId}`}
-                    label={`Depends on ${target?.title ?? dep.toInitiativeId}${dep.description ? `: ${dep.description}` : ""}`}
+                    label={`${t("initiative.dependsOnTitle", { title: target?.title ?? dep.toInitiativeId })}${dep.description ? `: ${dep.description}` : ""}`}
                     onDelete={
                       readOnly
                         ? undefined
@@ -481,7 +495,7 @@ export function InitiativeDetailPanel({
                 ))}
               {tab === "timeline" && (
                 <div className="rounded border border-slate-200 px-3 py-2 text-sm text-slate-600">
-                  Configure start/target/milestone dates above and save.
+                  {t("initiative.timelineHint")}
                 </div>
               )}
             </div>
@@ -493,12 +507,13 @@ export function InitiativeDetailPanel({
 }
 
 function Row({ label, onDelete }: { label: string; onDelete?: () => Promise<void> }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between rounded border border-slate-200 px-3 py-2">
       <span>{label}</span>
       {onDelete ? (
         <Button variant="ghost" onClick={onDelete}>
-          Remove
+          {t("common.remove")}
         </Button>
       ) : null}
     </div>

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { CartesianGrid, Cell, Label, ReferenceArea, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { Initiative } from "../../types/models";
 import { avg } from "../../lib/format";
@@ -61,6 +62,7 @@ function applyJitter(points: BuyerUserPoint[]): BuyerUserPoint[] {
 }
 
 export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
+  const { t } = useTranslation();
   const data = useMemo(() => {
     const raw = initiatives.map((initiative) => {
       const buyer = avg(
@@ -82,11 +84,11 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
         name: initiative.title,
         domain: initiative.domain.name,
         domainColor: initiative.domain.color || "#0284c7",
-        owner: initiative.owner?.name ?? "Unassigned"
+        owner: initiative.owner?.name ?? t("common.unassigned")
       };
     });
     return applyJitter(raw);
-  }, [initiatives]);
+  }, [initiatives, t]);
 
   function openByPoint(point: unknown) {
     if (!onOpen) return;
@@ -109,10 +111,10 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
           <ReferenceArea x1={2.5} x2={5} y1={2.5} y2={5} fill="#bbf7d0" fillOpacity={0.35} />
 
           <XAxis dataKey="x" name="Buyer impact" type="number" domain={[0, 5]} tick={{ fontSize: 12 }}>
-            <Label value="Buyer Impact →" position="bottom" offset={10} style={{ fontSize: 13, fill: "#475569" }} />
+            <Label value={t("buyerUser.buyerImpact")} position="bottom" offset={10} style={{ fontSize: 13, fill: "#475569" }} />
           </XAxis>
           <YAxis dataKey="y" name="User impact" type="number" domain={[0, 5]} tick={{ fontSize: 12 }}>
-            <Label value="User Impact →" angle={-90} position="left" offset={-2} style={{ fontSize: 13, fill: "#475569" }} />
+            <Label value={t("buyerUser.userImpact")} angle={-90} position="left" offset={-2} style={{ fontSize: 13, fill: "#475569" }} />
           </YAxis>
 
           <Tooltip
@@ -124,10 +126,10 @@ export function BuyerUserMatrix({ initiatives, onOpen }: Props) {
               return (
                 <div className="rounded-md border border-slate-200 bg-white p-2 text-xs shadow-sm">
                   <p className="font-semibold text-slate-900">{point.name}</p>
-                  <p className="text-slate-600">Domain: {point.domain}</p>
-                  <p className="text-slate-600">Owner: {point.owner}</p>
+                  <p className="text-slate-600">{t("calendar.domain")} {point.domain}</p>
+                  <p className="text-slate-600">{t("calendar.owner")} {point.owner}</p>
                   <p className="mt-1 text-slate-700">
-                    Buyer: {point.buyer} | User: {point.user}
+                    {t("buyerUser.buyer", { n: point.buyer })} | {t("buyerUser.user", { n: point.user })}
                   </p>
                 </div>
               );

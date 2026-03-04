@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   CommercialType,
   DateConfidence,
@@ -113,6 +114,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
   onDirtyChange,
   readOnly
 }, ref) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<FormValue>(() => toInitial(initiative, products, domains, personas, revenueStreams));
   const [saving, setSaving] = useState(false);
   const initialRef = useRef<string>(JSON.stringify(toInitial(initiative, products, domains, personas, revenueStreams)));
@@ -164,11 +166,11 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
     <div className="grid gap-3">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="md:col-span-2">
-          <Label>Title</Label>
+          <Label>{t("initiative.title")}</Label>
           <Input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} disabled={readOnly} />
         </div>
         <div className="md:col-span-2">
-          <Label>Description</Label>
+          <Label>{t("initiative.description")}</Label>
           <Textarea
             rows={3}
             value={form.description}
@@ -177,9 +179,9 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           />
         </div>
         <div>
-          <Label>Product / Asset</Label>
+          <Label>{t("initiative.product")}</Label>
           <Select value={form.productId} onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))} disabled={readOnly}>
-            <option value="">No product / asset</option>
+            <option value="">{t("initiative.noProduct")}</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -188,7 +190,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           </Select>
         </div>
         <div>
-          <Label>Domain</Label>
+          <Label>{t("initiative.domain")}</Label>
           <div className="relative">
             {form.domainId && (
               <span
@@ -211,9 +213,9 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           </div>
         </div>
         <div>
-          <Label>Owner</Label>
+          <Label>{t("initiative.owner")}</Label>
           <Select value={form.ownerId} onChange={(e) => setForm((prev) => ({ ...prev, ownerId: e.target.value }))} disabled={readOnly}>
-            <option value="">Unassigned</option>
+            <option value="">{t("common.unassigned")}</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -222,7 +224,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           </Select>
         </div>
         <div>
-          <Label>Priority</Label>
+          <Label>{t("initiative.priority")}</Label>
           <Select value={form.priority} onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value as Priority }))} disabled={readOnly}>
             {["P0", "P1", "P2", "P3"].map((p) => (
               <option key={p} value={p}>
@@ -232,44 +234,35 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           </Select>
         </div>
         <div>
-          <Label>Horizon</Label>
+          <Label>{t("initiative.horizon")}</Label>
           <Select value={form.horizon} onChange={(e) => setForm((prev) => ({ ...prev, horizon: e.target.value as Horizon }))} disabled={readOnly}>
-            <option value="NOW">Now</option>
-            <option value="NEXT">Next</option>
-            <option value="LATER">Later</option>
+            <option value="NOW">{t("horizon.NOW")}</option>
+            <option value="NEXT">{t("horizon.NEXT")}</option>
+            <option value="LATER">{t("horizon.LATER")}</option>
           </Select>
         </div>
         <div>
-          <Label>Status</Label>
+          <Label>{t("initiative.status")}</Label>
           <Select
             value={form.status}
             onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as InitiativeStatus }))}
             disabled={readOnly}
           >
-            <option value="IDEA">Idea</option>
-            <option value="PLANNED">Planned</option>
-            <option value="IN_PROGRESS">In progress</option>
-            <option value="DONE">Done</option>
-            <option value="BLOCKED">Blocked</option>
+            {(["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"] as const).map((s) => (
+              <option key={s} value={s}>{t(`status.${s}`)}</option>
+            ))}
           </Select>
         </div>
         <div>
-          <Label>Commercial Type</Label>
+          <Label>{t("initiative.commercial")}</Label>
           <Select
             value={form.commercialType}
             onChange={(e) => setForm((prev) => ({ ...prev, commercialType: e.target.value as CommercialType }))}
             disabled={readOnly}
           >
-            {[
-              "CONTRACT_ENABLER",
-              "CHURN_PREVENTER",
-              "UPSELL_DRIVER",
-              "COMPLIANCE_GATE",
-              "CARE_QUALITY",
-              "COST_REDUCER"
-            ].map((c) => (
+            {(["CONTRACT_ENABLER", "CHURN_PREVENTER", "UPSELL_DRIVER", "COMPLIANCE_GATE", "CARE_QUALITY", "COST_REDUCER"] as const).map((c) => (
               <option key={c} value={c}>
-                {c.replaceAll("_", " ")}
+                {t(`commercialType.${c}`)}
               </option>
             ))}
           </Select>
@@ -281,22 +274,22 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
             onChange={(e) => setForm((prev) => ({ ...prev, isGap: e.target.checked }))}
             disabled={readOnly}
           />
-          <span className="text-sm">Mark as gap item</span>
+          <span className="text-sm">{t("initiative.markGap")}</span>
         </div>
         <div className="md:col-span-2">
-          <Label>Notes</Label>
+          <Label>{t("initiative.notes")}</Label>
           <Textarea rows={2} value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} disabled={readOnly} />
         </div>
         <div>
-          <Label>Start Date</Label>
+          <Label>{t("initiative.startDate")}</Label>
           <Input type="date" value={form.startDate} onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))} disabled={readOnly} />
         </div>
         <div>
-          <Label>Target Date</Label>
+          <Label>{t("initiative.targetDate")}</Label>
           <Input type="date" value={form.targetDate} onChange={(e) => setForm((prev) => ({ ...prev, targetDate: e.target.value }))} disabled={readOnly} />
         </div>
         <div>
-          <Label>Milestone Date</Label>
+          <Label>{t("initiative.milestoneDate")}</Label>
           <Input
             type="date"
             value={form.milestoneDate}
@@ -305,19 +298,19 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           />
         </div>
         <div>
-          <Label>Date Confidence</Label>
+          <Label>{t("initiative.dateConfidence")}</Label>
           <Select value={form.dateConfidence} onChange={(e) => setForm((prev) => ({ ...prev, dateConfidence: e.target.value as DateConfidence }))} disabled={readOnly}>
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
+            {(["LOW", "MEDIUM", "HIGH"] as const).map((c) => (
+              <option key={c} value={c}>{t(`dateConfidence.${c}`)}</option>
+            ))}
           </Select>
         </div>
         <div>
-          <Label>ARR Impact</Label>
+          <Label>{t("initiative.arrImpact")}</Label>
           <Input value={form.arrImpact} onChange={(e) => setForm((prev) => ({ ...prev, arrImpact: e.target.value }))} disabled={readOnly} />
         </div>
         <div>
-          <Label>Renewal Date</Label>
+          <Label>{t("initiative.renewalDate")}</Label>
           <Input
             type="date"
             value={form.renewalDate}
@@ -326,31 +319,29 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           />
         </div>
         <div>
-          <Label>Deal Stage</Label>
+          <Label>{t("initiative.dealStage")}</Label>
           <Select value={form.dealStage} onChange={(e) => setForm((prev) => ({ ...prev, dealStage: e.target.value as DealStage }))} disabled={readOnly}>
-            <option value="DISCOVERY">DISCOVERY</option>
-            <option value="PILOT">PILOT</option>
-            <option value="CONTRACTING">CONTRACTING</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="RENEWAL">RENEWAL</option>
+            {(["DISCOVERY", "PILOT", "CONTRACTING", "ACTIVE", "RENEWAL"] as const).map((s) => (
+              <option key={s} value={s}>{t(`dealStage.${s}`)}</option>
+            ))}
           </Select>
         </div>
         <div>
-          <Label>Strategic Tier</Label>
+          <Label>{t("initiative.strategicTier")}</Label>
           <Select
             value={form.strategicTier}
             onChange={(e) => setForm((prev) => ({ ...prev, strategicTier: e.target.value as StrategicTier }))}
             disabled={readOnly}
           >
-            <option value="TIER_1">TIER_1</option>
-            <option value="TIER_2">TIER_2</option>
-            <option value="TIER_3">TIER_3</option>
+            {(["TIER_1", "TIER_2", "TIER_3"] as const).map((tier) => (
+              <option key={tier} value={tier}>{t(`strategicTier.${tier}`)}</option>
+            ))}
           </Select>
         </div>
       </div>
 
       <div className="rounded-md border border-slate-200 p-3">
-        <p className="mb-2 text-sm font-semibold">Persona impact (1-5)</p>
+        <p className="mb-2 text-sm font-semibold">{t("initiative.personaImpact")}</p>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
           {personas.map((p) => (
             <div key={p.id}>
@@ -374,7 +365,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
       </div>
 
       <div className="rounded-md border border-slate-200 p-3">
-        <p className="mb-2 text-sm font-semibold">Revenue attribution (%)</p>
+        <p className="mb-2 text-sm font-semibold">{t("initiative.revenueAttribution")}</p>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {revenueStreams.map((r) => (
             <div key={r.id}>
@@ -404,12 +395,12 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         <div>
           {initiative && onDelete && !readOnly ? (
             <Button variant="danger" onClick={onDelete}>
-              Delete
+              {t("common.delete")}
             </Button>
           ) : null}
         </div>
         <Button onClick={handleSave} disabled={!canSubmit || saving || readOnly}>
-          {saving ? "Saving..." : "Save"}
+          {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
 
@@ -20,13 +21,14 @@ function formatDate(d?: string | null) {
 type Tab = "users" | "activity" | "settings" | "data";
 
 export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("users");
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "users", label: "Users" },
-    { key: "settings", label: "Settings" },
-    { key: "data", label: "Data" },
-    { key: "activity", label: "Activity" }
+    { key: "users", label: t("admin.users") },
+    { key: "settings", label: t("admin.settings") },
+    { key: "data", label: t("admin.data") },
+    { key: "activity", label: t("admin.activity") }
   ];
 
   return (
@@ -51,6 +53,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
 }
 
 function InlineEdit({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +73,7 @@ function InlineEdit({ value, onSave }: { value: string; onSave: (v: string) => v
       <button
         className="text-left hover:underline hover:text-indigo-600 cursor-pointer"
         onClick={() => setEditing(true)}
-        title="Click to edit"
+        title={t("common.clickToEdit")}
       >
         {value}
       </button>
@@ -93,6 +96,7 @@ function InlineEdit({ value, onSave }: { value: string; onSave: (v: string) => v
 }
 
 function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter?: string }) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -179,46 +183,46 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
     });
   }, [quickFilter, users]);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading users...</p>;
+  if (loading) return <p className="text-sm text-gray-500">{t("admin.loadingUsers")}</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <button className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? "Cancel" : "+ Add user"}
+          {showAdd ? t("common.cancel") : t("admin.addUser")}
         </button>
       </div>
 
       {showAdd && (
         <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Email</label>
-            <input className="rounded border px-2 py-1 text-sm" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="user@example.com" />
+            <label className="block text-xs text-gray-500 mb-1">{t("common.email")}</label>
+            <input className="rounded border px-2 py-1 text-sm" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder={t("admin.emailPlaceholder")} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
-            <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name" />
+            <label className="block text-xs text-gray-500 mb-1">{t("common.name")}</label>
+            <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("admin.namePlaceholder")} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Role</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.role")}</label>
             <select className="rounded border px-2 py-1 text-sm" value={newRole} onChange={(e) => setNewRole(e.target.value as UserRole)}>
               {availableRoles.map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
-          <button className="rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700" onClick={addUser}>Save</button>
+          <button className="rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700" onClick={addUser}>{t("common.save")}</button>
         </div>
       )}
 
       <div className="overflow-x-auto text-sm">
         <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-          <div className="py-2 px-3">Name</div>
-          <div className="py-2 px-3">Email</div>
-          <div className="py-2 px-3">Role</div>
-          <div className="py-2 px-3 text-center">Active</div>
-          <div className="py-2 px-3">Last Login</div>
-          <div className="py-2 px-3 text-center">Google</div>
+          <div className="py-2 px-3">{t("common.name")}</div>
+          <div className="py-2 px-3">{t("common.email")}</div>
+          <div className="py-2 px-3">{t("common.role")}</div>
+          <div className="py-2 px-3 text-center">{t("common.active")}</div>
+          <div className="py-2 px-3">{t("admin.lastLogin")}</div>
+          <div className="py-2 px-3 text-center">{t("admin.google")}</div>
         </div>
         <div>
             {filteredUsers.map((u) => {
@@ -230,12 +234,12 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                       <div className="py-2 px-3 flex items-center gap-2">
                         {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
                         <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
-                        {u.role === "PENDING" && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">New - no access</span>}
+                        {u.role === "PENDING" && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 uppercase">{t("admin.newNoAccess")}</span>}
                       </div>
                       <div className="py-2 px-3 text-gray-600">
                         <div className="flex items-center gap-1.5">
                           {u.googleId ? (
-                            <span title="Email is locked after Google login">{u.email}</span>
+                            <span title={t("admin.emailLocked")}>{u.email}</span>
                           ) : (
                             <InlineEdit value={u.email} onSave={(v) => updateField(u.id, { email: v })} />
                           )}
@@ -247,7 +251,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                           <button
                             className="ml-1 text-gray-400 hover:text-indigo-600 text-xs"
                             onClick={() => { setExpandedUser(isExpanded ? null : u.id); setAliasInput(""); }}
-                            title="Manage email aliases"
+                            title={t("admin.manageAliases")}
                           >
                             {isExpanded ? "▲" : "▼"}
                           </button>
@@ -271,7 +275,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                           onClick={() => updateField(u.id, { isActive: !(u.isActive !== false) })}
                           disabled={u.id === currentUser.id}
                         >
-                          {u.isActive !== false ? "Active" : "Inactive"}
+                          {u.isActive !== false ? t("common.active") : t("common.inactive")}
                         </button>
                       </div>
                       <div className="py-2 px-3 text-gray-500 text-xs">{formatDate(u.lastLoginAt)}</div>
@@ -285,18 +289,18 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                     </div>
                     {isExpanded && (
                       <div className="bg-gray-50 border-t px-6 py-3">
-                        <p className="text-xs text-gray-500 font-medium mb-2">Login aliases (any of these emails can be used to log in):</p>
+                        <p className="text-xs text-gray-500 font-medium mb-2">{t("admin.aliasesDesc")}</p>
                         <div className="space-y-1.5">
                           {(u.emails ?? []).map((alias) => (
                             <div key={alias.id} className="flex items-center gap-2 text-xs">
                               <span className="text-gray-700">{alias.email}</span>
-                              {alias.isPrimary && <span className="rounded bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">primary</span>}
+                              {alias.isPrimary && <span className="rounded bg-blue-100 text-blue-700 px-1.5 py-0 text-[10px] font-medium">{t("common.primary")}</span>}
                               {!alias.isPrimary && (
                                 <button
                                   className="text-red-500 hover:text-red-700 text-[10px]"
                                   onClick={() => removeAlias(u.id, alias.id)}
                                 >
-                                  remove
+                                  {t("common.remove")}
                                 </button>
                               )}
                             </div>
@@ -307,14 +311,14 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                             className="rounded border px-2 py-1 text-xs w-60"
                             value={aliasInput}
                             onChange={(e) => setAliasInput(e.target.value)}
-                            placeholder="Add alias email..."
+                            placeholder={t("admin.aliasPlaceholder")}
                             onKeyDown={(e) => { if (e.key === "Enter") addAlias(u.id); }}
                           />
                           <button
                             className="rounded bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
                             onClick={() => addAlias(u.id)}
                           >
-                            Add
+                            {t("common.add")}
                           </button>
                         </div>
                       </div>
@@ -329,6 +333,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
 }
 
 function ActivityTab({ quickFilter }: { quickFilter?: string }) {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -381,13 +386,13 @@ function ActivityTab({ quickFilter }: { quickFilter?: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
         <select className="rounded border px-2 py-1 text-sm" value={filterAction} onChange={(e) => { setFilterAction(e.target.value); setPage(1); }}>
-          <option value="">All actions</option>
+          <option value="">{t("admin.allActions")}</option>
           {["CREATED", "UPDATED", "DELETED", "STATUS_CHANGED", "ROLE_CHANGED", "LOGIN"].map((a) => (
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
         <select className="rounded border px-2 py-1 text-sm" value={filterEntity} onChange={(e) => { setFilterEntity(e.target.value); setPage(1); }}>
-          <option value="">All entities</option>
+          <option value="">{t("admin.allEntities")}</option>
           {["USER", "INITIATIVE", "FEATURE", "CAMPAIGN"].map((e) => (
             <option key={e} value={e}>{e}</option>
           ))}
@@ -395,19 +400,19 @@ function ActivityTab({ quickFilter }: { quickFilter?: string }) {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading activity...</p>
+        <p className="text-sm text-gray-500">{t("admin.loadingActivity")}</p>
       ) : filteredEntries.length === 0 ? (
-        <p className="text-sm text-gray-500">No activity found.</p>
+        <p className="text-sm text-gray-500">{t("admin.noActivity")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-                <th className="py-2 px-3">Time</th>
-                <th className="py-2 px-3">User</th>
-                <th className="py-2 px-3">Action</th>
-                <th className="py-2 px-3">Entity</th>
-                <th className="py-2 px-3">Details</th>
+                <th className="py-2 px-3">{t("admin.time")}</th>
+                <th className="py-2 px-3">{t("admin.user")}</th>
+                <th className="py-2 px-3">{t("admin.action")}</th>
+                <th className="py-2 px-3">{t("admin.entity")}</th>
+                <th className="py-2 px-3">{t("admin.details")}</th>
               </tr>
             </thead>
             <tbody>
@@ -437,22 +442,22 @@ function ActivityTab({ quickFilter }: { quickFilter?: string }) {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">{total} entries</span>
+          <span className="text-gray-500">{t("admin.entries", { total })}</span>
           <div className="flex gap-2">
             <button
               className="rounded border px-3 py-1 text-sm disabled:opacity-40"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              Previous
+              {t("common.previous")}
             </button>
-            <span className="py-1 text-gray-600">Page {page} / {totalPages}</span>
+            <span className="py-1 text-gray-600">{t("admin.page", { page, totalPages })}</span>
             <button
               className="rounded border px-3 py-1 text-sm disabled:opacity-40"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t("common.next")}
             </button>
           </div>
         </div>
@@ -471,11 +476,12 @@ const PERSONA_CAT_COLORS: Record<PersonaCategory, string> = {
 };
 
 function SettingsTab({ onMetaChanged }: { onMetaChanged?: () => void }) {
+  const { t } = useTranslation();
   const [section, setSection] = useState<"domains" | "personas" | "revenue">("domains");
   const sections: { key: typeof section; label: string }[] = [
-    { key: "domains", label: "Domains" },
-    { key: "personas", label: "Personas" },
-    { key: "revenue", label: "Revenue Streams" }
+    { key: "domains", label: t("admin.domains") },
+    { key: "personas", label: t("admin.personas") },
+    { key: "revenue", label: t("admin.revenueStreams") }
   ];
 
   return (
@@ -501,6 +507,7 @@ function SettingsTab({ onMetaChanged }: { onMetaChanged?: () => void }) {
 /* ── Domains Section ──────────────────────────────────────────────── */
 
 function DomainsSection({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useTranslation();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<string | null>(null);
@@ -549,46 +556,46 @@ function DomainsSection({ onChanged }: { onChanged?: () => void }) {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this domain? Initiatives using it will lose their domain.")) return;
+    if (!confirm(t("admin.deleteDomain"))) return;
     await api.deleteDomain(id);
     setDomains((prev) => prev.filter((d) => d.id !== id));
     onChanged?.();
   };
 
-  if (loading) return <p className="text-sm text-gray-500">Loading domains...</p>;
+  if (loading) return <p className="text-sm text-gray-500">{t("admin.loadingDomains")}</p>;
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-700">Domains</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{t("admin.domains")}</h3>
         <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? "Cancel" : "+ Add"}
+          {showAdd ? t("common.cancel") : t("common.add")}
         </button>
       </div>
       {showAdd && (
         <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.name")}</label>
             <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Color</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.color")}</label>
             <input type="color" className="h-8 w-10 cursor-pointer rounded border" value={newColor} onChange={(e) => setNewColor(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Sort</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.sort")}</label>
             <input type="number" className="rounded border px-2 py-1 text-sm w-16" value={newSort} onChange={(e) => setNewSort(Number(e.target.value))} />
           </div>
-          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>{t("common.save")}</button>
         </div>
       )}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-            <th className="py-2 px-3">Color</th>
-            <th className="py-2 px-3">Name</th>
-            <th className="py-2 px-3">Sort</th>
-            <th className="py-2 px-3 text-right">Actions</th>
+            <th className="py-2 px-3">{t("common.color")}</th>
+            <th className="py-2 px-3">{t("common.name")}</th>
+            <th className="py-2 px-3">{t("common.sort")}</th>
+            <th className="py-2 px-3 text-right">{t("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -600,8 +607,8 @@ function DomainsSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} /></td>
                   <td className="py-2 px-3"><input type="number" className="rounded border px-2 py-0.5 text-sm w-16" value={editSort} onChange={(e) => setEditSort(Number(e.target.value))} /></td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
-                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>{t("common.save")}</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>{t("common.cancel")}</button>
                   </td>
                 </>
               ) : (
@@ -610,8 +617,8 @@ function DomainsSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3">{d.name}</td>
                   <td className="py-2 px-3 text-gray-500">{d.sortOrder}</td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(d)}>Edit</button>
-                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(d.id)}>Delete</button>
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(d)}>{t("common.edit")}</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(d.id)}>{t("common.delete")}</button>
                   </td>
                 </>
               )}
@@ -626,6 +633,7 @@ function DomainsSection({ onChanged }: { onChanged?: () => void }) {
 /* ── Personas Section ─────────────────────────────────────────────── */
 
 function PersonasSection({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useTranslation();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<string | null>(null);
@@ -674,51 +682,51 @@ function PersonasSection({ onChanged }: { onChanged?: () => void }) {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this persona? Impact data using it will be removed.")) return;
+    if (!confirm(t("admin.deletePersona"))) return;
     await api.deletePersona(id);
     setPersonas((prev) => prev.filter((p) => p.id !== id));
     onChanged?.();
   };
 
-  if (loading) return <p className="text-sm text-gray-500">Loading personas...</p>;
+  if (loading) return <p className="text-sm text-gray-500">{t("admin.loadingPersonas")}</p>;
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-700">Personas</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{t("admin.personas")}</h3>
         <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? "Cancel" : "+ Add"}
+          {showAdd ? t("common.cancel") : t("common.add")}
         </button>
       </div>
       <p className="text-xs text-gray-500">
-        Category determines grouping in the Buyer x User chart. <strong>BUYER</strong> = horizontal axis, <strong>USER</strong> = vertical axis, <strong>NONE</strong> = excluded from chart.
+        {t("admin.personaCategoryDesc")}
       </p>
       {showAdd && (
         <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.name")}</label>
             <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Icon</label>
-            <input className="rounded border px-2 py-1 text-sm w-24" value={newIcon} onChange={(e) => setNewIcon(e.target.value)} placeholder="e.g. heart" />
+            <label className="block text-xs text-gray-500 mb-1">{t("common.icon")}</label>
+            <input className="rounded border px-2 py-1 text-sm w-24" value={newIcon} onChange={(e) => setNewIcon(e.target.value)} placeholder={t("admin.iconPlaceholder")} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Category</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.category")}</label>
             <select className="rounded border px-2 py-1 text-sm" value={newCategory} onChange={(e) => setNewCategory(e.target.value as PersonaCategory)}>
-              {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{t(`personaCategory.${c}`)}</option>)}
             </select>
           </div>
-          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>{t("common.save")}</button>
         </div>
       )}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-            <th className="py-2 px-3">Name</th>
-            <th className="py-2 px-3">Icon</th>
-            <th className="py-2 px-3">Category</th>
-            <th className="py-2 px-3 text-right">Actions</th>
+            <th className="py-2 px-3">{t("common.name")}</th>
+            <th className="py-2 px-3">{t("common.icon")}</th>
+            <th className="py-2 px-3">{t("common.category")}</th>
+            <th className="py-2 px-3 text-right">{t("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -730,12 +738,12 @@ function PersonasSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-24" value={editIcon} onChange={(e) => setEditIcon(e.target.value)} /></td>
                   <td className="py-2 px-3">
                     <select className="rounded border px-2 py-0.5 text-sm" value={editCategory} onChange={(e) => setEditCategory(e.target.value as PersonaCategory)}>
-                      {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      {PERSONA_CATEGORIES.map((c) => <option key={c} value={c}>{t(`personaCategory.${c}`)}</option>)}
                     </select>
                   </td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
-                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>{t("common.save")}</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>{t("common.cancel")}</button>
                   </td>
                 </>
               ) : (
@@ -743,11 +751,11 @@ function PersonasSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3">{p.name}</td>
                   <td className="py-2 px-3 text-gray-500">{p.icon ?? "—"}</td>
                   <td className="py-2 px-3">
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${PERSONA_CAT_COLORS[p.category]}`}>{p.category}</span>
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${PERSONA_CAT_COLORS[p.category]}`}>{t(`personaCategory.${p.category}`)}</span>
                   </td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(p)}>Edit</button>
-                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(p.id)}>Delete</button>
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(p)}>{t("common.edit")}</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(p.id)}>{t("common.delete")}</button>
                   </td>
                 </>
               )}
@@ -770,6 +778,7 @@ const EXPORT_ENTITY_GROUPS: { label: string; keys: string[] }[] = [
 const ALL_EXPORT_KEYS = EXPORT_ENTITY_GROUPS.flatMap((g) => g.keys);
 
 function DataTab() {
+  const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -817,10 +826,9 @@ function DataTab() {
       a.download = `dd-export-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      const label = isAllSelected ? "all data" : `${exportEntities.size} entity types`;
-      setResult({ ok: true, message: `Export of ${label} downloaded successfully.` });
+      setResult({ ok: true, message: t("admin.exportSuccess") });
     } catch {
-      setResult({ ok: false, message: "Export failed. Check the console for details." });
+      setResult({ ok: false, message: t("admin.exportFailed") });
     } finally {
       setExporting(false);
     }
@@ -833,13 +841,13 @@ function DataTab() {
       const text = await file.text();
       const parsed = JSON.parse(text);
       if (parsed.version !== 1) {
-        setResult({ ok: false, message: "Invalid file: expected version 1." });
+        setResult({ ok: false, message: t("admin.invalidFile", { version: 1 }) });
         return;
       }
       setConfirmPayload(parsed);
       setResult(null);
     } catch {
-      setResult({ ok: false, message: "Failed to parse JSON file." });
+      setResult({ ok: false, message: t("admin.parseError") });
     }
   };
 
@@ -849,16 +857,15 @@ function DataTab() {
     setResult(null);
     try {
       const res = await api.importData(confirmPayload, importMode);
-      const modeLabel = importMode === "merge" ? "Merge" : "Replace";
-      const reloadMsg = importMode === "replace" ? " The page will reload so you can re-authenticate." : "";
-      setResult({ ok: true, message: `${modeLabel} import completed successfully.${reloadMsg}`, counts: res.counts });
+      const reloadMsg = importMode === "replace" ? " " + t("admin.importSuccessReload") : "";
+      setResult({ ok: true, message: t("admin.importSuccess") + reloadMsg, counts: res.counts });
       setConfirmPayload(null);
       if (fileRef.current) fileRef.current.value = "";
       if (importMode === "replace") {
         setTimeout(() => window.location.reload(), 3000);
       }
     } catch {
-      setResult({ ok: false, message: "Import failed. Transaction was rolled back. No data was changed." });
+      setResult({ ok: false, message: t("admin.importFailed") });
     } finally {
       setImporting(false);
     }
@@ -869,11 +876,11 @@ function DataTab() {
     setResult(null);
     try {
       const data = await api.clearData();
-      setResult({ ok: true, message: data.message + " The page will reload." });
+      setResult({ ok: true, message: data.message });
       setShowClearConfirm(false);
       setTimeout(() => window.location.reload(), 2000);
     } catch {
-      setResult({ ok: false, message: "Clear failed. Transaction was rolled back." });
+      setResult({ ok: false, message: t("admin.clearFailed") });
     } finally {
       setClearing(false);
     }
@@ -898,9 +905,9 @@ function DataTab() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">Export</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">{t("admin.export")}</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Download application data as a JSON file. Select which entity types to include, or export everything.
+          {t("admin.exportDesc")}
         </p>
         <div className="mb-3 space-y-2">
           <div className="flex items-center gap-2 mb-1">
@@ -911,12 +918,13 @@ function DataTab() {
                 onChange={() => setExportEntities(isAllSelected ? new Set() : new Set(ALL_EXPORT_KEYS))}
                 className="rounded"
               />
-              All
+              {t("admin.entityAll")}
             </label>
           </div>
           {EXPORT_ENTITY_GROUPS.map((group) => {
             const allGroupSelected = group.keys.every((k) => exportEntities.has(k));
             const someGroupSelected = group.keys.some((k) => exportEntities.has(k));
+            const groupLabelKey: Record<string, string> = { Core: "admin.entityCore", Business: "admin.entityBusiness", Product: "admin.entityProduct", Marketing: "admin.entityMarketing" };
             return (
               <div key={group.label} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 w-20 cursor-pointer">
@@ -927,7 +935,7 @@ function DataTab() {
                     onChange={() => toggleExportGroup(group.keys)}
                     className="rounded"
                   />
-                  {group.label}
+                  {t(groupLabelKey[group.label] ?? group.label)}
                 </label>
                 {group.keys.map((k) => (
                   <label key={k} className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
@@ -949,15 +957,14 @@ function DataTab() {
           onClick={handleExport}
           disabled={exporting || exportEntities.size === 0}
         >
-          {exporting ? "Exporting..." : isAllSelected ? "Export All Data" : `Export ${exportEntities.size} Entity Types`}
+          {exporting ? t("admin.exporting") : isAllSelected ? t("admin.exportAll") : t("admin.exportN", { count: exportEntities.size })}
         </button>
       </div>
 
       <div className="rounded-lg border bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">Import</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">{t("admin.import")}</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Upload a previously exported JSON file. Choose <strong>Merge</strong> to add/update only the entities present in the file,
-          or <strong>Replace</strong> to wipe everything and import fresh.
+          {t("admin.importDesc")}
         </p>
         <div className="flex items-center gap-3 mb-3">
           <input
@@ -973,7 +980,7 @@ function DataTab() {
           <div className="mt-4 space-y-4">
             {payloadSummary && payloadSummary.length > 0 && (
               <div className="rounded border bg-gray-50 p-3">
-                <p className="text-xs font-medium text-gray-600 mb-2">File contains:</p>
+                <p className="text-xs font-medium text-gray-600 mb-2">{t("admin.fileContains")}</p>
                 <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
                   {payloadSummary.map(({ key, count }) => (
                     <div key={key} className="flex justify-between">
@@ -989,15 +996,15 @@ function DataTab() {
               <label className={`flex items-center gap-2 rounded border px-4 py-3 cursor-pointer text-sm ${importMode === "merge" ? "border-indigo-400 bg-indigo-50" : "border-gray-200"}`}>
                 <input type="radio" name="importMode" value="merge" checked={importMode === "merge"} onChange={() => setImportMode("merge")} />
                 <div>
-                  <span className="font-medium">Merge</span>
-                  <p className="text-xs text-gray-500">Add new & update existing records by name. Entities not in the file stay untouched.</p>
+                  <span className="font-medium">{t("admin.merge")}</span>
+                  <p className="text-xs text-gray-500">{t("admin.mergeDesc")}</p>
                 </div>
               </label>
               <label className={`flex items-center gap-2 rounded border px-4 py-3 cursor-pointer text-sm ${importMode === "replace" ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
                 <input type="radio" name="importMode" value="replace" checked={importMode === "replace"} onChange={() => setImportMode("replace")} />
                 <div>
-                  <span className="font-medium text-red-700">Replace</span>
-                  <p className="text-xs text-gray-500">Delete all existing data and import from scratch. Destructive &mdash; cannot be undone.</p>
+                  <span className="font-medium text-red-700">{t("admin.replace")}</span>
+                  <p className="text-xs text-gray-500">{t("admin.replaceDesc")}</p>
                 </div>
               </label>
             </div>
@@ -1005,8 +1012,8 @@ function DataTab() {
             <div className={`rounded border p-4 ${importMode === "replace" ? "border-red-300 bg-red-50" : "border-indigo-300 bg-indigo-50"}`}>
               <p className={`text-sm font-medium mb-2 ${importMode === "replace" ? "text-red-800" : "text-indigo-800"}`}>
                 {importMode === "replace"
-                  ? "This will permanently delete all existing data and replace it. This action cannot be undone."
-                  : "This will merge the file contents into your existing data. Matching records (by name/title) will be updated."}
+                  ? t("admin.replaceWarning")
+                  : t("admin.mergeWarning")}
               </p>
               <div className="flex gap-2">
                 <button
@@ -1014,14 +1021,14 @@ function DataTab() {
                   onClick={handleImport}
                   disabled={importing}
                 >
-                  {importing ? "Importing..." : importMode === "replace" ? "Yes, Replace All Data" : "Yes, Merge Data"}
+                  {importing ? t("admin.importing") : importMode === "replace" ? t("admin.replaceConfirm") : t("admin.mergeConfirm")}
                 </button>
                 <button
                   className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                   onClick={() => { setConfirmPayload(null); if (fileRef.current) fileRef.current.value = ""; }}
                   disabled={importing}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1030,22 +1037,21 @@ function DataTab() {
       </div>
 
       <div className="rounded-lg border border-red-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-red-700 mb-1">Clear All Data</h3>
+        <h3 className="text-sm font-semibold text-red-700 mb-1">{t("admin.clearAllData")}</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Delete all application data (initiatives, features, campaigns, accounts, etc.) and start fresh.
-          Your own user account will be preserved so you stay logged in.
+          {t("admin.clearDesc")}
         </p>
         {!showClearConfirm ? (
           <button
             className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
             onClick={() => { setShowClearConfirm(true); setResult(null); }}
           >
-            Clear All Data...
+            {t("admin.clearButton")}
           </button>
         ) : (
           <div className="rounded border border-red-300 bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800 mb-2">
-              This will permanently delete everything except your user account.
+              {t("admin.clearWarning")}
             </p>
             <div className="flex gap-2">
               <button
@@ -1053,14 +1059,14 @@ function DataTab() {
                 onClick={handleClear}
                 disabled={clearing}
               >
-                {clearing ? "Clearing..." : "Yes, Delete Everything"}
+                {clearing ? t("admin.clearing") : t("admin.clearConfirm")}
               </button>
               <button
                 className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                 onClick={() => setShowClearConfirm(false)}
                 disabled={clearing}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -1089,6 +1095,7 @@ function DataTab() {
 /* ── Revenue Streams Section ──────────────────────────────────────── */
 
 function RevenueStreamsSection({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useTranslation();
   const [streams, setStreams] = useState<RevenueStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<string | null>(null);
@@ -1133,41 +1140,41 @@ function RevenueStreamsSection({ onChanged }: { onChanged?: () => void }) {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this revenue stream?")) return;
+    if (!confirm(t("admin.deleteStream"))) return;
     await api.deleteRevenueStream(id);
     setStreams((prev) => prev.filter((s) => s.id !== id));
     onChanged?.();
   };
 
-  if (loading) return <p className="text-sm text-gray-500">Loading revenue streams...</p>;
+  if (loading) return <p className="text-sm text-gray-500">{t("admin.loadingStreams")}</p>;
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-700">Revenue Streams</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{t("admin.revenueStreams")}</h3>
         <button className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? "Cancel" : "+ Add"}
+          {showAdd ? t("common.cancel") : t("common.add")}
         </button>
       </div>
       {showAdd && (
         <div className="flex flex-wrap items-end gap-3 rounded border bg-gray-50 p-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.name")}</label>
             <input className="rounded border px-2 py-1 text-sm" value={newName} onChange={(e) => setNewName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Color</label>
+            <label className="block text-xs text-gray-500 mb-1">{t("common.color")}</label>
             <input type="color" className="h-8 w-10 cursor-pointer rounded border" value={newColor} onChange={(e) => setNewColor(e.target.value)} />
           </div>
-          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>Save</button>
+          <button className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700" onClick={add}>{t("common.save")}</button>
         </div>
       )}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-            <th className="py-2 px-3">Color</th>
-            <th className="py-2 px-3">Name</th>
-            <th className="py-2 px-3 text-right">Actions</th>
+            <th className="py-2 px-3">{t("common.color")}</th>
+            <th className="py-2 px-3">{t("common.name")}</th>
+            <th className="py-2 px-3 text-right">{t("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -1178,8 +1185,8 @@ function RevenueStreamsSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3"><input type="color" className="h-6 w-8 rounded border cursor-pointer" value={editColor} onChange={(e) => setEditColor(e.target.value)} /></td>
                   <td className="py-2 px-3"><input className="rounded border px-2 py-0.5 text-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} /></td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>Save</button>
-                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>Cancel</button>
+                    <button className="text-green-600 text-xs hover:underline" onClick={saveEdit}>{t("common.save")}</button>
+                    <button className="text-gray-400 text-xs hover:underline" onClick={() => setEditId(null)}>{t("common.cancel")}</button>
                   </td>
                 </>
               ) : (
@@ -1187,8 +1194,8 @@ function RevenueStreamsSection({ onChanged }: { onChanged?: () => void }) {
                   <td className="py-2 px-3"><span className="inline-block h-4 w-4 rounded" style={{ backgroundColor: s.color }} /></td>
                   <td className="py-2 px-3">{s.name}</td>
                   <td className="py-2 px-3 text-right space-x-2">
-                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(s)}>Edit</button>
-                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(s.id)}>Delete</button>
+                    <button className="text-indigo-600 text-xs hover:underline" onClick={() => startEdit(s)}>{t("common.edit")}</button>
+                    <button className="text-red-500 text-xs hover:underline" onClick={() => remove(s.id)}>{t("common.delete")}</button>
                   </td>
                 </>
               )}

@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useTranslation } from "react-i18next";
 import type { Initiative, Persona } from "../../types/models";
 
 type Props = {
@@ -15,12 +16,13 @@ function colorByImpact(impact: number): string {
 }
 
 export function StakeholderHeatmap({ initiatives, personas }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
       <table className="min-w-full text-xs">
         <thead>
           <tr className="border-b bg-slate-50">
-            <th className="px-3 py-2 text-left">Initiative</th>
+            <th className="px-3 py-2 text-left">{t("heatmap.initiative")}</th>
             {personas.map((p) => (
               <th key={p.id} className="px-3 py-2 text-left">
                 {p.name}

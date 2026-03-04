@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Initiative } from "../../types/models";
 import { formatCommercial, formatHorizon, formatStatus } from "../../lib/format";
 import { DomainBadge } from "../ui/DomainBadge";
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function PriorityGrid({ initiatives, onOpen }: Props) {
+  const { t } = useTranslation();
   const sorted = [...initiatives].sort((a, b) => a.priority.localeCompare(b.priority) || a.horizon.localeCompare(b.horizon));
 
   return (
@@ -15,13 +17,13 @@ export function PriorityGrid({ initiatives, onOpen }: Props) {
       <table className="min-w-full text-sm">
         <thead className="bg-slate-50">
           <tr>
-            <th className="px-3 py-2 text-left">Title</th>
-            <th className="px-3 py-2 text-left">Domain</th>
-            <th className="px-3 py-2 text-left">Owner</th>
-            <th className="px-3 py-2 text-left">Priority</th>
-            <th className="px-3 py-2 text-left">Horizon</th>
-            <th className="px-3 py-2 text-left">Status</th>
-            <th className="px-3 py-2 text-left">Commercial</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.title")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.domain")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.owner")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.priority")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.horizon")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.status")}</th>
+            <th className="px-3 py-2 text-left">{t("priorityGrid.commercial")}</th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +33,7 @@ export function PriorityGrid({ initiatives, onOpen }: Props) {
               <td className="px-3 py-2">
                 <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
               </td>
-              <td className="px-3 py-2">{initiative.owner?.name || "Unassigned"}</td>
+              <td className="px-3 py-2">{initiative.owner?.name || t("common.unassigned")}</td>
               <td className="px-3 py-2">{initiative.priority}</td>
               <td className="px-3 py-2">{formatHorizon(initiative.horizon)}</td>
               <td className="px-3 py-2 capitalize">{formatStatus(initiative.status)}</td>

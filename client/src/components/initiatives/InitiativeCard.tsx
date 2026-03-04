@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Initiative } from "../../types/models";
 import { Card } from "../ui/Card";
 import { DomainBadge } from "../ui/DomainBadge";
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function InitiativeCard({ initiative, onClick }: Props) {
+  const { t } = useTranslation();
   return (
     <Card className="cursor-pointer p-3 hover:border-sky-300" onClick={onClick}>
       <div className="flex items-start justify-between gap-2">
@@ -22,7 +24,7 @@ export function InitiativeCard({ initiative, onClick }: Props) {
               onClick();
             }}
           >
-            Open
+            {t("common.open")}
           </button>
         ) : null}
       </div>
@@ -36,7 +38,7 @@ export function InitiativeCard({ initiative, onClick }: Props) {
           <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
         </div>
       )}
-      <p className="mt-1 text-xs text-slate-500">{initiative.owner?.name || "Unassigned"}</p>
+      <p className="mt-1 text-xs text-slate-500">{initiative.owner?.name || t("common.unassigned")}</p>
     </Card>
   );
 }
