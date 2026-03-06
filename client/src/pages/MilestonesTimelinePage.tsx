@@ -31,7 +31,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 type Period = "week" | "month" | "quarter" | "overdue" | "all";
 
-function daysDiff(targetDate: string | null): number | null {
+function daysDiff(targetDate: string | null | undefined): number | null {
   if (!targetDate) return null;
   const target = new Date(targetDate);
   const now = new Date();
@@ -49,7 +49,7 @@ function isOverdue(m: MilestoneRow): boolean {
 function inPeriod(m: MilestoneRow, period: Period): boolean {
   if (period === "all") return true;
   if (period === "overdue") return isOverdue(m);
-  if (!m.targetDate) return period === "all";
+  if (!m.targetDate) return false;
   const target = new Date(m.targetDate);
   const now = new Date();
   now.setHours(0, 0, 0, 0);

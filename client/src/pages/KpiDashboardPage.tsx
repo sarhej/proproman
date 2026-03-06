@@ -21,7 +21,7 @@ type Props = {
   initiatives: Initiative[];
 };
 
-function progressPct(current: string | null, target: string | null): number | null {
+function progressPct(current: string | null | undefined, target: string | null | undefined): number | null {
   const c = parseFloat(current ?? "");
   const t = parseFloat(target ?? "");
   if (isNaN(c) || isNaN(t) || t === 0) return null;
