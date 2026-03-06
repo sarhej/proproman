@@ -105,6 +105,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
   const [newRole, setNewRole] = useState<UserRole>("VIEWER");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [aliasInput, setAliasInput] = useState("");
+  const [aliasError, setAliasError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -146,18 +147,35 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
 
   const addAlias = async (userId: string) => {
     if (!aliasInput.trim()) return;
+    setAliasError(null);
     try {
       await api.addUserEmail(userId, aliasInput.trim());
       setAliasInput("");
       load();
-    } catch {
-      /* ignore */
+    } catch (e: unknown) {
+      const err = e as { status?: number; body?: { error?: string; existingUserName?: string | null } };
+      if (err.status === 409 && err.body?.existingUserName) {
+        setAliasError(t("admin.emailUsedByOther", { name: err.body.existingUserName }));
+      } else {
+        setAliasError(err.body?.error ?? String(e));
+      }
     }
   };
 
   const removeAlias = async (userId: string, emailId: string) => {
     try {
       await api.removeUserEmail(userId, emailId);
+      load();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const deleteUser = async (user: User) => {
+    if (user.id === currentUser.id) return;
+    if (!window.confirm(t("admin.deleteUserConfirm", { name: user.name }))) return;
+    try {
+      await api.deleteUser(user.id);
       load();
     } catch {
       /* ignore */
@@ -258,6 +276,15 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                 ) : (
                   <span className="text-amber-500 text-xs font-medium">Unlinked</span>
                 )}
+                {u.id !== currentUser.id && (
+                  <button
+                    className="rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    onClick={() => deleteUser(u)}
+                    title={t("admin.deleteUser")}
+                  >
+                    {t("admin.deleteUser")}
+                  </button>
+                )}
               </div>
               {aliases.length > 0 && (
                 <button
@@ -286,7 +313,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                     <input
                       className="rounded border px-2 py-1 text-xs flex-1"
                       value={aliasInput}
-                      onChange={(e) => setAliasInput(e.target.value)}
+                      onChange={(e) => { setAliasInput(e.target.value); setAliasError(null); }}
                       placeholder={t("admin.aliasPlaceholder")}
                       onKeyDown={(e) => { if (e.key === "Enter") addAlias(u.id); }}
                     />
@@ -294,6 +321,9 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                       {t("common.add")}
                     </button>
                   </div>
+                  {aliasError && expandedUser === u.id && (
+                    <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">{aliasError}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -303,13 +333,14 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
 
       {/* Desktop table view */}
       <div className="hidden lg:block overflow-x-auto text-sm">
-        <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+        <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
           <div className="py-2 px-3">{t("common.name")}</div>
           <div className="py-2 px-3">{t("common.email")}</div>
           <div className="py-2 px-3">{t("common.role")}</div>
           <div className="py-2 px-3 text-center">{t("common.active")}</div>
           <div className="py-2 px-3">{t("admin.lastLogin")}</div>
           <div className="py-2 px-3 text-center">{t("admin.google")}</div>
+          <div className="py-2 px-3 text-center">{t("admin.deleteUser")}</div>
         </div>
         <div>
             {filteredUsers.map((u) => {
@@ -317,7 +348,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
               const isExpanded = expandedUser === u.id;
               return (
                 <div key={u.id} className="border-b hover:bg-gray-50">
-                    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
+                    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px_80px] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
                       <div className="py-2 px-3 flex items-center gap-2">
                         {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
                         <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
@@ -373,6 +404,19 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                           <span className="text-amber-500 text-xs font-medium">Unlinked</span>
                         )}
                       </div>
+                      <div className="py-2 px-3 text-center">
+                        {u.id !== currentUser.id ? (
+                          <button
+                            className="text-red-600 hover:text-red-800 text-xs font-medium"
+                            onClick={() => deleteUser(u)}
+                            title={t("admin.deleteUser")}
+                          >
+                            {t("admin.deleteUser")}
+                          </button>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </div>
                     </div>
                     {isExpanded && (
                       <div className="bg-gray-50 border-t px-6 py-3">
@@ -397,7 +441,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                           <input
                             className="rounded border px-2 py-1 text-xs w-60"
                             value={aliasInput}
-                            onChange={(e) => setAliasInput(e.target.value)}
+                            onChange={(e) => { setAliasInput(e.target.value); setAliasError(null); }}
                             placeholder={t("admin.aliasPlaceholder")}
                             onKeyDown={(e) => { if (e.key === "Enter") addAlias(u.id); }}
                           />
@@ -408,6 +452,9 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                             {t("common.add")}
                           </button>
                         </div>
+                        {aliasError && expandedUser === u.id && (
+                          <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">{aliasError}</p>
+                        )}
                       </div>
                     )}
                 </div>

@@ -145,9 +145,13 @@ adminRouter.post("/users/:id/emails", async (req, res) => {
     return;
   }
 
-  const taken = await prisma.userEmail.findUnique({ where: { email: parsed.data.email } });
+  const taken = await prisma.userEmail.findUnique({ where: { email: parsed.data.email }, include: { user: { select: { id: true, name: true } } } });
   if (taken) {
-    res.status(409).json({ error: "This email is already registered" });
+    res.status(409).json({
+      error: "This email is already used by another user",
+      existingUserId: taken.userId,
+      existingUserName: taken.user?.name ?? null
+    });
     return;
   }
 
@@ -174,6 +178,27 @@ adminRouter.delete("/users/:id/emails/:emailId", async (req, res) => {
 
   await prisma.userEmail.delete({ where: { id: emailId } });
   await logAudit(req.user!.id, "UPDATED", "USER", userId, { action: "remove_alias", email: alias.email });
+  res.json({ ok: true });
+});
+
+/* ── Delete user (frees their emails so they can be added as alias elsewhere) ── */
+
+adminRouter.delete("/users/:id", async (req, res) => {
+  const id = String(req.params.id);
+
+  if (id === req.user!.id) {
+    res.status(400).json({ error: "You cannot delete your own account" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id }, include: { emails: true } });
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  await prisma.user.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "USER", id, { email: user.email, name: user.name });
   res.json({ ok: true });
 });
 

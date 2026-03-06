@@ -13,7 +13,8 @@
     "lint": "npm run lint --workspace client && npm run lint --workspace server",
     "db:generate": "npm run db:generate --workspace server",
     "db:migrate": "npm run db:migrate --workspace server",
-    "db:seed": "npm run db:seed --workspace server"
+    "db:seed": "npm run db:seed --workspace server",
+    "db:up": "docker compose up -d postgres && echo Waiting for Postgres... && sleep 5 && npm run db:migrate && npm run db:seed"
   },
   "engines": {
     "node": ">=20.0.0"

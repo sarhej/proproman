@@ -41,7 +41,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    const err = new Error(`Request failed: ${response.status}`) as Error & { status?: number; body?: unknown };
+    err.status = response.status;
+    try {
+      err.body = await response.json();
+    } catch {
+      err.body = undefined;
+    }
+    throw err;
   }
   if (response.status === 204) {
     return undefined as T;
@@ -190,6 +197,8 @@ export const api = {
     request<{ email: UserEmail }>(`/api/admin/users/${userId}/emails`, { method: "POST", body: JSON.stringify({ email }) }),
   removeUserEmail: async (userId: string, emailId: string) =>
     request<{ ok: boolean }>(`/api/admin/users/${userId}/emails/${emailId}`, { method: "DELETE" }),
+  deleteUser: async (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: "DELETE" }),
   getAuditLog: async (params?: URLSearchParams) =>
     request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
       `/api/admin/audit${params ? `?${params.toString()}` : ""}`
