@@ -201,6 +201,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
           "id" TEXT NOT NULL,
           "initiativeId" TEXT NOT NULL,
           "title" TEXT NOT NULL,
+          "description" TEXT,
           "targetDate" TIMESTAMP(3),
           "status" "MilestoneStatus" NOT NULL DEFAULT 'TODO',
           "sequence" INTEGER NOT NULL DEFAULT 0,
@@ -284,7 +285,15 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
       console.log("Pragmatic schema migration applied successfully via direct SQL.");
     } else {
-      console.log("InitiativeMilestone table exists. Checking targetDate on KPI...");
+      console.log("InitiativeMilestone table exists. Checking for missing columns...");
+      // InitiativeMilestone.description (table may have been created without it)
+      const milestoneDescCheck = await pool.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = 'InitiativeMilestone' AND column_name = 'description'"
+      );
+      if (milestoneDescCheck.rowCount === 0) {
+        await pool.query('ALTER TABLE "InitiativeMilestone" ADD COLUMN "description" TEXT');
+        console.log("Added description to InitiativeMilestone.");
+      }
       // Ensure targetDate column on InitiativeKPI exists (from 20260306 migration)
       const kpiTargetDateCheck = await pool.query(
         "SELECT 1 FROM information_schema.columns WHERE table_name = 'InitiativeKPI' AND column_name = 'targetDate'"

@@ -293,6 +293,7 @@ async function replaceImport(data: any) {
           await tx.initiativeMilestone.create({
             data: {
               initiativeId: initId, title: m.title,
+              description: m.description ?? null,
               targetDate: m.targetDate ? new Date(m.targetDate) : null,
               status: m.status ?? "TODO", sequence: m.sequence ?? 0,
               ownerId: mapId(idMap, m.ownerId),
