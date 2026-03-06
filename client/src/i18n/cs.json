@@ -36,6 +36,8 @@
     "partners": "Partneři",
     "campaigns": "Kampaně",
     "calendar": "Kalendář",
+    "kpiDashboard": "KPI Dashboard",
+    "milestonesTimeline": "Milníky",
     "gantt": "Gantt",
     "usersActivity": "Uživatelé & Aktivita",
     "newInitiative": "+ Nová iniciativa",
@@ -246,11 +248,26 @@
     "selectUser": "Vyberte uživatele",
     "addRole": "Přidat roli",
     "timelineHint": "Nastavte data zahájení/cíle/milníku výše a uložte.",
-    "dependsOnTitle": "Závisí na {{title}}"
+    "dependsOnTitle": "Závisí na {{title}}",
+    "problemStatement": "Definice problému",
+    "successCriteria": "Kritéria úspěchu",
+    "newMilestone": "Nový milník...",
+    "newKpi": "Nové KPI...",
+    "stakeholderName": "Jméno...",
+    "stakeholderOrg": "Organizace...",
+    "targetDate": "Cílové datum",
+    "target": "Cíl",
+    "current": "Aktuální",
+    "unit": "Jednotka",
+    "progress": "Pokrok",
+    "organization": "Organizace"
   },
   "tabs": {
     "details": "Detaily",
     "features": "Funkce",
+    "milestones": "Milníky",
+    "kpis": "KPI",
+    "stakeholders": "Stakeholders",
     "requirements": "Požadavky",
     "decisions": "Rozhodnutí",
     "risks": "Rizika",
@@ -258,6 +275,24 @@
     "demandLinks": "Propojení požadavků",
     "raci": "RACI",
     "timeline": "Časová osa"
+  },
+  "milestoneStatus": {
+    "TODO": "TODO",
+    "IN_PROGRESS": "Probíhá",
+    "DONE": "Hotovo",
+    "BLOCKED": "Blokováno"
+  },
+  "stakeholderRole": {
+    "DECISION_MAKER": "Rozhodovatel",
+    "SPONSOR": "Sponzor",
+    "REVIEWER": "Reviewer",
+    "AMBASSADOR": "Ambasador",
+    "LEGAL": "Právní",
+    "MEDICAL": "Medicínský"
+  },
+  "stakeholderType": {
+    "INTERNAL": "Interní",
+    "EXTERNAL": "Externí"
   },
   "raci": {
     "title": "RACI matice",
@@ -330,6 +365,34 @@
     "domains": "Domény:",
     "empty": "Žádné iniciativy s datem zahájení a cílem k zobrazení."
   },
+  "kpiDashboard": {
+    "title": "KPI Dashboard",
+    "initiative": "Iniciativa",
+    "total": "Celkem KPI",
+    "onTrack": "Na cestě",
+    "atRisk": "Riziko",
+    "offTrack": "Mimo",
+    "overdue": "Po termínu",
+    "noData": "Bez dat",
+    "searchPlaceholder": "Hledat KPI...",
+    "targetDate": "Cílové datum",
+    "expected": "Očekáváno"
+  },
+  "milestonesTimeline": {
+    "title": "Přehled milníků",
+    "milestone": "Milník",
+    "total": "Celkem",
+    "overdue": "Po termínu",
+    "delay": "Zpoždění",
+    "days": "dní",
+    "thisWeek": "Tento týden",
+    "thisMonth": "Tento měsíc",
+    "thisQuarter": "Tento kvartál",
+    "allPeriod": "Vše",
+    "overdueOnly": "Po termínu",
+    "searchPlaceholder": "Hledat milník...",
+    "deleteConfirm": "Opravdu smazat \"{{name}}\"? Tuto akci nelze vrátit zpět."
+  },
   "accounts": {
     "title": "Účty",
     "description": "Není CRM — sleduje závislosti účtů na produktech, assetech, iniciativách a požadavcích.",
@@ -389,7 +452,9 @@
   "productTree": {
     "addRequirement": "Přidat požadavek",
     "addFeature": "Přidat funkci",
+    "addInitiative": "Přidat iniciativu",
     "addProduct": "Přidat produkt / asset",
+    "selectDomain": "Vyberte doménu",
     "deleteConfirm": "Smazat \"{{name}}\"? Toto nelze vrátit zpět.",
     "impact": "Dopad",
     "progress": "Pokrok",

@@ -10,6 +10,9 @@ import type {
   GanttTask,
   Initiative,
   InitiativeAssignment,
+  InitiativeMilestone,
+  InitiativeKPI,
+  Stakeholder,
   Partner,
   Persona,
   Product,
@@ -191,6 +194,45 @@ export const api = {
     request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
       `/api/admin/audit${params ? `?${params.toString()}` : ""}`
     ),
+
+  getAllMilestones: async () =>
+    request<{ milestones: (InitiativeMilestone & { initiative: { id: string; title: string; domain: { id: string; name: string; color: string }; owner: { id: string; name: string } | null } })[] }>("/api/milestones"),
+
+  getAllKpis: async () =>
+    request<{ kpis: (InitiativeKPI & { initiative: { id: string; title: string; startDate: string | null; domain: { id: string; name: string; color: string }; owner: { id: string; name: string } | null } })[] }>("/api/kpis"),
+
+  createMilestone: async (initiativeId: string, body: unknown) =>
+    request<{ milestone: InitiativeMilestone }>(`/api/milestones/${initiativeId}`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  updateMilestone: async (id: string, body: unknown) =>
+    request<{ milestone: InitiativeMilestone }>(`/api/milestones/${id}`, {
+      method: "PUT", body: JSON.stringify(body),
+    }),
+  deleteMilestone: async (id: string) =>
+    request<void>(`/api/milestones/${id}`, { method: "DELETE" }),
+
+  createKpi: async (initiativeId: string, body: unknown) =>
+    request<{ kpi: InitiativeKPI }>(`/api/kpis/${initiativeId}`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  updateKpi: async (id: string, body: unknown) =>
+    request<{ kpi: InitiativeKPI }>(`/api/kpis/${id}`, {
+      method: "PUT", body: JSON.stringify(body),
+    }),
+  deleteKpi: async (id: string) =>
+    request<void>(`/api/kpis/${id}`, { method: "DELETE" }),
+
+  createStakeholder: async (initiativeId: string, body: unknown) =>
+    request<{ stakeholder: Stakeholder }>(`/api/stakeholders/${initiativeId}`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  updateStakeholder: async (id: string, body: unknown) =>
+    request<{ stakeholder: Stakeholder }>(`/api/stakeholders/${id}`, {
+      method: "PUT", body: JSON.stringify(body),
+    }),
+  deleteStakeholder: async (id: string) =>
+    request<void>(`/api/stakeholders/${id}`, { method: "DELETE" }),
 
   getDomains: async () => request<{ domains: Domain[] }>("/api/domains"),
   createDomain: async (body: unknown) =>

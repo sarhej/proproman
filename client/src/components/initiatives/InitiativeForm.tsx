@@ -22,6 +22,8 @@ type FormValue = {
   title: string;
   productId: string;
   description: string;
+  problemStatement: string;
+  successCriteria: string;
   domainId: string;
   ownerId: string;
   priority: Priority;
@@ -81,6 +83,8 @@ function toInitial(
     title: initiative?.title ?? "",
     productId: initiative?.productId ?? products[0]?.id ?? "",
     description: initiative?.description ?? "",
+    problemStatement: initiative?.problemStatement ?? "",
+    successCriteria: initiative?.successCriteria ?? "",
     domainId: initiative?.domainId ?? domains[0]?.id ?? "",
     ownerId: initiative?.ownerId ?? "",
     priority: initiative?.priority ?? "P1",
@@ -133,6 +137,8 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         title: form.title,
         productId: form.productId || null,
         description: form.description || null,
+        problemStatement: form.problemStatement || null,
+        successCriteria: form.successCriteria || null,
         domainId: form.domainId,
         ownerId: form.ownerId || null,
         priority: form.priority,
@@ -175,6 +181,24 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
             rows={3}
             value={form.description}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+            disabled={readOnly}
+          />
+        </div>
+        <div className="md:col-span-2 rounded-md border border-blue-200 bg-blue-50/50 p-3">
+          <Label>{t("initiative.problemStatement")}</Label>
+          <Textarea
+            rows={2}
+            value={form.problemStatement}
+            onChange={(e) => setForm((prev) => ({ ...prev, problemStatement: e.target.value }))}
+            disabled={readOnly}
+          />
+        </div>
+        <div className="md:col-span-2 rounded-md border border-blue-200 bg-blue-50/50 p-3">
+          <Label>{t("initiative.successCriteria")}</Label>
+          <Textarea
+            rows={2}
+            value={form.successCriteria}
+            onChange={(e) => setForm((prev) => ({ ...prev, successCriteria: e.target.value }))}
             disabled={readOnly}
           />
         </div>

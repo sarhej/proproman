@@ -80,6 +80,10 @@ export type CampaignType = "PARTNER_COBRANDING" | "PRODUCT_LAUNCH" | "SEASONAL" 
 export type AssetType = "LANDING_PAGE" | "LEAFLET" | "EMAIL_TEMPLATE" | "BANNER" | "VIDEO" | "PRESENTATION" | "SOCIAL_POST";
 export type AssetStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PUBLISHED" | "ARCHIVED";
 
+export type MilestoneStatus = "TODO" | "IN_PROGRESS" | "DONE" | "BLOCKED";
+export type StakeholderRole = "DECISION_MAKER" | "SPONSOR" | "REVIEWER" | "AMBASSADOR" | "LEGAL" | "MEDICAL";
+export type StakeholderType = "INTERNAL" | "EXTERNAL";
+
 export type Product = {
   id: string;
   name: string;
@@ -212,12 +216,45 @@ export type InitiativeAssignment = {
   user: User;
 };
 
+export type InitiativeMilestone = {
+  id: string;
+  initiativeId: string;
+  title: string;
+  description?: string | null;
+  status: MilestoneStatus;
+  targetDate?: string | null;
+  ownerId?: string | null;
+  owner?: User | null;
+  sequence: number;
+};
+
+export type InitiativeKPI = {
+  id: string;
+  initiativeId: string;
+  title: string;
+  targetValue?: string | null;
+  currentValue?: string | null;
+  unit?: string | null;
+  targetDate?: string | null;
+};
+
+export type Stakeholder = {
+  id: string;
+  initiativeId: string;
+  name: string;
+  role: StakeholderRole;
+  type: StakeholderType;
+  organization?: string | null;
+};
+
 export type Initiative = {
   id: string;
   productId?: string | null;
   product?: Product | null;
   title: string;
   description?: string | null;
+  problemStatement?: string | null;
+  successCriteria?: string | null;
   domainId: string;
   ownerId?: string | null;
   owner?: User | null;
@@ -244,6 +281,9 @@ export type Initiative = {
   risks: Risk[];
   demandLinks: DemandLink[];
   assignments: InitiativeAssignment[];
+  milestones: InitiativeMilestone[];
+  kpis: InitiativeKPI[];
+  stakeholders: Stakeholder[];
   outgoingDeps: Dependency[];
   incomingDeps: Dependency[];
 };

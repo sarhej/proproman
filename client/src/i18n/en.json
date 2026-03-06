@@ -36,6 +36,8 @@
     "partners": "Partners",
     "campaigns": "Campaigns",
     "calendar": "Calendar",
+    "kpiDashboard": "KPI Dashboard",
+    "milestonesTimeline": "Milestones",
     "gantt": "Gantt",
     "usersActivity": "Users & Activity",
     "newInitiative": "+ New initiative",
@@ -246,11 +248,26 @@
     "selectUser": "Select user",
     "addRole": "Add role",
     "timelineHint": "Configure start/target/milestone dates above and save.",
-    "dependsOnTitle": "Depends on {{title}}"
+    "dependsOnTitle": "Depends on {{title}}",
+    "problemStatement": "Problem Statement",
+    "successCriteria": "Success Criteria",
+    "newMilestone": "New milestone...",
+    "newKpi": "New KPI...",
+    "stakeholderName": "Name...",
+    "stakeholderOrg": "Organization...",
+    "targetDate": "Target date",
+    "target": "Target",
+    "current": "Current",
+    "unit": "Unit",
+    "progress": "Progress",
+    "organization": "Organization"
   },
   "tabs": {
     "details": "Details",
     "features": "Features",
+    "milestones": "Milestones",
+    "kpis": "KPIs",
+    "stakeholders": "Stakeholders",
     "requirements": "Requirements",
     "decisions": "Decisions",
     "risks": "Risks",
@@ -258,6 +275,24 @@
     "demandLinks": "Demand links",
     "raci": "RACI",
     "timeline": "Timeline"
+  },
+  "milestoneStatus": {
+    "TODO": "TODO",
+    "IN_PROGRESS": "In Progress",
+    "DONE": "Done",
+    "BLOCKED": "Blocked"
+  },
+  "stakeholderRole": {
+    "DECISION_MAKER": "Decision Maker",
+    "SPONSOR": "Sponsor",
+    "REVIEWER": "Reviewer",
+    "AMBASSADOR": "Ambassador",
+    "LEGAL": "Legal",
+    "MEDICAL": "Medical"
+  },
+  "stakeholderType": {
+    "INTERNAL": "Internal",
+    "EXTERNAL": "External"
   },
   "raci": {
     "title": "RACI Matrix",
@@ -330,6 +365,34 @@
     "domains": "Domains:",
     "empty": "No initiatives with start and target dates to display."
   },
+  "kpiDashboard": {
+    "title": "KPI Dashboard",
+    "initiative": "Initiative",
+    "total": "Total KPIs",
+    "onTrack": "On Track",
+    "atRisk": "At Risk",
+    "offTrack": "Off Track",
+    "overdue": "Overdue",
+    "noData": "No Data",
+    "searchPlaceholder": "Search KPI...",
+    "targetDate": "Target Date",
+    "expected": "Expected"
+  },
+  "milestonesTimeline": {
+    "title": "Milestones Overview",
+    "milestone": "Milestone",
+    "total": "Total",
+    "overdue": "Overdue",
+    "delay": "Delay",
+    "days": "days",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "thisQuarter": "This quarter",
+    "allPeriod": "All",
+    "overdueOnly": "Overdue",
+    "searchPlaceholder": "Search milestones...",
+    "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone."
+  },
   "accounts": {
     "title": "Accounts",
     "description": "Not a CRM — tracks account dependencies on products, assets, initiatives and requirements only.",
@@ -389,7 +452,9 @@
   "productTree": {
     "addRequirement": "Add requirement",
     "addFeature": "Add feature",
+    "addInitiative": "Add initiative",
     "addProduct": "Add product / asset",
+    "selectDomain": "Select domain",
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
     "impact": "Impact",
     "progress": "Progress",

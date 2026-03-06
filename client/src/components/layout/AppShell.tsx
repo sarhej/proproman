@@ -31,6 +31,7 @@ const navSections: NavSection[] = [
     labelKey: "nav.insights",
     phoneHidden: true,
     items: [
+      { to: "/kpi-dashboard", labelKey: "nav.kpiDashboard", icon: BarChart3 },
       { to: "/heatmap", labelKey: "nav.heatmap", icon: Users2 },
       { to: "/buyer-user", labelKey: "nav.buyerUser", icon: BarChart3 },
       { to: "/gaps", labelKey: "nav.gaps", icon: Filter }
@@ -58,6 +59,7 @@ const navSections: NavSection[] = [
   {
     labelKey: "nav.planning",
     items: [
+      { to: "/milestones", labelKey: "nav.milestonesTimeline", icon: CalendarClock },
       { to: "/calendar", labelKey: "nav.calendar", icon: CalendarClock },
       { to: "/gantt", labelKey: "nav.gantt", icon: CalendarClock, mobileHidden: true }
     ]

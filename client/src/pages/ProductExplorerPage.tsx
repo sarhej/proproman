@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import type { Initiative, ProductWithHierarchy, User } from "../types/models";
+import type { Domain, Initiative, ProductWithHierarchy, User } from "../types/models";
 import { ProductTree } from "../components/product-tree/ProductTree";
 
 type Props = {
@@ -12,11 +12,13 @@ type Props = {
 export function ProductExplorerPage({ isAdmin, onOpenInitiative, quickFilter }: Props) {
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [domains, setDomains] = useState<Domain[]>([]);
 
   async function load() {
     const [prodResult, metaResult] = await Promise.all([api.getProducts(), api.getMeta()]);
     setProducts(prodResult.products);
     setUsers(metaResult.users);
+    setDomains(metaResult.domains);
   }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -48,6 +50,7 @@ export function ProductExplorerPage({ isAdmin, onOpenInitiative, quickFilter }: 
     <ProductTree
       products={filtered}
       users={users}
+      domains={domains}
       isAdmin={isAdmin}
       onOpenInitiative={onOpenInitiative}
       onRefresh={load}

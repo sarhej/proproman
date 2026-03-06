@@ -6,13 +6,14 @@ import {
   PointerSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
-import type { Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
+import type { Domain, Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
 import { api } from "../../lib/api";
 import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
   products: ProductWithHierarchy[];
   users: User[];
+  domains: Domain[];
   isAdmin: boolean;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -512,15 +513,85 @@ function InitiativeRow({
   );
 }
 
+function InlineAddInitiative({ productId, domains, onRefresh }: { productId: string; domains: Domain[]; onRefresh: () => Promise<void> }) {
+  const { t } = useTranslation();
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState("");
+  const [domainId, setDomainId] = useState(domains[0]?.id ?? "");
+
+  if (!adding) {
+    return (
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-800"
+        onClick={() => setAdding(true)}
+      >
+        <Plus size={12} /> {t("productTree.addInitiative")}
+      </button>
+    );
+  }
+
+  async function submit() {
+    if (!title.trim() || !domainId) return;
+    await api.createInitiative({
+      title: title.trim(),
+      productId,
+      domainId,
+      priority: "P2",
+      horizon: "NEXT",
+      status: "IDEA",
+      commercialType: "GROWTH",
+    });
+    setTitle("");
+    setAdding(false);
+    await onRefresh();
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <input
+        autoFocus
+        className="rounded border border-sky-300 px-1.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-sky-400"
+        placeholder={t("productTree.addInitiative")}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={async (e) => {
+          if (e.key === "Enter") await submit();
+          if (e.key === "Escape") { setTitle(""); setAdding(false); }
+        }}
+      />
+      <select
+        className="rounded border border-sky-300 px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-sky-400"
+        value={domainId}
+        onChange={(e) => setDomainId(e.target.value)}
+      >
+        <option value="" disabled>{t("productTree.selectDomain")}</option>
+        {domains.map((d) => (
+          <option key={d.id} value={d.id}>{d.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="text-[10px] text-slate-400 hover:text-slate-600"
+        onClick={() => { setTitle(""); setAdding(false); }}
+      >
+        {t("common.cancel")}
+      </button>
+    </span>
+  );
+}
+
 function ProductRow({
   product,
   users,
+  domains,
   isAdmin,
   onOpenInitiative,
   onRefresh
 }: {
   product: ProductWithHierarchy;
   users: User[];
+  domains: Domain[];
   isAdmin: boolean;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -586,11 +657,19 @@ function ProductRow({
           onRefresh={onRefresh}
         />
       ))}
+      {open && isAdmin ? (
+        <tr className="border-t border-slate-100 text-xs">
+          <td className="py-1 pl-8 pr-2">
+            <InlineAddInitiative productId={product.id} domains={domains} onRefresh={onRefresh} />
+          </td>
+          <td colSpan={5} />
+        </tr>
+      ) : null}
     </>
   );
 }
 
-export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
+export function ProductTree({ products, users, domains, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
   const sensors = useSensors(
@@ -641,6 +720,7 @@ export function ProductTree({ products, users, isAdmin, onOpenInitiative, onRefr
                 key={product.id}
                 product={product}
                 users={users}
+                domains={domains}
                 isAdmin={isAdmin}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}

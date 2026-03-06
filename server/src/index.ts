@@ -31,6 +31,9 @@ import { domainsRouter } from "./routes/domains.js";
 import { personasRouter } from "./routes/personas.js";
 import { revenueStreamsRouter } from "./routes/revenue-streams.js";
 import { importExportRouter } from "./routes/import-export.js";
+import { milestonesRouter } from "./routes/milestones.js";
+import { kpisRouter } from "./routes/kpis.js";
+import { stakeholdersRouter } from "./routes/stakeholders.js";
 import { prisma } from "./db.js";
 
 const app = express();
@@ -98,6 +101,9 @@ app.use("/api/admin", importExportRouter);
 app.use("/api/domains", domainsRouter);
 app.use("/api/personas", personasRouter);
 app.use("/api/revenue-streams", revenueStreamsRouter);
+app.use("/api/milestones", milestonesRouter);
+app.use("/api/kpis", kpisRouter);
+app.use("/api/stakeholders", stakeholdersRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({

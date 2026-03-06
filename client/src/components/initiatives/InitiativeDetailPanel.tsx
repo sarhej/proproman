@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import { api } from "../../lib/api";
-import type { Demand, Domain, Initiative, Persona, Product, RevenueStream, User } from "../../types/models";
+import type { Demand, Domain, Initiative, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, User } from "../../types/models";
+import type { MilestoneStatus, StakeholderRole, StakeholderType } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -57,11 +58,14 @@ type Props = {
   onSaved: () => Promise<void>;
 };
 
-type Tab = "details" | "features" | "requirements" | "decisions" | "risks" | "dependencies" | "demand-links" | "raci" | "timeline";
+type Tab = "details" | "features" | "milestones" | "kpis" | "stakeholders" | "requirements" | "decisions" | "risks" | "dependencies" | "demand-links" | "raci" | "timeline";
 
 const TAB_KEYS: Record<Tab, string> = {
   details: "tabs.details",
   features: "tabs.features",
+  milestones: "tabs.milestones",
+  kpis: "tabs.kpis",
+  stakeholders: "tabs.stakeholders",
   requirements: "tabs.requirements",
   decisions: "tabs.decisions",
   risks: "tabs.risks",
@@ -71,7 +75,7 @@ const TAB_KEYS: Record<Tab, string> = {
   timeline: "tabs.timeline",
 };
 
-const ALL_TABS: Tab[] = ["details", "features", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"];
+const ALL_TABS: Tab[] = ["details", "features", "milestones", "kpis", "stakeholders", "requirements", "decisions", "risks", "dependencies", "demand-links", "raci", "timeline"];
 
 function TabPicker({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
   const { t } = useTranslation();
@@ -415,7 +419,7 @@ export function InitiativeDetailPanel({
                   {t("initiative.addRole")}
                 </Button>
               </div>
-            ) : (
+            ) : tab === "milestones" || tab === "kpis" || tab === "stakeholders" ? null : (
               <div className="mb-2 flex gap-2">
                 <Input
                   value={input}
@@ -427,6 +431,32 @@ export function InitiativeDetailPanel({
                   {t("common.add")}
                 </Button>
               </div>
+            )}
+
+            {tab === "milestones" && (
+              <MilestonesGrid
+                milestones={initiative.milestones ?? []}
+                initiativeId={initiative.id}
+                users={users}
+                readOnly={readOnly}
+                onSaved={onSaved}
+              />
+            )}
+            {tab === "kpis" && (
+              <KpisGrid
+                kpis={initiative.kpis ?? []}
+                initiativeId={initiative.id}
+                readOnly={readOnly}
+                onSaved={onSaved}
+              />
+            )}
+            {tab === "stakeholders" && (
+              <StakeholdersGrid
+                stakeholders={initiative.stakeholders ?? []}
+                initiativeId={initiative.id}
+                readOnly={readOnly}
+                onSaved={onSaved}
+              />
             )}
 
             <div className="grid gap-2 text-sm">
@@ -576,6 +606,431 @@ function Row({ label, onDelete }: { label: string; onDelete?: () => Promise<void
           {t("common.remove")}
         </Button>
       ) : null}
+    </div>
+  );
+}
+
+const MILESTONE_STATUSES: MilestoneStatus[] = ["TODO", "IN_PROGRESS", "DONE", "BLOCKED"];
+const MILESTONE_STATUS_COLORS: Record<string, string> = {
+  TODO: "bg-slate-100 text-slate-600",
+  IN_PROGRESS: "bg-blue-100 text-blue-700",
+  DONE: "bg-green-100 text-green-700",
+  BLOCKED: "bg-red-100 text-red-700",
+};
+
+function InlineText({ value, onSave, disabled, placeholder, className }: {
+  value: string; onSave: (v: string) => void; disabled?: boolean; placeholder?: string; className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  if (disabled || !editing) {
+    return (
+      <span
+        className={`cursor-pointer rounded px-1 py-0.5 hover:bg-slate-100 ${!value ? "text-slate-400 italic" : ""} ${className ?? ""}`}
+        onClick={() => !disabled && setEditing(true)}
+      >
+        {value || placeholder || "—"}
+      </span>
+    );
+  }
+  return (
+    <input
+      ref={inputRef}
+      className="w-full rounded border-2 border-sky-500 px-1 py-0.5 text-sm outline-none"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => { setEditing(false); if (draft !== value) onSave(draft); }}
+      onKeyDown={(e) => { if (e.key === "Enter") { setEditing(false); if (draft !== value) onSave(draft); } if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+    />
+  );
+}
+
+function InlineSelect<T extends string>({ value, options, onSave, disabled, renderLabel }: {
+  value: T; options: T[]; onSave: (v: T) => void; disabled?: boolean; renderLabel: (v: T) => string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLSelectElement>(null);
+  useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
+
+  if (disabled || !editing) {
+    return (
+      <span className="cursor-pointer rounded px-1 py-0.5 hover:bg-slate-100" onClick={() => !disabled && setEditing(true)}>
+        {renderLabel(value)}
+      </span>
+    );
+  }
+  return (
+    <select
+      ref={ref}
+      className="rounded border-2 border-sky-500 px-1 py-0.5 text-sm outline-none"
+      value={value}
+      onChange={(e) => { onSave(e.target.value as T); setEditing(false); }}
+      onBlur={() => setEditing(false)}
+    >
+      {options.map((o) => <option key={o} value={o}>{renderLabel(o)}</option>)}
+    </select>
+  );
+}
+
+function InlineDate({ value, onSave, disabled }: { value: string | null | undefined; onSave: (v: string | null) => void; disabled?: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const display = value ? value.slice(0, 10) : "";
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
+
+  if (disabled || !editing) {
+    return (
+      <span className="cursor-pointer rounded px-1 py-0.5 hover:bg-slate-100 text-slate-600" onClick={() => !disabled && setEditing(true)}>
+        {display || "—"}
+      </span>
+    );
+  }
+  return (
+    <input
+      ref={ref}
+      type="date"
+      className="rounded border-2 border-sky-500 px-1 py-0.5 text-sm outline-none"
+      defaultValue={display}
+      onBlur={(e) => { setEditing(false); const v = e.target.value; onSave(v ? `${v}T00:00:00.000Z` : null); }}
+      onKeyDown={(e) => { if (e.key === "Escape") setEditing(false); }}
+    />
+  );
+}
+
+function MilestonesGrid({ milestones, initiativeId, users, readOnly, onSaved }: {
+  milestones: InitiativeMilestone[]; initiativeId: string; users: User[]; readOnly: boolean; onSaved: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [newTitle, setNewTitle] = useState("");
+
+  async function addMilestone() {
+    if (!newTitle.trim()) return;
+    await api.createMilestone(initiativeId, { title: newTitle, status: "TODO", sequence: milestones.length });
+    setNewTitle("");
+    await onSaved();
+  }
+
+  async function updateField(id: string, field: string, value: unknown) {
+    await api.updateMilestone(id, { [field]: value });
+    await onSaved();
+  }
+
+  return (
+    <div className="grid gap-2">
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={t("initiative.newMilestone")}
+            onKeyDown={(e) => { if (e.key === "Enter") addMilestone(); }} />
+          <Button onClick={addMilestone} disabled={!newTitle.trim()}>{t("common.add")}</Button>
+        </div>
+      )}
+      {milestones.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="px-2 py-2">#</th>
+                <th className="px-2 py-2">{t("common.title")}</th>
+                <th className="px-2 py-2">{t("common.status")}</th>
+                <th className="px-2 py-2">{t("initiative.targetDate")}</th>
+                <th className="px-2 py-2">{t("initiative.owner")}</th>
+                {!readOnly && <th className="px-2 py-2" />}
+              </tr>
+            </thead>
+            <tbody>
+              {milestones.map((m, i) => (
+                <tr key={m.id} className="border-t border-slate-200 hover:bg-slate-50/50">
+                  <td className="px-2 py-2 text-slate-400">{i + 1}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <InlineText value={m.title} onSave={(v) => updateField(m.id, "title", v)} disabled={readOnly} />
+                  </td>
+                  <td className="px-2 py-2">
+                    {readOnly ? (
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${MILESTONE_STATUS_COLORS[m.status]}`}>
+                        {t(`milestoneStatus.${m.status}`)}
+                      </span>
+                    ) : (
+                      <InlineSelect
+                        value={m.status}
+                        options={MILESTONE_STATUSES}
+                        onSave={(v) => updateField(m.id, "status", v)}
+                        renderLabel={(v) => t(`milestoneStatus.${v}`)}
+                      />
+                    )}
+                  </td>
+                  <td className="px-2 py-2">
+                    <InlineDate value={m.targetDate} onSave={(v) => updateField(m.id, "targetDate", v)} disabled={readOnly} />
+                  </td>
+                  <td className="px-2 py-2">
+                    {readOnly ? (
+                      <span>{m.owner?.name ?? "—"}</span>
+                    ) : (
+                      <InlineSelect
+                        value={m.ownerId ?? ""}
+                        options={["", ...users.map(u => u.id)]}
+                        onSave={(v) => updateField(m.id, "ownerId", v || null)}
+                        renderLabel={(v) => users.find(u => u.id === v)?.name ?? "—"}
+                      />
+                    )}
+                  </td>
+                  {!readOnly && (
+                    <td className="px-2 py-2">
+                      <Button variant="ghost" onClick={async () => { if (!window.confirm(t("milestonesTimeline.deleteConfirm", { name: m.title }))) return; await api.deleteMilestone(m.id); await onSaved(); }}>
+                        {t("common.remove")}
+                      </Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {milestones.length === 0 && (
+        <div className="rounded border border-slate-200 px-3 py-4 text-center text-sm text-slate-400">
+          {t("common.none")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KpiProgressBar({ current, target }: { current: string | null | undefined; target: string | null | undefined }) {
+  const cur = parseFloat(current ?? "");
+  const tar = parseFloat(target ?? "");
+  if (isNaN(cur) || isNaN(tar) || tar === 0) return <span className="text-xs text-slate-400">—</span>;
+  const pct = Math.min(Math.round((cur / tar) * 100), 100);
+  const color = pct < 34 ? "bg-red-500" : pct < 67 ? "bg-yellow-500" : "bg-green-500";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-2 w-full max-w-[120px] rounded-full bg-slate-100">
+        <div className={`h-2 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-semibold text-slate-500">{pct}%</span>
+    </div>
+  );
+}
+
+function KpisGrid({ kpis, initiativeId, readOnly, onSaved }: {
+  kpis: InitiativeKPI[]; initiativeId: string; readOnly: boolean; onSaved: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [newTitle, setNewTitle] = useState("");
+
+  async function addKpi() {
+    if (!newTitle.trim()) return;
+    await api.createKpi(initiativeId, { title: newTitle });
+    setNewTitle("");
+    await onSaved();
+  }
+
+  async function updateField(id: string, field: string, value: unknown) {
+    await api.updateKpi(id, { [field]: value });
+    await onSaved();
+  }
+
+  return (
+    <div className="grid gap-2">
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={t("initiative.newKpi")}
+            onKeyDown={(e) => { if (e.key === "Enter") addKpi(); }} />
+          <Button onClick={addKpi} disabled={!newTitle.trim()}>{t("common.add")}</Button>
+        </div>
+      )}
+      {kpis.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="px-2 py-2">KPI</th>
+                <th className="px-2 py-2">{t("initiative.target")}</th>
+                <th className="px-2 py-2">{t("initiative.current")}</th>
+                <th className="px-2 py-2">{t("initiative.unit")}</th>
+                <th className="px-2 py-2">{t("kpiDashboard.targetDate")}</th>
+                <th className="px-2 py-2">{t("initiative.progress")}</th>
+                {!readOnly && <th className="px-2 py-2" />}
+              </tr>
+            </thead>
+            <tbody>
+              {kpis.map((k) => (
+                <tr key={k.id} className="border-t border-slate-200 hover:bg-slate-50/50">
+                  <td className="px-2 py-2 font-medium">
+                    <InlineText value={k.title} onSave={(v) => updateField(k.id, "title", v)} disabled={readOnly} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <InlineText value={k.targetValue ?? ""} onSave={(v) => updateField(k.id, "targetValue", v || null)} disabled={readOnly} placeholder="—" />
+                  </td>
+                  <td className="px-2 py-2">
+                    <InlineText value={k.currentValue ?? ""} onSave={(v) => updateField(k.id, "currentValue", v || null)} disabled={readOnly} placeholder="—" />
+                  </td>
+                  <td className="px-2 py-2">
+                    <InlineText value={k.unit ?? ""} onSave={(v) => updateField(k.id, "unit", v || null)} disabled={readOnly} placeholder="—" />
+                  </td>
+                  <td className="px-2 py-2">
+                    {readOnly ? (
+                      <span className="text-sm">{k.targetDate ? k.targetDate.slice(0, 10) : "—"}</span>
+                    ) : (
+                      <input
+                        type="date"
+                        className="rounded border border-slate-200 px-1 py-0.5 text-sm hover:border-blue-400 focus:border-sky-500 focus:outline-none"
+                        value={k.targetDate ? k.targetDate.slice(0, 10) : ""}
+                        onChange={async (e) => {
+                          const v = e.target.value;
+                          await updateField(k.id, "targetDate", v ? `${v}T00:00:00.000Z` : null);
+                        }}
+                      />
+                    )}
+                  </td>
+                  <td className="px-2 py-2">
+                    <KpiProgressBar current={k.currentValue} target={k.targetValue} />
+                  </td>
+                  {!readOnly && (
+                    <td className="px-2 py-2">
+                      <Button variant="ghost" onClick={async () => { if (!window.confirm(t("milestonesTimeline.deleteConfirm", { name: k.title }))) return; await api.deleteKpi(k.id); await onSaved(); }}>
+                        {t("common.remove")}
+                      </Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {kpis.length === 0 && (
+        <div className="rounded border border-slate-200 px-3 py-4 text-center text-sm text-slate-400">
+          {t("common.none")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const STAKEHOLDER_ROLES: StakeholderRole[] = ["DECISION_MAKER", "SPONSOR", "REVIEWER", "AMBASSADOR", "LEGAL", "MEDICAL"];
+const STAKEHOLDER_TYPES: StakeholderType[] = ["INTERNAL", "EXTERNAL"];
+const ROLE_COLORS: Record<string, string> = {
+  DECISION_MAKER: "bg-amber-100 text-amber-800",
+  SPONSOR: "bg-blue-100 text-blue-700",
+  REVIEWER: "bg-indigo-100 text-indigo-700",
+  AMBASSADOR: "bg-green-100 text-green-700",
+  LEGAL: "bg-slate-100 text-slate-600",
+  MEDICAL: "bg-pink-100 text-pink-700",
+};
+const TYPE_COLORS: Record<string, string> = {
+  INTERNAL: "bg-green-100 text-green-700",
+  EXTERNAL: "bg-red-100 text-red-600",
+};
+
+function StakeholdersGrid({ stakeholders, initiativeId, readOnly, onSaved }: {
+  stakeholders: Stakeholder[]; initiativeId: string; readOnly: boolean; onSaved: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<StakeholderRole>("SPONSOR");
+  const [newType, setNewType] = useState<StakeholderType>("INTERNAL");
+  const [newOrg, setNewOrg] = useState("");
+
+  async function addStakeholder() {
+    if (!newName.trim()) return;
+    await api.createStakeholder(initiativeId, { name: newName, role: newRole, type: newType, organization: newOrg || null });
+    setNewName(""); setNewOrg("");
+    await onSaved();
+  }
+
+  async function updateField(id: string, field: string, value: unknown) {
+    await api.updateStakeholder(id, { [field]: value });
+    await onSaved();
+  }
+
+  return (
+    <div className="grid gap-2">
+      {!readOnly && (
+        <div className="flex flex-wrap gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+          <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("initiative.stakeholderName")} className="min-w-[150px] flex-1"
+            onKeyDown={(e) => { if (e.key === "Enter") addStakeholder(); }} />
+          <Select value={newRole} onChange={(e) => setNewRole(e.target.value as StakeholderRole)} className="w-auto">
+            {STAKEHOLDER_ROLES.map((r) => <option key={r} value={r}>{t(`stakeholderRole.${r}`)}</option>)}
+          </Select>
+          <Select value={newType} onChange={(e) => setNewType(e.target.value as StakeholderType)} className="w-auto">
+            {STAKEHOLDER_TYPES.map((st) => <option key={st} value={st}>{t(`stakeholderType.${st}`)}</option>)}
+          </Select>
+          <Input value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder={t("initiative.stakeholderOrg")} className="min-w-[130px] flex-1" />
+          <Button onClick={addStakeholder} disabled={!newName.trim()}>{t("common.add")}</Button>
+        </div>
+      )}
+      {stakeholders.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="px-2 py-2">{t("common.name")}</th>
+                <th className="px-2 py-2">{t("common.role")}</th>
+                <th className="px-2 py-2">{t("common.type")}</th>
+                <th className="px-2 py-2">{t("initiative.organization")}</th>
+                {!readOnly && <th className="px-2 py-2" />}
+              </tr>
+            </thead>
+            <tbody>
+              {stakeholders.map((s) => (
+                <tr key={s.id} className="border-t border-slate-200 hover:bg-slate-50/50">
+                  <td className="px-2 py-2 font-medium">
+                    <InlineText value={s.name} onSave={(v) => updateField(s.id, "name", v)} disabled={readOnly} />
+                  </td>
+                  <td className="px-2 py-2">
+                    {readOnly ? (
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${ROLE_COLORS[s.role]}`}>
+                        {t(`stakeholderRole.${s.role}`)}
+                      </span>
+                    ) : (
+                      <InlineSelect
+                        value={s.role}
+                        options={STAKEHOLDER_ROLES}
+                        onSave={(v) => updateField(s.id, "role", v)}
+                        renderLabel={(v) => t(`stakeholderRole.${v}`)}
+                      />
+                    )}
+                  </td>
+                  <td className="px-2 py-2">
+                    {readOnly ? (
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${TYPE_COLORS[s.type]}`}>
+                        {t(`stakeholderType.${s.type}`)}
+                      </span>
+                    ) : (
+                      <InlineSelect
+                        value={s.type}
+                        options={STAKEHOLDER_TYPES}
+                        onSave={(v) => updateField(s.id, "type", v)}
+                        renderLabel={(v) => t(`stakeholderType.${v}`)}
+                      />
+                    )}
+                  </td>
+                  <td className="px-2 py-2">
+                    <InlineText value={s.organization ?? ""} onSave={(v) => updateField(s.id, "organization", v || null)} disabled={readOnly} placeholder="—" />
+                  </td>
+                  {!readOnly && (
+                    <td className="px-2 py-2">
+                      <Button variant="ghost" onClick={async () => { if (!window.confirm(t("milestonesTimeline.deleteConfirm", { name: s.name }))) return; await api.deleteStakeholder(s.id); await onSaved(); }}>
+                        {t("common.remove")}
+                      </Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {stakeholders.length === 0 && (
+        <div className="rounded border border-slate-200 px-3 py-4 text-center text-sm text-slate-400">
+          {t("common.none")}
+        </div>
+      )}
     </div>
   );
 }

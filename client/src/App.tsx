@@ -27,6 +27,8 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
 import { AdminPage } from "./pages/AdminPage";
+import { KpiDashboardPage } from "./pages/KpiDashboardPage";
+import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
 import type { Initiative, UserRole } from "./types/models";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
@@ -256,6 +258,17 @@ function App() {
               />
             }
           />
+          <Route
+            path="/kpi-dashboard"
+            element={
+              <KpiDashboardPage
+                domains={board.meta.domains}
+                users={board.meta.users}
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+              />
+            }
+          />
           <Route path="/heatmap" element={<HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />} />
           <Route path="/buyer-user" element={<BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           <Route path="/gaps" element={<GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
@@ -296,6 +309,18 @@ function App() {
                 initiatives={board.initiatives}
                 onOpenInitiative={(i) => setSelected(i)}
                 quickFilter={board.filters.quick}
+              />
+            }
+          />
+          <Route
+            path="/milestones"
+            element={
+              <MilestonesTimelinePage
+                domains={board.meta.domains}
+                users={board.meta.users}
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+                readOnly={!perms.canEditStructure}
               />
             }
           />

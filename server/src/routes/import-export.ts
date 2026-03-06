@@ -16,6 +16,7 @@ const ALL_ENTITY_KEYS = [
   "accounts", "partners", "initiatives", "features", "requirements",
   "decisions", "risks", "demands", "demandLinks", "dependencies",
   "campaigns", "assets", "campaignLinks",
+  "milestones", "kpis", "stakeholders",
 ] as const;
 
 type EntityKey = typeof ALL_ENTITY_KEYS[number];
@@ -51,6 +52,9 @@ importExportRouter.get("/export", async (req, res) => {
       campaigns: () => prisma.campaign.findMany({ orderBy: { createdAt: "asc" } }),
       assets: () => prisma.asset.findMany({ orderBy: { createdAt: "asc" } }),
       campaignLinks: () => prisma.campaignLink.findMany(),
+      milestones: () => prisma.initiativeMilestone.findMany({ orderBy: { sequence: "asc" } }),
+      kpis: () => prisma.initiativeKPI.findMany({ orderBy: { createdAt: "asc" } }),
+      stakeholders: () => prisma.stakeholder.findMany({ orderBy: { createdAt: "asc" } }),
     };
 
     const payload: Record<string, unknown> = {
@@ -93,6 +97,7 @@ importExportRouter.post("/import", async (req, res) => {
       "users", "products", "domains", "personas", "revenueStreams",
       "accounts", "partners", "initiatives", "features", "requirements",
       "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
+      "milestones", "kpis", "stakeholders",
     ];
     const hasAny = entityKeys.some((k) => Array.isArray(data[k]));
     if (!hasAny) {
@@ -177,6 +182,9 @@ async function replaceImport(data: any) {
     if (has("requirements")) await tx.requirement.deleteMany();
     if (has("features")) { await tx.requirement.deleteMany(); await tx.feature.deleteMany(); }
     if (has("initiatives")) {
+      await tx.initiativeMilestone.deleteMany();
+      await tx.initiativeKPI.deleteMany();
+      await tx.stakeholder.deleteMany();
       await tx.initiativeAssignment.deleteMany();
       await tx.initiativeRevenueStream.deleteMany();
       await tx.initiativePersonaImpact.deleteMany();
@@ -276,6 +284,55 @@ async function replaceImport(data: any) {
     if (has("campaigns")) await importCampaigns(tx, data.campaigns, idMap);
     if (has("assets")) await importAssets(tx, data.assets, idMap);
     if (has("campaignLinks")) await importCampaignLinks(tx, data.campaignLinks, idMap);
+
+    if (has("milestones")) {
+      await tx.initiativeMilestone.deleteMany();
+      for (const m of data.milestones) {
+        const initId = idMap.get(m.initiativeId);
+        if (initId) {
+          await tx.initiativeMilestone.create({
+            data: {
+              initiativeId: initId, title: m.title,
+              targetDate: m.targetDate ? new Date(m.targetDate) : null,
+              status: m.status ?? "TODO", sequence: m.sequence ?? 0,
+              ownerId: mapId(idMap, m.ownerId),
+            },
+          });
+        }
+      }
+    }
+
+    if (has("kpis")) {
+      await tx.initiativeKPI.deleteMany();
+      for (const k of data.kpis) {
+        const initId = idMap.get(k.initiativeId);
+        if (initId) {
+          await tx.initiativeKPI.create({
+            data: {
+              initiativeId: initId, title: k.title,
+              targetValue: k.targetValue ?? null, currentValue: k.currentValue ?? null,
+              unit: k.unit ?? null, targetDate: k.targetDate ? new Date(k.targetDate) : null,
+            },
+          });
+        }
+      }
+    }
+
+    if (has("stakeholders")) {
+      await tx.stakeholder.deleteMany();
+      for (const s of data.stakeholders) {
+        const initId = idMap.get(s.initiativeId);
+        if (initId) {
+          await tx.stakeholder.create({
+            data: {
+              initiativeId: initId, name: s.name,
+              role: s.role, type: s.type,
+              organization: s.organization ?? null,
+            },
+          });
+        }
+      }
+    }
 
     return buildCounts(data);
   }, { timeout: 60_000 });
@@ -595,6 +652,61 @@ async function mergeImport(data: any) {
     if (Array.isArray(data.assets)) await importAssets(tx, data.assets, idMap);
     if (Array.isArray(data.campaignLinks)) await importCampaignLinks(tx, data.campaignLinks, idMap);
 
+    if (Array.isArray(data.milestones)) {
+      for (const m of data.milestones) {
+        const initId = idMap.get(m.initiativeId);
+        if (!initId) continue;
+        const existing = await tx.initiativeMilestone.findFirst({ where: { initiativeId: initId, title: m.title } });
+        const mData = {
+          initiativeId: initId, title: m.title,
+          targetDate: m.targetDate ? new Date(m.targetDate) : null,
+          status: m.status ?? "TODO", sequence: m.sequence ?? 0,
+          ownerId: mapId(idMap, m.ownerId),
+        };
+        if (existing) {
+          await tx.initiativeMilestone.update({ where: { id: existing.id }, data: mData });
+        } else {
+          await tx.initiativeMilestone.create({ data: mData });
+        }
+      }
+    }
+
+    if (Array.isArray(data.kpis)) {
+      for (const k of data.kpis) {
+        const initId = idMap.get(k.initiativeId);
+        if (!initId) continue;
+        const existing = await tx.initiativeKPI.findFirst({ where: { initiativeId: initId, title: k.title } });
+        const kData = {
+          initiativeId: initId, title: k.title,
+          targetValue: k.targetValue ?? null, currentValue: k.currentValue ?? null,
+          unit: k.unit ?? null, targetDate: k.targetDate ? new Date(k.targetDate) : null,
+        };
+        if (existing) {
+          await tx.initiativeKPI.update({ where: { id: existing.id }, data: kData });
+        } else {
+          await tx.initiativeKPI.create({ data: kData });
+        }
+      }
+    }
+
+    if (Array.isArray(data.stakeholders)) {
+      for (const s of data.stakeholders) {
+        const initId = idMap.get(s.initiativeId);
+        if (!initId) continue;
+        const existing = await tx.stakeholder.findFirst({ where: { initiativeId: initId, name: s.name } });
+        const sData = {
+          initiativeId: initId, name: s.name,
+          role: s.role, type: s.type,
+          organization: s.organization ?? null,
+        };
+        if (existing) {
+          await tx.stakeholder.update({ where: { id: existing.id }, data: sData });
+        } else {
+          await tx.stakeholder.create({ data: sData });
+        }
+      }
+    }
+
     return buildCounts(data);
   }, { timeout: 60_000 });
 }
@@ -763,6 +875,9 @@ importExportRouter.post("/clear", async (req, res) => {
       await tx.decision.deleteMany();
       await tx.requirement.deleteMany();
       await tx.feature.deleteMany();
+      await tx.initiativeMilestone.deleteMany();
+      await tx.initiativeKPI.deleteMany();
+      await tx.stakeholder.deleteMany();
       await tx.initiativeRevenueStream.deleteMany();
       await tx.initiativePersonaImpact.deleteMany();
       await tx.initiative.deleteMany();
@@ -803,6 +918,7 @@ function buildCounts(data: any): Record<string, number> {
     "users", "products", "domains", "personas", "revenueStreams", "accounts", "partners",
     "initiatives", "features", "requirements", "decisions", "risks",
     "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
+    "milestones", "kpis", "stakeholders",
   ];
   const result: Record<string, number> = {};
   for (const k of keys) {

@@ -8,6 +8,7 @@ import { logAudit } from "../services/audit.js";
 function roleForEmail(email: string): UserRole | null {
   if (email === "s@strt.vc") return UserRole.SUPER_ADMIN;
   if (email.endsWith("@drdigital.care")) return UserRole.EDITOR;
+  if (email.endsWith("@ehtmedic.cz")) return UserRole.EDITOR;
   return null;
 }
 

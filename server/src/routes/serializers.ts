@@ -56,5 +56,11 @@ export const initiativeInclude = {
     }
   },
   outgoingDeps: true,
-  incomingDeps: true
+  incomingDeps: true,
+  milestones: {
+    include: { owner: true },
+    orderBy: { sequence: "asc" as const },
+  },
+  kpis: true,
+  stakeholders: true,
 } satisfies Prisma.InitiativeInclude;
