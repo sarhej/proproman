@@ -216,7 +216,7 @@ async function main() {
     raci: { accountable: string; implementer: string; consulted: string[]; informed: string[] };
     features: { title: string; description: string; status: FeatureStatus; startDate: string; targetDate: string; requirements: string[] }[];
     milestones: { title: string; targetDate?: string; status: MilestoneStatus; owner?: string }[];
-    kpis: { title: string; targetValue?: string; currentValue?: string; unit?: string }[];
+    kpis: { title: string; targetValue?: string; currentValue?: string; unit?: string; targetDate?: string }[];
     stakeholders: { name: string; role: StakeholderRole; type: StakeholderType; organization?: string }[];
     risks: { title: string; probability: "LOW" | "MEDIUM" | "HIGH"; impact: "LOW" | "MEDIUM" | "HIGH"; mitigation: string; owner: string }[];
   };
@@ -863,7 +863,7 @@ async function main() {
         targetValue: k.targetValue ?? null,
         currentValue: k.currentValue ?? null,
         unit: k.unit ?? null,
-        targetDate: (k as Record<string, unknown>).targetDate ? new Date((k as Record<string, unknown>).targetDate as string) : null,
+        targetDate: k.targetDate ? new Date(k.targetDate) : null,
       })),
     });
 
