@@ -36,7 +36,7 @@ const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "V
 function App() {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
-  const board = useBoardData();
+  const board = useBoardData(!!user);
   const perms = usePermissions(user);
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);

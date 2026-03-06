@@ -11,7 +11,7 @@ type Filters = {
   quick?: string;
 };
 
-export function useBoardData() {
+export function useBoardData(enabled = true) {
   const [meta, setMeta] = useState<MetaPayload | null>(null);
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [filters, setFilters] = useState<Filters>({});
@@ -29,6 +29,7 @@ export function useBoardData() {
   }, [filters]);
 
   const refresh = useCallback(async () => {
+    if (!enabled) return;
     try {
       setLoading(true);
       const [metaPayload, initiativesPayload] = await Promise.all([
@@ -43,11 +44,11 @@ export function useBoardData() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, enabled]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (enabled) refresh();
+  }, [refresh, enabled]);
 
   const filteredInitiatives = useMemo(() => {
     const quick = filters.quick?.trim().toLowerCase();
