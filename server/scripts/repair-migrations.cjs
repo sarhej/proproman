@@ -240,7 +240,6 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
           "type" "StakeholderType" NOT NULL DEFAULT 'INTERNAL',
           "organization" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" TIMESTAMP(3) NOT NULL,
           CONSTRAINT "Stakeholder_pkey" PRIMARY KEY ("id")
         );
         CREATE INDEX IF NOT EXISTS "Stakeholder_initiativeId_idx" ON "Stakeholder"("initiativeId");
@@ -310,6 +309,14 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
         await pool.query('ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "problemStatement" TEXT');
         await pool.query('ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "successCriteria" TEXT');
         console.log("Added problemStatement/successCriteria to Initiative.");
+      }
+      // Drop stale updatedAt column from Stakeholder (schema doesn't define it)
+      const stakeholderUpdatedAtCheck = await pool.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = 'Stakeholder' AND column_name = 'updatedAt'"
+      );
+      if (stakeholderUpdatedAtCheck.rowCount > 0) {
+        await pool.query('ALTER TABLE "Stakeholder" DROP COLUMN "updatedAt"');
+        console.log("Dropped stale updatedAt column from Stakeholder.");
       }
     }
 
