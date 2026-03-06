@@ -114,11 +114,35 @@ importExportRouter.post("/import", async (req, res) => {
   }
 
   try {
-    const counts = mode === "replace"
-      ? await replaceImport(data)
-      : await mergeImport(data);
+    let counts: Record<string, number>;
+    let auditUserId = req.user!.id;
 
-    await logAudit(req.user!.id, "CREATED", "IMPORT", undefined, { mode, counts });
+    if (mode === "replace") {
+      const currentEmail = req.user!.email;
+      const result = await replaceImport(data);
+      counts = result.counts;
+
+      // Re-map session to the newly created user matching the caller's email
+      if (Array.isArray(data.users)) {
+        const newSelf = await prisma.user.findFirst({
+          where: { emails: { some: { email: currentEmail } } },
+        });
+        if (newSelf) {
+          auditUserId = newSelf.id;
+          if (req.session) {
+            (req.session as any).passport = { user: newSelf.id };
+          }
+        }
+      }
+    } else {
+      counts = await mergeImport(data);
+    }
+
+    try {
+      await logAudit(auditUserId, "CREATED", "IMPORT", undefined, { mode, counts });
+    } catch {
+      // Audit log is non-critical; don't fail the import
+    }
 
     res.json({ ok: true, mode, counts });
   } catch (err) {
@@ -335,7 +359,7 @@ async function replaceImport(data: any) {
       }
     }
 
-    return buildCounts(data);
+    return { counts: buildCounts(data), idMap };
   }, { timeout: 60_000 });
 }
 
