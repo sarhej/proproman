@@ -166,6 +166,144 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       console.log("UserEmail table exists. No repair needed.");
     }
 
+    // Ensure new schema models from 20260305 migration exist
+    const milestoneTableCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'InitiativeMilestone'"
+    );
+
+    if (milestoneTableCheck.rowCount === 0) {
+      console.log("New schema tables missing. Applying pragmatic schema migration...");
+
+      // Create enums
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'MilestoneStatus') THEN
+            CREATE TYPE "MilestoneStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE', 'SKIPPED');
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StakeholderRole') THEN
+            CREATE TYPE "StakeholderRole" AS ENUM ('SPONSOR', 'OWNER', 'CONTRIBUTOR', 'REVIEWER', 'INFORMED');
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StakeholderType') THEN
+            CREATE TYPE "StakeholderType" AS ENUM ('INTERNAL', 'EXTERNAL', 'PARTNER');
+          END IF;
+        END $$;
+      `);
+
+      // Add columns to Initiative
+      await pool.query(`
+        ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "problemStatement" TEXT;
+        ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "successCriteria" TEXT;
+      `);
+
+      // Create InitiativeMilestone table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "InitiativeMilestone" (
+          "id" TEXT NOT NULL,
+          "initiativeId" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "targetDate" TIMESTAMP(3),
+          "status" "MilestoneStatus" NOT NULL DEFAULT 'TODO',
+          "sequence" INTEGER NOT NULL DEFAULT 0,
+          "ownerId" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "InitiativeMilestone_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX IF NOT EXISTS "InitiativeMilestone_initiativeId_idx" ON "InitiativeMilestone"("initiativeId");
+      `);
+
+      // Create InitiativeKPI table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "InitiativeKPI" (
+          "id" TEXT NOT NULL,
+          "initiativeId" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "targetValue" TEXT,
+          "currentValue" TEXT,
+          "unit" TEXT,
+          "targetDate" TIMESTAMP(3),
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "InitiativeKPI_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX IF NOT EXISTS "InitiativeKPI_initiativeId_idx" ON "InitiativeKPI"("initiativeId");
+      `);
+
+      // Create Stakeholder table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "Stakeholder" (
+          "id" TEXT NOT NULL,
+          "initiativeId" TEXT NOT NULL,
+          "name" TEXT NOT NULL,
+          "role" "StakeholderRole" NOT NULL,
+          "type" "StakeholderType" NOT NULL DEFAULT 'INTERNAL',
+          "organization" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "Stakeholder_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX IF NOT EXISTS "Stakeholder_initiativeId_idx" ON "Stakeholder"("initiativeId");
+      `);
+
+      // Add foreign keys
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InitiativeMilestone_initiativeId_fkey') THEN
+            ALTER TABLE "InitiativeMilestone" ADD CONSTRAINT "InitiativeMilestone_initiativeId_fkey"
+              FOREIGN KEY ("initiativeId") REFERENCES "Initiative"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InitiativeMilestone_ownerId_fkey') THEN
+            ALTER TABLE "InitiativeMilestone" ADD CONSTRAINT "InitiativeMilestone_ownerId_fkey"
+              FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InitiativeKPI_initiativeId_fkey') THEN
+            ALTER TABLE "InitiativeKPI" ADD CONSTRAINT "InitiativeKPI_initiativeId_fkey"
+              FOREIGN KEY ("initiativeId") REFERENCES "Initiative"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Stakeholder_initiativeId_fkey') THEN
+            ALTER TABLE "Stakeholder" ADD CONSTRAINT "Stakeholder_initiativeId_fkey"
+              FOREIGN KEY ("initiativeId") REFERENCES "Initiative"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+          END IF;
+        END $$;
+      `);
+
+      // Mark both migrations as applied
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260305_pragmatic_milestones_kpis_stakeholders', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260305_pragmatic_milestones_kpis_stakeholders'
+        );
+
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260306_add_kpi_target_date', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260306_add_kpi_target_date'
+        );
+      `);
+
+      console.log("Pragmatic schema migration applied successfully via direct SQL.");
+    } else {
+      console.log("InitiativeMilestone table exists. Checking targetDate on KPI...");
+      // Ensure targetDate column on InitiativeKPI exists (from 20260306 migration)
+      const kpiTargetDateCheck = await pool.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = 'InitiativeKPI' AND column_name = 'targetDate'"
+      );
+      if (kpiTargetDateCheck.rowCount === 0) {
+        await pool.query('ALTER TABLE "InitiativeKPI" ADD COLUMN "targetDate" TIMESTAMP(3)');
+        console.log("Added targetDate to InitiativeKPI.");
+      }
+      // Ensure problemStatement/successCriteria on Initiative
+      const psCheck = await pool.query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = 'Initiative' AND column_name = 'problemStatement'"
+      );
+      if (psCheck.rowCount === 0) {
+        await pool.query('ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "problemStatement" TEXT');
+        await pool.query('ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "successCriteria" TEXT');
+        console.log("Added problemStatement/successCriteria to Initiative.");
+      }
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);
