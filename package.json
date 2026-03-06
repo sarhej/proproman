@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "client",
-    "server"
+    "server",
+    "mcp"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
@@ -14,7 +15,9 @@
     "db:generate": "npm run db:generate --workspace server",
     "db:migrate": "npm run db:migrate --workspace server",
     "db:seed": "npm run db:seed --workspace server",
-    "db:up": "docker compose up -d postgres && echo Waiting for Postgres... && sleep 5 && npm run db:migrate && npm run db:seed"
+    "db:up": "docker compose up -d postgres && echo Waiting for Postgres... && sleep 5 && npm run db:migrate && npm run db:seed",
+    "mcp:build": "npm run build --workspace mcp",
+    "mcp:start": "npm run start --workspace mcp"
   },
   "engines": {
     "node": ">=20.0.0"

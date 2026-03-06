@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "drd-hub": {
+      "url": "http://localhost:8080/mcp"
+    },
+    "drd-hub-remote": {
+      "url": "https://drdhub.up.railway.app/mcp"
+    }
+  }
+}

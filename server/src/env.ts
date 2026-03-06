@@ -24,7 +24,13 @@ const envSchema = z.object({
     .transform((value) => value === "true"),
   DEV_AUTH_EMAIL: z.string().default("s@strt.vc"),
   DEV_AUTH_NAME: z.string().default("Sergei"),
-  DEV_AUTH_ROLE: z.nativeEnum(UserRole).default(UserRole.SUPER_ADMIN)
+  DEV_AUTH_ROLE: z.nativeEnum(UserRole).default(UserRole.SUPER_ADMIN),
+  /** Optional: when set, requests with Authorization: Bearer <API_KEY> are authenticated (e.g. for MCP). */
+  API_KEY: optionalString,
+  /** Optional: user ID to impersonate when API_KEY is used. If unset, first SUPER_ADMIN is used. */
+  API_KEY_USER_ID: optionalString,
+  /** Secret for signing MCP OAuth JWT tokens. Falls back to SESSION_SECRET if not set. */
+  MCP_JWT_SECRET: optionalString
 });
 
 export const env = envSchema

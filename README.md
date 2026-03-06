@@ -72,6 +72,15 @@ npm run db:migrate --workspace server -- --name init
 npm run db:seed
 ```
 
+## Agents & MCP
+
+The project APIs are exposed as **MCP (Model Context Protocol)** tools so agents (e.g. in Cursor) can call DrD Hub programmatically.
+
+- **Remote (recommended):** The Express server serves an MCP endpoint at `/mcp` with **OAuth 2.1 (Google login)**. Add `"url": "https://<your-domain>/mcp"` in Cursor; no API key—Cursor discovers OAuth and opens the browser. See [docs/MCP_API_EXPOSURE.md](docs/MCP_API_EXPOSURE.md).
+- **Local / stdio:** The `mcp/` package runs as a separate process and calls the API with an API key. Set `API_KEY` on the server and `DRD_API_KEY` in Cursor config; see [mcp/README.md](mcp/README.md).
+
+For both options, Cursor config (local + remote) and Google redirect URI for MCP are in [docs/MCP_API_EXPOSURE.md](docs/MCP_API_EXPOSURE.md).
+
 ## Views
 
 - Domain Board (drag and drop by domain)

@@ -35,6 +35,8 @@ import { milestonesRouter } from "./routes/milestones.js";
 import { kpisRouter } from "./routes/kpis.js";
 import { stakeholdersRouter } from "./routes/stakeholders.js";
 import { prisma } from "./db.js";
+import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
+import { mountMcp } from "./mcp/setup.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -74,6 +76,9 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(apiKeyAuth);
+
+mountMcp(app);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
