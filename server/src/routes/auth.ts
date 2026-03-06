@@ -24,7 +24,7 @@ authRouter.get(
 );
 
 authRouter.post("/dev-login", async (req, res, next) => {
-  const allowDevAuth = env.NODE_ENV !== "production" && env.ALLOW_DEV_AUTH;
+  const allowDevAuth = env.ALLOW_DEV_AUTH;
   if (!allowDevAuth) {
     res.status(403).json({ error: "Dev login is disabled." });
     return;
