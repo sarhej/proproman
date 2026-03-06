@@ -181,10 +181,10 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
             CREATE TYPE "MilestoneStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE', 'SKIPPED');
           END IF;
           IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StakeholderRole') THEN
-            CREATE TYPE "StakeholderRole" AS ENUM ('SPONSOR', 'OWNER', 'CONTRIBUTOR', 'REVIEWER', 'INFORMED');
+            CREATE TYPE "StakeholderRole" AS ENUM ('DECISION_MAKER', 'SPONSOR', 'REVIEWER', 'AMBASSADOR', 'LEGAL', 'MEDICAL');
           END IF;
           IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StakeholderType') THEN
-            CREATE TYPE "StakeholderType" AS ENUM ('INTERNAL', 'EXTERNAL', 'PARTNER');
+            CREATE TYPE "StakeholderType" AS ENUM ('INTERNAL', 'EXTERNAL');
           END IF;
         END $$;
       `);
@@ -317,6 +317,35 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       if (stakeholderUpdatedAtCheck.rowCount > 0) {
         await pool.query('ALTER TABLE "Stakeholder" DROP COLUMN "updatedAt"');
         console.log("Dropped stale updatedAt column from Stakeholder.");
+      }
+    }
+
+    // Ensure StakeholderRole enum has all required values from Prisma schema
+    const requiredStakeholderRoles = ['DECISION_MAKER', 'SPONSOR', 'REVIEWER', 'AMBASSADOR', 'LEGAL', 'MEDICAL'];
+    const existingStakeholderRoles = await pool.query(
+      "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'StakeholderRole'"
+    );
+    if (existingStakeholderRoles.rowCount > 0) {
+      const existing = existingStakeholderRoles.rows.map(r => r.enumlabel);
+      for (const val of requiredStakeholderRoles) {
+        if (!existing.includes(val)) {
+          await pool.query(`ALTER TYPE "StakeholderRole" ADD VALUE '${val}'`);
+          console.log(`Added enum value to StakeholderRole: ${val}`);
+        }
+      }
+    }
+
+    // Ensure StakeholderType enum matches Prisma schema (INTERNAL, EXTERNAL only)
+    const existingStakeholderTypes = await pool.query(
+      "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'StakeholderType'"
+    );
+    if (existingStakeholderTypes.rowCount > 0) {
+      const existing = existingStakeholderTypes.rows.map(r => r.enumlabel);
+      for (const val of ['INTERNAL', 'EXTERNAL']) {
+        if (!existing.includes(val)) {
+          await pool.query(`ALTER TYPE "StakeholderType" ADD VALUE '${val}'`);
+          console.log(`Added enum value to StakeholderType: ${val}`);
+        }
       }
     }
 
