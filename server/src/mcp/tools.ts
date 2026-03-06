@@ -4,6 +4,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
 import { initiativeInclude } from "../routes/serializers.js";
 
+/** Only these user fields are exposed to MCP (so the AI can match user id). */
+const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
+
 function textContent(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
@@ -17,6 +20,27 @@ function getUserFromCtx(ctx: unknown): { userId: string; role: string } {
 function requireRole(role: string, ...allowed: string[]) {
   if (role === UserRole.SUPER_ADMIN) return;
   if (!allowed.includes(role)) throw new Error(`Forbidden: requires ${allowed.join(" or ")}`);
+}
+
+/** Recursively replace any user-like object (has email + name) with only id, name, email, role. */
+function sanitizeUserFields(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(sanitizeUserFields);
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.email === "string" && typeof obj.name === "string") {
+      return {
+        id: obj.id,
+        name: obj.name,
+        email: obj.email,
+        role: obj.role
+      };
+    }
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) out[k] = sanitizeUserFields(v);
+    return out;
+  }
+  return value;
 }
 
 export function registerTools(server: McpServer) {
@@ -37,7 +61,7 @@ export function registerTools(server: McpServer) {
         prisma.domain.findMany({ orderBy: { sortOrder: "asc" } }),
         prisma.persona.findMany({ orderBy: { name: "asc" } }),
         prisma.revenueStream.findMany({ orderBy: { name: "asc" } }),
-        prisma.user.findMany({ orderBy: { name: "asc" } }),
+        prisma.user.findMany({ select: userPublicSelect, orderBy: { name: "asc" } }),
         prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
         prisma.account.findMany({ orderBy: { name: "asc" } }),
         prisma.partner.findMany({ orderBy: { name: "asc" } })
@@ -73,7 +97,7 @@ export function registerTools(server: McpServer) {
         include: initiativeInclude,
         orderBy: [{ domain: { sortOrder: "asc" } }, { sortOrder: "asc" }, { createdAt: "asc" }]
       });
-      return textContent(JSON.stringify(initiatives, null, 2));
+      return textContent(JSON.stringify(sanitizeUserFields(initiatives), null, 2));
     }
   );
 
@@ -84,7 +108,7 @@ export function registerTools(server: McpServer) {
       getUserFromCtx(ctx);
       const initiative = await prisma.initiative.findUnique({ where: { id }, include: initiativeInclude });
       if (!initiative) throw new Error("Initiative not found");
-      return textContent(JSON.stringify(initiative, null, 2));
+      return textContent(JSON.stringify(sanitizeUserFields(initiative), null, 2));
     }
   );
 
@@ -122,7 +146,7 @@ export function registerTools(server: McpServer) {
         },
         include: initiativeInclude
       });
-      return textContent(JSON.stringify(initiative, null, 2));
+      return textContent(JSON.stringify(sanitizeUserFields(initiative), null, 2));
     }
   );
 
@@ -158,7 +182,7 @@ export function registerTools(server: McpServer) {
       if (body.commercialType !== undefined) data.commercialType = body.commercialType;
       if (body.isGap !== undefined) data.isGap = body.isGap;
       const initiative = await prisma.initiative.update({ where: { id }, data, include: initiativeInclude });
-      return textContent(JSON.stringify(initiative, null, 2));
+      return textContent(JSON.stringify(sanitizeUserFields(initiative), null, 2));
     }
   );
 
@@ -210,7 +234,7 @@ export function registerTools(server: McpServer) {
     async (_args, ctx) => {
       getUserFromCtx(ctx);
       const kpis = await prisma.initiativeKPI.findMany({
-        include: { initiative: { select: { id: true, title: true, startDate: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: { id: true, name: true } } } } },
+        include: { initiative: { select: { id: true, title: true, startDate: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } } },
         orderBy: { initiative: { title: "asc" } }
       });
       return textContent(JSON.stringify(kpis, null, 2));
@@ -223,7 +247,7 @@ export function registerTools(server: McpServer) {
     async (_args, ctx) => {
       getUserFromCtx(ctx);
       const milestones = await prisma.initiativeMilestone.findMany({
-        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: { id: true, name: true } } } } },
+        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } } },
         orderBy: { initiative: { title: "asc" } }
       });
       return textContent(JSON.stringify(milestones, null, 2));
@@ -244,5 +268,294 @@ export function registerTools(server: McpServer) {
     "drd_list_revenue_streams",
     { title: "List revenue streams", description: "List all revenue streams.", inputSchema: z.object({}) },
     async (_args, ctx) => { getUserFromCtx(ctx); return textContent(JSON.stringify((await prisma.revenueStream.findMany({ orderBy: { name: "asc" } })), null, 2)); }
+  );
+
+  // --- Features (read-only list) ---
+  server.registerTool(
+    "drd_list_features",
+    {
+      title: "List features",
+      description: "List all features with initiative context. Optionally filter by initiativeId.",
+      inputSchema: z.object({ initiativeId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const features = await prisma.feature.findMany({
+        where: args.initiativeId ? { initiativeId: args.initiativeId } : undefined,
+        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } }, owner: true },
+        orderBy: [{ initiative: { title: "asc" } }, { sortOrder: "asc" }]
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(features), null, 2));
+    }
+  );
+
+  // --- Decisions (read-only list) ---
+  server.registerTool(
+    "drd_list_decisions",
+    {
+      title: "List decisions",
+      description: "List all initiative decisions. Optionally filter by initiativeId.",
+      inputSchema: z.object({ initiativeId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const decisions = await prisma.decision.findMany({
+        where: args.initiativeId ? { initiativeId: args.initiativeId } : undefined,
+        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } } },
+        orderBy: { createdAt: "desc" }
+      });
+      return textContent(JSON.stringify(decisions, null, 2));
+    }
+  );
+
+  // --- Risks (read-only list) ---
+  server.registerTool(
+    "drd_list_risks",
+    {
+      title: "List risks",
+      description: "List all initiative risks with owner. Optionally filter by initiativeId.",
+      inputSchema: z.object({ initiativeId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const risks = await prisma.risk.findMany({
+        where: args.initiativeId ? { initiativeId: args.initiativeId } : undefined,
+        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } }, owner: true },
+        orderBy: { createdAt: "desc" }
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(risks), null, 2));
+    }
+  );
+
+  // --- Dependencies (read-only list) ---
+  server.registerTool(
+    "drd_list_dependencies",
+    {
+      title: "List dependencies",
+      description: "List all initiative dependencies (from/to initiatives).",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const deps = await prisma.dependency.findMany({
+        include: {
+          fromInitiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } },
+          toInitiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } }
+        }
+      });
+      return textContent(JSON.stringify(deps, null, 2));
+    }
+  );
+
+  // --- Requirements (read-only list) ---
+  server.registerTool(
+    "drd_list_requirements",
+    {
+      title: "List requirements",
+      description: "List all feature requirements with feature and initiative context. Optionally filter by featureId.",
+      inputSchema: z.object({ featureId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const requirements = await prisma.requirement.findMany({
+        where: args.featureId ? { featureId: args.featureId } : undefined,
+        include: { feature: { include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } } } } },
+        orderBy: { createdAt: "asc" }
+      });
+      return textContent(JSON.stringify(requirements, null, 2));
+    }
+  );
+
+  // --- Assignments (read-only list) ---
+  server.registerTool(
+    "drd_list_assignments",
+    {
+      title: "List assignments",
+      description: "List all initiative assignments (user roles). Optionally filter by initiativeId.",
+      inputSchema: z.object({ initiativeId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const assignments = await prisma.initiativeAssignment.findMany({
+        where: args.initiativeId ? { initiativeId: args.initiativeId } : undefined,
+        include: { user: true, initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true } } } } },
+        orderBy: [{ initiativeId: "asc" }, { role: "asc" }]
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(assignments), null, 2));
+    }
+  );
+
+  // --- Stakeholders (read-only list) ---
+  server.registerTool(
+    "drd_list_stakeholders",
+    {
+      title: "List stakeholders",
+      description: "List all initiative stakeholders. Optionally filter by initiativeId.",
+      inputSchema: z.object({ initiativeId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const stakeholders = await prisma.stakeholder.findMany({
+        where: args.initiativeId ? { initiativeId: args.initiativeId } : undefined,
+        include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: userPublicSelect } } } },
+        orderBy: { initiative: { title: "asc" } }
+      });
+      return textContent(JSON.stringify(stakeholders, null, 2));
+    }
+  );
+
+  // --- Timeline (read-only) ---
+  server.registerTool(
+    "drd_timeline_calendar",
+    {
+      title: "Timeline calendar",
+      description: "Get initiatives as calendar items (id, title, dates, domain, owner) for timeline/calendar view.",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const initiatives = await prisma.initiative.findMany({
+        include: { domain: true, owner: true },
+        orderBy: { targetDate: "asc" }
+      });
+      const items = initiatives.map((i) => ({
+        id: i.id,
+        title: i.title,
+        startDate: i.startDate,
+        targetDate: i.targetDate,
+        milestoneDate: i.milestoneDate,
+        domain: i.domain.name,
+        domainId: i.domainId,
+        domainColor: i.domain.color,
+        owner: i.owner?.name ?? null,
+        dateConfidence: i.dateConfidence
+      }));
+      return textContent(JSON.stringify({ items }, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_timeline_gantt",
+    {
+      title: "Timeline Gantt",
+      description: "Get initiatives as Gantt tasks (id, title, dates, domain, progress, dependency ids).",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const initiatives = await prisma.initiative.findMany({
+        include: { domain: true, owner: true, outgoingDeps: true },
+        orderBy: { startDate: "asc" }
+      });
+      const tasks = initiatives.map((i) => ({
+        id: i.id,
+        title: i.title,
+        startDate: i.startDate,
+        targetDate: i.targetDate,
+        domain: i.domain.name,
+        domainColor: i.domain.color,
+        owner: i.owner?.name ?? null,
+        progress:
+          i.status === "DONE"
+            ? 100
+            : i.status === "IN_PROGRESS"
+              ? 60
+              : i.status === "PLANNED"
+                ? 30
+                : i.status === "BLOCKED"
+                  ? 10
+                  : 0,
+        dependencies: i.outgoingDeps.map((d) => d.toInitiativeId)
+      }));
+      return textContent(JSON.stringify({ tasks }, null, 2));
+    }
+  );
+
+  // --- Campaigns (read-only list + get) ---
+  const campaignInclude = {
+    owner: true,
+    assets: { include: { persona: true }, orderBy: { createdAt: "asc" as const } },
+    links: {
+      include: {
+        initiative: { include: { domain: true } },
+        feature: true,
+        account: true,
+        partner: true
+      }
+    }
+  };
+
+  server.registerTool(
+    "drd_list_campaigns",
+    {
+      title: "List campaigns",
+      description: "List all campaigns with assets and links to initiatives/features/accounts/partners.",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const campaigns = await prisma.campaign.findMany({
+        include: campaignInclude,
+        orderBy: { createdAt: "desc" }
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(campaigns), null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_get_campaign",
+    {
+      title: "Get campaign by ID",
+      description: "Get a single campaign by ID with assets and links.",
+      inputSchema: z.object({ id: z.string() })
+    },
+    async ({ id }, ctx) => {
+      getUserFromCtx(ctx);
+      const campaign = await prisma.campaign.findUnique({ where: { id }, include: campaignInclude });
+      if (!campaign) throw new Error("Campaign not found");
+      return textContent(JSON.stringify(sanitizeUserFields(campaign), null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_list_assets",
+    {
+      title: "List assets",
+      description: "List all campaign assets. Optionally filter by campaignId.",
+      inputSchema: z.object({ campaignId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const assets = await prisma.asset.findMany({
+        where: args.campaignId ? { campaignId: args.campaignId } : undefined,
+        include: { persona: true, campaign: true },
+        orderBy: { createdAt: "asc" }
+      });
+      return textContent(JSON.stringify(assets, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_list_campaign_links",
+    {
+      title: "List campaign links",
+      description: "Links between campaigns and initiatives/features/accounts/partners. Optionally filter by campaignId.",
+      inputSchema: z.object({ campaignId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const links = await prisma.campaignLink.findMany({
+        where: args.campaignId ? { campaignId: args.campaignId } : undefined,
+        include: {
+          campaign: true,
+          initiative: { include: { domain: true } },
+          feature: true,
+          account: true,
+          partner: true
+        },
+        orderBy: { id: "asc" }
+      });
+      return textContent(JSON.stringify(links, null, 2));
+    }
   );
 }

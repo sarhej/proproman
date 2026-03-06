@@ -82,6 +82,19 @@ To use **both** local (stdio) and remote (OAuth) in Cursor, see the example in [
 | `drd_list_milestones` | List initiative milestones. |
 | `drd_list_demands` | List demands. |
 | `drd_list_revenue_streams` | List revenue streams. |
+| `drd_list_features` | List features (optional initiativeId). |
+| `drd_list_decisions` | List decisions (optional initiativeId). |
+| `drd_list_risks` | List risks (optional initiativeId). |
+| `drd_list_dependencies` | List initiative dependencies. |
+| `drd_list_requirements` | List requirements (optional featureId). |
+| `drd_list_assignments` | List assignments (optional initiativeId). |
+| `drd_list_stakeholders` | List stakeholders (optional initiativeId). |
+| `drd_timeline_calendar` | Timeline calendar items. |
+| `drd_timeline_gantt` | Timeline Gantt tasks. |
+| `drd_list_campaigns` | List campaigns. |
+| `drd_get_campaign` | Get campaign by ID. |
+| `drd_list_assets` | List assets (optional campaignId). |
+| `drd_list_campaign_links` | List campaign links (optional campaignId). |
 
 ## Design
 

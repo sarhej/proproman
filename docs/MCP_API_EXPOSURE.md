@@ -171,8 +171,25 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | `drd_list_kpis` | List initiative KPIs with initiative context. |
 | `drd_list_milestones` | List initiative milestones. |
 | `drd_list_demands` | List demands (accounts, partners, internal, compliance). |
+| **Features, decisions, risks** | |
+| `drd_list_features` | List features with initiative context (optional initiativeId). |
+| `drd_list_decisions` | List decisions with initiative context (optional initiativeId). |
+| `drd_list_risks` | List risks with initiative and owner (optional initiativeId). |
+| **Dependencies, requirements, assignments, stakeholders** | |
+| `drd_list_dependencies` | List initiative dependencies (from/to). |
+| `drd_list_requirements` | List requirements with feature/initiative (optional featureId). |
+| `drd_list_assignments` | List initiative assignments (optional initiativeId). |
+| `drd_list_stakeholders` | List stakeholders with initiative (optional initiativeId). |
+| **Timeline** | |
+| `drd_timeline_calendar` | Initiatives as calendar items (dates, domain, owner). |
+| `drd_timeline_gantt` | Initiatives as Gantt tasks (progress, dependencies). |
+| **Campaigns & assets** | |
+| `drd_list_campaigns` | List campaigns with assets and links. |
+| `drd_get_campaign` | Get one campaign by ID. |
+| `drd_list_assets` | List campaign assets (optional campaignId). |
+| `drd_list_campaign_links` | List campaign–initiative/feature/account/partner links (optional campaignId). |
 
-Naming prefix `drd_` avoids clashes with other MCP tools.
+Naming prefix `drd_` avoids clashes with other MCP tools. All of the above are **read-only** except initiative create/update/delete. Settings and admin (audit, user management, import/export) are not exposed.
 
 ---
 

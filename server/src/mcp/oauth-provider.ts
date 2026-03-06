@@ -18,9 +18,11 @@ import type {
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 
 export function getMcpBaseUrl(): string {
-  return env.NODE_ENV === "production"
-    ? env.CLIENT_URL
-    : `http://localhost:${env.PORT}`;
+  const base =
+    env.NODE_ENV === "production"
+      ? env.CLIENT_URL
+      : `http://localhost:${env.PORT}`;
+  return base.replace(/\/+$/, "");
 }
 
 const JWT_SECRET_RAW = env.MCP_JWT_SECRET ?? env.SESSION_SECRET;
