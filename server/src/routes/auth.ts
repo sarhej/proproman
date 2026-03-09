@@ -12,7 +12,8 @@ authRouter.get("/google", (req, res, next) => {
     res.status(503).json({ error: "Google OAuth is not configured." });
     return;
   }
-  passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+  // prompt=select_account forces Google to show the account picker every time (e.g. after logout)
+  passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
 });
 
 authRouter.get("/google/callback", (req, res, next) => {
