@@ -72,6 +72,8 @@ npm run db:migrate --workspace server -- --name init
 npm run db:seed
 ```
 
+For the notification matrix / in-app messages release, see [docs/DEPLOYMENT_NOTIFICATION_MATRIX.md](docs/DEPLOYMENT_NOTIFICATION_MATRIX.md) (migration is additive; optional `db:seed-notification-rules`).
+
 ## Agents & MCP
 
 The project APIs are exposed as **MCP (Model Context Protocol)** tools so agents (e.g. in Cursor) can call DrD Hub programmatically.
