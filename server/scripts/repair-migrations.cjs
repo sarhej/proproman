@@ -365,6 +365,101 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       `);
     }
 
+    // Ensure SuccessCriterion table exists (20260308_add_success_criteria)
+    const successCriterionCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'SuccessCriterion'"
+    );
+    if (successCriterionCheck.rowCount === 0) {
+      await pool.query(`
+        CREATE TABLE "SuccessCriterion" (
+          "id" TEXT NOT NULL,
+          "initiativeId" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "sortOrder" INTEGER NOT NULL DEFAULT 0,
+          "isDone" BOOLEAN NOT NULL DEFAULT false,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "SuccessCriterion_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX "SuccessCriterion_initiativeId_idx" ON "SuccessCriterion"("initiativeId");
+      `);
+      await pool.query(`
+        ALTER TABLE "SuccessCriterion" ADD CONSTRAINT "SuccessCriterion_initiativeId_fkey"
+          FOREIGN KEY ("initiativeId") REFERENCES "Initiative"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+      `);
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260308_add_success_criteria', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260308_add_success_criteria');
+      `);
+      console.log("Created SuccessCriterion table.");
+    }
+
+    // Ensure InitiativeComment table exists (20260308_add_initiative_comments)
+    const initiativeCommentCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'InitiativeComment'"
+    );
+    if (initiativeCommentCheck.rowCount === 0) {
+      await pool.query(`
+        CREATE TABLE "InitiativeComment" (
+          "id" TEXT NOT NULL,
+          "initiativeId" TEXT NOT NULL,
+          "userId" TEXT NOT NULL,
+          "text" TEXT NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "InitiativeComment_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX "InitiativeComment_initiativeId_idx" ON "InitiativeComment"("initiativeId");
+        CREATE INDEX "InitiativeComment_userId_idx" ON "InitiativeComment"("userId");
+      `);
+      await pool.query(`
+        ALTER TABLE "InitiativeComment" ADD CONSTRAINT "InitiativeComment_initiativeId_fkey"
+          FOREIGN KEY ("initiativeId") REFERENCES "Initiative"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+        ALTER TABLE "InitiativeComment" ADD CONSTRAINT "InitiativeComment_userId_fkey"
+          FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+      `);
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260308_add_initiative_comments', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260308_add_initiative_comments');
+      `);
+      console.log("Created InitiativeComment table.");
+    }
+
+    // Ensure UserMessage table exists (20260308_add_user_messages)
+    const userMessageCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'UserMessage'"
+    );
+    if (userMessageCheck.rowCount === 0) {
+      await pool.query(`
+        CREATE TABLE "UserMessage" (
+          "id" TEXT NOT NULL,
+          "userId" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "body" TEXT,
+          "linkUrl" TEXT,
+          "linkLabel" TEXT,
+          "readAt" TIMESTAMP(3),
+          "source" TEXT,
+          "type" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "UserMessage_pkey" PRIMARY KEY ("id")
+        );
+        CREATE INDEX "UserMessage_userId_idx" ON "UserMessage"("userId");
+        CREATE INDEX "UserMessage_userId_readAt_idx" ON "UserMessage"("userId", "readAt");
+      `);
+      await pool.query(`
+        ALTER TABLE "UserMessage" ADD CONSTRAINT "UserMessage_userId_fkey"
+          FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+      `);
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260308_add_user_messages', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260308_add_user_messages');
+      `);
+      console.log("Created UserMessage table.");
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);
