@@ -51,7 +51,18 @@ const clientDist = path.resolve(__dirname, "../../../client/dist");
 const PgStore = connectPgSimple(session);
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "img-src": ["'self'", "data:", "https://*.googleusercontent.com", "https://*.ggpht.com"],
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-inline/eval needed for some dev tools/react
+        "connect-src": ["'self'", "ws:", "wss:"], // Allow websockets for HMR
+      },
+    },
+  })
+);
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
