@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const dependencySchema = z.object({
   fromInitiativeId: z.string(),
@@ -27,6 +28,10 @@ dependenciesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), 
       description: parsed.data.description ?? null
     }
   });
+  await logAudit(req.user!.id, "CREATED", "DEPENDENCY", undefined, {
+    fromInitiativeId: dep.fromInitiativeId,
+    toInitiativeId: dep.toInitiativeId
+  });
   res.status(201).json({ dependency: dep });
 });
 
@@ -36,6 +41,10 @@ dependenciesRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN)
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  await logAudit(req.user!.id, "DELETED", "DEPENDENCY", undefined, {
+    fromInitiativeId: parsed.data.fromInitiativeId,
+    toInitiativeId: parsed.data.toInitiativeId
+  });
   await prisma.dependency.delete({
     where: {
       fromInitiativeId_toInitiativeId: {

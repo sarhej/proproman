@@ -30,7 +30,13 @@ const envSchema = z.object({
   /** Optional: user ID to impersonate when API_KEY is used. If unset, first SUPER_ADMIN is used. */
   API_KEY_USER_ID: optionalString,
   /** Secret for signing MCP OAuth JWT tokens. Falls back to SESSION_SECRET if not set. */
-  MCP_JWT_SECRET: optionalString
+  MCP_JWT_SECRET: optionalString,
+  /** Notification delivery: when "true", attempt to send via email (placeholder; no SMTP yet). */
+  NOTIFICATION_EMAIL_ENABLED: z.string().optional().transform((v) => v === "true"),
+  /** Notification delivery: when "true", attempt to send via Slack (placeholder; no integration yet). */
+  NOTIFICATION_SLACK_ENABLED: z.string().optional().transform((v) => v === "true"),
+  /** Notification delivery: when "true", attempt to send via WhatsApp (placeholder; no integration yet). */
+  NOTIFICATION_WHATSAPP_ENABLED: z.string().optional().transform((v) => v === "true")
 });
 
 export const env = envSchema

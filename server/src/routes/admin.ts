@@ -4,9 +4,12 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireRole } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
+import { notificationRulesRouter } from "./notification-rules.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN));
+
+adminRouter.use("/notification-rules", notificationRulesRouter);
 
 adminRouter.get("/users", async (_req, res) => {
   const users = await prisma.user.findMany({

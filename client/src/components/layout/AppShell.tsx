@@ -3,7 +3,7 @@ import { BarChart3, Bell, Building2, CalendarClock, Columns3, Filter, Globe, Gri
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
-import type { User, UserMessage } from "../../types/models";
+import type { User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
 
 
@@ -169,6 +169,85 @@ function NavContent({ permissions, onNavigate, mobile, phone, onExport, onExport
 
 const isPhone = () => window.matchMedia("(max-width: 639px)").matches;
 
+function SubscriptionsModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const [subscriptions, setSubscriptions] = useState<UserNotificationSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { subscriptions: s } = await api.getNotificationSubscriptions();
+      setSubscriptions(s);
+    } catch {
+      setSubscriptions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const unsubscribe = useCallback(async (id: string) => {
+    try {
+      await api.deleteNotificationSubscription(id);
+      setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-lg border border-slate-200 bg-white shadow-xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <h2 className="text-base font-semibold text-slate-800">{t("notificationSubscriptions.title")}</h2>
+          <button type="button" onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-4 flex-1">
+          {loading ? (
+            <p className="text-sm text-slate-500">{t("admin.loadingRules")}</p>
+          ) : subscriptions.length === 0 ? (
+            <p className="text-sm text-slate-500">{t("notificationSubscriptions.empty")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {subscriptions.map((sub) => (
+                <li
+                  key={sub.id}
+                  className="flex items-center justify-between gap-2 rounded border border-slate-100 bg-slate-50/50 px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-700">
+                    {sub.entityType} · {sub.action} · {t(`notificationSubscriptions.scope.${sub.scopeType}`)}
+                    {sub.scopeId ? ` (${sub.scopeId.slice(0, 8)}…)` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => unsubscribe(sub.id)}
+                    className="shrink-0 text-xs text-red-600 hover:text-red-800 font-medium"
+                  >
+                    {t("notificationSubscriptions.unsubscribe")}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <p className="text-xs font-semibold uppercase text-slate-400 mb-2">{t("admin.ruleChannels")}</p>
+            <p className="text-sm text-slate-500">
+              {t("admin.channel.IN_APP")}: {t("common.active")}. {t("admin.channel.EMAIL")} / {t("admin.channel.SLACK")} / {t("admin.channel.WHATSAPP")}: Coming soon.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ user, children, permissions, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -177,6 +256,7 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [subscriptionsModalOpen, setSubscriptionsModalOpen] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -311,27 +391,52 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
                   <p className="px-3 py-4 text-sm text-slate-400">{t("nav.messagesEmpty")}</p>
                 ) : (
                   <ul className="space-y-0.5">
-                    {messages.map((msg) => (
-                      <li key={msg.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleMessageClick(msg)}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${!msg.readAt ? "bg-sky-50/50" : ""}`}
-                        >
-                          <div className="font-medium text-slate-900">{msg.title}</div>
-                          {msg.body ? <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">{msg.body}</div> : null}
-                          <div className="mt-1 text-[10px] text-slate-400">
-                            {new Date(msg.createdAt).toLocaleString()}
-                            {msg.linkUrl && msg.linkLabel ? ` \u00b7 ${msg.linkLabel}` : ""}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
+                    {messages.map((msg) => {
+                      const displayTitle = msg.titleKey
+                        ? t(msg.titleKey, (msg.titleParams as Record<string, string>) ?? {})
+                        : msg.title ?? "";
+                      const displayBody = msg.bodyKey
+                        ? t(msg.bodyKey, (msg.bodyParams as Record<string, string>) ?? {})
+                        : msg.body ?? null;
+                      const displayLinkLabel = msg.linkLabelKey
+                        ? t(msg.linkLabelKey, (msg.linkLabelParams as Record<string, string>) ?? {})
+                        : msg.linkLabel ?? null;
+                      return (
+                        <li key={msg.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleMessageClick(msg)}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${!msg.readAt ? "bg-sky-50/50" : ""}`}
+                          >
+                            <div className="font-medium text-slate-900">{displayTitle}</div>
+                            {displayBody ? <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">{displayBody}</div> : null}
+                            <div className="mt-1 text-[10px] text-slate-400">
+                              {new Date(msg.createdAt).toLocaleString()}
+                              {msg.linkUrl && displayLinkLabel ? ` \u00b7 ${displayLinkLabel}` : ""}
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
+                <div className="border-t border-slate-100 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => { setSubscriptionsModalOpen(true); setMessagesOpen(false); }}
+                    className="text-xs text-sky-600 hover:text-sky-800 font-medium"
+                  >
+                    {t("notificationSubscriptions.title")}
+                  </button>
+                </div>
               </div>
             )}
           </div>
+          {subscriptionsModalOpen && (
+            <SubscriptionsModal
+              onClose={() => setSubscriptionsModalOpen(false)}
+            />
+          )}
           <div className="hidden lg:flex items-center gap-1 rounded border border-slate-200 px-1">
             <Globe size={13} className="text-slate-400" />
             {LANGS.map((lng) => (

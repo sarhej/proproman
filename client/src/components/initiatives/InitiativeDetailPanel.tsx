@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Bell, Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Demand, Domain, Initiative, InitiativeComment, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, SuccessCriterion, User } from "../../types/models";
 import type { MilestoneStatus, StakeholderRole, StakeholderType } from "../../types/models";
@@ -9,6 +9,46 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Input, Label, Select } from "../ui/Field";
 import { InitiativeForm, type InitiativeFormHandle } from "./InitiativeForm";
+
+function NotifyMeButton({ initiativeId }: { initiativeId: string }) {
+  const { t } = useTranslation();
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const subscribe = useCallback(async () => {
+    if (loading || subscribed) return;
+    setLoading(true);
+    try {
+      await api.createNotificationSubscription({
+        action: "UPDATED",
+        entityType: "INITIATIVE",
+        scopeType: "INITIATIVE",
+        scopeId: initiativeId
+      });
+      setSubscribed(true);
+    } catch {
+      /* already subscribed or error */
+      setSubscribed(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [initiativeId, loading, subscribed]);
+
+  if (subscribed) {
+    return (
+      <span className="flex items-center gap-1 text-sm text-slate-500">
+        <Check className="h-4 w-4 text-green-600" />
+        {t("notificationSubscriptions.notifyMe")}
+      </span>
+    );
+  }
+  return (
+    <Button variant="secondary" onClick={subscribe} disabled={loading}>
+      <Bell className="h-4 w-4" />
+      {t("notificationSubscriptions.notifyMe")}
+    </Button>
+  );
+}
 
 function ShareButton({ initiativeId, title }: { initiativeId: string; title: string }) {
   const { t } = useTranslation();
@@ -289,6 +329,7 @@ export function InitiativeDetailPanel({
                 {t("common.save")}
               </Button>
             ) : null}
+            <NotifyMeButton initiativeId={initiative.id} />
             <ShareButton initiativeId={initiative.id} title={initiative.title} />
             <Button variant="ghost" onClick={tryClose}>
               {t("app.close")}

@@ -1,5 +1,7 @@
 import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
+import { env } from "../env.js";
+import { processNotificationForAuditEntry } from "./notification-delivery.js";
 
 export async function logAudit(
   userId: string,
@@ -9,7 +11,7 @@ export async function logAudit(
   details?: object | null
 ): Promise<void> {
   try {
-    await prisma.auditEntry.create({
+    const entry = await prisma.auditEntry.create({
       data: {
         userId,
         action: action as AuditAction,
@@ -18,6 +20,9 @@ export async function logAudit(
         details: details ? (details as Prisma.InputJsonValue) : Prisma.JsonNull
       }
     });
+    void processNotificationForAuditEntry(entry.id, env.CLIENT_URL).catch((err) =>
+      console.error("[notification] processNotificationForAuditEntry failed:", err)
+    );
   } catch {
     console.error("[audit] Failed to write audit entry:", action, entityType, entityId);
   }

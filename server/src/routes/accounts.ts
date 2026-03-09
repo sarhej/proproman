@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const accountSchema = z.object({
   name: z.string().min(1),
@@ -52,6 +53,7 @@ accountsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
       strategicTier: parsed.data.strategicTier ?? null
     }
   });
+  await logAudit(req.user!.id, "CREATED", "ACCOUNT", account.id, { name: account.name });
   res.status(201).json({ account });
 });
 
@@ -62,6 +64,7 @@ accountsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  const existing = await prisma.account.findUnique({ where: { id } });
   const account = await prisma.account.update({
     where: { id },
     data: {
@@ -75,11 +78,14 @@ accountsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
       strategicTier: parsed.data.strategicTier ?? undefined
     }
   });
+  await logAudit(req.user!.id, "UPDATED", "ACCOUNT", id, { name: account.name });
   res.json({ account });
 });
 
 accountsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.account.findUnique({ where: { id } });
   await prisma.account.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "ACCOUNT", id, { name: existing?.name });
   res.status(204).send();
 });

@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import type { AuditEntry, Domain, Persona, PersonaCategory, RevenueStream, User, UserRole } from "../types/models";
+import type {
+  AuditAction,
+  AuditEntry,
+  DeliveryChannel,
+  Domain,
+  NotificationRecipientKind,
+  NotificationRule,
+  Persona,
+  PersonaCategory,
+  RevenueStream,
+  User,
+  UserRole
+} from "../types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER", "PENDING"];
 const ROLE_COLORS: Record<UserRole, string> = {
@@ -18,7 +30,12 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
-type Tab = "users" | "activity" | "settings" | "data";
+const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION"] as const;
+const AUDIT_ACTIONS: AuditAction[] = ["CREATED", "UPDATED", "DELETED", "STATUS_CHANGED", "ROLE_CHANGED", "LOGIN"];
+const RECIPIENT_KINDS: NotificationRecipientKind[] = ["OBJECT_OWNER", "OBJECT_ROLE", "GLOBAL_ROLE", "OBJECT_ASSIGNEE"];
+const DELIVERY_CHANNELS: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
+
+type Tab = "users" | "activity" | "settings" | "data" | "notificationRules";
 
 export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
   const { t } = useTranslation();
@@ -28,7 +45,8 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
     { key: "users", label: t("admin.users") },
     { key: "settings", label: t("admin.settings") },
     { key: "data", label: t("admin.data") },
-    { key: "activity", label: t("admin.activity") }
+    { key: "activity", label: t("admin.activity") },
+    { key: "notificationRules", label: t("admin.notificationRules") }
   ];
 
   return (
@@ -48,6 +66,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
       {tab === "settings" && <SettingsTab onMetaChanged={onMetaChanged} />}
       {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
+      {tab === "notificationRules" && <NotificationRulesTab />}
     </div>
   );
 }
@@ -594,6 +613,277 @@ function ActivityTab({ quickFilter }: { quickFilter?: string }) {
               {t("common.next")}
             </button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NotificationRulesTab() {
+  const { t } = useTranslation();
+  const [rules, setRules] = useState<NotificationRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    action: "CREATED" as AuditAction,
+    entityType: "INITIATIVE",
+    eventKind: "",
+    recipientKind: "OBJECT_OWNER" as NotificationRecipientKind,
+    recipientRole: "",
+    deliveryChannels: ["IN_APP"] as DeliveryChannel[],
+    enabled: true
+  });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { rules: r } = await api.getNotificationRules();
+      setRules(r);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm({
+      action: "CREATED",
+      entityType: "INITIATIVE",
+      eventKind: "",
+      recipientKind: "OBJECT_OWNER",
+      recipientRole: "",
+      deliveryChannels: ["IN_APP"],
+      enabled: true
+    });
+    setShowForm(true);
+  };
+
+  const openEdit = (rule: NotificationRule) => {
+    setEditingId(rule.id);
+    setForm({
+      action: rule.action,
+      entityType: rule.entityType,
+      eventKind: rule.eventKind ?? "",
+      recipientKind: rule.recipientKind,
+      recipientRole: rule.recipientRole ?? "",
+      deliveryChannels: Array.isArray(rule.deliveryChannels) ? (rule.deliveryChannels as DeliveryChannel[]) : ["IN_APP"],
+      enabled: rule.enabled
+    });
+    setShowForm(true);
+  };
+
+  const toggleChannel = (ch: DeliveryChannel) => {
+    setForm((prev) => ({
+      ...prev,
+      deliveryChannels: prev.deliveryChannels.includes(ch)
+        ? prev.deliveryChannels.filter((c) => c !== ch)
+        : [...prev.deliveryChannels, ch]
+    }));
+  };
+
+  const submit = async () => {
+    try {
+      const payload = {
+        action: form.action,
+        entityType: form.entityType,
+        eventKind: form.eventKind.trim() || null,
+        recipientKind: form.recipientKind,
+        recipientRole: form.recipientRole.trim() || null,
+        deliveryChannels: form.deliveryChannels.length ? form.deliveryChannels : ["IN_APP"],
+        enabled: form.enabled
+      };
+      if (editingId) {
+        await api.updateNotificationRule(editingId, payload);
+      } else {
+        await api.createNotificationRule(payload);
+      }
+      setShowForm(false);
+      load();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const deleteRule = async (id: string) => {
+    if (!window.confirm(t("admin.deleteRule") + "?")) return;
+    try {
+      await api.deleteNotificationRule(id);
+      load();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">{t("admin.notificationRulesDesc")}</p>
+      <div className="flex justify-between items-center">
+        <button
+          type="button"
+          className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700"
+          onClick={openAdd}
+        >
+          {t("admin.addRule")}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="rounded border border-gray-200 bg-gray-50 p-4 space-y-3 max-w-lg">
+          <h3 className="text-sm font-medium text-gray-800">{editingId ? t("admin.editRule") : t("admin.addRule")}</h3>
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            <label className="flex flex-col gap-0.5">
+              <span className="text-gray-600">{t("admin.ruleAction")}</span>
+              <select
+                className="rounded border px-2 py-1"
+                value={form.action}
+                onChange={(e) => setForm((f) => ({ ...f, action: e.target.value as AuditAction }))}
+              >
+                {AUDIT_ACTIONS.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-gray-600">{t("admin.ruleEntityType")}</span>
+              <select
+                className="rounded border px-2 py-1"
+                value={form.entityType}
+                onChange={(e) => setForm((f) => ({ ...f, entityType: e.target.value }))}
+              >
+                {ENTITY_TYPES.map((et) => (
+                  <option key={et} value={et}>{et}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-gray-600">{t("admin.ruleEventKind")}</span>
+              <input
+                className="rounded border px-2 py-1"
+                value={form.eventKind}
+                onChange={(e) => setForm((f) => ({ ...f, eventKind: e.target.value }))}
+                placeholder="e.g. INITIATIVE_STATUS_CHANGED"
+              />
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-gray-600">{t("admin.ruleRecipientKind")}</span>
+              <select
+                className="rounded border px-2 py-1"
+                value={form.recipientKind}
+                onChange={(e) => setForm((f) => ({ ...f, recipientKind: e.target.value as NotificationRecipientKind }))}
+              >
+                {RECIPIENT_KINDS.map((k) => (
+                  <option key={k} value={k}>{t(`admin.recipientKind.${k}`)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-gray-600">{t("admin.ruleRecipientRole")}</span>
+              <input
+                className="rounded border px-2 py-1"
+                value={form.recipientRole}
+                onChange={(e) => setForm((f) => ({ ...f, recipientRole: e.target.value }))}
+                placeholder="e.g. ACCOUNTABLE, ADMIN"
+              />
+            </label>
+            <div>
+              <span className="text-gray-600 text-sm block mb-1">{t("admin.ruleChannels")}</span>
+              <div className="flex flex-wrap gap-2">
+                {DELIVERY_CHANNELS.map((ch) => (
+                  <label key={ch} className="flex items-center gap-1.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.deliveryChannels.includes(ch)}
+                      onChange={() => toggleChannel(ch)}
+                    />
+                    {t(`admin.channel.${ch}`)}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.enabled}
+                onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
+              />
+              {t("admin.ruleEnabled")}
+            </label>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700"
+              onClick={submit}
+            >
+              {editingId ? t("admin.editRule") : t("common.add")}
+            </button>
+            <button
+              type="button"
+              className="rounded border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => setShowForm(false)}
+            >
+              {t("common.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-gray-500">{t("admin.loadingRules")}</p>
+      ) : rules.length === 0 ? (
+        <p className="text-sm text-gray-500">{t("admin.noRules")}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+                <th className="py-2 px-3">{t("admin.ruleAction")}</th>
+                <th className="py-2 px-3">{t("admin.ruleEntityType")}</th>
+                <th className="py-2 px-3">{t("admin.ruleRecipientKind")}</th>
+                <th className="py-2 px-3">{t("admin.ruleChannels")}</th>
+                <th className="py-2 px-3">{t("admin.ruleEnabled")}</th>
+                <th className="py-2 px-3 w-20" />
+              </tr>
+            </thead>
+            <tbody>
+              {rules.map((rule) => (
+                <tr key={rule.id} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-3">{rule.action}</td>
+                  <td className="py-2 px-3">{rule.entityType}</td>
+                  <td className="py-2 px-3">{t(`admin.recipientKind.${rule.recipientKind}`)}</td>
+                  <td className="py-2 px-3">
+                    {Array.isArray(rule.deliveryChannels)
+                      ? (rule.deliveryChannels as string[]).map((ch) => t(`admin.channel.${ch}`)).join(", ")
+                      : "In-app"}
+                  </td>
+                  <td className="py-2 px-3">{rule.enabled ? t("common.active") : t("common.inactive")}</td>
+                  <td className="py-2 px-3">
+                    <button
+                      type="button"
+                      className="text-indigo-600 hover:text-indigo-800 text-xs mr-2"
+                      onClick={() => openEdit(rule)}
+                    >
+                      {t("admin.editRule")}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:text-red-800 text-xs"
+                      onClick={() => deleteRule(rule.id)}
+                    >
+                      {t("admin.deleteRule")}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const assetSchema = z.object({
   campaignId: z.string().min(1),
@@ -46,6 +47,7 @@ assetsRouter.post("/", requireMarketingAccess(), async (req, res) => {
     },
     include: { persona: true }
   });
+  await logAudit(req.user!.id, "CREATED", "ASSET", asset.id, { campaignId: asset.campaignId, name: asset.name });
   res.status(201).json({ asset });
 });
 
@@ -70,11 +72,14 @@ assetsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
     },
     include: { persona: true }
   });
+  await logAudit(req.user!.id, "UPDATED", "ASSET", id, { campaignId: asset.campaignId, name: asset.name });
   res.json({ asset });
 });
 
 assetsRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.asset.findUnique({ where: { id } });
   await prisma.asset.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "ASSET", id, { campaignId: existing?.campaignId, name: existing?.name });
   res.status(204).send();
 });

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 import { PersonaCategory, UserRole } from "@prisma/client";
 
 const personaSchema = z.object({
@@ -31,6 +32,7 @@ personasRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
       category: parsed.data.category
     }
   });
+  await logAudit(req.user!.id, "CREATED", "PERSONA", persona.id, { name: persona.name });
   res.status(201).json({ persona });
 });
 
@@ -41,6 +43,7 @@ personasRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  const existing = await prisma.persona.findUnique({ where: { id } });
   const persona = await prisma.persona.update({
     where: { id },
     data: {
@@ -49,11 +52,21 @@ personasRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
       category: parsed.data.category
     }
   });
+  const changes =
+    existing && (parsed.data.name !== undefined || parsed.data.icon !== undefined || parsed.data.category !== undefined)
+      ? [
+          ...(parsed.data.name !== undefined && existing.name !== parsed.data.name ? [{ field: "name", old: existing.name, new: parsed.data.name }] : []),
+          ...(parsed.data.category !== undefined && existing.category !== parsed.data.category ? [{ field: "category", old: existing.category, new: parsed.data.category }] : [])
+        ]
+      : [];
+  await logAudit(req.user!.id, "UPDATED", "PERSONA", id, changes.length ? { changes } : { name: persona.name });
   res.json({ persona });
 });
 
 personasRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.persona.findUnique({ where: { id } });
   await prisma.persona.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "PERSONA", id, { name: existing?.name });
   res.status(204).send();
 });

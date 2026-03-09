@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const demandSchema = z.object({
   title: z.string().min(1),
@@ -76,6 +77,7 @@ demandsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async
       demandLinks: true
     }
   });
+  await logAudit(req.user!.id, "CREATED", "DEMAND", demand.id, { title: demand.title });
   res.status(201).json({ demand });
 });
 
@@ -121,11 +123,14 @@ demandsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asy
       demandLinks: { include: { initiative: true, feature: true } }
     }
   });
+  await logAudit(req.user!.id, "UPDATED", "DEMAND", id, { title: demand?.title });
   res.json({ demand });
 });
 
 demandsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.demand.findUnique({ where: { id } });
   await prisma.demand.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "DEMAND", id, { title: existing?.title });
   res.status(204).send();
 });

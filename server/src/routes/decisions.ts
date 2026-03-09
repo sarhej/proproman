@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const decisionSchema = z.object({
   title: z.string().min(1),
@@ -29,11 +30,14 @@ decisionsRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) =>
       decidedAt: parsed.data.decidedAt ? new Date(parsed.data.decidedAt) : null
     }
   });
+  await logAudit(req.user!.id, "CREATED", "DECISION", decision.id, { initiativeId, title: decision.title });
   res.status(201).json({ decision });
 });
 
 decisionsRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.decision.findUnique({ where: { id } });
   await prisma.decision.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "DECISION", id, { initiativeId: existing?.initiativeId, title: existing?.title });
   res.status(204).send();
 });

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const riskSchema = z.object({
   title: z.string().min(1),
@@ -33,11 +34,14 @@ risksRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
     },
     include: { owner: true }
   });
+  await logAudit(req.user!.id, "CREATED", "RISK", risk.id, { initiativeId, title: risk.title });
   res.status(201).json({ risk });
 });
 
 risksRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.risk.findUnique({ where: { id } });
   await prisma.risk.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "RISK", id, { initiativeId: existing?.initiativeId, title: existing?.title });
   res.status(204).send();
 });

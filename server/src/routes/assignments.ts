@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const assignmentSchema = z.object({
   initiativeId: z.string().min(1),
@@ -67,6 +68,11 @@ assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), a
     });
   }
 
+  await logAudit(req.user!.id, "CREATED", "ASSIGNMENT", undefined, {
+    initiativeId: parsed.data.initiativeId,
+    userId: parsed.data.userId,
+    role: parsed.data.role
+  });
   res.status(201).json({ assignment });
 });
 
@@ -82,6 +88,11 @@ assignmentsRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN),
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  await logAudit(req.user!.id, "DELETED", "ASSIGNMENT", undefined, {
+    initiativeId: parsed.data.initiativeId,
+    userId: parsed.data.userId,
+    role: parsed.data.role
+  });
   await prisma.initiativeAssignment.delete({
     where: {
       initiativeId_userId_role: parsed.data

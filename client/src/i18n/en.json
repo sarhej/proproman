@@ -555,6 +555,27 @@
     "clearWarning": "This will permanently delete everything except your user account.",
     "clearing": "Clearing...",
     "clearConfirm": "Yes, Delete Everything",
+    "notificationRules": "Notification rules",
+    "notificationRulesDesc": "Global rules: who gets notified when events happen.",
+    "addRule": "Add rule",
+    "editRule": "Edit rule",
+    "deleteRule": "Delete rule",
+    "ruleAction": "Action",
+    "ruleEntityType": "Entity type",
+    "ruleEventKind": "Event kind (optional)",
+    "ruleRecipientKind": "Recipient",
+    "ruleRecipientRole": "Role (optional)",
+    "ruleChannels": "Channels",
+    "ruleEnabled": "Enabled",
+    "loadingRules": "Loading rules...",
+    "noRules": "No notification rules. Add one to notify users on events.",
+    "recipientKind": {
+      "OBJECT_OWNER": "Object owner",
+      "OBJECT_ROLE": "Object role",
+      "GLOBAL_ROLE": "Global role",
+      "OBJECT_ASSIGNEE": "Object assignee"
+    },
+    "channel": { "IN_APP": "In-app", "EMAIL": "Email", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
     "exportSuccess": "Export downloaded successfully.",
     "exportFailed": "Export failed. Check the console for details.",
     "invalidFile": "Invalid file: expected version {{version}}.",
@@ -568,5 +589,25 @@
     "en": "English",
     "cs": "Čeština",
     "sk": "Slovenčina"
+  },
+  "notificationSubscriptions": {
+    "title": "My notification subscriptions",
+    "empty": "You have no subscriptions. Use \"Notify me\" on an initiative or domain to subscribe.",
+    "unsubscribe": "Unsubscribe",
+    "scope": { "GLOBAL": "All", "DOMAIN": "Domain", "INITIATIVE": "Initiative", "CAMPAIGN": "Campaign", "FEATURE": "Feature", "USER": "User" },
+    "notifyMe": "Notify me about changes here"
+  },
+  "notification": {
+    "initiative": {
+      "created": "Initiative \"{{title}}\" was created",
+      "updated": "Initiative \"{{title}}\" was updated",
+      "deleted": "Initiative \"{{title}}\" was deleted",
+      "status_changed": "Initiative \"{{title}}\" status changed from {{old}} to {{new}}"
+    },
+    "feature": { "created": "Feature \"{{title}}\" was created", "updated": "Feature \"{{title}}\" was updated", "deleted": "Feature \"{{title}}\" was deleted" },
+    "campaign": { "created": "Campaign \"{{title}}\" was created", "updated": "Campaign \"{{title}}\" was updated", "deleted": "Campaign \"{{title}}\" was deleted" },
+    "product": { "created": "Product \"{{title}}\" was created", "updated": "Product \"{{title}}\" was updated", "deleted": "Product \"{{title}}\" was deleted" },
+    "domain": { "created": "Domain \"{{title}}\" was created", "updated": "Domain \"{{title}}\" was updated", "deleted": "Domain \"{{title}}\" was deleted" },
+    "default": "{{type}}: {{title}}"
   }
 }

@@ -28,7 +28,9 @@ import type {
   UserEmail,
   UserMessage,
   UserRole,
-  Account
+  Account,
+  NotificationRule,
+  UserNotificationSubscription
 } from "../types/models";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -245,6 +247,60 @@ export const api = {
     request<{ entries: AuditEntry[]; total: number; page: number; limit: number }>(
       `/api/admin/audit${params ? `?${params.toString()}` : ""}`
     ),
+  getNotificationRules: async () =>
+    request<{ rules: NotificationRule[] }>("/api/admin/notification-rules"),
+  createNotificationRule: async (body: {
+    action: string;
+    entityType: string;
+    eventKind?: string | null;
+    recipientKind: string;
+    recipientRole?: string | null;
+    deliveryChannels?: string[];
+    enabled?: boolean;
+  }) =>
+    request<{ rule: NotificationRule }>("/api/admin/notification-rules", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateNotificationRule: async (id: string, body: Partial<{
+    action: string;
+    entityType: string;
+    eventKind: string | null;
+    recipientKind: string;
+    recipientRole: string | null;
+    deliveryChannels: string[];
+    enabled: boolean;
+  }>) =>
+    request<{ rule: NotificationRule }>(`/api/admin/notification-rules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  deleteNotificationRule: async (id: string) =>
+    request<void>(`/api/admin/notification-rules/${id}`, { method: "DELETE" }),
+
+  getNotificationSubscriptions: async () =>
+    request<{ subscriptions: UserNotificationSubscription[] }>("/api/notification-subscriptions"),
+  createNotificationSubscription: async (body: {
+    action: string;
+    entityType: string;
+    scopeType: string;
+    scopeId?: string | null;
+    deliveryChannels?: string[];
+  }) =>
+    request<{ subscription: UserNotificationSubscription }>("/api/notification-subscriptions", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deleteNotificationSubscription: async (id: string) =>
+    request<void>(`/api/notification-subscriptions/${id}`, { method: "DELETE" }),
+
+  getNotificationPreferences: async () =>
+    request<{ preferences: { channel: string; enabled: boolean; channelIdentifier: string | null }[] }>("/api/me/notification-preferences"),
+  updateNotificationPreferences: async (preferences: { channel: string; enabled: boolean; channelIdentifier?: string | null }[]) =>
+    request<{ preferences: { channel: string; enabled: boolean; channelIdentifier: string | null }[] }>("/api/me/notification-preferences", {
+      method: "PATCH",
+      body: JSON.stringify({ preferences }),
+    }),
 
   getAllMilestones: async () =>
     request<{ milestones: (InitiativeMilestone & { initiative: { id: string; title: string; domain: { id: string; name: string; color: string }; owner: { id: string; name: string } | null } })[] }>("/api/milestones"),

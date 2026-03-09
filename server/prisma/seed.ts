@@ -2,6 +2,7 @@ import {
   AssignmentRole,
   AccountType,
   AssetStatus,
+  AuditAction,
   AssetType,
   CampaignStatus,
   CampaignType,
@@ -14,6 +15,7 @@ import {
   Horizon,
   InitiativeStatus,
   MilestoneStatus,
+  NotificationRecipientKind,
   PersonaCategory,
   Priority,
   PrismaClient,
@@ -984,6 +986,34 @@ async function main() {
     prisma.campaignLink.create({ data: { campaignId: campaigns[2].id, initiativeId: findInit("Marketingová podpora obchodu")?.id } }),
     prisma.campaignLink.create({ data: { campaignId: campaigns[3].id, accountId: acc["Uniqa pojištění cizinců"].id, initiativeId: findInit("Nahradit Eurocross")?.id } }),
   ]);
+
+  // ─── Notification rules: RACI over initiative ───────────────────
+  await prisma.notificationRule.deleteMany({ where: { entityType: "INITIATIVE" } });
+  const initiativeActions: AuditAction[] = [AuditAction.CREATED, AuditAction.UPDATED, AuditAction.STATUS_CHANGED, AuditAction.DELETED];
+  const channels = ["IN_APP"] as const;
+  const raciRules: { action: AuditAction; entityType: string; recipientKind: NotificationRecipientKind; recipientRole: string | null }[] = [
+    ...initiativeActions.map((action) => ({ action, entityType: "INITIATIVE", recipientKind: NotificationRecipientKind.OBJECT_OWNER, recipientRole: null })),
+    ...initiativeActions.map((action) => ({ action, entityType: "INITIATIVE", recipientKind: NotificationRecipientKind.OBJECT_ASSIGNEE, recipientRole: null })),
+    ...initiativeActions.flatMap((action) =>
+      ([AssignmentRole.ACCOUNTABLE, AssignmentRole.IMPLEMENTER, AssignmentRole.CONSULTED, AssignmentRole.INFORMED] as const).map((role) => ({
+        action,
+        entityType: "INITIATIVE",
+        recipientKind: NotificationRecipientKind.OBJECT_ROLE,
+        recipientRole: role
+      }))
+    )
+  ];
+  await prisma.notificationRule.createMany({
+    data: raciRules.map((r) => ({
+      action: r.action,
+      entityType: r.entityType,
+      eventKind: null,
+      recipientKind: r.recipientKind,
+      recipientRole: r.recipientRole,
+      deliveryChannels: channels,
+      enabled: true
+    }))
+  });
 
   console.log("Seed dokončen úspěšně!");
 }

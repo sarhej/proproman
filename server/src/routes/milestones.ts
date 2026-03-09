@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const milestoneSchema = z.object({
   title: z.string().min(1),
@@ -49,6 +50,7 @@ milestonesRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) =
     },
     include: { owner: true },
   });
+  await logAudit(req.user!.id, "CREATED", "MILESTONE", milestone.id, { initiativeId, title: milestone.title });
   res.status(201).json({ milestone });
 });
 
@@ -73,11 +75,14 @@ milestonesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     data,
     include: { owner: true },
   });
+  await logAudit(req.user!.id, "UPDATED", "MILESTONE", id, { title: milestone.title });
   res.json({ milestone });
 });
 
 milestonesRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.initiativeMilestone.findUnique({ where: { id } });
   await prisma.initiativeMilestone.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "MILESTONE", id, { initiativeId: existing?.initiativeId, title: existing?.title });
   res.status(204).send();
 });

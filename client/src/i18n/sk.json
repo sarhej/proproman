@@ -555,6 +555,27 @@
     "clearWarning": "Toto natrvalo zmaže všetko okrem vášho používateľského účtu.",
     "clearing": "Mazanie...",
     "clearConfirm": "Áno, zmazať všetko",
+    "notificationRules": "Pravidlá notifikácií",
+    "notificationRulesDesc": "Globálne pravidlá: kto dostane upozornenie pri udalostiach.",
+    "addRule": "Pridať pravidlo",
+    "editRule": "Upraviť pravidlo",
+    "deleteRule": "Zmazať pravidlo",
+    "ruleAction": "Akcia",
+    "ruleEntityType": "Typ entity",
+    "ruleEventKind": "Druh udalosti (voliteľné)",
+    "ruleRecipientKind": "Príjemca",
+    "ruleRecipientRole": "Rola (voliteľné)",
+    "ruleChannels": "Kanály",
+    "ruleEnabled": "Zapnuté",
+    "loadingRules": "Načítavanie pravidiel...",
+    "noRules": "Žiadne pravidlá notifikácií. Pridajte pravidlo pre upozornenie používateľov.",
+    "recipientKind": {
+      "OBJECT_OWNER": "Vlastník objektu",
+      "OBJECT_ROLE": "Rola u objektu",
+      "GLOBAL_ROLE": "Globálna rola",
+      "OBJECT_ASSIGNEE": "Pridelenec objektu"
+    },
+    "channel": { "IN_APP": "V aplikácii", "EMAIL": "E-mail", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
     "exportSuccess": "Export úspešne stiahnutý.",
     "exportFailed": "Export zlyhal. Skontrolujte konzolu.",
     "invalidFile": "Neplatný súbor: očakávaná verzia {{version}}.",
@@ -568,5 +589,25 @@
     "en": "English",
     "cs": "Čeština",
     "sk": "Slovenčina"
+  },
+  "notificationSubscriptions": {
+    "title": "Moje odbery notifikácií",
+    "empty": "Nemáte žiadne odbery. Použite „Upozorni ma“ u iniciatívy alebo domény.",
+    "unsubscribe": "Zrušiť odber",
+    "scope": { "GLOBAL": "Všetko", "DOMAIN": "Doména", "INITIATIVE": "Iniciatíva", "CAMPAIGN": "Kampaň", "FEATURE": "Funkcia", "USER": "Používateľ" },
+    "notifyMe": "Upozorni ma na zmeny tu"
+  },
+  "notification": {
+    "initiative": {
+      "created": "Iniciatíva \"{{title}}\" bola vytvorená",
+      "updated": "Iniciatíva \"{{title}}\" bola upravená",
+      "deleted": "Iniciatíva \"{{title}}\" bola zmazaná",
+      "status_changed": "U iniciatívy \"{{title}}\" sa zmenil stav z {{old}} na {{new}}"
+    },
+    "feature": { "created": "Funkcia \"{{title}}\" bola vytvorená", "updated": "Funkcia \"{{title}}\" bola upravená", "deleted": "Funkcia \"{{title}}\" bola zmazaná" },
+    "campaign": { "created": "Kampaň \"{{title}}\" bola vytvorená", "updated": "Kampaň \"{{title}}\" bola upravená", "deleted": "Kampaň \"{{title}}\" bola zmazaná" },
+    "product": { "created": "Produkt \"{{title}}\" bol vytvorený", "updated": "Produkt \"{{title}}\" bol upravený", "deleted": "Produkt \"{{title}}\" bol zmazaný" },
+    "domain": { "created": "Doména \"{{title}}\" bola vytvorená", "updated": "Doména \"{{title}}\" bola upravená", "deleted": "Doména \"{{title}}\" bola zmazaná" },
+    "default": "{{type}}: {{title}}"
   }
 }

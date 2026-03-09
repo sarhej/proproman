@@ -2,6 +2,34 @@ export type UserRole = "SUPER_ADMIN" | "ADMIN" | "EDITOR" | "MARKETING" | "VIEWE
 
 export type AuditAction = "CREATED" | "UPDATED" | "DELETED" | "STATUS_CHANGED" | "ROLE_CHANGED" | "LOGIN";
 
+export type DeliveryChannel = "IN_APP" | "EMAIL" | "SLACK" | "WHATSAPP";
+export type NotificationScope = "GLOBAL" | "DOMAIN" | "INITIATIVE" | "CAMPAIGN" | "FEATURE" | "USER";
+export type NotificationRecipientKind = "OBJECT_OWNER" | "OBJECT_ROLE" | "GLOBAL_ROLE" | "OBJECT_ASSIGNEE";
+
+export type NotificationRule = {
+  id: string;
+  action: AuditAction;
+  entityType: string;
+  eventKind: string | null;
+  recipientKind: NotificationRecipientKind;
+  recipientRole: string | null;
+  deliveryChannels: DeliveryChannel[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserNotificationSubscription = {
+  id: string;
+  userId: string;
+  action: AuditAction;
+  entityType: string;
+  scopeType: NotificationScope;
+  scopeId: string | null;
+  deliveryChannels: DeliveryChannel[];
+  createdAt: string;
+};
+
 export type UserEmail = {
   id: string;
   email: string;
@@ -310,10 +338,18 @@ export type SuccessCriterion = {
 export type UserMessage = {
   id: string;
   userId: string;
-  title: string;
+  title: string | null;
   body: string | null;
   linkUrl: string | null;
   linkLabel: string | null;
+  titleKey?: string | null;
+  titleParams?: Record<string, unknown> | null;
+  bodyKey?: string | null;
+  bodyParams?: Record<string, unknown> | null;
+  linkLabelKey?: string | null;
+  linkLabelParams?: Record<string, unknown> | null;
+  entityType?: string | null;
+  entityId?: string | null;
   readAt: string | null;
   source: string | null;
   type: string | null;

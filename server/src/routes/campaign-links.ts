@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const linkSchema = z.object({
   campaignId: z.string().min(1),
@@ -52,11 +53,20 @@ campaignLinksRouter.post("/", requireMarketingAccess(), async (req, res) => {
       partner: true
     }
   });
+  await logAudit(req.user!.id, "CREATED", "CAMPAIGN_LINK", link.id, {
+    campaignId: link.campaignId,
+    initiativeId: link.initiativeId
+  });
   res.status(201).json({ link });
 });
 
 campaignLinksRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.campaignLink.findUnique({ where: { id } });
   await prisma.campaignLink.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "CAMPAIGN_LINK", id, {
+    campaignId: existing?.campaignId,
+    initiativeId: existing?.initiativeId
+  });
   res.status(204).send();
 });

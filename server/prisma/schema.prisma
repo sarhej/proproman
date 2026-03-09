@@ -25,6 +25,35 @@ enum AuditAction {
   LOGIN
 }
 
+enum NotificationScope {
+  GLOBAL
+  DOMAIN
+  INITIATIVE
+  CAMPAIGN
+  FEATURE
+  USER
+}
+
+enum DeliveryChannel {
+  IN_APP
+  EMAIL
+  SLACK
+  WHATSAPP
+}
+
+enum NotificationRecipientKind {
+  OBJECT_OWNER
+  OBJECT_ROLE
+  GLOBAL_ROLE
+  OBJECT_ASSIGNEE
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 enum Priority {
   P0
   P1
@@ -197,25 +226,39 @@ model User {
   initiativeComments InitiativeComment[]
   userMessages     UserMessage[]
   auditEntries     AuditEntry[]
+  notificationSubscriptions UserNotificationSubscription[]
+  notificationPreferences   UserNotificationPreference[]
+  preferredLocale  String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }
 
 model UserMessage {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String?
-  linkUrl   String?
-  linkLabel String?
-  readAt    DateTime?
-  source    String?
-  type      String?
-  createdAt DateTime  @default(now())
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String?
+  body           String?
+  linkUrl        String?
+  linkLabel      String?
+  titleKey       String?
+  titleParams    Json?
+  bodyKey        String?
+  bodyParams     Json?
+  linkLabelKey   String?
+  linkLabelParams Json?
+  entityType     String?
+  entityId       String?
+  auditEntryId   String?
+  readAt         DateTime?
+  source         String?
+  type           String?
+  createdAt      DateTime  @default(now())
+  deliveries     NotificationDelivery[]
 
   @@index([userId])
   @@index([userId, readAt])
+  @@unique([userId, auditEntryId])
 }
 
 model UserEmail {
@@ -608,4 +651,63 @@ model AuditEntry {
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model NotificationRule {
+  id               String                   @id @default(cuid())
+  action           AuditAction
+  entityType       String
+  eventKind        String?
+  recipientKind   NotificationRecipientKind
+  recipientRole   String?
+  deliveryChannels Json                     // array of DeliveryChannel names, default ["IN_APP"]
+  enabled          Boolean                  @default(true)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([action, entityType, enabled])
+}
+
+model UserNotificationSubscription {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action           AuditAction
+  entityType       String
+  scopeType        NotificationScope
+  scopeId          String?
+  deliveryChannels Json              // array of DeliveryChannel names, default ["IN_APP"]
+  createdAt        DateTime         @default(now())
+
+  @@unique([userId, action, entityType, scopeType, scopeId])
+  @@index([userId])
+}
+
+model UserNotificationPreference {
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel            DeliveryChannel
+  enabled            Boolean        @default(true)
+  channelIdentifier  String?        // email, Slack user id, phone - no validation yet
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([userId, channel])
+  @@index([userId])
+}
+
+model NotificationDelivery {
+  id             String                     @id @default(cuid())
+  userMessageId  String?
+  userMessage    UserMessage?               @relation(fields: [userMessageId], references: [id], onDelete: Cascade)
+  userId         String
+  channel        DeliveryChannel
+  status         NotificationDeliveryStatus
+  sentAt         DateTime?
+  externalId     String?
+  createdAt      DateTime                   @default(now())
+
+  @@index([userMessageId])
+  @@index([userId])
 }

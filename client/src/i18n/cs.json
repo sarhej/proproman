@@ -555,6 +555,27 @@
     "clearWarning": "Toto trvale smaže vše kromě vašeho uživatelského účtu.",
     "clearing": "Mazání...",
     "clearConfirm": "Ano, smazat vše",
+    "notificationRules": "Pravidla notifikací",
+    "notificationRulesDesc": "Globální pravidla: kdo dostane upozornění při událostech.",
+    "addRule": "Přidat pravidlo",
+    "editRule": "Upravit pravidlo",
+    "deleteRule": "Smazat pravidlo",
+    "ruleAction": "Akce",
+    "ruleEntityType": "Typ entity",
+    "ruleEventKind": "Druh události (volitelné)",
+    "ruleRecipientKind": "Příjemce",
+    "ruleRecipientRole": "Role (volitelné)",
+    "ruleChannels": "Kanály",
+    "ruleEnabled": "Zapnuto",
+    "loadingRules": "Načítání pravidel...",
+    "noRules": "Žádná pravidla notifikací. Přidejte pravidlo pro upozornění uživatelů.",
+    "recipientKind": {
+      "OBJECT_OWNER": "Vlastník objektu",
+      "OBJECT_ROLE": "Role u objektu",
+      "GLOBAL_ROLE": "Globální role",
+      "OBJECT_ASSIGNEE": "Přiřazenec objektu"
+    },
+    "channel": { "IN_APP": "V aplikaci", "EMAIL": "E-mail", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
     "exportSuccess": "Export úspěšně stažen.",
     "exportFailed": "Export selhal. Zkontrolujte konzoli.",
     "invalidFile": "Neplatný soubor: očekávaná verze {{version}}.",
@@ -568,5 +589,25 @@
     "en": "English",
     "cs": "Čeština",
     "sk": "Slovenčina"
+  },
+  "notificationSubscriptions": {
+    "title": "Moje odběry notifikací",
+    "empty": "Nemáte žádné odběry. Použijte „Upozornit mě“ u iniciativy nebo domény.",
+    "unsubscribe": "Zrušit odběr",
+    "scope": { "GLOBAL": "Vše", "DOMAIN": "Doména", "INITIATIVE": "Iniciativa", "CAMPAIGN": "Kampaň", "FEATURE": "Funkce", "USER": "Uživatel" },
+    "notifyMe": "Upozornit mě na změny zde"
+  },
+  "notification": {
+    "initiative": {
+      "created": "Iniciativa \"{{title}}\" byla vytvořena",
+      "updated": "Iniciativa \"{{title}}\" byla upravena",
+      "deleted": "Iniciativa \"{{title}}\" byla smazána",
+      "status_changed": "U iniciativy \"{{title}}\" se změnil stav z {{old}} na {{new}}"
+    },
+    "feature": { "created": "Funkce \"{{title}}\" byla vytvořena", "updated": "Funkce \"{{title}}\" byla upravena", "deleted": "Funkce \"{{title}}\" byla smazána" },
+    "campaign": { "created": "Kampaň \"{{title}}\" byla vytvořena", "updated": "Kampaň \"{{title}}\" byla upravena", "deleted": "Kampaň \"{{title}}\" byla smazána" },
+    "product": { "created": "Produkt \"{{title}}\" byl vytvořen", "updated": "Produkt \"{{title}}\" byl upraven", "deleted": "Produkt \"{{title}}\" byl smazán" },
+    "domain": { "created": "Doména \"{{title}}\" byla vytvořena", "updated": "Doména \"{{title}}\" byla upravena", "deleted": "Doména \"{{title}}\" byla smazána" },
+    "default": "{{type}}: {{title}}"
   }
 }

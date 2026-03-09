@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const partnerSchema = z.object({
   name: z.string().min(1),
@@ -42,6 +43,7 @@ partnersRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
       ownerId: parsed.data.ownerId ?? null
     }
   });
+  await logAudit(req.user!.id, "CREATED", "PARTNER", partner.id, { name: partner.name });
   res.status(201).json({ partner });
 });
 
@@ -60,11 +62,14 @@ partnersRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
       ownerId: parsed.data.ownerId ?? undefined
     }
   });
+  await logAudit(req.user!.id, "UPDATED", "PARTNER", id, { name: partner.name });
   res.json({ partner });
 });
 
 partnersRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.partner.findUnique({ where: { id } });
   await prisma.partner.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "PARTNER", id, { name: existing?.name });
   res.status(204).send();
 });

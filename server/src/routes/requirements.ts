@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const requirementSchema = z.object({
   featureId: z.string().min(1),
@@ -43,6 +44,7 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
       description: parsed.data.description ?? null
     }
   });
+  await logAudit(req.user!.id, "CREATED", "REQUIREMENT", requirement.id, { featureId: parsed.data.featureId, title: requirement.title });
   res.status(201).json({ requirement });
 });
 
@@ -63,11 +65,14 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
       priority: parsed.data.priority
     }
   });
+  await logAudit(req.user!.id, "UPDATED", "REQUIREMENT", id, { featureId: requirement.featureId, title: requirement.title });
   res.json({ requirement });
 });
 
 requirementsRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.requirement.findUnique({ where: { id } });
   await prisma.requirement.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "REQUIREMENT", id, { featureId: existing?.featureId, title: existing?.title });
   res.status(204).send();
 });

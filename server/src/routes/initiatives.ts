@@ -10,6 +10,19 @@ export const initiativesRouter = Router();
 
 initiativesRouter.use(requireAuth);
 
+/** EDITOR can only edit initiatives they own or are assigned to (any RACI role). */
+async function canUserEditInitiative(userId: string, userRole: UserRole, initiativeId: string): Promise<boolean> {
+  if (userRole === UserRole.SUPER_ADMIN || userRole === UserRole.ADMIN) return true;
+  const initiative = await prisma.initiative.findUnique({
+    where: { id: initiativeId },
+    select: { ownerId: true, assignments: { select: { userId: true } } }
+  });
+  if (!initiative) return false;
+  if (initiative.ownerId === userId) return true;
+  if (initiative.assignments.some((a) => a.userId === userId)) return true;
+  return false;
+}
+
 initiativesRouter.get("/", async (req, res) => {
   const { domainId, ownerId, horizon, priority, isGap, archived } = req.query;
   const where: Prisma.InitiativeWhereInput = {};
@@ -66,10 +79,15 @@ initiativesRouter.post("/:id/comments", requireWriteAccess(), async (req, res) =
     res.status(404).json({ error: "Initiative not found" });
     return;
   }
+  if (!(await canUserEditInitiative(userId, req.user!.role, initiativeId))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const comment = await prisma.initiativeComment.create({
     data: { initiativeId, userId, text },
     include: { user: { select: { id: true, name: true } } }
   });
+  await logAudit(req.user!.id, "CREATED", "COMMENT", comment.id, { initiativeId });
   res.status(201).json({ comment });
 });
 
@@ -100,10 +118,15 @@ initiativesRouter.post("/:id/success-criteria", requireWriteAccess(), async (req
     res.status(404).json({ error: "Initiative not found" });
     return;
   }
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const count = await prisma.successCriterion.count({ where: { initiativeId } });
   const item = await prisma.successCriterion.create({
     data: { initiativeId, title, sortOrder: body?.sortOrder ?? count }
   });
+  await logAudit(req.user!.id, "CREATED", "SUCCESS_CRITERION", item.id, { initiativeId, title: item.title });
   res.status(201).json({ successCriterion: item });
 });
 
@@ -118,6 +141,10 @@ initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess
     res.status(404).json({ error: "Success criterion not found" });
     return;
   }
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const item = await prisma.successCriterion.update({
     where: { id: criterionId },
     data: {
@@ -126,6 +153,7 @@ initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess
       ...(typeof body.sortOrder === "number" && { sortOrder: body.sortOrder })
     }
   });
+  await logAudit(req.user!.id, "UPDATED", "SUCCESS_CRITERION", criterionId, { initiativeId, title: item.title });
   res.json({ successCriterion: item });
 });
 
@@ -139,6 +167,11 @@ initiativesRouter.delete("/:id/success-criteria/:criterionId", requireWriteAcces
     res.status(404).json({ error: "Success criterion not found" });
     return;
   }
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  await logAudit(req.user!.id, "DELETED", "SUCCESS_CRITERION", criterionId, { initiativeId, title: existing.title });
   await prisma.successCriterion.delete({ where: { id: criterionId } });
   res.status(204).send();
 });
@@ -158,7 +191,7 @@ initiativesRouter.get("/:id", async (req, res) => {
   res.json({ initiative });
 });
 
-initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
   const parsed = initiativeInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -247,6 +280,10 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   const existing = await prisma.initiative.findUnique({ where: { id } });
   if (!existing) {
     res.status(404).json({ error: "Initiative not found" });
+    return;
+  }
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -343,6 +380,12 @@ initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
     return;
   }
   const updates = parsed.data;
+  for (const u of updates) {
+    if (!(await canUserEditInitiative(req.user!.id, req.user!.role, u.id))) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  }
   await prisma.$transaction(
     updates.map((u) =>
       prisma.initiative.update({
@@ -359,6 +402,10 @@ initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
 
 initiativesRouter.patch("/:id/archive", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const initiative = await prisma.initiative.update({
     where: { id },
     data: { archivedAt: new Date() },
@@ -370,6 +417,10 @@ initiativesRouter.patch("/:id/archive", requireWriteAccess(), async (req, res) =
 
 initiativesRouter.patch("/:id/unarchive", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const initiative = await prisma.initiative.update({
     where: { id },
     data: { archivedAt: null },

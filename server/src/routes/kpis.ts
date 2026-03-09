@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { logAudit } from "../services/audit.js";
 
 const kpiSchema = z.object({
   title: z.string().min(1),
@@ -43,6 +44,7 @@ kpisRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
       targetDate: parsed.data.targetDate ? new Date(parsed.data.targetDate) : null,
     },
   });
+  await logAudit(req.user!.id, "CREATED", "KPI", kpi.id, { initiativeId, title: kpi.title });
   res.status(201).json({ kpi });
 });
 
@@ -63,11 +65,14 @@ kpisRouter.put("/:id", requireWriteAccess(), async (req, res) => {
       ...(parsed.data.targetDate !== undefined && { targetDate: parsed.data.targetDate ? new Date(parsed.data.targetDate) : null }),
     },
   });
+  await logAudit(req.user!.id, "UPDATED", "KPI", id, { title: kpi.title });
   res.json({ kpi });
 });
 
 kpisRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
   const id = String(req.params.id);
+  const existing = await prisma.initiativeKPI.findUnique({ where: { id } });
   await prisma.initiativeKPI.delete({ where: { id } });
+  await logAudit(req.user!.id, "DELETED", "KPI", id, { initiativeId: existing?.initiativeId, title: existing?.title });
   res.status(204).send();
 });
