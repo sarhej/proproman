@@ -41,6 +41,7 @@ authRouter.get("/google/callback", (req, res, next) => {
             const base = env.CLIENT_URL.replace(/\/$/, "");
             return res.redirect(`${base}/?error=login_failed`);
           }
+          console.log("[auth] Login OK redirecting", { userId: user.id, email: user.email, sessionId: req.sessionID?.slice(0, 8) });
           res.redirect(env.CLIENT_URL);
         });
       });
@@ -86,7 +87,10 @@ authRouter.post("/dev-login", async (req, res, next) => {
 });
 
 authRouter.get("/me", (req, res) => {
-  if (!req.user) {
+  const hasSession = !!req.sessionID;
+  const hasUser = !!req.user;
+  if (!hasUser) {
+    console.log("[auth] GET /me 401", { hasSession, sessionId: req.sessionID?.slice(0, 8), cookie: req.headers.cookie ? "present" : "missing" });
     res.status(401).json({ user: null });
     return;
   }

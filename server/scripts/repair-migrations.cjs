@@ -349,6 +349,15 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       }
     }
 
+    // Ensure User.preferredLocale exists (20260309) so auth and Prisma do not fail
+    const preferredLocaleCheck = await pool.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'User' AND column_name = 'preferredLocale'"
+    );
+    if (preferredLocaleCheck.rowCount === 0) {
+      await pool.query('ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT');
+      console.log("Added User.preferredLocale.");
+    }
+
     // Ensure Initiative.archivedAt exists (20260308_add_initiative_archived_at) so app does not crash on Railway when migrate deploy did not run
     const archivedAtCheck = await pool.query(
       "SELECT 1 FROM information_schema.columns WHERE table_name = 'Initiative' AND column_name = 'archivedAt'"

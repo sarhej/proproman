@@ -10,19 +10,19 @@ CREATE TYPE "NotificationRecipientKind" AS ENUM ('OBJECT_OWNER', 'OBJECT_ROLE', 
 -- CreateEnum
 CREATE TYPE "NotificationDeliveryStatus" AS ENUM ('PENDING', 'SENT', 'FAILED');
 
--- AlterTable: User add preferredLocale
-ALTER TABLE "User" ADD COLUMN "preferredLocale" TEXT;
+-- AlterTable: User add preferredLocale (IF NOT EXISTS so repair can add it first)
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "preferredLocale" TEXT;
 
--- AlterTable: UserMessage add i18n and context columns, make title optional
-ALTER TABLE "UserMessage" ADD COLUMN "titleKey" TEXT;
-ALTER TABLE "UserMessage" ADD COLUMN "titleParams" JSONB;
-ALTER TABLE "UserMessage" ADD COLUMN "bodyKey" TEXT;
-ALTER TABLE "UserMessage" ADD COLUMN "bodyParams" JSONB;
-ALTER TABLE "UserMessage" ADD COLUMN "linkLabelKey" TEXT;
-ALTER TABLE "UserMessage" ADD COLUMN "linkLabelParams" JSONB;
-ALTER TABLE "UserMessage" ADD COLUMN "entityType" TEXT;
-ALTER TABLE "UserMessage" ADD COLUMN "entityId" TEXT;
-ALTER TABLE "UserMessage" ADD COLUMN "auditEntryId" TEXT;
+-- AlterTable: UserMessage add i18n and context columns, make title optional (IF NOT EXISTS for idempotency)
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "titleKey" TEXT;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "titleParams" JSONB;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "bodyKey" TEXT;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "bodyParams" JSONB;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "linkLabelKey" TEXT;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "linkLabelParams" JSONB;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "entityType" TEXT;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "entityId" TEXT;
+ALTER TABLE "UserMessage" ADD COLUMN IF NOT EXISTS "auditEntryId" TEXT;
 ALTER TABLE "UserMessage" ALTER COLUMN "title" DROP NOT NULL;
 
 -- CreateTable: NotificationRule
