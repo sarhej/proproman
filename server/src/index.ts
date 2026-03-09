@@ -51,7 +51,7 @@ const pool = new Pool({ connectionString: env.DATABASE_URL });
 
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: env.CLIENT_URL.replace(/\/$/, ""),
     credentials: true
   })
 );
@@ -72,7 +72,8 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 14
+      maxAge: 1000 * 60 * 60 * 24 * 14,
+      sameSite: "lax"
     }
   })
 );

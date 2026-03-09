@@ -35,7 +35,14 @@ authRouter.get("/google/callback", (req, res, next) => {
           const base = env.CLIENT_URL.replace(/\/$/, "");
           return res.redirect(`${base}/?error=login_failed`);
         }
-        res.redirect(env.CLIENT_URL);
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[auth] Session persist after login:", saveErr?.message ?? saveErr);
+            const base = env.CLIENT_URL.replace(/\/$/, "");
+            return res.redirect(`${base}/?error=login_failed`);
+          }
+          res.redirect(env.CLIENT_URL);
+        });
       });
     }
   )(req, res, next);
