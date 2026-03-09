@@ -8,6 +8,7 @@ type Filters = {
   priority?: string;
   horizon?: string;
   isGap?: boolean;
+  archived?: boolean;
   quick?: string;
 };
 
@@ -25,6 +26,7 @@ export function useBoardData(enabled = true) {
     if (filters.priority) params.set("priority", filters.priority);
     if (filters.horizon) params.set("horizon", filters.horizon);
     if (typeof filters.isGap === "boolean") params.set("isGap", String(filters.isGap));
+    if (filters.archived === true) params.set("archived", "true");
     return params;
   }, [filters]);
 

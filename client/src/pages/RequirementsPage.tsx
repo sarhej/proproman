@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { formatPriority } from "../lib/format";
 import type { Initiative, Requirement } from "../types/models";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -56,7 +57,7 @@ export function RequirementsPage({ initiatives, isAdmin }: Props) {
           <div key={r.id} className="rounded border border-slate-200 px-3 py-2 text-sm">
             <div className="font-medium">{r.title}</div>
             <div className="text-slate-500">
-              {r.priority} • {r.isDone ? "Done" : "Open"}
+              {formatPriority(r.priority)} • {r.isDone ? "Done" : "Open"}
             </div>
           </div>
         ))}

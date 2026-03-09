@@ -18,10 +18,11 @@ milestonesRouter.use(requireAuth);
 
 milestonesRouter.get("/", async (_req, res) => {
   const milestones = await prisma.initiativeMilestone.findMany({
+    where: { initiative: { archivedAt: null } },
     include: {
       owner: { select: { id: true, name: true } },
       initiative: {
-        select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: { id: true, name: true } } },
+        select: { id: true, title: true, horizon: true, domain: { select: { id: true, name: true, color: true } }, owner: { select: { id: true, name: true } } },
       },
     },
     orderBy: { targetDate: "asc" },

@@ -1,8 +1,9 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
-import { BarChart3, Building2, CalendarClock, Columns3, Filter, Globe, Grid2x2, Home, KanbanSquare, Menu, Megaphone, Network, Settings, Table, Users2, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { BarChart3, Bell, Building2, CalendarClock, Columns3, Filter, Globe, Grid2x2, Home, KanbanSquare, Menu, Megaphone, Network, Plus, Settings, Table, Users2, X } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { User } from "../../types/models";
+import { api } from "../../lib/api";
+import type { User, UserMessage } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
 
 
@@ -79,6 +80,7 @@ type Props = {
   user: User;
   children: ReactNode;
   permissions: Permissions;
+  onNewInitiative?: () => void;
   onLogout: () => void;
   onExport: () => void;
   onExportPdf: () => void;
@@ -167,15 +169,62 @@ function NavContent({ permissions, onNavigate, mobile, phone, onExport, onExport
 
 const isPhone = () => window.matchMedia("(max-width: 639px)").matches;
 
-export function AppShell({ user, children, permissions, onLogout, onExport, onExportPdf }: Props) {
+export function AppShell({ user, children, permissions, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [phone, setPhone] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  const loadMessages = useCallback(async () => {
+    try {
+      const res = await api.getMessages();
+      setMessages(res.messages);
+      setUnreadCount(res.unreadCount);
+    } catch {
+      setMessages([]);
+      setUnreadCount(0);
+    }
+  }, []);
+
   useEffect(() => { closeDrawer(); }, [location.pathname, closeDrawer]);
+
+  useEffect(() => {
+    void loadMessages();
+    const interval = setInterval(loadMessages, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loadMessages]);
+
+  useEffect(() => {
+    if (!messagesOpen) return;
+    const close = (e: MouseEvent) => {
+      if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) setMessagesOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [messagesOpen]);
+
+  async function handleMessageClick(msg: UserMessage) {
+    if (!msg.readAt) {
+      await api.markMessageRead(msg.id);
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, readAt: new Date().toISOString() } : m)));
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+    if (msg.linkUrl) {
+      if (msg.linkUrl.startsWith("/")) {
+        navigate(msg.linkUrl);
+      } else {
+        window.open(msg.linkUrl, "_blank");
+      }
+    }
+    setMessagesOpen(false);
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -231,6 +280,58 @@ export function AppShell({ user, children, permissions, onLogout, onExport, onEx
           <span className="hidden lg:inline font-semibold text-slate-500">{t("app.brand")}</span>
         </div>
         <div className="flex items-center gap-2">
+          {onNewInitiative ? (
+            <button
+              type="button"
+              onClick={onNewInitiative}
+              className="hidden lg:flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              <Plus size={14} />
+              {t("nav.newInitiative")}
+            </button>
+          ) : null}
+          <div className="relative hidden lg:block" ref={messagesRef}>
+            <button
+              type="button"
+              onClick={() => { setMessagesOpen((o) => !o); if (!messagesOpen) void loadMessages(); }}
+              className="relative rounded p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              title={t("nav.messages")}
+            >
+              <Bell size={18} />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
+            </button>
+            {messagesOpen && (
+              <div className="absolute right-0 top-full z-30 mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <div className="px-3 py-2 text-xs font-semibold uppercase text-slate-400">{t("nav.messages")}</div>
+                {messages.length === 0 ? (
+                  <p className="px-3 py-4 text-sm text-slate-400">{t("nav.messagesEmpty")}</p>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {messages.map((msg) => (
+                      <li key={msg.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleMessageClick(msg)}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${!msg.readAt ? "bg-sky-50/50" : ""}`}
+                        >
+                          <div className="font-medium text-slate-900">{msg.title}</div>
+                          {msg.body ? <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">{msg.body}</div> : null}
+                          <div className="mt-1 text-[10px] text-slate-400">
+                            {new Date(msg.createdAt).toLocaleString()}
+                            {msg.linkUrl && msg.linkLabel ? ` \u00b7 ${msg.linkLabel}` : ""}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           <div className="hidden lg:flex items-center gap-1 rounded border border-slate-200 px-1">
             <Globe size={13} className="text-slate-400" />
             {LANGS.map((lng) => (

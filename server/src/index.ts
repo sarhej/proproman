@@ -34,6 +34,7 @@ import { importExportRouter } from "./routes/import-export.js";
 import { milestonesRouter } from "./routes/milestones.js";
 import { kpisRouter } from "./routes/kpis.js";
 import { stakeholdersRouter } from "./routes/stakeholders.js";
+import { messagesRouter } from "./routes/messages.js";
 import { prisma } from "./db.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
 import { mountMcp } from "./mcp/setup.js";
@@ -109,6 +110,7 @@ app.use("/api/revenue-streams", revenueStreamsRouter);
 app.use("/api/milestones", milestonesRouter);
 app.use("/api/kpis", kpisRouter);
 app.use("/api/stakeholders", stakeholdersRouter);
+app.use("/api/messages", messagesRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({
@@ -150,6 +152,15 @@ if (env.NODE_ENV === "production") {
 app.use((err: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   void next;
   console.error(err);
+  const isDbDown =
+    (err as Error & { code?: string }).code === "ECONNREFUSED" ||
+    (err as Error & { code?: string }).code === "P1001" ||
+    String(err.message).includes("ECONNREFUSED") ||
+    String(err.message).includes("connect");
+  if (isDbDown) {
+    res.status(503).json({ error: "Service temporarily unavailable. Please try again later." });
+    return;
+  }
   res.status(500).json({ error: "Internal server error" });
 });
 

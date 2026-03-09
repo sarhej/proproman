@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Initiative } from "../../types/models";
-import { formatCommercial, formatHorizon, formatStatus } from "../../lib/format";
+import { formatCommercial, formatHorizon, formatPriority, formatStatus } from "../../lib/format";
 import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
@@ -30,7 +30,7 @@ export function PriorityGrid({ initiatives, onOpen }: Props) {
               {initiative.domain.name} &middot; {initiative.owner?.name || t("common.unassigned")}
             </div>
             <div className="flex flex-wrap gap-1">
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium">{initiative.priority}</span>
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium">{formatPriority(initiative.priority)}</span>
               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px]">{formatHorizon(initiative.horizon)}</span>
               <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] text-sky-700 capitalize">{formatStatus(initiative.status)}</span>
               <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] capitalize">{formatCommercial(initiative.commercialType)}</span>
@@ -61,7 +61,7 @@ export function PriorityGrid({ initiatives, onOpen }: Props) {
                   <DomainBadge name={initiative.domain.name} color={initiative.domain.color} />
                 </td>
                 <td className="px-3 py-2">{initiative.owner?.name || t("common.unassigned")}</td>
-                <td className="px-3 py-2">{initiative.priority}</td>
+                <td className="px-3 py-2">{formatPriority(initiative.priority)}</td>
                 <td className="px-3 py-2">{formatHorizon(initiative.horizon)}</td>
                 <td className="px-3 py-2 capitalize">{formatStatus(initiative.status)}</td>
                 <td className="px-3 py-2 capitalize">{formatCommercial(initiative.commercialType)}</td>

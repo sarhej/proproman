@@ -17,10 +17,11 @@ export function useAuth() {
           setUser(payload.user);
           setError(null);
         }
-      } catch {
+      } catch (e) {
         if (!cancelled) {
           setUser(null);
-          setError("Not authenticated.");
+          const err = e as Error & { status?: number };
+          setError(err.status === 401 ? null : (err.message || "Not authenticated."));
         }
       } finally {
         if (!cancelled) {

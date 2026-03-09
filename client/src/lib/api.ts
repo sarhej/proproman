@@ -10,7 +10,9 @@ import type {
   GanttTask,
   Initiative,
   InitiativeAssignment,
+  InitiativeComment,
   InitiativeMilestone,
+  SuccessCriterion,
   InitiativeKPI,
   Stakeholder,
   Partner,
@@ -24,6 +26,7 @@ import type {
   Risk,
   User,
   UserEmail,
+  UserMessage,
   UserRole,
   Account
 } from "../types/models";
@@ -41,13 +44,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const err = new Error(`Request failed: ${response.status}`) as Error & { status?: number; body?: unknown };
-    err.status = response.status;
+    let body: { error?: string } | undefined;
     try {
-      err.body = await response.json();
+      body = await response.json();
     } catch {
-      err.body = undefined;
+      body = undefined;
     }
+    const err = new Error(
+      response.status === 503 ? "Service temporarily unavailable. Please try again later." : (body?.error ?? `Request failed: ${response.status}`)
+    ) as Error & { status?: number; body?: unknown };
+    err.status = response.status;
+    err.body = body;
     throw err;
   }
   if (response.status === 204) {
@@ -62,9 +69,36 @@ export const api = {
     request<{ user: User }>("/api/auth/dev-login", { method: "POST", body: JSON.stringify(role ? { role } : {}) }),
   logout: async () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   getMeta: async () => request<MetaPayload>("/api/meta"),
+  getMessages: async (unreadOnly?: boolean) =>
+    request<{ messages: UserMessage[]; unreadCount: number }>(`/api/messages${unreadOnly ? "?unreadOnly=true" : ""}`),
+  markMessageRead: async (id: string) =>
+    request<{ message: UserMessage }>(`/api/messages/${id}/read`, { method: "PATCH" }),
   getInitiatives: async (query: URLSearchParams) =>
     request<{ initiatives: Initiative[] }>(`/api/initiatives?${query.toString()}`),
   getInitiative: async (id: string) => request<{ initiative: Initiative }>(`/api/initiatives/${id}`),
+  getInitiativeComments: async (initiativeId: string) =>
+    request<{ comments: InitiativeComment[] }>(`/api/initiatives/${initiativeId}/comments`),
+  createInitiativeComment: async (initiativeId: string, body: { text: string }) =>
+    request<{ comment: InitiativeComment }>(`/api/initiatives/${initiativeId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  getSuccessCriteria: async (initiativeId: string) =>
+    request<{ successCriteria: SuccessCriterion[] }>(`/api/initiatives/${initiativeId}/success-criteria`),
+  createSuccessCriterion: async (initiativeId: string, body: { title: string; sortOrder?: number }) =>
+    request<{ successCriterion: SuccessCriterion }>(`/api/initiatives/${initiativeId}/success-criteria`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  updateSuccessCriterion: async (initiativeId: string, criterionId: string, body: { title?: string; isDone?: boolean; sortOrder?: number }) =>
+    request<{ successCriterion: SuccessCriterion }>(`/api/initiatives/${initiativeId}/success-criteria/${criterionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    }),
+  deleteSuccessCriterion: async (initiativeId: string, criterionId: string) =>
+    request<void>(`/api/initiatives/${initiativeId}/success-criteria/${criterionId}`, {
+      method: "DELETE"
+    }),
   createInitiative: async (body: unknown) =>
     request<{ initiative: Initiative }>("/api/initiatives", {
       method: "POST",
@@ -74,6 +108,14 @@ export const api = {
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {
       method: "PUT",
       body: JSON.stringify(body)
+    }),
+  archiveInitiative: async (id: string) =>
+    request<{ initiative: Initiative }>(`/api/initiatives/${id}/archive`, {
+      method: "PATCH"
+    }),
+  unarchiveInitiative: async (id: string) =>
+    request<{ initiative: Initiative }>(`/api/initiatives/${id}/unarchive`, {
+      method: "PATCH"
     }),
   deleteInitiative: async (id: string) =>
     request<void>(`/api/initiatives/${id}`, {

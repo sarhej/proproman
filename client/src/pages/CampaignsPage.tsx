@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type {
   Campaign, CampaignStatus, CampaignType, AssetType, AssetStatus,
@@ -157,13 +158,14 @@ function AssetRow({ asset, isAdmin, onRefresh }: { asset: Asset; isAdmin: boolea
 }
 
 function CampaignRow({
-  campaign, isAdmin, users, accounts, partners, initiatives, onOpenInitiative, onRefresh
+  campaign, isAdmin, users, accounts, partners, initiatives, onOpenInitiative, onRefresh, highlightId
 }: {
   campaign: Campaign; isAdmin: boolean; users: User[]; accounts: Account[]; partners: Partner[];
   initiatives: Initiative[]; onOpenInitiative: (i: Initiative) => void; onRefresh: () => Promise<void>;
+  highlightId?: string | null;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(campaign.id === highlightId);
   const [addingLink, setAddingLink] = useState(false);
   const [linkInit, setLinkInit] = useState("");
   const [linkAcct, setLinkAcct] = useState("");
@@ -208,13 +210,16 @@ function CampaignRow({
             </select>
           ) : <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${statusColor(campaign.status)}`}>{t(`campaignStatus.${campaign.status}`)}</span>}
         </td>
+        <td className="px-2 text-center text-[11px] text-slate-600 whitespace-nowrap">
+          {formatDate(campaign.startDate)} – {formatDate(campaign.endDate)}
+        </td>
       </tr>
 
       {open ? (
         <>
           {/* Campaign metadata row */}
           <tr className="border-t border-slate-100 bg-white text-xs">
-            <td colSpan={4} className="px-8 py-2">
+            <td colSpan={5} className="px-8 py-2">
               <div className="flex flex-wrap gap-4 text-slate-600">
                 <span><strong>{t("campaigns.dates")}</strong> {formatDate(campaign.startDate)} – {formatDate(campaign.endDate)}</span>
                 {campaign.budget ? <span><strong>{t("campaigns.budget")}</strong> {campaign.budget.toLocaleString("cs-CZ")} CZK</span> : null}
@@ -264,6 +269,7 @@ function CampaignRow({
             <th className="px-2 py-1 text-center">{t("common.type")}</th>
             <th className="px-2 py-1 text-center">{t("campaigns.persona")}</th>
             <th className="px-2 py-1 text-center">{t("common.status")}</th>
+            <th className="px-2 py-1" />
           </tr>
 
           {campaign.assets.map((asset) => (
@@ -272,7 +278,7 @@ function CampaignRow({
 
           {isAdmin ? (
             <tr className="border-t border-slate-50 text-xs">
-              <td className="py-1 pl-12 pr-2" colSpan={4}>
+              <td className="py-1 pl-12 pr-2" colSpan={5}>
                 <InlineAdd placeholder={t("campaigns.addAsset")} onAdd={async (name) => {
                   await api.createAsset({ campaignId: campaign.id, name, type: "LANDING_PAGE", status: "DRAFT" });
                   await onRefresh();
@@ -288,6 +294,8 @@ function CampaignRow({
 
 export function CampaignsPage({ isAdmin, users, accounts, partners, personas, initiatives, onOpenInitiative, quickFilter }: Props) {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   void personas; // available for future persona-based filtering
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -336,17 +344,18 @@ export function CampaignsPage({ isAdmin, users, accounts, partners, personas, in
               <th className="px-2 py-2 text-center">{t("common.type")}</th>
               <th className="px-2 py-2 text-center">{t("campaigns.owner")}</th>
               <th className="px-2 py-2 text-center">{t("common.status")}</th>
+              <th className="px-2 py-2 text-center">{t("campaigns.dates")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((campaign) => (
               <CampaignRow key={campaign.id} campaign={campaign} isAdmin={isAdmin} users={users}
                 accounts={accounts} partners={partners} initiatives={initiatives}
-                onOpenInitiative={onOpenInitiative} onRefresh={load} />
+                onOpenInitiative={onOpenInitiative} onRefresh={load} highlightId={highlightId} />
             ))}
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">
                   {t("campaigns.empty")}
                 </td>
               </tr>

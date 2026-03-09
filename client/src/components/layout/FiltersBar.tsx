@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Domain, User } from "../../types/models";
+import { formatPriority } from "../../lib/format";
 import { Input, Label, Select } from "../ui/Field";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
     priority?: string;
     horizon?: string;
     isGap?: boolean;
+    archived?: boolean;
     quick?: string;
   };
   onChange: (patch: Partial<Props["filters"]>) => void;
@@ -71,10 +73,10 @@ export function FiltersBar({ domains, users, filters, onChange }: Props) {
           <Label>{t("filters.priority")}</Label>
           <Select value={filters.priority || ""} onChange={(e) => onChange({ priority: e.target.value || undefined })}>
             <option value="">{t("filters.all")}</option>
-            <option value="P0">P0</option>
-            <option value="P1">P1</option>
-            <option value="P2">P2</option>
-            <option value="P3">P3</option>
+            <option value="P0">{formatPriority("P0")}</option>
+            <option value="P1">{formatPriority("P1")}</option>
+            <option value="P2">{formatPriority("P2")}</option>
+            <option value="P3">{formatPriority("P3")}</option>
           </Select>
         </div>
         <div>
@@ -86,13 +88,24 @@ export function FiltersBar({ domains, users, filters, onChange }: Props) {
             <option value="LATER">{t("horizon.LATER")}</option>
           </Select>
         </div>
-        <div className="col-span-2">
-          <Label>{t("filters.quickFilter")}</Label>
-          <Input
-            value={filters.quick || ""}
-            placeholder={t("filters.searchPlaceholder")}
-            onChange={(e) => onChange({ quick: e.target.value || undefined })}
-          />
+        <div className="col-span-2 flex items-end gap-3">
+          <div className="flex-1">
+            <Label>{t("filters.quickFilter")}</Label>
+            <Input
+              value={filters.quick || ""}
+              placeholder={t("filters.searchPlaceholder")}
+              onChange={(e) => onChange({ quick: e.target.value || undefined })}
+            />
+          </div>
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={filters.archived === true}
+              onChange={(e) => onChange({ archived: e.target.checked || undefined })}
+              className="rounded border-slate-300"
+            />
+            {t("filters.showArchived")}
+          </label>
         </div>
       </div>
     </div>

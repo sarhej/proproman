@@ -11,7 +11,7 @@ export const initiativesRouter = Router();
 initiativesRouter.use(requireAuth);
 
 initiativesRouter.get("/", async (req, res) => {
-  const { domainId, ownerId, horizon, priority, isGap } = req.query;
+  const { domainId, ownerId, horizon, priority, isGap, archived } = req.query;
   const where: Prisma.InitiativeWhereInput = {};
 
   if (typeof domainId === "string") where.domainId = domainId;
@@ -23,6 +23,11 @@ initiativesRouter.get("/", async (req, res) => {
     where.priority = priority as Priority;
   }
   if (typeof isGap === "string") where.isGap = isGap === "true";
+  if (archived === "true") {
+    where.archivedAt = { not: null };
+  } else {
+    where.archivedAt = null;
+  }
 
   const initiatives = await prisma.initiative.findMany({
     where,
@@ -30,6 +35,112 @@ initiativesRouter.get("/", async (req, res) => {
     orderBy: [{ domain: { sortOrder: "asc" } }, { sortOrder: "asc" }, { createdAt: "asc" }]
   });
   res.json({ initiatives });
+});
+
+initiativesRouter.get("/:id/comments", async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+  if (!initiative) {
+    res.status(404).json({ error: "Initiative not found" });
+    return;
+  }
+  const comments = await prisma.initiativeComment.findMany({
+    where: { initiativeId },
+    include: { user: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "asc" }
+  });
+  res.json({ comments });
+});
+
+initiativesRouter.post("/:id/comments", requireWriteAccess(), async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const userId = req.user!.id;
+  const body = req.body as { text?: string };
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  if (!text) {
+    res.status(400).json({ error: "text is required" });
+    return;
+  }
+  const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+  if (!initiative) {
+    res.status(404).json({ error: "Initiative not found" });
+    return;
+  }
+  const comment = await prisma.initiativeComment.create({
+    data: { initiativeId, userId, text },
+    include: { user: { select: { id: true, name: true } } }
+  });
+  res.status(201).json({ comment });
+});
+
+initiativesRouter.get("/:id/success-criteria", async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+  if (!initiative) {
+    res.status(404).json({ error: "Initiative not found" });
+    return;
+  }
+  const items = await prisma.successCriterion.findMany({
+    where: { initiativeId },
+    orderBy: { sortOrder: "asc" }
+  });
+  res.json({ successCriteria: items });
+});
+
+initiativesRouter.post("/:id/success-criteria", requireWriteAccess(), async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const body = req.body as { title?: string; sortOrder?: number };
+  const title = typeof body?.title === "string" ? body.title.trim() : "";
+  if (!title) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+  if (!initiative) {
+    res.status(404).json({ error: "Initiative not found" });
+    return;
+  }
+  const count = await prisma.successCriterion.count({ where: { initiativeId } });
+  const item = await prisma.successCriterion.create({
+    data: { initiativeId, title, sortOrder: body?.sortOrder ?? count }
+  });
+  res.status(201).json({ successCriterion: item });
+});
+
+initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess(), async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const criterionId = String(req.params.criterionId);
+  const body = req.body as { title?: string; isDone?: boolean; sortOrder?: number };
+  const existing = await prisma.successCriterion.findFirst({
+    where: { id: criterionId, initiativeId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Success criterion not found" });
+    return;
+  }
+  const item = await prisma.successCriterion.update({
+    where: { id: criterionId },
+    data: {
+      ...(typeof body.title === "string" && { title: body.title.trim() }),
+      ...(typeof body.isDone === "boolean" && { isDone: body.isDone }),
+      ...(typeof body.sortOrder === "number" && { sortOrder: body.sortOrder })
+    }
+  });
+  res.json({ successCriterion: item });
+});
+
+initiativesRouter.delete("/:id/success-criteria/:criterionId", requireWriteAccess(), async (req, res) => {
+  const initiativeId = String(req.params.id);
+  const criterionId = String(req.params.criterionId);
+  const existing = await prisma.successCriterion.findFirst({
+    where: { id: criterionId, initiativeId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Success criterion not found" });
+    return;
+  }
+  await prisma.successCriterion.delete({ where: { id: criterionId } });
+  res.status(204).send();
 });
 
 initiativesRouter.get("/:id", async (req, res) => {
@@ -244,6 +355,28 @@ initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
     )
   );
   res.json({ ok: true });
+});
+
+initiativesRouter.patch("/:id/archive", requireWriteAccess(), async (req, res) => {
+  const id = String(req.params.id);
+  const initiative = await prisma.initiative.update({
+    where: { id },
+    data: { archivedAt: new Date() },
+    include: initiativeInclude
+  });
+  await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id, { archived: true });
+  res.json({ initiative });
+});
+
+initiativesRouter.patch("/:id/unarchive", requireWriteAccess(), async (req, res) => {
+  const id = String(req.params.id);
+  const initiative = await prisma.initiative.update({
+    where: { id },
+    data: { archivedAt: null },
+    include: initiativeInclude
+  });
+  await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id, { archived: false });
+  res.json({ initiative });
 });
 
 initiativesRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {

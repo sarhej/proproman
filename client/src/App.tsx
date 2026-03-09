@@ -35,7 +35,7 @@ const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "V
 
 function App() {
   const { t } = useTranslation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const board = useBoardData(!!user);
   const perms = usePermissions(user);
   const [selected, setSelected] = useState<Initiative | null>(null);
@@ -64,6 +64,15 @@ function App() {
     }
   }, [searchParams, board.initiatives, selected, setSearchParams]);
 
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setShowCreate(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   if (authLoading) {
     return <div className="p-8">{t("app.loadingAuth")}</div>;
   }
@@ -79,6 +88,11 @@ function App() {
           <p className="mb-4 text-sm text-slate-600">
             {t("app.signInDesc")}
           </p>
+          {authError ? (
+            <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" data-testid="auth-error">
+              {authError}
+            </p>
+          ) : null}
           <div className="grid gap-2">
             <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
               {t("app.continueGoogle")}
@@ -163,6 +177,7 @@ function App() {
     <AppShell
       user={user}
       permissions={perms}
+      onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
         await api.logout();
         window.location.reload();
@@ -320,6 +335,7 @@ function App() {
                 users={board.meta.users}
                 initiatives={board.initiatives}
                 onOpenInitiative={(i) => setSelected(i)}
+                onArchiveInitiative={() => board.refresh()}
                 readOnly={!perms.canEditStructure}
               />
             }
@@ -367,6 +383,7 @@ function App() {
         personas={board.meta.personas}
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
+        currentUserId={user?.id ?? null}
         readOnly={!perms.canEditContent}
         onClose={() => setSelected(null)}
         onSaved={refreshAndClose}

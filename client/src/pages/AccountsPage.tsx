@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Account, Campaign, Demand, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input, Select } from "../components/ui/Field";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Pencil } from "lucide-react";
 
 type AccountWithDemands = Account & {
   demands: (Demand & {
@@ -30,6 +31,9 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
   const [name, setName] = useState("");
   const [type, setType] = useState<Account["type"]>("B2B2C");
   const [selected, setSelected] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState<Account["type"]>("B2B2C");
 
   async function load() {
     const [acctResult, campResult] = await Promise.all([api.getAccounts(), api.getCampaigns()]);
@@ -102,14 +106,58 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
       <Card className="p-4">
         {detail ? (
           <div>
-            <h3 className="mb-1 text-lg font-semibold">{detail.name}</h3>
-            <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500">
-              <span>{t("accounts.type")} {t(`accountType.${detail.type}`)}</span>
-              {detail.segment ? <span>{t("accounts.segment")} {detail.segment}</span> : null}
-              {detail.arrImpact ? <span>{t("accounts.arr")} {detail.arrImpact.toLocaleString()}</span> : null}
-              {detail.dealStage ? <span>{t("accounts.deal")} {detail.dealStage}</span> : null}
-              {detail.strategicTier ? <span>{t("accounts.tier")} {detail.strategicTier}</span> : null}
-            </div>
+            {editingId === detail.id ? (
+              <div className="mb-3 space-y-2">
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t("accounts.placeholder")} />
+                <Select value={editType} onChange={(e) => setEditType(e.target.value as Account["type"])}>
+                  <option value="B2B2C">{t("accountType.B2B2C")}</option>
+                  <option value="B2G2C">{t("accountType.B2G2C")}</option>
+                  <option value="INSURER">{t("accountType.INSURER")}</option>
+                  <option value="EMPLOYER">{t("accountType.EMPLOYER")}</option>
+                  <option value="PUBLIC">{t("accountType.PUBLIC")}</option>
+                </Select>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => setEditingId(null)}>{t("common.cancel")}</Button>
+                  <Button
+                    onClick={async () => {
+                      if (!editName.trim()) return;
+                      await api.updateAccount(detail.id, { name: editName.trim(), type: editType });
+                      setEditingId(null);
+                      await load();
+                    }}
+                  >
+                    {t("common.save")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold">{detail.name}</h3>
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(detail.id);
+                        setEditName(detail.name);
+                        setEditType(detail.type);
+                      }}
+                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      title={t("common.edit")}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+                <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500">
+                  <span>{t("accounts.type")} {t(`accountType.${detail.type}`)}</span>
+                  {detail.segment ? <span>{t("accounts.segment")} {detail.segment}</span> : null}
+                  {detail.arrImpact ? <span>{t("accounts.arr")} {detail.arrImpact.toLocaleString()}</span> : null}
+                  {detail.dealStage ? <span>{t("accounts.deal")} {detail.dealStage}</span> : null}
+                  {detail.strategicTier ? <span>{t("accounts.tier")} {detail.strategicTier}</span> : null}
+                </div>
+              </>
+            )}
 
             <h4 className="mb-2 text-sm font-semibold">{t("accounts.demands", { count: detail.demands.length })}</h4>
             {detail.demands.length === 0 ? (
@@ -167,7 +215,9 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives, quickFilt
                       <div key={c.id} className="flex items-center gap-2 rounded border border-slate-200 p-2 text-sm">
                         <Megaphone size={14} className="text-sky-500" />
                         <div>
-                          <span className="font-medium">{c.name}</span>
+                          <Link to={`/campaigns?highlight=${c.id}`} className="font-medium text-sky-700 hover:text-sky-900 hover:underline">
+                            {c.name}
+                          </Link>
                           <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium ${c.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"}`}>
                             {t(`campaignStatus.${c.status}`)}
                           </span>

@@ -274,6 +274,7 @@ export type Initiative = {
   strategicTier?: StrategicTier | null;
   notes?: string | null;
   sortOrder: number;
+  archivedAt?: string | null;
   personaImpacts: PersonaImpact[];
   revenueWeights: InitiativeRevenueWeight[];
   features: Feature[];
@@ -284,8 +285,39 @@ export type Initiative = {
   milestones: InitiativeMilestone[];
   kpis: InitiativeKPI[];
   stakeholders: Stakeholder[];
+  successCriteriaItems?: SuccessCriterion[];
   outgoingDeps: Dependency[];
   incomingDeps: Dependency[];
+};
+
+export type InitiativeComment = {
+  id: string;
+  initiativeId: string;
+  userId: string;
+  text: string;
+  createdAt: string;
+  user: { id: string; name: string };
+};
+
+export type SuccessCriterion = {
+  id: string;
+  initiativeId: string;
+  title: string;
+  sortOrder: number;
+  isDone: boolean;
+};
+
+export type UserMessage = {
+  id: string;
+  userId: string;
+  title: string;
+  body: string | null;
+  linkUrl: string | null;
+  linkLabel: string | null;
+  readAt: string | null;
+  source: string | null;
+  type: string | null;
+  createdAt: string;
 };
 
 export type Asset = {
@@ -360,6 +392,8 @@ export type GanttTask = {
   targetDate?: string | null;
   domain: string;
   domainColor: string;
+  status?: string;
+  statusColor?: string;
   owner?: string | null;
   progress: number;
   dependencies: string[];

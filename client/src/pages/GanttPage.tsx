@@ -12,10 +12,13 @@ type Props = {
   onOpen?: (initiative: Initiative) => void;
 };
 
-const VIEW_OPTIONS: { labelKey: string; value: ViewMode }[] = [
+type GanttViewMode = ViewMode | "Quarter";
+
+const VIEW_OPTIONS: { labelKey: string; value: GanttViewMode }[] = [
   { labelKey: "gantt.day", value: ViewMode.Day },
   { labelKey: "gantt.week", value: ViewMode.Week },
   { labelKey: "gantt.month", value: ViewMode.Month },
+  { labelKey: "gantt.quarter", value: "Quarter" },
   { labelKey: "gantt.year", value: ViewMode.Year },
 ];
 
@@ -41,14 +44,14 @@ function darken(hex: string, amount = 0.2): string {
   return `#${dr.toString(16).padStart(2, "0")}${dg.toString(16).padStart(2, "0")}${db.toString(16).padStart(2, "0")}`;
 }
 
-function toGanttTasks(raw: GanttTask[], allIds: Set<string>): Task[] {
+function toGanttTasks(raw: GanttTask[], allIds: Set<string>): (Task & { domain?: string })[] {
   return raw
     .filter((t) => t.startDate && t.targetDate)
     .map((t) => {
       const start = new Date(t.startDate!);
       const end = new Date(t.targetDate!);
       if (end <= start) end.setDate(start.getDate() + 1);
-      const bg = t.domainColor || "#3b82f6";
+      const bg = t.statusColor ?? t.domainColor ?? "#3b82f6";
 
       return {
         id: t.id,
@@ -59,6 +62,7 @@ function toGanttTasks(raw: GanttTask[], allIds: Set<string>): Task[] {
         progress: t.progress,
         dependencies: t.dependencies.filter((d) => allIds.has(d)),
         isDisabled: true,
+        domain: t.domain,
         styles: {
           backgroundColor: bg,
           backgroundSelectedColor: lighten(bg, 0.15),
@@ -69,11 +73,12 @@ function toGanttTasks(raw: GanttTask[], allIds: Set<string>): Task[] {
     });
 }
 
-function CustomTooltip({ task }: { task: Task; fontSize: string; fontFamily: string }) {
+function CustomTooltip({ task }: { task: Task & { domain?: string }; fontSize: string; fontFamily: string }) {
   const pct = Math.round(task.progress);
   return (
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg" style={{ minWidth: 200 }}>
       <p className="mb-1 text-sm font-semibold text-slate-900">{task.name}</p>
+      {task.domain ? <p className="mb-0.5 text-xs text-slate-500">{task.domain}</p> : null}
       <p className="text-xs text-slate-500">
         {task.start.toLocaleDateString()} &ndash; {task.end.toLocaleDateString()}
       </p>
@@ -93,7 +98,7 @@ function CustomTooltip({ task }: { task: Task; fontSize: string; fontFamily: str
 export function GanttPage({ initiatives, onOpen }: Props) {
   const { t } = useTranslation();
   const [raw, setRaw] = useState<GanttTask[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
+  const [viewMode, setViewMode] = useState<GanttViewMode>(ViewMode.Month);
   const today = useMemo(() => new Date(), []);
   const oneYearOut = useMemo(() => {
     const d = new Date();
@@ -119,13 +124,17 @@ export function GanttPage({ initiatives, onOpen }: Props) {
     );
   }, [raw, today, oneYearOut]);
 
-  const domains = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const t of raw) {
-      if (t.domain && t.domainColor) map.set(t.domain, t.domainColor);
-    }
-    return [...map.entries()];
-  }, [raw]);
+  const statusLegend = useMemo(() => {
+    const order = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
+    const colors: Record<string, string> = {
+      IDEA: "#94a3b8",
+      PLANNED: "#3b82f6",
+      IN_PROGRESS: "#f59e0b",
+      DONE: "#22c55e",
+      BLOCKED: "#ef4444"
+    };
+    return order.map((s) => ({ status: s, color: colors[s] }));
+  }, []);
 
   const skipped = raw.length - ganttTasks.length;
 
@@ -135,7 +144,17 @@ export function GanttPage({ initiatives, onOpen }: Props) {
     if (found) onOpen(found);
   };
 
-  const columnWidth = viewMode === ViewMode.Year ? 350 : viewMode === ViewMode.Month ? 200 : viewMode === ViewMode.Week ? 100 : 50;
+  const effectiveViewMode: ViewMode = viewMode === "Quarter" ? ViewMode.Month : viewMode;
+  const columnWidth =
+    viewMode === ViewMode.Year
+      ? 350
+      : viewMode === "Quarter"
+        ? 180
+        : viewMode === ViewMode.Month
+          ? 200
+          : viewMode === ViewMode.Week
+            ? 100
+            : 50;
 
   return (
     <Card className="p-4">
@@ -169,17 +188,21 @@ export function GanttPage({ initiatives, onOpen }: Props) {
         </div>
       </div>
 
-      {domains.length > 0 && (
+      {statusLegend.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          <span className="font-medium">{t("gantt.domains")}</span>
-          {domains.map(([name, color]) => (
-            <span key={name} className="flex items-center gap-1">
+          <span className="font-medium">{t("gantt.statusLegend")}</span>
+          {statusLegend.map(({ status, color }) => (
+            <span key={status} className="flex items-center gap-1">
               <span className="inline-block h-2.5 w-2.5 rounded" style={{ background: color }} />
-              {name === "Unassigned" ? t("common.unassigned") : name}
+              {t(`gantt.status.${status}`)}
             </span>
           ))}
         </div>
       )}
+
+      <p className="mb-3 text-xs text-slate-500 italic">
+        {t("gantt.prolongedNote")}
+      </p>
 
       {ganttTasks.length === 0 ? (
         <div className="py-12 text-center text-sm text-slate-400">
@@ -189,7 +212,7 @@ export function GanttPage({ initiatives, onOpen }: Props) {
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: "touch" }}>
           <Gantt
             tasks={ganttTasks}
-            viewMode={viewMode}
+            viewMode={effectiveViewMode}
             viewDate={today}
             onClick={handleClick}
             TooltipContent={CustomTooltip}

@@ -41,6 +41,8 @@
     "gantt": "Gantt",
     "usersActivity": "Users & Activity",
     "newInitiative": "+ New initiative",
+    "messages": "Messages",
+    "messagesEmpty": "No messages",
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "logout": "Logout"
@@ -51,6 +53,7 @@
     "priority": "Priority",
     "horizon": "Horizon",
     "quickFilter": "Quick filter",
+    "showArchived": "Show archived",
     "all": "All",
     "searchPlaceholder": "Search title, notes, owner, domain..."
   },
@@ -58,6 +61,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
     "edit": "Edit",
     "add": "Add",
     "remove": "Remove",
@@ -107,10 +112,10 @@
     "DONE": "Done"
   },
   "priority": {
-    "P0": "P0",
-    "P1": "P1",
-    "P2": "P2",
-    "P3": "P3"
+    "P0": "Critical",
+    "P1": "High",
+    "P2": "Medium",
+    "P3": "Low"
   },
   "commercialType": {
     "CONTRACT_ENABLER": "Contract enabler",
@@ -238,6 +243,8 @@
     "discard": "Discard",
     "saveAndClose": "Save & Close",
     "personaRadar": "Persona Radar",
+    "comments": "Comments",
+    "addComment": "Add a comment...",
     "dependsOn": "Depends on",
     "selectInitiative": "Select initiative",
     "dependencyReason": "Why this dependency exists",
@@ -251,6 +258,9 @@
     "dependsOnTitle": "Depends on {{title}}",
     "problemStatement": "Problem Statement",
     "successCriteria": "Success Criteria",
+    "addSuccessCriterion": "Add criterion...",
+    "successCriterionDone": "Mark as done",
+    "successCriterionUndone": "Mark as not done",
     "newMilestone": "New milestone...",
     "newKpi": "New KPI...",
     "stakeholderName": "Name...",
@@ -361,8 +371,18 @@
     "day": "Day",
     "week": "Week",
     "month": "Month",
+    "quarter": "Quarter",
     "year": "Year",
     "domains": "Domains:",
+    "statusLegend": "Status:",
+    "status": {
+      "IDEA": "Idea",
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done",
+      "BLOCKED": "Blocked"
+    },
+    "prolongedNote": "Initiatives are for a fixed period. Work continuing into the next period should be added as a new follow-up initiative with new goals.",
     "empty": "No initiatives with start and target dates to display."
   },
   "kpiDashboard": {
@@ -392,6 +412,10 @@
     "overdueOnly": "Overdue",
     "searchPlaceholder": "Search milestones...",
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone."
+  },
+  "products": {
+    "namePlaceholder": "Product / asset name",
+    "descriptionPlaceholder": "Description (optional)"
   },
   "accounts": {
     "title": "Accounts",
@@ -458,6 +482,7 @@
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
     "impact": "Impact",
     "progress": "Progress",
+    "withImpact": "With impact",
     "empty": "No products / assets found. Create one to get started."
   },
   "admin": {

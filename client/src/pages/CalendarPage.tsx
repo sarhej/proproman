@@ -224,9 +224,6 @@ export function CalendarPage({ quickFilter }: Props) {
                               {t("calendar.milestone")} {new Date(item.milestoneDate).toLocaleDateString()}
                             </p>
                           )}
-                          {item.dateConfidence && (
-                            <p className="text-gray-400">{t("calendar.confidence")} {item.dateConfidence}</p>
-                          )}
                         </div>
                       </div>
                     ))}
@@ -282,7 +279,6 @@ function AgendaView({ items }: { items: CalendarItem[] }) {
             </div>
             <div className="mt-0.5 text-xs text-slate-400">
               {item.domain} · {item.owner ?? t("common.unassigned")}
-              {item.dateConfidence && ` · ${t("calendar.confidence")} ${item.dateConfidence}`}
             </div>
           </div>
         </div>

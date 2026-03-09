@@ -15,6 +15,7 @@ import type {
   StrategicTier,
   User
 } from "../../types/models";
+import { formatPriority } from "../../lib/format";
 import { Button } from "../ui/Button";
 import { Input, Label, Select, Textarea } from "../ui/Field";
 
@@ -51,10 +52,15 @@ type Props = {
   users: User[];
   personas: Persona[];
   revenueStreams: RevenueStream[];
+  currentUserId?: string | null;
   readOnly: boolean;
   onSubmit: (value: unknown) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onArchive?: () => Promise<void>;
+  onUnarchive?: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
+  /** When true, the form does not render its own Save button (e.g. when Save is in the panel header). */
+  hideSaveButton?: boolean;
 };
 
 export type InitiativeFormHandle = {
@@ -113,10 +119,14 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
   users,
   personas,
   revenueStreams,
+  currentUserId = null,
   onSubmit,
   onDelete,
+  onArchive,
+  onUnarchive,
   onDirtyChange,
-  readOnly
+  readOnly,
+  hideSaveButton = false
 }, ref) {
   const { t } = useTranslation();
   const [form, setForm] = useState<FormValue>(() => toInitial(initiative, products, domains, personas, revenueStreams));
@@ -173,7 +183,12 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="md:col-span-2">
           <Label>{t("initiative.title")}</Label>
-          <Input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} disabled={readOnly} />
+          <Input
+            className="text-lg font-semibold"
+            value={form.title}
+            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+            disabled={readOnly || (!!initiative && initiative.ownerId !== currentUserId)}
+          />
         </div>
         <div className="md:col-span-2">
           <Label>{t("initiative.description")}</Label>
@@ -252,7 +267,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           <Select value={form.priority} onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value as Priority }))} disabled={readOnly}>
             {["P0", "P1", "P2", "P3"].map((p) => (
               <option key={p} value={p}>
-                {p}
+                {formatPriority(p as Priority)}
               </option>
             ))}
           </Select>
@@ -320,14 +335,6 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
             onChange={(e) => setForm((prev) => ({ ...prev, milestoneDate: e.target.value }))}
             disabled={readOnly}
           />
-        </div>
-        <div>
-          <Label>{t("initiative.dateConfidence")}</Label>
-          <Select value={form.dateConfidence} onChange={(e) => setForm((prev) => ({ ...prev, dateConfidence: e.target.value as DateConfidence }))} disabled={readOnly}>
-            {(["LOW", "MEDIUM", "HIGH"] as const).map((c) => (
-              <option key={c} value={c}>{t(`dateConfidence.${c}`)}</option>
-            ))}
-          </Select>
         </div>
         <div>
           <Label>{t("initiative.arrImpact")}</Label>
@@ -417,15 +424,29 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
 
       <div className="flex items-center justify-between gap-2">
         <div>
-          {initiative && onDelete && !readOnly ? (
+          {initiative && !readOnly && (onArchive || onUnarchive) ? (
+            initiative.archivedAt ? (
+              onUnarchive ? (
+                <Button variant="secondary" onClick={onUnarchive}>
+                  {t("common.unarchive")}
+                </Button>
+              ) : null
+            ) : onArchive ? (
+              <Button variant="secondary" onClick={onArchive}>
+                {t("common.archive")}
+              </Button>
+            ) : null
+          ) : initiative && onDelete && !readOnly ? (
             <Button variant="danger" onClick={onDelete}>
               {t("common.delete")}
             </Button>
           ) : null}
         </div>
-        <Button onClick={handleSave} disabled={!canSubmit || saving || readOnly}>
-          {saving ? t("common.saving") : t("common.save")}
-        </Button>
+        {!hideSaveButton ? (
+          <Button onClick={handleSave} disabled={!canSubmit || saving || readOnly}>
+            {saving ? t("common.saving") : t("common.save")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { api } from "../../lib/api";
-import type { Demand, Domain, Initiative, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, User } from "../../types/models";
+import type { Demand, Domain, Initiative, InitiativeComment, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, SuccessCriterion, User } from "../../types/models";
 import type { MilestoneStatus, StakeholderRole, StakeholderType } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
 import { Button } from "../ui/Button";
@@ -53,6 +53,7 @@ type Props = {
   personas: Persona[];
   revenueStreams: RevenueStream[];
   domains: Domain[];
+  currentUserId: string | null;
   readOnly: boolean;
   onClose: () => void;
   onSaved: () => Promise<void>;
@@ -138,6 +139,7 @@ export function InitiativeDetailPanel({
   personas,
   revenueStreams,
   domains,
+  currentUserId,
   readOnly,
   onClose,
   onSaved
@@ -180,6 +182,10 @@ export function InitiativeDetailPanel({
   const [timelineTarget, setTimelineTarget] = useState("");
   const [timelineMilestone, setTimelineMilestone] = useState("");
   const [demands, setDemands] = useState<Demand[]>([]);
+  const [comments, setComments] = useState<InitiativeComment[]>([]);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [successCriteria, setSuccessCriteria] = useState<SuccessCriterion[]>([]);
+  const [newCriterionTitle, setNewCriterionTitle] = useState("");
 
   const availableDependencies = useMemo(
     () => allInitiatives.filter((i) => i.id !== initiative?.id),
@@ -196,6 +202,8 @@ export function InitiativeDetailPanel({
     setTimelineTarget(initiative.targetDate ? initiative.targetDate.slice(0, 10) : "");
     setTimelineMilestone(initiative.milestoneDate ? initiative.milestoneDate.slice(0, 10) : "");
     void api.getDemands().then((r) => setDemands(r.demands));
+    void api.getInitiativeComments(initiative.id).then((r) => setComments(r.comments));
+    setSuccessCriteria(initiative.successCriteriaItems ?? []);
   }, [initiative]);
 
   if (!initiative) return null;
@@ -272,6 +280,15 @@ export function InitiativeDetailPanel({
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("initiative.detail")}</h2>
           <div className="flex items-center gap-2">
+            {tab === "details" && !readOnly ? (
+              <Button
+                onClick={async () => {
+                  await formRef.current?.save();
+                }}
+              >
+                {t("common.save")}
+              </Button>
+            ) : null}
             <ShareButton initiativeId={initiative.id} title={initiative.title} />
             <Button variant="ghost" onClick={tryClose}>
               {t("app.close")}
@@ -291,23 +308,145 @@ export function InitiativeDetailPanel({
                 users={users}
                 personas={personas}
                 revenueStreams={revenueStreams}
+                currentUserId={currentUserId}
                 readOnly={readOnly}
+                hideSaveButton
                 onDirtyChange={setIsDirty}
                 onSubmit={async (payload) => {
                   await api.updateInitiative(initiative.id, payload);
                   setIsDirty(false);
                   await onSaved();
                 }}
-                onDelete={
+                onArchive={
                   readOnly
                     ? undefined
                     : async () => {
-                        await api.deleteInitiative(initiative.id);
+                        await api.archiveInitiative(initiative.id);
                         await onSaved();
                         onClose();
                       }
                 }
+                onUnarchive={
+                  readOnly
+                    ? undefined
+                    : async () => {
+                        await api.unarchiveInitiative(initiative.id);
+                        await onSaved();
+                      }
+                }
               />
+            </Card>
+            <Card className="p-3">
+              <p className="mb-2 text-sm font-semibold">{t("initiative.comments")}</p>
+              <div className="space-y-2">
+                {comments.map((c) => (
+                  <div
+                    key={c.id}
+                    className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm"
+                  >
+                    <p className="text-slate-800">{c.text}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {c.user.name} · {new Date(c.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {!readOnly ? (
+                <div className="mt-3 flex gap-2">
+                  <Input
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder={t("initiative.addComment")}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!newCommentText.trim()) return;
+                      await api.createInitiativeComment(initiative.id, { text: newCommentText.trim() });
+                      setNewCommentText("");
+                      const r = await api.getInitiativeComments(initiative.id);
+                      setComments(r.comments);
+                    }}
+                    disabled={!newCommentText.trim()}
+                  >
+                    {t("common.add")}
+                  </Button>
+                </div>
+              ) : null}
+            </Card>
+            <Card className="p-3">
+              <p className="mb-2 text-sm font-semibold">{t("initiative.successCriteria")}</p>
+              <div className="space-y-2">
+                {successCriteria.map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50/80 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (readOnly) return;
+                        void api.updateSuccessCriterion(initiative.id, c.id, { isDone: !c.isDone }).then((r) => {
+                          setSuccessCriteria((prev) => prev.map((x) => (x.id === c.id ? r.successCriterion : x)));
+                        });
+                      }}
+                      className="flex-shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-200"
+                      title={c.isDone ? t("initiative.successCriterionUndone") : t("initiative.successCriterionDone")}
+                    >
+                      {c.isDone ? (
+                        <Check className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <span className="inline-block h-5 w-5 rounded border border-slate-400" />
+                      )}
+                    </button>
+                    <span className={`flex-1 text-sm ${c.isDone ? "text-slate-500 line-through" : "text-slate-800"}`}>
+                      {c.title}
+                    </span>
+                    {!readOnly ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void api.deleteSuccessCriterion(initiative.id, c.id).then(() => {
+                            setSuccessCriteria((prev) => prev.filter((x) => x.id !== c.id));
+                          });
+                        }}
+                        className="flex-shrink-0 rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600"
+                        title={t("common.delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              {!readOnly ? (
+                <div className="mt-3 flex gap-2">
+                  <Input
+                    value={newCriterionTitle}
+                    onChange={(e) => setNewCriterionTitle(e.target.value)}
+                    placeholder={t("initiative.addSuccessCriterion")}
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (!newCriterionTitle.trim()) return;
+                        void api.createSuccessCriterion(initiative.id, { title: newCriterionTitle.trim() }).then((r) => {
+                          setSuccessCriteria((prev) => [...prev, r.successCriterion]);
+                          setNewCriterionTitle("");
+                        });
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!newCriterionTitle.trim()) return;
+                      const r = await api.createSuccessCriterion(initiative.id, { title: newCriterionTitle.trim() });
+                      setSuccessCriteria((prev) => [...prev, r.successCriterion]);
+                      setNewCriterionTitle("");
+                    }}
+                    disabled={!newCriterionTitle.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : null}
             </Card>
             <Card className="p-3">
               <p className="mb-2 text-sm font-semibold">{t("initiative.personaRadar")}</p>

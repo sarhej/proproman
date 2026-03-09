@@ -194,9 +194,28 @@ model User {
   demandsOwned     Demand[]     @relation("DemandOwner")
   campaignsOwned   Campaign[]   @relation("CampaignOwner")
   milestonesOwned  InitiativeMilestone[] @relation("MilestoneOwner")
+  initiativeComments InitiativeComment[]
+  userMessages     UserMessage[]
   auditEntries     AuditEntry[]
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+}
+
+model UserMessage {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?
+  linkUrl   String?
+  linkLabel String?
+  readAt    DateTime?
+  source    String?
+  type      String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([userId, readAt])
 }
 
 model UserEmail {
@@ -274,6 +293,7 @@ model Initiative {
   successCriteria  String?
   notes            String?
   sortOrder        Int                       @default(0)
+  archivedAt       DateTime?
   product          Product?                  @relation(fields: [productId], references: [id], onDelete: SetNull)
   domain           Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
   owner            User?                     @relation("InitiativeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -290,8 +310,34 @@ model Initiative {
   stakeholders     Stakeholder[]
   outgoingDeps     Dependency[]              @relation("FromInitiative")
   incomingDeps     Dependency[]              @relation("ToInitiative")
+  comments         InitiativeComment[]
+  successCriteriaItems SuccessCriterion[]
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+}
+
+model SuccessCriterion {
+  id           String     @id @default(cuid())
+  initiativeId String
+  title        String
+  sortOrder    Int        @default(0)
+  isDone       Boolean    @default(false)
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  @@index([initiativeId])
+}
+
+model InitiativeComment {
+  id           String     @id @default(cuid())
+  initiativeId String
+  userId       String
+  text         String
+  createdAt    DateTime   @default(now())
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([initiativeId])
+  @@index([userId])
 }
 
 model InitiativePersonaImpact {

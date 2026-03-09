@@ -41,6 +41,8 @@
     "gantt": "Gantt",
     "usersActivity": "Používatelia & Aktivita",
     "newInitiative": "+ Nová iniciatíva",
+    "messages": "Správy",
+    "messagesEmpty": "Žiadne správy",
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "logout": "Odhlásiť"
@@ -51,6 +53,7 @@
     "priority": "Priorita",
     "horizon": "Horizont",
     "quickFilter": "Rýchly filter",
+    "showArchived": "Zobraziť archivované",
     "all": "Všetko",
     "searchPlaceholder": "Hľadať názov, poznámky, vlastníka, doménu..."
   },
@@ -58,6 +61,8 @@
     "save": "Uložiť",
     "cancel": "Zrušiť",
     "delete": "Zmazať",
+    "archive": "Archivovať",
+    "unarchive": "Zrušiť archiváciu",
     "edit": "Upraviť",
     "add": "Pridať",
     "remove": "Odobrať",
@@ -107,10 +112,10 @@
     "DONE": "Hotovo"
   },
   "priority": {
-    "P0": "P0",
-    "P1": "P1",
-    "P2": "P2",
-    "P3": "P3"
+    "P0": "Kritická",
+    "P1": "Vysoká",
+    "P2": "Stredná",
+    "P3": "Nízka"
   },
   "commercialType": {
     "CONTRACT_ENABLER": "Enabler zmluvy",
@@ -238,6 +243,8 @@
     "discard": "Zahodiť",
     "saveAndClose": "Uložiť a zavrieť",
     "personaRadar": "Radar persón",
+    "comments": "Komentáre",
+    "addComment": "Pridať komentár...",
     "dependsOn": "Závisí na",
     "selectInitiative": "Vyberte iniciatívu",
     "dependencyReason": "Prečo táto závislosť existuje",
@@ -251,6 +258,9 @@
     "dependsOnTitle": "Závisí na {{title}}",
     "problemStatement": "Definícia problému",
     "successCriteria": "Kritériá úspechu",
+    "addSuccessCriterion": "Pridať kritérium...",
+    "successCriterionDone": "Označiť ako splnené",
+    "successCriterionUndone": "Označiť ako nesplnené",
     "newMilestone": "Nový míľnik...",
     "newKpi": "Nové KPI...",
     "stakeholderName": "Meno...",
@@ -361,8 +371,18 @@
     "day": "Deň",
     "week": "Týždeň",
     "month": "Mesiac",
+    "quarter": "Kvartál",
     "year": "Rok",
     "domains": "Domény:",
+    "statusLegend": "Stav:",
+    "status": {
+      "IDEA": "Nápad",
+      "PLANNED": "Plánované",
+      "IN_PROGRESS": "Prebieha",
+      "DONE": "Hotovo",
+      "BLOCKED": "Blokované"
+    },
+    "prolongedNote": "Iniciatíva platí pre dané obdobie. Práca pokračujúca do ďalšieho obdobia má byť založená ako nová nadväzujúca iniciatíva s novými cieľmi.",
     "empty": "Žiadne iniciatívy s dátumom začiatku a cieľa na zobrazenie."
   },
   "kpiDashboard": {
@@ -392,6 +412,10 @@
     "overdueOnly": "Po termíne",
     "searchPlaceholder": "Hľadať míľniky...",
     "deleteConfirm": "Zmazať \"{{name}}\"? Túto akciu nemožno vrátiť."
+  },
+  "products": {
+    "namePlaceholder": "Názov produktu / assetu",
+    "descriptionPlaceholder": "Popis (voliteľný)"
   },
   "accounts": {
     "title": "Účty",
@@ -458,6 +482,7 @@
     "deleteConfirm": "Zmazať \"{{name}}\"? Toto sa nedá vrátiť späť.",
     "impact": "Dopad",
     "progress": "Pokrok",
+    "withImpact": "S dopadom",
     "empty": "Žiadne produkty / assety. Vytvorte prvý."
   },
   "admin": {

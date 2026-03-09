@@ -1,0 +1,48 @@
+---
+description: SVG file validation rules - ALWAYS validate SVG files after creating or modifying them
+globs: ["**/*.svg"]
+alwaysApply: true
+---
+
+# SVG Validation Rules
+
+## MANDATORY: Validate Every SVG
+
+After creating or modifying ANY `.svg` file, you MUST:
+
+1. **Run `xmllint --noout <file>.svg`** to verify the SVG is valid XML
+2. **Fix ALL errors** before considering the task complete
+3. **Re-validate** after fixes to confirm zero errors
+
+## Common SVG Pitfalls to Avoid
+
+### Character Encoding
+- SVG files are XML and MUST be valid UTF-8
+- **NEVER** use raw Unicode special characters that may get corrupted:
+  - Use `&#x2014;` instead of `—` (em dash)
+  - Use `&#x2013;` instead of `–` (en dash)
+  - Use `&#x2192;` instead of `→` (right arrow)
+  - Use `&#x2190;` instead of `←` (left arrow)
+  - Use `&#x2039;` instead of `‹` (left angle quote)
+  - Use `&#x203A;` instead of `›` (right angle quote)
+  - Use `&#x2715;` instead of `✕` (multiplication X)
+  - Use `&#x2713;` instead of `✓` (check mark)
+  - Use `&#x25C6;` instead of `◆` (diamond)
+  - Use `&#x25FB;` instead of `◻` (square)
+  - Use `&#xB7;` instead of `·` (middle dot)
+- **ALWAYS** use XML entities for `&` (`&amp;`), `<` (`&lt;`), `>` (`&gt;`)
+- For Czech/Slovak diacritics (ě, š, č, ř, ž, etc.), use XML numeric character references:
+  - `&#x11B;` for ě, `&#x161;` for š, `&#x10D;` for č, `&#x159;` for ř, `&#x17E;` for ž
+  - OR ensure the file is saved as proper UTF-8 and validate with xmllint
+
+### Structure
+- Always include `xmlns="http://www.w3.org/2000/svg"` on the root `<svg>` element
+- Always close all tags (SVG is XML, not HTML)
+- Always quote all attribute values
+
+### Validation Command
+```bash
+xmllint --noout path/to/file.svg
+```
+- Exit code 0 = valid
+- Any other exit code = MUST FIX before proceeding

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../lib/api";
-import type { Domain, Initiative, InitiativeMilestone, MilestoneStatus, User } from "../types/models";
+import type { Domain, Horizon, Initiative, InitiativeMilestone, MilestoneStatus, User } from "../types/models";
 import { Card } from "../components/ui/Card";
 
 type MilestoneRow = InitiativeMilestone & {
   initiative: {
     id: string;
     title: string;
+    horizon?: Horizon;
     domain: { id: string; name: string; color: string };
     owner: { id: string; name: string } | null;
   };
@@ -17,11 +19,13 @@ type Props = {
   domains: Domain[];
   users: User[];
   onOpenInitiative?: (initiative: Initiative) => void;
+  onArchiveInitiative?: () => void;
   initiatives: Initiative[];
   readOnly: boolean;
 };
 
 const STATUSES: MilestoneStatus[] = ["TODO", "IN_PROGRESS", "DONE", "BLOCKED"];
+const HORIZONS: Horizon[] = ["NOW", "NEXT", "LATER"];
 const STATUS_STYLES: Record<string, string> = {
   TODO: "bg-slate-100 text-slate-600",
   IN_PROGRESS: "bg-blue-100 text-blue-700",
@@ -139,13 +143,14 @@ function InlineOwnerSelect({ value, users, onSave }: { value: string | null; use
   );
 }
 
-export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initiatives, readOnly }: Props) {
+export function MilestonesTimelinePage({ domains, users, onOpenInitiative, onArchiveInitiative, initiatives, readOnly }: Props) {
   const { t } = useTranslation();
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [domainFilter, setDomainFilter] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [horizonFilter, setHorizonFilter] = useState<Horizon | "">("");
   const [periodFilter, setPeriodFilter] = useState<Period>("all");
   const [search, setSearch] = useState("");
 
@@ -162,6 +167,7 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
       if (domainFilter && m.initiative.domain.id !== domainFilter) return false;
       if (ownerFilter && m.ownerId !== ownerFilter) return false;
       if (statusFilter && m.status !== statusFilter) return false;
+      if (horizonFilter && m.initiative.horizon !== horizonFilter) return false;
       if (!inPeriod(m, periodFilter)) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -178,7 +184,7 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
       return aDate - bDate;
     });
     return result;
-  }, [milestones, domainFilter, ownerFilter, statusFilter, periodFilter, search]);
+  }, [milestones, domainFilter, ownerFilter, statusFilter, horizonFilter, periodFilter, search]);
 
   const counts = useMemo(() => {
     const c = { total: filtered.length, TODO: 0, IN_PROGRESS: 0, DONE: 0, BLOCKED: 0, overdue: 0 };
@@ -188,6 +194,13 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
     });
     return c;
   }, [filtered]);
+
+  const chartData = useMemo(() => [
+    { status: "TODO", count: counts.TODO, fill: "#94a3b8" },
+    { status: "IN_PROGRESS", count: counts.IN_PROGRESS, fill: "#3b82f6" },
+    { status: "DONE", count: counts.DONE, fill: "#22c55e" },
+    { status: "BLOCKED", count: counts.BLOCKED, fill: "#ef4444" },
+  ], [counts.TODO, counts.IN_PROGRESS, counts.DONE, counts.BLOCKED]);
 
   async function updateField(id: string, field: string, value: unknown) {
     await api.updateMilestone(id, { [field]: value });
@@ -225,6 +238,10 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
           <option value="">{t("filters.all")} — {t("common.status")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`milestoneStatus.${s}`)}</option>)}
         </select>
+        <select className="rounded border border-slate-300 px-2 py-1.5 text-sm" value={horizonFilter} onChange={(e) => setHorizonFilter((e.target.value || "") as Horizon | "")}>
+          <option value="">{t("filters.all")} — {t("filters.horizon")}</option>
+          {HORIZONS.map((h) => <option key={h} value={h}>{t(`horizon.${h}`)}</option>)}
+        </select>
         <select className="rounded border border-slate-300 px-2 py-1.5 text-sm" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value as Period)}>
           <option value="all">{t("milestonesTimeline.allPeriod")}</option>
           <option value="week">{t("milestonesTimeline.thisWeek")}</option>
@@ -240,32 +257,65 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
         />
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards — click status to filter */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="text-xs font-semibold uppercase text-slate-500">{t("milestonesTimeline.total")}</div>
           <div className="mt-1 text-2xl font-bold">{counts.total}</div>
         </div>
-        <div className="rounded-xl border border-green-200 bg-white p-4">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "DONE" ? "" : "DONE")}
+          className={`rounded-xl border p-4 text-left transition ${statusFilter === "DONE" ? "border-green-500 ring-2 ring-green-200" : "border-green-200 hover:bg-green-50"}`}
+        >
           <div className="text-xs font-semibold uppercase text-green-600">{t("milestoneStatus.DONE")}</div>
           <div className="mt-1 text-2xl font-bold text-green-600">{counts.DONE}</div>
-        </div>
-        <div className="rounded-xl border border-blue-200 bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "IN_PROGRESS" ? "" : "IN_PROGRESS")}
+          className={`rounded-xl border p-4 text-left transition ${statusFilter === "IN_PROGRESS" ? "border-blue-500 ring-2 ring-blue-200" : "border-blue-200 hover:bg-blue-50"}`}
+        >
           <div className="text-xs font-semibold uppercase text-blue-600">{t("milestoneStatus.IN_PROGRESS")}</div>
           <div className="mt-1 text-2xl font-bold text-blue-600">{counts.IN_PROGRESS}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "TODO" ? "" : "TODO")}
+          className={`rounded-xl border p-4 text-left transition ${statusFilter === "TODO" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200 hover:bg-slate-50"}`}
+        >
           <div className="text-xs font-semibold uppercase text-slate-500">{t("milestoneStatus.TODO")}</div>
           <div className="mt-1 text-2xl font-bold text-slate-500">{counts.TODO}</div>
-        </div>
-        <div className="rounded-xl border border-red-200 bg-white p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "BLOCKED" ? "" : "BLOCKED")}
+          className={`rounded-xl border p-4 text-left transition ${statusFilter === "BLOCKED" ? "border-red-500 ring-2 ring-red-200" : "border-red-200 hover:bg-red-50"}`}
+        >
           <div className="text-xs font-semibold uppercase text-red-600">{t("milestoneStatus.BLOCKED")}</div>
           <div className="mt-1 text-2xl font-bold text-red-600">{counts.BLOCKED}</div>
-        </div>
+        </button>
         <div className="rounded-xl border border-orange-200 bg-white p-4">
           <div className="text-xs font-semibold uppercase text-orange-600">{t("milestonesTimeline.overdue")}</div>
           <div className="mt-1 text-2xl font-bold text-orange-600">{counts.overdue}</div>
         </div>
+      </div>
+
+      {/* Status distribution chart */}
+      <div className="mb-4 h-48 w-full max-w-md rounded-xl border border-slate-200 bg-white p-3">
+        <div className="mb-1 text-xs font-semibold uppercase text-slate-500">{t("common.status")} — {t("milestonesTimeline.title")}</div>
+        <ResponsiveContainer width="100%" height="90%">
+          <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <XAxis dataKey="status" tick={{ fontSize: 10 }} tickFormatter={(v) => t(`milestoneStatus.${v}`)} />
+            <YAxis width={24} tick={{ fontSize: 10 }} />
+            <Tooltip formatter={(value: number) => [value, t("milestonesTimeline.total")]} labelFormatter={(label) => t(`milestoneStatus.${label}`)} />
+            <Bar dataKey="count" radius={4}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Table */}
@@ -338,9 +388,22 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, initi
                   </td>
                   {!readOnly && (
                     <td className="px-3 py-2">
-                      <button className="text-xs font-medium text-red-500 hover:text-red-700" onClick={() => deleteMilestone(m.id, m.title)}>
-                        {t("common.delete")}
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button className="text-xs font-medium text-red-500 hover:text-red-700" onClick={() => deleteMilestone(m.id, m.title)}>
+                          {t("common.delete")}
+                        </button>
+                        <button
+                          className="text-xs font-medium text-slate-600 hover:text-slate-800"
+                          onClick={async () => {
+                            await api.archiveInitiative(m.initiative.id);
+                            await load();
+                            onArchiveInitiative?.();
+                          }}
+                          title={t("common.archive")}
+                        >
+                          {t("common.archive")} {t("kpiDashboard.initiative")}
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>

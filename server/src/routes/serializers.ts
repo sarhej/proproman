@@ -63,4 +63,7 @@ export const initiativeInclude = {
   },
   kpis: true,
   stakeholders: true,
+  successCriteriaItems: {
+    orderBy: { sortOrder: "asc" as const }
+  },
 } satisfies Prisma.InitiativeInclude;

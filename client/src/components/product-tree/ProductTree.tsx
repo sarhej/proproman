@@ -8,6 +8,7 @@ import {
 } from "@dnd-kit/core";
 import type { Domain, Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
 import { api } from "../../lib/api";
+import { formatPriority } from "../../lib/format";
 import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
@@ -260,13 +261,15 @@ function RequirementRow({
               await onRefresh();
             }}
           >
-            <option value="P0">P0</option>
-            <option value="P1">P1</option>
-            <option value="P2">P2</option>
-            <option value="P3">P3</option>
+            <option value="P0">{formatPriority("P0")}</option>
+            <option value="P1">{formatPriority("P1")}</option>
+            <option value="P2">{formatPriority("P2")}</option>
+            <option value="P3">{formatPriority("P3")}</option>
           </select>
         ) : (
-          <StatusBadge status={requirement.priority} color="bg-slate-100 text-slate-600" />
+          <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600">
+            {formatPriority(requirement.priority)}
+          </span>
         )}
       </td>
       <td />
