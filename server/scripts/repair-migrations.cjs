@@ -349,6 +349,22 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       }
     }
 
+    // Ensure Initiative.archivedAt exists (20260308_add_initiative_archived_at) so app does not crash on Railway when migrate deploy did not run
+    const archivedAtCheck = await pool.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'Initiative' AND column_name = 'archivedAt'"
+    );
+    if (archivedAtCheck.rowCount === 0) {
+      await pool.query('ALTER TABLE "Initiative" ADD COLUMN IF NOT EXISTS "archivedAt" TIMESTAMP(3)');
+      console.log("Added Initiative.archivedAt.");
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260308_add_initiative_archived_at', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260308_add_initiative_archived_at'
+        );
+      `);
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);
