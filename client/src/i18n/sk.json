@@ -6,6 +6,8 @@
     "loadingInitiatives": "Načítanie iniciatív...",
     "signInDesc": "Prihláste sa cez Google na správu priorít domén, dopadu persón a plánovanie B2B2C backlogu.",
     "continueGoogle": "Pokračovať cez Google",
+    "loginFailed": "Prihlásenie zlyhalo. Skúste to znova alebo kontaktujte podporu.",
+    "loginDenied": "Prihlásenie bolo odmietnuté.",
     "signOut": "Odhlásiť sa",
     "pendingTitle": "Žiadosť o registráciu odoslaná",
     "pendingMsg": "Váš účet <1>{{email}}</1> bol zaregistrovaný.",

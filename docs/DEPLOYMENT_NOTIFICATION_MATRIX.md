@@ -31,6 +31,7 @@ npm run db:seed-notification-rules
 ## Checklist before deploy
 
 1. Ensure `DATABASE_URL` is set in production.
-2. Deploy: migrations run via `preDeployCommand` (see `railway.json`).
-3. (Optional) Run `npm run db:seed-notification-rules` once if you want default initiative notification rules.
-4. Do **not** run full `npm run db:seed` in production (it wipes and re-seeds all data).
+2. **Set `CLIENT_URL`** in production to your app origin (e.g. `https://drdhub.up.railway.app`) with no trailing slash. Required for Google OAuth redirect and login error redirects.
+3. Deploy: migrations run via `preDeployCommand` (see `railway.json`).
+4. (Optional) Run `npm run db:seed-notification-rules` once if you want default initiative notification rules.
+5. Do **not** run full `npm run db:seed` in production (it wipes and re-seeds all data).

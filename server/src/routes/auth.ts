@@ -15,13 +15,31 @@ authRouter.get("/google", (req, res, next) => {
   passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
 });
 
-authRouter.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login", session: true }),
-  (_req, res) => {
-    res.redirect(env.CLIENT_URL);
-  }
-);
+authRouter.get("/google/callback", (req, res, next) => {
+  passport.authenticate(
+    "google",
+    { session: true },
+    (err: Error | null, user: Express.User | false) => {
+      if (err) {
+        console.error("[auth] Google callback error:", err?.message ?? err);
+        const base = env.CLIENT_URL.replace(/\/$/, "");
+        return res.redirect(`${base}/?error=login_failed`);
+      }
+      if (!user) {
+        const base = env.CLIENT_URL.replace(/\/$/, "");
+        return res.redirect(`${base}/?error=login_denied`);
+      }
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("[auth] Session save after login:", loginErr?.message ?? loginErr);
+          const base = env.CLIENT_URL.replace(/\/$/, "");
+          return res.redirect(`${base}/?error=login_failed`);
+        }
+        res.redirect(env.CLIENT_URL);
+      });
+    }
+  )(req, res, next);
+});
 
 authRouter.post("/dev-login", async (req, res, next) => {
   const allowDevAuth = env.ALLOW_DEV_AUTH;

@@ -88,9 +88,13 @@ function App() {
           <p className="mb-4 text-sm text-slate-600">
             {t("app.signInDesc")}
           </p>
-          {authError ? (
+          {(authError || searchParams.get("error") === "login_failed" || searchParams.get("error") === "login_denied") ? (
             <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" data-testid="auth-error">
-              {authError}
+              {searchParams.get("error") === "login_denied"
+                ? t("app.loginDenied")
+                : searchParams.get("error") === "login_failed"
+                  ? t("app.loginFailed")
+                  : authError}
             </p>
           ) : null}
           <div className="grid gap-2">

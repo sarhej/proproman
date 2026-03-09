@@ -6,6 +6,8 @@
     "loadingInitiatives": "Loading initiatives...",
     "signInDesc": "Sign in with Google to manage domain priorities, persona impact, and B2B2C backlog planning.",
     "continueGoogle": "Continue with Google",
+    "loginFailed": "Sign-in failed. Please try again or contact support if it persists.",
+    "loginDenied": "Sign-in was denied.",
     "signOut": "Sign out",
     "pendingTitle": "Registration request sent",
     "pendingMsg": "Your account <1>{{email}}</1> has been registered.",
