@@ -308,7 +308,7 @@ export function MilestonesTimelinePage({ domains, users, onOpenInitiative, onArc
           <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <XAxis dataKey="status" tick={{ fontSize: 10 }} tickFormatter={(v) => t(`milestoneStatus.${v}`)} />
             <YAxis width={24} tick={{ fontSize: 10 }} />
-            <Tooltip formatter={(value: number) => [value, t("milestonesTimeline.total")]} labelFormatter={(label) => t(`milestoneStatus.${label}`)} />
+            <Tooltip formatter={(value: number | undefined) => [value ?? 0, t("milestonesTimeline.total")]} labelFormatter={(label) => t(`milestoneStatus.${label}`)} />
             <Bar dataKey="count" radius={4}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
