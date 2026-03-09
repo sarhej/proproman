@@ -370,7 +370,7 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
               {t("nav.newInitiative")}
             </button>
           ) : null}
-          <div className="relative hidden lg:block" ref={messagesRef}>
+          <div className="relative" ref={messagesRef}>
             <button
               type="button"
               onClick={() => { setMessagesOpen((o) => !o); if (!messagesOpen) void loadMessages(); }}
@@ -385,7 +385,7 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
               ) : null}
             </button>
             {messagesOpen && (
-              <div className="absolute right-0 top-full z-30 mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+              <div className="absolute right-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
                 <div className="px-3 py-2 text-xs font-semibold uppercase text-slate-400">{t("nav.messages")}</div>
                 {messages.length === 0 ? (
                   <p className="px-3 py-4 text-sm text-slate-400">{t("nav.messagesEmpty")}</p>
