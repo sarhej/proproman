@@ -33,6 +33,13 @@ COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/package.json ./client/package.json
 
 ENV NODE_ENV=production
+
+# Create a non-root user
+RUN groupadd -r nodejs && useradd -r -g nodejs -s /bin/false nodejs
+RUN chown -R nodejs:nodejs /app
+
+USER nodejs
+
 EXPOSE 8080
 
 CMD ["npm", "run", "start"]

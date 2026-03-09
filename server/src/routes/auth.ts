@@ -50,6 +50,12 @@ authRouter.get("/google/callback", (req, res, next) => {
 });
 
 authRouter.post("/dev-login", async (req, res, next) => {
+  // Hard disable in production, regardless of env var
+  if (env.NODE_ENV === "production") {
+    res.status(403).json({ error: "Dev login is disabled in production." });
+    return;
+  }
+
   const allowDevAuth = env.ALLOW_DEV_AUTH;
   if (!allowDevAuth) {
     res.status(403).json({ error: "Dev login is disabled." });

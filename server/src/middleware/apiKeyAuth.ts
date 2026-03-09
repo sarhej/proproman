@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import crypto from "node:crypto";
 import { env } from "../env.js";
 import { prisma } from "../db.js";
 
@@ -9,7 +10,20 @@ import { prisma } from "../db.js";
  */
 export async function apiKeyAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
-  if (!token || !env.API_KEY || token !== env.API_KEY) {
+  
+  if (!token || !env.API_KEY) {
+    next();
+    return;
+  }
+
+  // Use timingSafeEqual to prevent timing attacks
+  const tokenBuffer = Buffer.from(token);
+  const keyBuffer = Buffer.from(env.API_KEY);
+  
+  const isValid = tokenBuffer.length === keyBuffer.length && 
+    crypto.timingSafeEqual(tokenBuffer, keyBuffer);
+
+  if (!isValid) {
     next();
     return;
   }

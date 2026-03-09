@@ -18,13 +18,25 @@
     "db:seed": "npm run db:seed --workspace server",
     "db:up": "docker compose up -d postgres && echo Waiting for Postgres... && sleep 5 && npm run db:migrate && npm run db:seed",
     "mcp:build": "npm run build --workspace mcp",
-    "mcp:start": "npm run start --workspace mcp"
+    "mcp:start": "npm run start --workspace mcp",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "security:check": "npm audit --audit-level=high",
+    "security:sast": "semgrep scan --config auto --error",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "vitest": "^1.6.0"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.3.0",
+    "helmet": "^8.1.0"
   }
 }

@@ -7,6 +7,8 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Pool } from "pg";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { env } from "./env.js";
 import "./auth/passport.js";
 import { authRouter } from "./routes/auth.js";
@@ -48,6 +50,16 @@ const clientDist = path.resolve(__dirname, "../../../client/dist");
 
 const PgStore = connectPgSimple(session);
 const pool = new Pool({ connectionString: env.DATABASE_URL });
+
+app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  })
+);
 
 app.use(
   cors({
