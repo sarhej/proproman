@@ -119,7 +119,6 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
   users,
   personas,
   revenueStreams,
-  currentUserId = null,
   onSubmit,
   onDelete,
   onArchive,
