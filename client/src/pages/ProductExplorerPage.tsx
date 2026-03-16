@@ -7,13 +7,14 @@ import { Label, Select } from "../components/ui/Field";
 
 type Props = {
   isAdmin: boolean;
+  currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   quickFilter?: string;
 };
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
 
-export function ProductExplorerPage({ isAdmin, onOpenInitiative, quickFilter }: Props) {
+export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, quickFilter }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -83,17 +84,18 @@ export function ProductExplorerPage({ isAdmin, onOpenInitiative, quickFilter }: 
         </div>
       </div>
       <ProductTree
-      products={filtered}
-      users={users}
-      domains={domains}
-      isAdmin={isAdmin}
-      onOpenInitiative={onOpenInitiative}
-      onRefresh={load}
-      onAddProduct={async (name) => {
-        await api.createProduct({ name, sortOrder: products.length + 1 });
-        await load();
-      }}
-    />
+        products={filtered}
+        users={users}
+        domains={domains}
+        isAdmin={isAdmin}
+        currentUserId={currentUserId}
+        onOpenInitiative={onOpenInitiative}
+        onRefresh={load}
+        onAddProduct={async (name) => {
+          await api.createProduct({ name, sortOrder: products.length + 1 });
+          await load();
+        }}
+      />
     </div>
   );
 }

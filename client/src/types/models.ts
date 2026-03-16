@@ -50,6 +50,13 @@ export type User = {
   emails?: UserEmail[];
 };
 
+/** Normalize role to a string code (handles both legacy string role and future { code } shape). */
+export function getRoleCode(user: { role?: UserRole | { code?: string } } | null | undefined): string {
+  if (!user?.role) return "";
+  const r = user.role;
+  return typeof r === "string" ? r : (r?.code ?? "");
+}
+
 export type AuditEntry = {
   id: string;
   userId: string;

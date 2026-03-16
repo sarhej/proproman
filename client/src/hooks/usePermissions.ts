@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { User, UserRole } from "../types/models";
+import { getRoleCode } from "../types/models";
 
 export type Permissions = {
   isSuperAdmin: boolean;
@@ -18,7 +19,8 @@ const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN"];
 
 export function usePermissions(user: User | null): Permissions {
   return useMemo(() => {
-    if (!user) {
+    const role = getRoleCode(user);
+    if (!user || !role) {
       return {
         isSuperAdmin: false,
         isAdmin: false,
@@ -30,16 +32,15 @@ export function usePermissions(user: User | null): Permissions {
         canCreate: false
       };
     }
-    const role = user.role;
     return {
       isSuperAdmin: role === "SUPER_ADMIN",
-      isAdmin: ADMIN_ROLES.includes(role),
-      canEditStructure: ADMIN_ROLES.includes(role),
-      canEditContent: WRITE_ROLES.includes(role),
-      canEditMarketing: MARKETING_ROLES.includes(role),
-      canManageUsers: ADMIN_ROLES.includes(role),
+      isAdmin: ADMIN_ROLES.includes(role as UserRole),
+      canEditStructure: ADMIN_ROLES.includes(role as UserRole),
+      canEditContent: WRITE_ROLES.includes(role as UserRole),
+      canEditMarketing: MARKETING_ROLES.includes(role as UserRole),
+      canManageUsers: ADMIN_ROLES.includes(role as UserRole),
       canExport: true,
-      canCreate: ADMIN_ROLES.includes(role)
+      canCreate: ADMIN_ROLES.includes(role as UserRole)
     };
   }, [user]);
 }

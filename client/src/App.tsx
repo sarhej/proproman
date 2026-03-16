@@ -293,7 +293,14 @@ function App() {
           <Route path="/gaps" element={<GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
           <Route
             path="/product-explorer"
-            element={<ProductExplorerPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} quickFilter={board.filters.quick} />}
+            element={
+              <ProductExplorerPage
+                isAdmin={perms.canEditStructure}
+                currentUserId={user?.id ?? null}
+                onOpenInitiative={(i) => setSelected(i)}
+                quickFilter={board.filters.quick}
+              />
+            }
           />
           <Route
             path="/accounts"
@@ -388,7 +395,13 @@ function App() {
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
         currentUserId={user?.id ?? null}
-        readOnly={!perms.canEditContent}
+        readOnly={
+          !(
+            perms.canEditStructure ||
+            perms.canEditContent ||
+            (selectedFresh && user?.id && (selectedFresh.ownerId === user.id || selectedFresh.assignments?.some((a) => a.userId === user.id)))
+          )
+        }
         onClose={() => setSelected(null)}
         onSaved={refreshAndClose}
       />

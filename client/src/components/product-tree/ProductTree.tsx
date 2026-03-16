@@ -16,6 +16,7 @@ type Props = {
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
+  currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
 };
@@ -529,7 +530,17 @@ function InitiativeRow({
   );
 }
 
-function InlineAddInitiative({ productId, domains, onRefresh }: { productId: string; domains: Domain[]; onRefresh: () => Promise<void> }) {
+function InlineAddInitiative({
+  productId,
+  domains,
+  currentUserId,
+  onRefresh
+}: {
+  productId: string;
+  domains: Domain[];
+  currentUserId: string | null;
+  onRefresh: () => Promise<void>;
+}) {
   const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
@@ -553,6 +564,7 @@ function InlineAddInitiative({ productId, domains, onRefresh }: { productId: str
       title: title.trim(),
       productId,
       domainId,
+      ownerId: currentUserId ?? undefined,
       priority: "P2",
       horizon: "NEXT",
       status: "IDEA",
@@ -612,6 +624,7 @@ function ProductRow({
   users,
   domains,
   isAdmin,
+  currentUserId,
   onOpenInitiative,
   onRefresh
 }: {
@@ -619,6 +632,7 @@ function ProductRow({
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
+  currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
 }) {
@@ -686,7 +700,12 @@ function ProductRow({
       {open && isAdmin ? (
         <tr className="border-t border-slate-100 text-xs">
           <td className="py-1 pl-8 pr-2">
-            <InlineAddInitiative productId={product.id} domains={domains} onRefresh={onRefresh} />
+            <InlineAddInitiative
+              productId={product.id}
+              domains={domains}
+              currentUserId={currentUserId}
+              onRefresh={onRefresh}
+            />
           </td>
           <td colSpan={5} />
         </tr>
@@ -695,7 +714,16 @@ function ProductRow({
   );
 }
 
-export function ProductTree({ products, users, domains, isAdmin, onOpenInitiative, onRefresh, onAddProduct }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
+export function ProductTree({
+  products,
+  users,
+  domains,
+  isAdmin,
+  currentUserId,
+  onOpenInitiative,
+  onRefresh,
+  onAddProduct
+}: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
   const sensors = useSensors(
@@ -748,6 +776,7 @@ export function ProductTree({ products, users, domains, isAdmin, onOpenInitiativ
                 users={users}
                 domains={domains}
                 isAdmin={isAdmin}
+                currentUserId={currentUserId}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}
               />
