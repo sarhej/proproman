@@ -147,6 +147,42 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 
 ---
 
+## Semantic mapping (product planning tree)
+
+In the Hub, the hierarchy is used as follows:
+
+| Model       | Semantic role   | Meaning |
+|------------|-----------------|--------|
+| Product    | Asset / bucket  | Top-level grouping (e.g. Dr Digital HUB). |
+| Initiative | Epic            | Large planning unit; no separate "summary" initiative. |
+| Feature    | User story      | Deliverable narrative with acceptance criteria. |
+| Requirement| Task            | Atomic work item; status, assignee, due date, etc. |
+
+Overview text for a product lives in the product description, not in a redundant summary initiative.
+
+### Bootstrap: Dr Digital HUB tree
+
+The **Dr Digital HUB** product is the canonical planning tree with four epics (initiatives):
+
+1. **Epic: Naming & terminology** — stories/tasks 1.1–1.4  
+2. **Epic: Bugs (fix first)** — stories (RACI, Initiative, Admin, Requirements, Accounts) and tasks 2.1–2.9  
+3. **Epic: Feature/UX requirements** — stories (Initiative form & fields, Gantt, Milestones, Campaigns, Accounts, Products/assets) and tasks 3.1–3.24  
+4. **Epic: Clarifications needed** — one or more stories and tasks 4.1–4.6  
+
+**Import (idempotent):** From the repo root, run:
+
+```bash
+npm run db:populate-dr-hub --workspace server
+```
+
+Or from `server/`: `npx tsx scripts/populate-dr-digital-hub.ts`
+
+Requires a domain named "Technologický Leader" (or similar); the script creates the product and the four initiatives if missing, then creates features and requirements. Re-running skips existing requirements (matched by feature + title).
+
+**Verify:** Use MCP tool `drd_get_product_tree` with no arguments (first product) or with `productId` to return the full product → initiatives → features → requirements tree.
+
+---
+
 ## MCP tools (same set for remote and local)
 
 | Tool | Description |
@@ -164,6 +200,8 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | `drd_list_domains` | List domains. |
 | `drd_list_products` | List products. |
 | `drd_create_product` | Create product/asset (admin/super_admin). name, optional description, sortOrder. |
+| `drd_update_product` | Update product by ID. Optional: name, description, sortOrder. |
+| `drd_get_product_tree` | Full tree: product → initiatives → features → requirements. Optional productId; if omitted returns first product. |
 | `drd_list_personas` | List personas. |
 | `drd_list_accounts` | List accounts. |
 | `drd_list_partners` | List partners. |
@@ -174,11 +212,16 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | `drd_list_demands` | List demands (accounts, partners, internal, compliance). |
 | **Features, decisions, risks** | |
 | `drd_list_features` | List features with initiative context (optional initiativeId). |
+| `drd_create_feature` | Create feature (user story) under an initiative (admin/editor). initiativeId, title, optional description, acceptanceCriteria, storyPoints, storyType (FUNCTIONAL/BUG/TECH_DEBT/RESEARCH), ownerId, status, sortOrder. |
+| `drd_update_feature` | Update feature by ID. Optional: title, description, acceptanceCriteria, storyPoints, storyType, ownerId, status, sortOrder. |
 | `drd_list_decisions` | List decisions with initiative context (optional initiativeId). |
 | `drd_list_risks` | List risks with initiative and owner (optional initiativeId). |
 | **Dependencies, requirements, assignments, stakeholders** | |
 | `drd_list_dependencies` | List initiative dependencies (from/to). |
-| `drd_list_requirements` | List requirements with feature/initiative (optional featureId). |
+| `drd_list_requirements` | List requirements with feature/initiative and assignee (optional featureId). Ordered by sortOrder, createdAt. |
+| `drd_create_requirement` | Create requirement (task) under a feature (admin/editor). Full task payload: featureId, title, optional description, status (NOT_STARTED/IN_PROGRESS/DONE), isDone, priority, assigneeId, dueDate, estimate, labels, taskType (TASK/SPIKE/QA/DESIGN), blockedReason, externalRef, metadata, sortOrder. |
+| `drd_update_requirement` | Update requirement by ID. Same optional task fields as create. |
+| `drd_upsert_requirement` | Idempotent create-or-update by featureId + title or featureId + externalRef; use for imports. |
 | `drd_list_assignments` | List initiative assignments (optional initiativeId). |
 | `drd_list_stakeholders` | List stakeholders with initiative (optional initiativeId). |
 | **Timeline** | |
@@ -190,7 +233,7 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | `drd_list_assets` | List campaign assets (optional campaignId). |
 | `drd_list_campaign_links` | List campaign–initiative/feature/account/partner links (optional campaignId). |
 
-Naming prefix `drd_` avoids clashes with other MCP tools. **Write** tools: initiative create/update/delete (and optional productId), product create. All others are read-only. Settings and admin (audit, user management, import/export) are not exposed.
+Naming prefix `drd_` avoids clashes with other MCP tools. **Write** tools: initiative create/update/delete (and optional productId), product create/update, feature create/update, requirement create/update/upsert. All others are read-only. Settings and admin (audit, user management, import/export) are not exposed.
 
 ---
 

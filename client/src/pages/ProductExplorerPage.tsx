@@ -34,33 +34,31 @@ export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, 
 
   const filtered = useMemo(() => {
     const q = quickFilter?.trim().toLowerCase();
-    return products
-      .map((product) => ({
-        ...product,
-        initiatives: product.initiatives.filter((initiative) => {
-          if (statusFilter && initiative.status !== statusFilter) return false;
-          if (impactFilter === "with") {
-            const hasPersona = (initiative.personaImpacts?.length ?? 0) > 0;
-            const hasRevenue = (initiative.revenueWeights?.length ?? 0) > 0;
-            if (!hasPersona && !hasRevenue) return false;
-          }
-          if (q) {
-            const hay = [
-              initiative.title,
-              initiative.description ?? "",
-              initiative.owner?.name ?? "",
-              initiative.domain?.name ?? "",
-              product.name,
-              ...initiative.features.map((f) => f.title)
-            ]
-              .join(" ")
-              .toLowerCase();
-            if (!hay.includes(q)) return false;
-          }
-          return true;
-        })
-      }))
-      .filter((p) => p.initiatives.length > 0);
+    return products.map((product) => ({
+      ...product,
+      initiatives: product.initiatives.filter((initiative) => {
+        if (statusFilter && initiative.status !== statusFilter) return false;
+        if (impactFilter === "with") {
+          const hasPersona = (initiative.personaImpacts?.length ?? 0) > 0;
+          const hasRevenue = (initiative.revenueWeights?.length ?? 0) > 0;
+          if (!hasPersona && !hasRevenue) return false;
+        }
+        if (q) {
+          const hay = [
+            initiative.title,
+            initiative.description ?? "",
+            initiative.owner?.name ?? "",
+            initiative.domain?.name ?? "",
+            product.name,
+            ...initiative.features.map((f) => f.title)
+          ]
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+    }));
   }, [products, quickFilter, statusFilter, impactFilter]);
 
   return (

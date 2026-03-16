@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Horizon, Prisma, Priority, UserRole } from "@prisma/client";
+import { FeatureStatus, Horizon, Prisma, Priority, StoryType, TaskStatus, TaskType, UserRole } from "@prisma/client";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
 import { initiativeInclude } from "../routes/serializers.js";
@@ -240,6 +240,92 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
+    "drd_update_product",
+    {
+      title: "Update product",
+      description: "Update an existing product by ID.",
+      inputSchema: z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        description: z.string().nullable().optional(),
+        sortOrder: z.number().int().optional()
+      })
+    },
+    async ({ id, ...body }, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+      const data: { name?: string; description?: string | null; sortOrder?: number } = {};
+      if (body.name !== undefined) data.name = body.name;
+      if (body.description !== undefined) data.description = body.description;
+      if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      const product = await prisma.product.update({ where: { id }, data });
+      return textContent(JSON.stringify(product, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_get_product_tree",
+    {
+      title: "Get product tree",
+      description: "Get a product with full hierarchy: initiatives (epics), features (stories), requirements (tasks). Optionally filter by productId; if omitted, returns first product by sortOrder.",
+      inputSchema: z.object({ productId: z.string().optional() })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      if (args.productId) {
+        const product = await prisma.product.findUnique({
+          where: { id: args.productId },
+          include: {
+            initiatives: {
+              orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+              include: {
+                domain: { select: { id: true, name: true, color: true } },
+                owner: { select: userPublicSelect },
+                features: {
+                  orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+                  include: {
+                    owner: { select: userPublicSelect },
+                    requirements: {
+                      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+                      include: { assignee: { select: userPublicSelect } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+        if (!product) throw new Error("Product not found");
+        return textContent(JSON.stringify(sanitizeUserFields(product), null, 2));
+      }
+      const product = await prisma.product.findFirst({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          initiatives: {
+            orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+            include: {
+              domain: { select: { id: true, name: true, color: true } },
+              owner: { select: userPublicSelect },
+              features: {
+                orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+                include: {
+                  owner: { select: userPublicSelect },
+                  requirements: {
+                    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+                    include: { assignee: { select: userPublicSelect } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      if (!product) throw new Error("No product found");
+      return textContent(JSON.stringify(sanitizeUserFields(product), null, 2));
+    }
+  );
+
+  server.registerTool(
     "drd_list_personas",
     { title: "List personas", description: "List all personas.", inputSchema: z.object({}) },
     async (_args, ctx) => { getUserFromCtx(ctx); return textContent(JSON.stringify((await prisma.persona.findMany({ orderBy: { name: "asc" } })), null, 2)); }
@@ -299,7 +385,7 @@ export function registerTools(server: McpServer) {
     async (_args, ctx) => { getUserFromCtx(ctx); return textContent(JSON.stringify((await prisma.revenueStream.findMany({ orderBy: { name: "asc" } })), null, 2)); }
   );
 
-  // --- Features (read-only list) ---
+  // --- Features ---
   server.registerTool(
     "drd_list_features",
     {
@@ -315,6 +401,82 @@ export function registerTools(server: McpServer) {
         orderBy: [{ initiative: { title: "asc" } }, { sortOrder: "asc" }]
       });
       return textContent(JSON.stringify(sanitizeUserFields(features), null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_create_feature",
+    {
+      title: "Create feature",
+      description: "Create a new feature (user story) under an initiative. Requires admin/editor role.",
+      inputSchema: z.object({
+        initiativeId: z.string(),
+        title: z.string().min(1),
+        description: z.string().nullable().optional(),
+        acceptanceCriteria: z.string().nullable().optional(),
+        storyPoints: z.number().int().min(0).nullable().optional(),
+        storyType: z.enum(["FUNCTIONAL", "BUG", "TECH_DEBT", "RESEARCH"]).nullable().optional(),
+        ownerId: z.string().nullable().optional(),
+        status: z.enum(["IDEA", "PLANNED", "IN_PROGRESS", "DONE"]).optional(),
+        sortOrder: z.number().int().optional()
+      })
+    },
+    async (body, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const feature = await prisma.feature.create({
+        data: {
+          initiativeId: body.initiativeId,
+          title: body.title,
+          description: body.description ?? null,
+          acceptanceCriteria: body.acceptanceCriteria ?? null,
+          storyPoints: body.storyPoints ?? null,
+          storyType: body.storyType ? (body.storyType as StoryType) : null,
+          ownerId: body.ownerId ?? null,
+          status: (body.status as FeatureStatus) ?? FeatureStatus.IDEA,
+          sortOrder: body.sortOrder ?? 0
+        },
+        include: { initiative: { select: { id: true, title: true } }, owner: true }
+      });
+      return textContent(JSON.stringify(feature, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "drd_update_feature",
+    {
+      title: "Update feature",
+      description: "Update an existing feature (user story) by ID.",
+      inputSchema: z.object({
+        id: z.string(),
+        title: z.string().min(1).optional(),
+        description: z.string().nullable().optional(),
+        acceptanceCriteria: z.string().nullable().optional(),
+        storyPoints: z.number().int().min(0).nullable().optional(),
+        storyType: z.enum(["FUNCTIONAL", "BUG", "TECH_DEBT", "RESEARCH"]).nullable().optional(),
+        ownerId: z.string().nullable().optional(),
+        status: z.enum(["IDEA", "PLANNED", "IN_PROGRESS", "DONE"]).optional(),
+        sortOrder: z.number().int().optional()
+      })
+    },
+    async ({ id, ...body }, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const data: Record<string, unknown> = {};
+      if (body.title !== undefined) data.title = body.title;
+      if (body.description !== undefined) data.description = body.description;
+      if (body.acceptanceCriteria !== undefined) data.acceptanceCriteria = body.acceptanceCriteria;
+      if (body.storyPoints !== undefined) data.storyPoints = body.storyPoints;
+      if (body.storyType !== undefined) data.storyType = body.storyType;
+      if (body.ownerId !== undefined) data.ownerId = body.ownerId;
+      if (body.status !== undefined) data.status = body.status;
+      if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      const feature = await prisma.feature.update({
+        where: { id },
+        data,
+        include: { initiative: { select: { id: true, title: true } }, owner: true }
+      });
+      return textContent(JSON.stringify(feature, null, 2));
     }
   );
 
@@ -376,7 +538,7 @@ export function registerTools(server: McpServer) {
     }
   );
 
-  // --- Requirements (read-only list) ---
+  // --- Requirements ---
   server.registerTool(
     "drd_list_requirements",
     {
@@ -388,10 +550,202 @@ export function registerTools(server: McpServer) {
       getUserFromCtx(ctx);
       const requirements = await prisma.requirement.findMany({
         where: args.featureId ? { featureId: args.featureId } : undefined,
-        include: { feature: { include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } } } } },
-        orderBy: { createdAt: "asc" }
+        include: {
+          feature: { include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } } } },
+          assignee: { select: userPublicSelect }
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
       });
-      return textContent(JSON.stringify(requirements, null, 2));
+      return textContent(JSON.stringify(sanitizeUserFields(requirements), null, 2));
+    }
+  );
+
+  const requirementTaskFields = {
+    featureId: z.string(),
+    title: z.string().min(1),
+    description: z.string().nullable().optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    isDone: z.boolean().optional(),
+    priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
+    assigneeId: z.string().nullable().optional(),
+    dueDate: z.string().datetime().nullable().optional(),
+    estimate: z.string().nullable().optional(),
+    labels: z.array(z.string()).nullable().optional(),
+    taskType: z.enum(["TASK", "SPIKE", "QA", "DESIGN"]).nullable().optional(),
+    blockedReason: z.string().nullable().optional(),
+    externalRef: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).nullable().optional(),
+    sortOrder: z.number().int().optional()
+  };
+
+  server.registerTool(
+    "drd_create_requirement",
+    {
+      title: "Create requirement",
+      description: "Create a new requirement (task) under a feature. Supports full task fields for Kanban/Notion readiness. Requires admin/editor role.",
+      inputSchema: z.object(requirementTaskFields)
+    },
+    async (body, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const requirement = await prisma.requirement.create({
+        data: {
+          featureId: body.featureId,
+          title: body.title,
+          description: body.description ?? null,
+          status: body.status ? (body.status as TaskStatus) : TaskStatus.NOT_STARTED,
+          isDone: body.isDone ?? false,
+          priority: (body.priority as Priority) ?? Priority.P2,
+          assigneeId: body.assigneeId ?? null,
+          dueDate: body.dueDate ? new Date(body.dueDate) : null,
+          estimate: body.estimate ?? null,
+          labels: body.labels === null ? Prisma.JsonNull : (body.labels ?? undefined),
+          taskType: body.taskType ? (body.taskType as TaskType) : null,
+          blockedReason: body.blockedReason ?? null,
+          externalRef: body.externalRef ?? null,
+          metadata: body.metadata === null ? Prisma.JsonNull : ((body.metadata ?? undefined) as Prisma.InputJsonValue),
+          sortOrder: body.sortOrder ?? 0
+        },
+        include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(requirement), null, 2));
+    }
+  );
+
+  const updateRequirementSchema = z.object({
+    id: z.string(),
+    featureId: z.string().optional(),
+    title: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    isDone: z.boolean().optional(),
+    priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
+    assigneeId: z.string().nullable().optional(),
+    dueDate: z.string().datetime().nullable().optional(),
+    estimate: z.string().nullable().optional(),
+    labels: z.array(z.string()).nullable().optional(),
+    taskType: z.enum(["TASK", "SPIKE", "QA", "DESIGN"]).nullable().optional(),
+    blockedReason: z.string().nullable().optional(),
+    externalRef: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).nullable().optional(),
+    sortOrder: z.number().int().optional()
+  });
+
+  server.registerTool(
+    "drd_update_requirement",
+    {
+      title: "Update requirement",
+      description: "Update an existing requirement (task) by ID. Supports full task payload: status, assigneeId, dueDate, estimate, labels, taskType, blockedReason, externalRef, metadata.",
+      inputSchema: updateRequirementSchema
+    },
+    async (args, ctx) => {
+      const { id, ...body } = updateRequirementSchema.parse(args);
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const data: Prisma.RequirementUncheckedUpdateInput = {};
+      if (body.featureId !== undefined) data.featureId = body.featureId;
+      if (body.title !== undefined) data.title = body.title;
+      if (body.description !== undefined) data.description = body.description;
+      if (body.status !== undefined) data.status = body.status as TaskStatus;
+      if (body.isDone !== undefined) data.isDone = body.isDone;
+      if (body.priority !== undefined) data.priority = body.priority as Priority;
+      if (body.assigneeId !== undefined) data.assigneeId = body.assigneeId;
+      if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+      if (body.estimate !== undefined) data.estimate = body.estimate;
+      if (body.labels !== undefined) data.labels = body.labels === null ? Prisma.JsonNull : (body.labels as Prisma.InputJsonValue);
+      if (body.taskType !== undefined) data.taskType = body.taskType as TaskType | null;
+      if (body.blockedReason !== undefined) data.blockedReason = body.blockedReason;
+      if (body.externalRef !== undefined) data.externalRef = body.externalRef;
+      if (body.metadata !== undefined) data.metadata = body.metadata === null ? Prisma.JsonNull : (body.metadata as Prisma.InputJsonValue);
+      if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      const requirement = await prisma.requirement.update({
+        where: { id },
+        data,
+        include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(requirement), null, 2));
+    }
+  );
+
+  const upsertRequirementSchema = z.object({
+    featureId: z.string(),
+    title: z.string().min(1),
+    externalRef: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    isDone: z.boolean().optional(),
+    priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
+    assigneeId: z.string().nullable().optional(),
+    dueDate: z.string().datetime().nullable().optional(),
+    estimate: z.string().nullable().optional(),
+    labels: z.array(z.string()).nullable().optional(),
+    taskType: z.enum(["TASK", "SPIKE", "QA", "DESIGN"]).nullable().optional(),
+    blockedReason: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).nullable().optional(),
+    sortOrder: z.number().int().optional()
+  });
+
+  server.registerTool(
+    "drd_upsert_requirement",
+    {
+      title: "Upsert requirement",
+      description: "Idempotent create-or-update a requirement (task): find by featureId and either externalRef or normalized title; if found, update with payload, else create. Use for imports to avoid duplicates.",
+      inputSchema: upsertRequirementSchema
+    },
+    async (args, ctx) => {
+      const body = upsertRequirementSchema.parse(args);
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const where = body.externalRef
+        ? { featureId: body.featureId, externalRef: body.externalRef }
+        : { featureId: body.featureId, title: body.title.trim() };
+      const existing = await prisma.requirement.findFirst({ where });
+      const createData: Prisma.RequirementUncheckedCreateInput = {
+        featureId: body.featureId,
+        title: body.title,
+        description: body.description ?? null,
+        status: (body.status as TaskStatus) ?? TaskStatus.NOT_STARTED,
+        isDone: body.isDone ?? false,
+        priority: (body.priority as Priority) ?? Priority.P2,
+        assigneeId: body.assigneeId ?? null,
+        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        estimate: body.estimate ?? null,
+        labels: body.labels === null ? Prisma.JsonNull : (body.labels as Prisma.InputJsonValue),
+        taskType: body.taskType ? (body.taskType as TaskType) : null,
+        blockedReason: body.blockedReason ?? null,
+        externalRef: body.externalRef ?? null,
+        metadata: body.metadata === null ? Prisma.JsonNull : (body.metadata as Prisma.InputJsonValue),
+        sortOrder: body.sortOrder ?? 0
+      };
+      if (existing) {
+        const updateData: Prisma.RequirementUncheckedUpdateInput = {
+          title: createData.title,
+          description: createData.description,
+          status: createData.status,
+          isDone: createData.isDone,
+          priority: createData.priority,
+          assigneeId: createData.assigneeId,
+          dueDate: createData.dueDate,
+          estimate: createData.estimate,
+          labels: createData.labels,
+          taskType: createData.taskType,
+          blockedReason: createData.blockedReason,
+          externalRef: createData.externalRef,
+          metadata: createData.metadata,
+          sortOrder: createData.sortOrder
+        };
+        const requirement = await prisma.requirement.update({
+          where: { id: existing.id },
+          data: updateData,
+          include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+        });
+        return textContent(JSON.stringify({ updated: true, requirement: sanitizeUserFields(requirement) }, null, 2));
+      }
+      const requirement = await prisma.requirement.create({
+        data: createData,
+        include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+      });
+      return textContent(JSON.stringify({ created: true, requirement: sanitizeUserFields(requirement) }, null, 2));
     }
   );
 

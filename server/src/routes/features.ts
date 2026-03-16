@@ -1,4 +1,4 @@
-import { FeatureStatus } from "@prisma/client";
+import { FeatureStatus, StoryType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -8,6 +8,9 @@ import { logAudit } from "../services/audit.js";
 const featureSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
+  acceptanceCriteria: z.string().nullable().optional(),
+  storyPoints: z.number().int().min(0).nullable().optional(),
+  storyType: z.nativeEnum(StoryType).nullable().optional(),
   ownerId: z.string().nullable().optional(),
   status: z.nativeEnum(FeatureStatus).default(FeatureStatus.IDEA),
   sortOrder: z.number().int().default(0)
@@ -28,6 +31,9 @@ featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => 
       initiativeId,
       ...parsed.data,
       description: parsed.data.description ?? null,
+      acceptanceCriteria: parsed.data.acceptanceCriteria ?? null,
+      storyPoints: parsed.data.storyPoints ?? null,
+      storyType: parsed.data.storyType ?? null,
       ownerId: parsed.data.ownerId ?? null
     },
     include: { owner: true }
@@ -48,6 +54,9 @@ featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     data: {
       ...parsed.data,
       description: parsed.data.description ?? undefined,
+      acceptanceCriteria: parsed.data.acceptanceCriteria ?? undefined,
+      storyPoints: parsed.data.storyPoints ?? undefined,
+      storyType: parsed.data.storyType ?? undefined,
       ownerId: parsed.data.ownerId ?? undefined
     },
     include: { owner: true }
