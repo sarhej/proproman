@@ -23,6 +23,9 @@ const transports = new Map<string, StreamableHTTPServerTransport>();
 
 export function mountMcp(app: express.Express): void {
   const base = getMcpBaseUrl();
+  if (env.NODE_ENV === "production" && (base.includes("localhost") || base.startsWith("http://127."))) {
+    console.warn("[MCP] CLIENT_URL should be your public app URL in production (e.g. https://drdhub.up.railway.app). Current base:", base);
+  }
   const issuerUrl = new URL(base);
   const resourceServerUrl = new URL(`${base}/mcp`);
 
@@ -54,9 +57,21 @@ export function mountMcp(app: express.Express): void {
     }
   });
 
-  // Bearer auth middleware for MCP endpoint
+  // Bearer auth middleware for MCP endpoint. Wrap verifier so we log any thrown error
+  // (SDK catches and sends 500 without calling next(err), so our global handler never runs).
+  const loggingVerifier = {
+    async verifyAccessToken(token: string) {
+      try {
+        return await provider.verifyAccessToken(token);
+      } catch (err) {
+        console.error("[MCP] Bearer auth / verifyAccessToken error:", err);
+        if (err instanceof Error && err.stack) console.error(err.stack);
+        throw err;
+      }
+    }
+  };
   const bearerAuth = requireBearerAuth({
-    verifier: provider,
+    verifier: loggingVerifier,
     requiredScopes: [],
     resourceMetadataUrl: `${base}/.well-known/oauth-protected-resource/mcp`
   });
@@ -95,6 +110,7 @@ export function mountMcp(app: express.Express): void {
       }
     } catch (err) {
       console.error("MCP request error:", err);
+      if (err instanceof Error && err.stack) console.error(err.stack);
       if (!res.headersSent) {
         res.status(500).json({ error: "Internal server error" });
       }

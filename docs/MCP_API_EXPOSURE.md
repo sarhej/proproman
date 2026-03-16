@@ -201,6 +201,57 @@ Naming prefix `drd_` avoids clashes with other MCP tools. All of the above are *
 
 ---
 
+## Troubleshooting (MCP not working)
+
+If Cursor shows **"The MCP server errored"** for `drd-hub` or `drd-hub-remote`, use these checks.
+
+**`ECONNREFUSED 127.0.0.1:8080`** in the MCP log means the DrD Hub server is not running on your machine. Start it with `npm run dev` from the repo root so the `drd-hub` (local) MCP can connect.
+
+**`500 Internal Server Error` or `{"error":"server_error"}` from remote (`drd-hub-remote`)** means the deployed app (e.g. Railway) is reachable but the `/mcp` handler or auth layer is throwing. Check **Railway (or your host) logs** for the actual exception and stack trace. Common causes: missing or wrong env (`CLIENT_URL`, `DATABASE_URL`, `SESSION_SECRET`, `MCP_JWT_SECRET`, `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`), DB unreachable, or an uncaught error in MCP/OAuth code. **In production, set `CLIENT_URL` to your public app URL** (e.g. `https://drdhub.up.railway.app`); if it stays default (`http://localhost:5173`), OAuth and MCP discovery can break and the server may return 500. The server logs a startup warning when it detects localhost in production.
+
+**How to check Railway logs**
+
+- **Via Railway MCP (Cursor):** Call the `get-logs` tool with `workspacePath: "/Users/supersergio/projects/dd"` (or your repo path), `logType: "deploy"`, and optionally `lines: 150` and `filter: "error"` or `filter: "MCP"` to focus on errors. Reproduce the 500 (enable `drd-hub-remote` in Cursor), then fetch logs again to see the stack trace.
+- **Via Railway CLI:** From the project directory run `railway logs` to stream deploy logs, or `railway logs --lines 200` for recent lines, or `railway logs --lines 200 --filter '@level:error'` to filter. Ensure the project is linked (`railway link` if needed).
+
+### 1. Is the server running? (local only)
+
+- From repo root: `npm run dev` (runs server + client).
+- Server listens on **port 8080** by default (`PORT` in `server/.env` or `server/.env.example`).
+
+```bash
+# Should return {"ok":true}
+curl -s http://localhost:8080/api/health
+```
+
+If this fails, start the server and ensure nothing else is using port 8080.
+
+### 2. Is the MCP endpoint reachable?
+
+- **Local:** `curl -i -X POST http://localhost:8080/mcp`  
+  Expected: **401** with `WWW-Authenticate` (OAuth metadata). That means the MCP route is up and auth is required.
+- **Remote:** `curl -i -X POST https://drdhub.up.railway.app/mcp`  
+  Same expectation (401 + OAuth). If you get connection refused or timeout, the deployment or URL is wrong.
+
+### 3. Cursor MCP config
+
+- **Settings → Tools & MCP** and open the failed server (`drd-hub` or `drd-hub-remote`). Check the **exact error** (e.g. "Connection refused", "401", "ECONNREFUSED").
+- **Local:** URL must be `http://localhost:8080/mcp` (no trailing slash). If your API runs on another port, change the URL to match (e.g. `http://localhost:3000/mcp`).
+- **Remote:** URL must be your real Railway (or other) host, e.g. `https://drdhub.up.railway.app/mcp`. Ensure the app is deployed and the domain is correct.
+
+### 4. OAuth (remote, and local if Cursor uses OAuth)
+
+- For **remote**, first connection triggers Google login. Ensure in **Google Cloud Console** the OAuth client has the redirect URI:  
+  `https://<your-mcp-domain>/mcp-oauth/google/callback`  
+  (e.g. `https://drdhub.up.railway.app/mcp-oauth/google/callback`).
+- Server env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and in production `CLIENT_URL` (and any callback URL) must use the real public base URL.
+
+### 5. Retry after fixes
+
+- Restart Cursor, or in **Settings → MCP** disable and re-enable the server so it reconnects and re-lists tools.
+
+---
+
 ## Summary
 
 - **Remote MCP** = same Express server, `/mcp` + OAuth routes, Google login, per-user identity. Configure Cursor with `url: "https://<your-domain>/mcp"` and add `https://<your-domain>/mcp-oauth/google/callback` in Google Console.

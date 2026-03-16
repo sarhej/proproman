@@ -39,6 +39,7 @@ import { stakeholdersRouter } from "./routes/stakeholders.js";
 import { messagesRouter } from "./routes/messages.js";
 import { notificationSubscriptionsRouter } from "./routes/notification-subscriptions.js";
 import { meRouter } from "./routes/me.js";
+import { filesRouter } from "./routes/files.js";
 import { prisma } from "./db.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
 import { mountMcp } from "./mcp/setup.js";
@@ -139,6 +140,7 @@ app.use("/api/stakeholders", stakeholdersRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/notification-subscriptions", notificationSubscriptionsRouter);
 app.use("/api/me", meRouter);
+app.use("/api/files", filesRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({
@@ -180,6 +182,7 @@ if (env.NODE_ENV === "production") {
 app.use((err: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   void next;
   console.error(err);
+  if (err.stack) console.error(err.stack);
   const isDbDown =
     (err as Error & { code?: string }).code === "ECONNREFUSED" ||
     (err as Error & { code?: string }).code === "P1001" ||
