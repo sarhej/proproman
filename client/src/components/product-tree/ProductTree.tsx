@@ -104,7 +104,7 @@ function InlineAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (title:
   }
 
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1.5">
       <input
         autoFocus
         className="rounded border border-sky-300 px-1.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-sky-400"
@@ -123,6 +123,19 @@ function InlineAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (title:
           }
         }}
       />
+      <button
+        type="button"
+        className="rounded border border-sky-400 bg-sky-500 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-sky-600"
+        disabled={!value.trim()}
+        onClick={async () => {
+          if (!value.trim()) return;
+          await onAdd(value.trim());
+          setValue("");
+          setAdding(false);
+        }}
+      >
+        {t("common.save")}
+      </button>
       <button
         type="button"
         className="text-[10px] text-slate-400 hover:text-slate-600"
@@ -543,12 +556,14 @@ function InlineAddInitiative({ productId, domains, onRefresh }: { productId: str
       priority: "P2",
       horizon: "NEXT",
       status: "IDEA",
-      commercialType: "GROWTH",
+      commercialType: "CONTRACT_ENABLER",
     });
     setTitle("");
     setAdding(false);
     await onRefresh();
   }
+
+  const canSubmit = title.trim() && domainId;
 
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -573,6 +588,14 @@ function InlineAddInitiative({ productId, domains, onRefresh }: { productId: str
           <option key={d.id} value={d.id}>{d.name}</option>
         ))}
       </select>
+      <button
+        type="button"
+        className="rounded border border-sky-400 bg-sky-500 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!canSubmit}
+        onClick={async () => await submit()}
+      >
+        {t("common.save")}
+      </button>
       <button
         type="button"
         className="text-[10px] text-slate-400 hover:text-slate-600"
