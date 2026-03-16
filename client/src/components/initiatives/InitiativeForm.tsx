@@ -187,7 +187,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
             className="text-lg font-semibold"
             value={form.title}
             onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-            disabled={readOnly || (!!initiative && initiative.ownerId !== currentUserId)}
+            disabled={readOnly}
           />
         </div>
         <div className="md:col-span-2">
