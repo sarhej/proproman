@@ -52,9 +52,14 @@ export type User = {
 
 /** Normalize role to a string code (handles both legacy string role and future { code } shape). */
 export function getRoleCode(user: { role?: UserRole | { code?: string } } | null | undefined): string {
-  if (!user?.role) return "";
-  const r = user.role;
-  return typeof r === "string" ? r : (r?.code ?? "");
+  if (!user) return "";
+  const r = (user as { role?: unknown }).role;
+  if (r == null) return "";
+  if (typeof r === "string") return r;
+  if (typeof r === "object" && r !== null && "code" in r && typeof (r as { code: unknown }).code === "string") {
+    return (r as { code: string }).code;
+  }
+  return "";
 }
 
 export type AuditEntry = {

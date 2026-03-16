@@ -30,6 +30,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { KpiDashboardPage } from "./pages/KpiDashboardPage";
 import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
 import type { Initiative, UserRole } from "./types/models";
+import { getRoleCode } from "./types/models";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
@@ -395,13 +396,16 @@ function App() {
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
         currentUserId={user?.id ?? null}
-        readOnly={
-          !(
-            perms.canEditStructure ||
-            perms.canEditContent ||
-            (selectedFresh && user?.id && (selectedFresh.ownerId === user.id || selectedFresh.assignments?.some((a) => a.userId === user.id)))
-          )
-        }
+        readOnly={(() => {
+          const roleCode = getRoleCode(user);
+          const canEditAsAdmin = roleCode === "SUPER_ADMIN" || roleCode === "ADMIN";
+          const canEditAsWriter = perms.canEditContent;
+          const isOwnerOrAssignee =
+            selectedFresh &&
+            user?.id &&
+            (selectedFresh.ownerId === user.id || selectedFresh.assignments?.some((a) => a.userId === user.id));
+          return !(canEditAsAdmin || canEditAsWriter || isOwnerOrAssignee);
+        })()}
         onClose={() => setSelected(null)}
         onSaved={refreshAndClose}
       />
