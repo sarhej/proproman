@@ -157,12 +157,13 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | **Initiatives** | |
 | `drd_list_initiatives` | List initiatives (optional: domainId, ownerId, horizon, priority, isGap). |
 | `drd_get_initiative` | Get one initiative by ID. |
-| `drd_create_initiative` | Create initiative (admin/editor). |
-| `drd_update_initiative` | Update initiative by ID. |
+| `drd_create_initiative` | Create initiative (admin/editor). Optional: productId to assign to a product/asset. |
+| `drd_update_initiative` | Update initiative by ID. Optional: productId to assign to a product/asset. |
 | `drd_delete_initiative` | Delete initiative by ID. |
 | **Reference data** | |
 | `drd_list_domains` | List domains. |
 | `drd_list_products` | List products. |
+| `drd_create_product` | Create product/asset (admin/super_admin). name, optional description, sortOrder. |
 | `drd_list_personas` | List personas. |
 | `drd_list_accounts` | List accounts. |
 | `drd_list_partners` | List partners. |
@@ -189,7 +190,7 @@ Replace `replace-with-your-railway-host` with your actual Railway host (no token
 | `drd_list_assets` | List campaign assets (optional campaignId). |
 | `drd_list_campaign_links` | List campaign–initiative/feature/account/partner links (optional campaignId). |
 
-Naming prefix `drd_` avoids clashes with other MCP tools. All of the above are **read-only** except initiative create/update/delete. Settings and admin (audit, user management, import/export) are not exposed.
+Naming prefix `drd_` avoids clashes with other MCP tools. **Write** tools: initiative create/update/delete (and optional productId), product create. All others are read-only. Settings and admin (audit, user management, import/export) are not exposed.
 
 ---
 

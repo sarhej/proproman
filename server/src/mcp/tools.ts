@@ -120,6 +120,7 @@ export function registerTools(server: McpServer) {
       inputSchema: z.object({
         title: z.string(),
         domainId: z.string(),
+        productId: z.string().nullable().optional(),
         description: z.string().optional(),
         ownerId: z.string().optional(),
         priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
@@ -136,6 +137,7 @@ export function registerTools(server: McpServer) {
         data: {
           title: body.title,
           domainId: body.domainId,
+          productId: body.productId ?? null,
           description: body.description ?? null,
           ownerId: body.ownerId ?? null,
           priority: (body.priority as Priority) ?? "P2",
@@ -159,6 +161,7 @@ export function registerTools(server: McpServer) {
         id: z.string(),
         title: z.string().optional(),
         domainId: z.string().optional(),
+        productId: z.string().nullable().optional(),
         description: z.string().optional(),
         ownerId: z.string().optional(),
         priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
@@ -174,6 +177,7 @@ export function registerTools(server: McpServer) {
       const data: Record<string, unknown> = {};
       if (body.title !== undefined) data.title = body.title;
       if (body.domainId !== undefined) data.domainId = body.domainId;
+      if (body.productId !== undefined) data.productId = body.productId;
       if (body.description !== undefined) data.description = body.description;
       if (body.ownerId !== undefined) data.ownerId = body.ownerId;
       if (body.priority !== undefined) data.priority = body.priority;
@@ -208,6 +212,31 @@ export function registerTools(server: McpServer) {
     "drd_list_products",
     { title: "List products", description: "List all products (with hierarchy).", inputSchema: z.object({}) },
     async (_args, ctx) => { getUserFromCtx(ctx); return textContent(JSON.stringify((await prisma.product.findMany({ orderBy: { sortOrder: "asc" } })), null, 2)); }
+  );
+
+  server.registerTool(
+    "drd_create_product",
+    {
+      title: "Create product",
+      description: "Create a new product (asset). Requires admin or super_admin role.",
+      inputSchema: z.object({
+        name: z.string().min(1),
+        description: z.string().nullable().optional(),
+        sortOrder: z.number().int().optional()
+      })
+    },
+    async (body, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+      const product = await prisma.product.create({
+        data: {
+          name: body.name,
+          description: body.description ?? null,
+          sortOrder: body.sortOrder ?? 0
+        }
+      });
+      return textContent(JSON.stringify(product, null, 2));
+    }
   );
 
   server.registerTool(
