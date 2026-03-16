@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { env } from "../env.js";
 import { DrdOAuthProvider, handleGoogleCallback, getMcpBaseUrl } from "./oauth-provider.js";
 import { registerTools } from "./tools.js";
@@ -64,6 +65,12 @@ export function mountMcp(app: express.Express): void {
       try {
         return await provider.verifyAccessToken(token);
       } catch (err) {
+        const isExpired =
+          (err as Error & { code?: string }).code === "ERR_JWT_EXPIRED" ||
+          (err as Error).name === "JWTExpired";
+        if (isExpired) {
+          throw new InvalidTokenError("Token has expired");
+        }
         console.error("[MCP] Bearer auth / verifyAccessToken error:", err);
         if (err instanceof Error && err.stack) console.error(err.stack);
         throw err;

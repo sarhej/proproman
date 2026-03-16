@@ -207,6 +207,8 @@ If Cursor shows **"The MCP server errored"** for `drd-hub` or `drd-hub-remote`, 
 
 **`ECONNREFUSED 127.0.0.1:8080`** in the MCP log means the DrD Hub server is not running on your machine. Start it with `npm run dev` from the repo root so the `drd-hub` (local) MCP can connect.
 
+**Expired token (JWTExpired):** If logs show `[MCP] Bearer auth / verifyAccessToken error: JWTExpired`, Cursor was using an expired access token. The server now returns **401** with `invalid_token` so the client can refresh or re-auth; re-enable the MCP in Cursor to trigger a new login or token refresh.
+
 **`500 Internal Server Error` or `{"error":"server_error"}` from remote (`drd-hub-remote`)** means the deployed app (e.g. Railway) is reachable but the `/mcp` handler or auth layer is throwing. Check **Railway (or your host) logs** for the actual exception and stack trace. Common causes: missing or wrong env (`CLIENT_URL`, `DATABASE_URL`, `SESSION_SECRET`, `MCP_JWT_SECRET`, `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`), DB unreachable, or an uncaught error in MCP/OAuth code. **In production, set `CLIENT_URL` to your public app URL** (e.g. `https://drdhub.up.railway.app`); if it stays default (`http://localhost:5173`), OAuth and MCP discovery can break and the server may return 500. The server logs a startup warning when it detects localhost in production.
 
 **How to check Railway logs**
