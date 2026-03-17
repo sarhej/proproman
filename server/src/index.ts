@@ -105,11 +105,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(apiKeyAuth);
 
-void mountMcp(app).then(() => {
-  app.listen(Number(env.PORT), () => {
-    console.log(`Server running on port ${env.PORT}`);
-  });
-});
+mountMcp(app);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
@@ -195,4 +191,8 @@ app.use((err: Error, _req: express.Request, res: express.Response, next: express
     return;
   }
   res.status(500).json({ error: "Internal server error" });
+});
+
+app.listen(Number(env.PORT), () => {
+  console.log(`Server running on port ${env.PORT}`);
 });

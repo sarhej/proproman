@@ -22,8 +22,7 @@ function createMcpServer(): McpServer {
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-export async function mountMcp(app: express.Express): Promise<void> {
-  await loadMcpOAuthClients();
+export function mountMcp(app: express.Express): void {
   const base = getMcpBaseUrl();
   if (env.NODE_ENV === "production" && (base.includes("localhost") || base.startsWith("http://127."))) {
     console.warn("[MCP] CLIENT_URL should be your public app URL in production (e.g. https://drdhub.up.railway.app). Current base:", base);
@@ -125,5 +124,9 @@ export async function mountMcp(app: express.Express): Promise<void> {
     }
   });
 
+  // Hydrate OAuth client store from DB (non-blocking; avoids Invalid client_id after deploy)
+  loadMcpOAuthClients().catch((err) => {
+    console.error("[MCP] Failed to load OAuth clients from DB (table may be missing). Re-auth after migration.", err);
+  });
   console.log("MCP OAuth endpoint mounted at /mcp");
 }
