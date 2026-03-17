@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
-import type { Initiative, Requirement } from "../types/models";
+import type { Initiative, Priority, Requirement, TaskStatus, User } from "../types/models";
 import { formatPriority } from "../lib/format";
 import { Button } from "../components/ui/Button";
+import { Input, Label, Select, Textarea } from "../components/ui/Field";
+
+const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
+const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "DONE"];
 
 type Props = {
   initiatives: Initiative[];
@@ -25,11 +29,56 @@ function findRequirement(
   return null;
 }
 
+function toDateOnly(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return iso.slice(0, 10);
+  } catch {
+    return "";
+  }
+}
+
+function fromDateOnly(dateStr: string): string | null {
+  if (!dateStr.trim()) return null;
+  return `${dateStr}T00:00:00.000Z`;
+}
+
 export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, readOnly }: Props) {
   const { requirementId } = useParams<{ requirementId: string }>();
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState<Priority>("P2");
+  const [editStatus, setEditStatus] = useState<TaskStatus>("NOT_STARTED");
+  const [editAssigneeId, setEditAssigneeId] = useState<string | null>(null);
+  const [editDueDate, setEditDueDate] = useState("");
+
   const found = requirementId ? findRequirement(initiatives, requirementId) : null;
+
+  useEffect(() => {
+    if (!found || editing) return;
+    const r = found.requirement;
+    setEditTitle(r.title);
+    setEditDescription(r.description ?? "");
+    setEditPriority(r.priority);
+    setEditStatus(r.status ?? "NOT_STARTED");
+    setEditAssigneeId(r.assigneeId ?? null);
+    setEditDueDate(toDateOnly(r.dueDate));
+  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate]);
+
+  useEffect(() => {
+    if (editing && users.length === 0) {
+      api
+        .getUsers()
+        .then((res) => setUsers(res.users ?? []))
+        .catch(() => {});
+    }
+  }, [editing]);
 
   if (!requirementId) {
     return (
@@ -59,117 +108,351 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const siblings = (initiative.features ?? [])
     .flatMap((f) => (f.id === feature.id ? (f.requirements ?? []) : []))
     .filter((r) => r.id !== requirement.id);
+  const allInFeature = (initiative.features ?? []).find((f) => f.id === feature.id)?.requirements ?? [];
+  const currentIndex = allInFeature.findIndex((r) => r.id === requirement.id);
+  const prevId = currentIndex > 0 ? allInFeature[currentIndex - 1]?.id ?? null : null;
+  const nextId =
+    currentIndex >= 0 && currentIndex < allInFeature.length - 1 ? allInFeature[currentIndex + 1]?.id ?? null : null;
+
+  const handleSave = async () => {
+    if (!editTitle.trim()) return;
+    setSaving(true);
+    try {
+      await api.updateRequirement(requirement.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        priority: editPriority,
+        status: editStatus,
+        isDone: editStatus === "DONE",
+        assigneeId: editAssigneeId || null,
+        dueDate: fromDateOnly(editDueDate)
+      });
+      await onSaved?.();
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditTitle(requirement.title);
+    setEditDescription(requirement.description ?? "");
+    setEditPriority(requirement.priority);
+    setEditStatus(requirement.status ?? "NOT_STARTED");
+    setEditAssigneeId(requirement.assigneeId ?? null);
+    setEditDueDate(toDateOnly(requirement.dueDate));
+    setEditing(false);
+  };
 
   return (
-    <div className="space-y-4 p-4">
-      <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-        <Link to="/product-explorer" className="hover:text-slate-700">
-          Product Explorer
-        </Link>
-        <span aria-hidden>/</span>
-        <button
-          type="button"
-          onClick={() => onOpenInitiative(initiative)}
-          className="hover:text-sky-600 hover:underline"
-        >
-          {initiative.title}
-        </button>
-        <span aria-hidden>/</span>
-        <Link to={`/features/${feature.id}`} className="hover:text-sky-600 hover:underline">
-          {feature.title}
-        </Link>
-        <span aria-hidden>/</span>
-        <span className="font-medium text-slate-800">{requirement.title}</span>
-      </nav>
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">{requirement.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {product?.name ?? "—"} · {initiative.title} · {feature.title}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-            {formatPriority(requirement.priority)}
-          </span>
-          <span
-            className={`rounded px-2 py-0.5 text-xs font-medium ${
-              isDone ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
-            }`}
+    <div className="min-h-0">
+      {/* Breadcrumb bar – wireframe header */}
+      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+        <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <Link to="/product-explorer" className="hover:text-slate-700">
+            Product Explorer
+          </Link>
+          <span aria-hidden>/</span>
+          <button
+            type="button"
+            onClick={() => onOpenInitiative(initiative)}
+            className="hover:text-sky-600 hover:underline"
           >
-            {isDone ? "Done" : requirement.status ?? "Open"}
+            {initiative.title}
+          </button>
+          <span aria-hidden>/</span>
+          <Link to={`/features/${feature.id}`} className="hover:text-sky-600 hover:underline">
+            {feature.title}
+          </Link>
+          <span aria-hidden>/</span>
+          <span className="font-medium text-slate-800">
+            {editing ? editTitle : requirement.title}
           </span>
-          {!readOnly && (
-            <>
-              <Button
-                variant="secondary"
-                disabled={toggling}
-                onClick={async () => {
-                  setToggling(true);
-                  try {
-                    await api.updateRequirement(requirement.id, {
-                      isDone: !isDone,
-                      status: isDone ? "NOT_STARTED" : "DONE"
-                    });
-                    await onSaved?.();
-                  } finally {
-                    setToggling(false);
-                  }
-                }}
-              >
-                {isDone ? "Reopen" : "Mark done"}
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={deleting}
-                onClick={async () => {
-                  if (!window.confirm("Delete this requirement?")) return;
-                  setDeleting(true);
-                  try {
-                    await api.deleteRequirement(requirement.id);
-                    window.history.back();
-                    await onSaved?.();
-                  } finally {
-                    setDeleting(false);
-                  }
-                }}
-              >
-                Delete
-              </Button>
-            </>
-          )}
+        </nav>
+      </div>
+
+      {/* Title row: chips + actions (wireframe) */}
+      <div className="border-b border-slate-200 bg-white px-4 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {editing ? (
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="text-xl font-semibold"
+                placeholder="Requirement title"
+              />
+            ) : (
+              <h1 className="text-xl font-semibold text-slate-900">{requirement.title}</h1>
+            )}
+            <p className="mt-1 text-sm text-slate-500">
+              {product?.name ?? "—"} · {initiative.title} · {feature.title}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {editing ? (
+              <>
+                <Select
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value as Priority)}
+                  className="w-24 rounded-full border-slate-300 text-xs font-medium"
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {formatPriority(p)}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
+                  className={`w-28 rounded-full text-xs font-medium ${
+                    editStatus === "DONE" ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
+                  }`}
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "DONE" ? "Done" : s === "NOT_STARTED" ? "Open" : "In progress"}
+                    </option>
+                  ))}
+                </Select>
+                <Button variant="primary" disabled={saving || !editTitle.trim()} onClick={handleSave}>
+                  Save
+                </Button>
+                <Button variant="secondary" disabled={saving} onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                  {formatPriority(requirement.priority)}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    isDone ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
+                  }`}
+                >
+                  {isDone ? "Done" : requirement.status ?? "Open"}
+                </span>
+                {!readOnly && (
+                  <>
+                    <Button variant="primary" onClick={() => setEditing(true)}>
+                      Edit
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={toggling}
+                      onClick={async () => {
+                        setToggling(true);
+                        try {
+                          await api.updateRequirement(requirement.id, {
+                            isDone: !isDone,
+                            status: isDone ? "NOT_STARTED" : "DONE"
+                          });
+                          await onSaved?.();
+                        } finally {
+                          setToggling(false);
+                        }
+                      }}
+                    >
+                      {isDone ? "Reopen" : "Mark done"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={deleting}
+                      onClick={async () => {
+                        if (!window.confirm("Delete this requirement?")) return;
+                        setDeleting(true);
+                        try {
+                          await api.deleteRequirement(requirement.id);
+                          window.history.back();
+                          await onSaved?.();
+                        } finally {
+                          setDeleting(false);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {requirement.description ? (
-        <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-700">Description</h2>
-          <p className="text-sm text-slate-600">{requirement.description}</p>
-        </section>
-      ) : null}
+      {/* Two columns: main + sidebar */}
+      <div className="flex gap-6 p-4">
+        {/* Main column */}
+        <div className="min-w-0 flex-1 space-y-6">
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <Label>Description</Label>
+            {editing ? (
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={4}
+                className="mt-1.5"
+                placeholder="Detailed acceptance / implementation note..."
+              />
+            ) : (
+              <p className="mt-1.5 text-sm text-slate-600">
+                {requirement.description || (
+                  <span className="italic text-slate-400">No description</span>
+                )}
+              </p>
+            )}
+          </section>
 
-      <section>
-        <h2 className="mb-1 text-sm font-semibold text-slate-700">Feature</h2>
-        <Link to={`/features/${feature.id}`} className="text-sm text-sky-600 hover:underline">
-          {feature.title}
-        </Link>
-      </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Task metadata
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Assignee</Label>
+                {editing ? (
+                  <Select
+                    value={editAssigneeId ?? ""}
+                    onChange={(e) => setEditAssigneeId(e.target.value || null)}
+                    className="mt-1"
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">
+                    {requirement.assignee?.name ?? "—"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Due date</Label>
+                {editing ? (
+                  <Input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">
+                    {requirement.dueDate ? toDateOnly(requirement.dueDate) : "—"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Feature</Label>
+                <p className="mt-1 text-sm">
+                  <Link to={`/features/${feature.id}`} className="text-sky-600 hover:underline">
+                    {feature.title}
+                  </Link>
+                </p>
+              </div>
+              <div>
+                <Label>Initiative</Label>
+                <p className="mt-1 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => onOpenInitiative(initiative)}
+                    className="text-sky-600 hover:underline"
+                  >
+                    {initiative.title}
+                  </button>
+                </p>
+              </div>
+            </div>
+          </section>
 
-      {siblings.length > 0 ? (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">Other tasks in this feature</h2>
-          <ul className="space-y-1">
-            {siblings.slice(0, 5).map((r) => (
-              <li key={r.id}>
-                <Link to={`/requirements/${r.id}`} className="text-sm text-sky-600 hover:underline">
-                  {r.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+          {siblings.length > 0 && (
+            <section className="rounded-lg border border-slate-200 bg-white p-4">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Other tasks in this feature
+              </h2>
+              <ul className="space-y-2">
+                {siblings.slice(0, 8).map((r) => (
+                  <li key={r.id} className="flex items-center justify-between rounded border border-slate-100 bg-slate-50/50 py-1.5 pl-3 pr-2">
+                    <Link to={`/requirements/${r.id}`} className="text-sm font-medium text-sky-600 hover:underline">
+                      {r.title}
+                    </Link>
+                    <Link
+                      to={`/requirements/${r.id}`}
+                      className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                    >
+                      Open
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        {/* Sidebar – wireframe right rail */}
+        <aside className="w-72 shrink-0 space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Summary
+            </h2>
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-slate-500">Priority</dt>
+                <dd className="font-medium text-slate-800">
+                  {editing ? formatPriority(editPriority) : formatPriority(requirement.priority)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">State</dt>
+                <dd className="font-medium text-slate-800">
+                  {editing
+                    ? (editStatus === "DONE" ? "Done" : editStatus === "NOT_STARTED" ? "Open" : "In progress")
+                    : isDone
+                      ? "Done"
+                      : requirement.status ?? "Open"}
+                </dd>
+              </div>
+              {requirement.taskType && (
+                <div>
+                  <dt className="text-slate-500">Type</dt>
+                  <dd className="font-medium text-slate-800">{requirement.taskType}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+
+          {(prevId || nextId) && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Navigate
+              </h2>
+              <div className="flex gap-2">
+                {prevId ? (
+                  <Link
+                    to={`/requirements/${prevId}`}
+                    className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    ← Previous
+                  </Link>
+                ) : null}
+                {nextId ? (
+                  <Link
+                    to={`/requirements/${nextId}`}
+                    className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    Next →
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

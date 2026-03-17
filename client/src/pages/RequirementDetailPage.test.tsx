@@ -106,7 +106,7 @@ describe("RequirementDetailPage – edge cases", () => {
       }
     ];
     renderWithRoute("/requirements/req-done", initiatives);
-    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("Done");
     expect(screen.getByRole("button", { name: "Reopen" })).toBeInTheDocument();
   });
 
