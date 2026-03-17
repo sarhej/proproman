@@ -640,6 +640,30 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       console.log("Applied 20260316 epic/story/task migration.");
     }
 
+    // Ensure McpOAuthClient table exists (20260317) so MCP OAuth client_id survives deploy
+    const mcpOAuthClientCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'McpOAuthClient'"
+    );
+    if (mcpOAuthClientCheck.rowCount === 0) {
+      await pool.query(`
+        CREATE TABLE "McpOAuthClient" (
+          "id" TEXT NOT NULL,
+          "clientId" TEXT NOT NULL,
+          "payload" JSONB NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "McpOAuthClient_pkey" PRIMARY KEY ("id")
+        );
+        CREATE UNIQUE INDEX "McpOAuthClient_clientId_key" ON "McpOAuthClient"("clientId");
+        CREATE INDEX "McpOAuthClient_clientId_idx" ON "McpOAuthClient"("clientId");
+      `);
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260317_add_mcp_oauth_client', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260317_add_mcp_oauth_client');
+      `);
+      console.log("Created McpOAuthClient table (20260317).");
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);

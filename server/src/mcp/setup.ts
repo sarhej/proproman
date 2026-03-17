@@ -6,7 +6,7 @@ import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { env } from "../env.js";
-import { DrdOAuthProvider, handleGoogleCallback, getMcpBaseUrl } from "./oauth-provider.js";
+import { DrdOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
 import { registerTools } from "./tools.js";
 
 const provider = new DrdOAuthProvider();
@@ -22,7 +22,8 @@ function createMcpServer(): McpServer {
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-export function mountMcp(app: express.Express): void {
+export async function mountMcp(app: express.Express): Promise<void> {
+  await loadMcpOAuthClients();
   const base = getMcpBaseUrl();
   if (env.NODE_ENV === "production" && (base.includes("localhost") || base.startsWith("http://127."))) {
     console.warn("[MCP] CLIENT_URL should be your public app URL in production (e.g. https://drdhub.up.railway.app). Current base:", base);

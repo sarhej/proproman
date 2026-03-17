@@ -37,9 +37,19 @@ function roleForEmail(email: string): UserRole | null {
   return null;
 }
 
-// --- In-memory stores (fine for single-process; swap for DB/Redis for multi-node) ---
+// --- Client store: in-memory map hydrated from DB at startup so client_id survives deploys ---
 
 const registeredClients = new Map<string, OAuthClientInformationFull>();
+
+/** Load persisted MCP OAuth clients from DB into memory. Call once before mounting MCP routes. */
+export async function loadMcpOAuthClients(): Promise<void> {
+  const rows = await prisma.mcpOAuthClient.findMany();
+  registeredClients.clear();
+  for (const row of rows) {
+    const payload = row.payload as unknown as OAuthClientInformationFull;
+    if (payload?.client_id) registeredClients.set(payload.client_id, payload);
+  }
+}
 
 interface PendingAuth {
   clientId: string;
@@ -79,6 +89,9 @@ const clientsStore: OAuthRegisteredClientsStore = {
       client_id_issued_at: Math.floor(Date.now() / 1000)
     } as OAuthClientInformationFull;
     registeredClients.set(clientId, full);
+    prisma.mcpOAuthClient
+      .create({ data: { clientId, payload: full as unknown as object } })
+      .catch((err) => console.error("[MCP OAuth] Failed to persist client:", err));
     return full;
   }
 };

@@ -748,3 +748,12 @@ model NotificationDelivery {
   @@index([userMessageId])
   @@index([userId])
 }
+
+model McpOAuthClient {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  payload   Json     // OAuthClientInformationFull (client_id, redirect_uris, client_name, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([clientId])
+}
