@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
@@ -50,7 +50,6 @@ function App() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const hideFilters = location.pathname === "/gantt";
 
   const selectedFresh = useMemo(

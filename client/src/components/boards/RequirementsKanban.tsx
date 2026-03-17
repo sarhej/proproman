@@ -224,7 +224,7 @@ export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
 
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
           <div>
-            <Label>{t("filters.all")} product</Label>
+            <Label>{`${t("filters.all")} product`}</Label>
             <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}>
               <option value="">{t("filters.all")}</option>
               {products.map((p) => (
