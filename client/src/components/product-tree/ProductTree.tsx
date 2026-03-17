@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
@@ -248,20 +249,28 @@ function RequirementRow({
           )}
         </button>
         {isAdmin ? (
-          <EditableTitle
-            title={requirement.title}
-            className={requirement.isDone ? "line-through text-slate-400" : ""}
-            onSave={async (newTitle) => {
-              await api.updateRequirement(requirement.id, { title: newTitle });
-              await onRefresh();
-            }}
-          />
+          <>
+            <EditableTitle
+              title={requirement.title}
+              className={requirement.isDone ? "line-through text-slate-400" : ""}
+              onSave={async (newTitle) => {
+                await api.updateRequirement(requirement.id, { title: newTitle });
+                await onRefresh();
+              }}
+            />
+            <Link to={`/requirements/${requirement.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
+              Open
+            </Link>
+            <DeleteBtn label={requirement.title} onDelete={async () => { await api.deleteRequirement(requirement.id); await onRefresh(); }} />
+          </>
         ) : (
-          <span className={requirement.isDone ? "line-through text-slate-400" : ""}>{requirement.title}</span>
+          <Link
+            to={`/requirements/${requirement.id}`}
+            className={`hover:underline ${requirement.isDone ? "line-through text-slate-400" : "text-slate-800"}`}
+          >
+            {requirement.title}
+          </Link>
         )}
-        {isAdmin ? (
-          <DeleteBtn label={requirement.title} onDelete={async () => { await api.deleteRequirement(requirement.id); await onRefresh(); }} />
-        ) : null}
       </td>
       <td />
       <td />
@@ -320,20 +329,25 @@ function FeatureRow({
             )}
           </button>
           {isAdmin ? (
-            <EditableTitle
-              title={feature.title}
-              className="font-medium"
-              onSave={async (newTitle) => {
-                await api.updateFeature(feature.id, { title: newTitle });
-                await onRefresh();
-              }}
-            />
+            <>
+              <EditableTitle
+                title={feature.title}
+                className="font-medium"
+                onSave={async (newTitle) => {
+                  await api.updateFeature(feature.id, { title: newTitle });
+                  await onRefresh();
+                }}
+              />
+              <Link to={`/features/${feature.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
+                Open
+              </Link>
+              <DeleteBtn label={feature.title} onDelete={async () => { await api.deleteFeature(feature.id); await onRefresh(); }} />
+            </>
           ) : (
-            <span className="font-medium">{feature.title}</span>
+            <Link to={`/features/${feature.id}`} className="font-medium hover:underline text-slate-800">
+              {feature.title}
+            </Link>
           )}
-          {isAdmin ? (
-            <DeleteBtn label={feature.title} onDelete={async () => { await api.deleteFeature(feature.id); await onRefresh(); }} />
-          ) : null}
         </td>
         <td />
         <td className="px-2 text-center text-[11px]">

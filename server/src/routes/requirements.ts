@@ -8,7 +8,7 @@ import { logAudit } from "../services/audit.js";
 const labelsSchema = z.array(z.string()).nullable().optional();
 const metadataSchema = z.record(z.unknown()).nullable().optional();
 
-const requirementSchema = z.object({
+export const requirementSchema = z.object({
   featureId: z.string().min(1),
   title: z.string().min(1),
   description: z.string().nullable().optional(),

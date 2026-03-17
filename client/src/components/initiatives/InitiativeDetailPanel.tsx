@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { api } from "../../lib/api";
@@ -645,6 +646,7 @@ export function InitiativeDetailPanel({
                   <Row
                     key={feature.id}
                     label={`${feature.title} (${feature.status})`}
+                    linkTo={`/features/${feature.id}`}
                     onDelete={
                       readOnly
                         ? undefined
@@ -661,6 +663,7 @@ export function InitiativeDetailPanel({
                     <Row
                       key={requirement.id}
                       label={`${requirement.title} (${requirement.isDone ? t("common.done") : t("common.open")})`}
+                      linkTo={`/requirements/${requirement.id}`}
                       onDelete={
                         readOnly
                           ? undefined
@@ -776,11 +779,17 @@ export function InitiativeDetailPanel({
   );
 }
 
-function Row({ label, onDelete }: { label: string; onDelete?: () => Promise<void> }) {
+function Row({ label, onDelete, linkTo }: { label: string; onDelete?: () => Promise<void>; linkTo?: string }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between rounded border border-slate-200 px-3 py-2">
-      <span>{label}</span>
+      {linkTo ? (
+        <Link to={linkTo} className="text-sky-600 hover:underline">
+          {label}
+        </Link>
+      ) : (
+        <span>{label}</span>
+      )}
       {onDelete ? (
         <Button variant="ghost" onClick={onDelete}>
           {t("common.remove")}

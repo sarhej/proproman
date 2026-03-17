@@ -5,7 +5,7 @@ import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
 
-const featureSchema = z.object({
+export const featureSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   acceptanceCriteria: z.string().nullable().optional(),

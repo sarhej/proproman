@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
@@ -29,6 +29,9 @@ import { CampaignsPage } from "./pages/CampaignsPage";
 import { AdminPage } from "./pages/AdminPage";
 import { KpiDashboardPage } from "./pages/KpiDashboardPage";
 import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
+import { FeatureDetailPage } from "./pages/FeatureDetailPage";
+import { RequirementDetailPage } from "./pages/RequirementDetailPage";
+import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
 import type { Initiative, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
 
@@ -47,6 +50,7 @@ function App() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const hideFilters = location.pathname === "/gantt";
 
   const selectedFresh = useMemo(
@@ -354,6 +358,43 @@ function App() {
           />
           <Route path="/calendar" element={<CalendarPage quickFilter={board.filters.quick} />} />
           <Route path="/gantt" element={<GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
+          <Route
+            path="/features/:featureId"
+            element={
+              <FeatureDetailPage
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+                onSaved={() => board.refresh()}
+                readOnly={!perms.canEditContent}
+              />
+            }
+          />
+          <Route
+            path="/requirements/kanban"
+            element={
+              <RequirementsKanbanPage
+                initiatives={board.initiatives}
+                onMoveRequirement={async (id, isDone) => {
+                  await api.updateRequirement(id, {
+                    isDone,
+                    status: isDone ? "DONE" : "NOT_STARTED"
+                  });
+                  await board.refresh();
+                }}
+              />
+            }
+          />
+          <Route
+            path="/requirements/:requirementId"
+            element={
+              <RequirementDetailPage
+                initiatives={board.initiatives}
+                onOpenInitiative={(i) => setSelected(i)}
+                onSaved={() => board.refresh()}
+                readOnly={!perms.canEditContent}
+              />
+            }
+          />
           {perms.canManageUsers && (
             <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} onMetaChanged={() => board.refresh()} />} />
           )}

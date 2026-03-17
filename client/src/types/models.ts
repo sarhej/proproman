@@ -99,6 +99,9 @@ export type Priority = "P0" | "P1" | "P2" | "P3";
 export type Horizon = "NOW" | "NEXT" | "LATER";
 export type InitiativeStatus = "IDEA" | "PLANNED" | "IN_PROGRESS" | "DONE" | "BLOCKED";
 export type FeatureStatus = "IDEA" | "PLANNED" | "IN_PROGRESS" | "DONE";
+export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "DONE";
+export type StoryType = "FUNCTIONAL" | "BUG" | "TECH_DEBT" | "RESEARCH";
+export type TaskType = "TASK" | "SPIKE" | "QA" | "DESIGN";
 export type CommercialType =
   | "CONTRACT_ENABLER"
   | "CHURN_PREVENTER"
@@ -154,6 +157,9 @@ export type Feature = {
   initiativeId: string;
   title: string;
   description?: string | null;
+  acceptanceCriteria?: string | null;
+  storyPoints?: number | null;
+  storyType?: StoryType | null;
   ownerId?: string | null;
   owner?: User | null;
   status: FeatureStatus;
@@ -164,6 +170,7 @@ export type Feature = {
   sortOrder: number;
   requirements?: Requirement[];
   demandLinks?: DemandLink[];
+  initiative?: Initiative | null;
 };
 
 export type Requirement = {
@@ -171,8 +178,20 @@ export type Requirement = {
   featureId: string;
   title: string;
   description?: string | null;
+  status?: TaskStatus;
   isDone: boolean;
   priority: Priority;
+  assigneeId?: string | null;
+  assignee?: User | null;
+  dueDate?: string | null;
+  estimate?: string | null;
+  labels?: string[] | null;
+  taskType?: TaskType | null;
+  blockedReason?: string | null;
+  externalRef?: string | null;
+  metadata?: Record<string, unknown> | null;
+  sortOrder: number;
+  feature?: Feature | null;
 };
 
 export type Decision = {
