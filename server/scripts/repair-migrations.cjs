@@ -594,6 +594,52 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       console.log("Created notification matrix tables (20260309).");
     }
 
+    // Ensure 20260316 epic/story/task: Feature and Requirement columns (so /api/initiatives and app do not crash)
+    const requirementStatusCheck = await pool.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Requirement' AND column_name = 'status'"
+    );
+    if (requirementStatusCheck.rowCount === 0) {
+      console.log("Requirement.status missing. Applying 20260316 epic/story/task migration...");
+      await pool.query(`
+        DO $$ BEGIN CREATE TYPE "StoryType" AS ENUM ('FUNCTIONAL', 'BUG', 'TECH_DEBT', 'RESEARCH'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+        DO $$ BEGIN CREATE TYPE "TaskStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'DONE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+        DO $$ BEGIN CREATE TYPE "TaskType" AS ENUM ('TASK', 'SPIKE', 'QA', 'DESIGN'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+      `);
+      await pool.query(`
+        ALTER TABLE "Feature" ADD COLUMN IF NOT EXISTS "acceptanceCriteria" TEXT;
+        ALTER TABLE "Feature" ADD COLUMN IF NOT EXISTS "storyPoints" INTEGER;
+        ALTER TABLE "Feature" ADD COLUMN IF NOT EXISTS "storyType" "StoryType";
+      `);
+      await pool.query(`
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "status" "TaskStatus" NOT NULL DEFAULT 'NOT_STARTED';
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "assigneeId" TEXT;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP(3);
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "estimate" TEXT;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "labels" JSONB;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "taskType" "TaskType";
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "blockedReason" TEXT;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "externalRef" TEXT;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "metadata" JSONB;
+        ALTER TABLE "Requirement" ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER NOT NULL DEFAULT 0;
+      `);
+      await pool.query(`UPDATE "Requirement" SET "status" = 'DONE' WHERE "isDone" = true`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS "Requirement_assigneeId_idx" ON "Requirement"("assigneeId")`);
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Requirement_assigneeId_fkey') THEN
+            ALTER TABLE "Requirement" ADD CONSTRAINT "Requirement_assigneeId_fkey"
+              FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+          END IF;
+        END $$;
+      `);
+      await pool.query(`
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+        SELECT gen_random_uuid()::text, '', NOW(), '20260316_add_epic_story_task_fields', NULL, NULL, NOW(), 1
+        WHERE NOT EXISTS (SELECT 1 FROM "_prisma_migrations" WHERE "migration_name" = '20260316_add_epic_story_task_fields');
+      `);
+      console.log("Applied 20260316 epic/story/task migration.");
+    }
+
   } catch (e) {
     console.error("Repair failed:", e.message);
     process.exit(1);

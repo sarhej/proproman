@@ -1,11 +1,18 @@
--- CreateEnum
-CREATE TYPE "StoryType" AS ENUM ('FUNCTIONAL', 'BUG', 'TECH_DEBT', 'RESEARCH');
+-- CreateEnum (idempotent: skip if already exists)
+DO $$ BEGIN
+  CREATE TYPE "StoryType" AS ENUM ('FUNCTIONAL', 'BUG', 'TECH_DEBT', 'RESEARCH');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "TaskStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'DONE');
+DO $$ BEGIN
+  CREATE TYPE "TaskStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'DONE');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "TaskType" AS ENUM ('TASK', 'SPIKE', 'QA', 'DESIGN');
+DO $$ BEGIN
+  CREATE TYPE "TaskType" AS ENUM ('TASK', 'SPIKE', 'QA', 'DESIGN');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AlterTable Feature: add acceptanceCriteria, storyPoints, storyType
 ALTER TABLE "Feature" ADD COLUMN IF NOT EXISTS "acceptanceCriteria" TEXT;
