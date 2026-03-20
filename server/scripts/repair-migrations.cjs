@@ -4,6 +4,18 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 (async () => {
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error("Repair skipped: DATABASE_URL not set");
+      process.exit(0);
+    }
+    // On fresh DB, User table may not exist yet (migrate deploy runs before repair). Skip repair.
+    const userTableCheck = await pool.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'User'"
+    );
+    if (userTableCheck.rowCount === 0) {
+      console.log("User table not found. Skipping repair (run migrate deploy first).");
+      process.exit(0);
+    }
     // Check if the RBAC column exists
     const colCheck = await pool.query(
       "SELECT 1 FROM information_schema.columns WHERE table_name = 'User' AND column_name = 'isActive'"
