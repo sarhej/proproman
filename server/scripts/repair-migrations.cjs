@@ -695,7 +695,8 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     }
 
   } catch (e) {
-    console.error("Repair failed:", e.message);
+    console.error("Repair failed:", e.message || e);
+    if (e.stack) console.error(e.stack);
     process.exit(1);
   } finally {
     await pool.end();
