@@ -9,6 +9,8 @@ COPY client/package.json client/
 COPY server/package.json server/
 COPY mcp/package.json mcp/
 
+# Disable husky in Docker (no .git); reduce install noise
+ENV HUSKY=0
 RUN npm ci
 
 COPY . .
