@@ -9,13 +9,17 @@ COPY client/package.json client/
 COPY server/package.json server/
 COPY mcp/package.json mcp/
 
-# Disable husky in Docker (no .git); reduce install noise
+# Skip lifecycle scripts in CI (no .git for husky); avoid audit in Docker
 ENV HUSKY=0
-RUN npm ci
+ENV CI=true
+ENV npm_config_audit=false
+RUN npm ci --ignore-scripts
 
 COPY . .
 
 RUN npx prisma generate --schema=server/prisma/schema.prisma
+# Avoid OOM on Railway; single RUN for build
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 RUN npm prune --omit=dev
