@@ -493,12 +493,20 @@ function InitiativeRow({
     data: { initiative },
     disabled: !isAdmin
   });
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: initiative.id,
+    disabled: !!isDragOverlay
+  });
+  const mergeRef = (node: HTMLTableRowElement | null) => {
+    setNodeRef(node);
+    setDroppableRef(node);
+  };
 
   return (
     <>
       <tr
-        ref={!isDragOverlay ? setNodeRef : undefined}
-        className={`group/row border-t border-slate-200 text-sm hover:bg-slate-50 ${isDragging && !isDragOverlay ? "opacity-30" : ""} ${isDragOverlay ? "bg-white shadow-lg" : ""}`}
+        ref={!isDragOverlay ? mergeRef : undefined}
+        className={`group/row border-t border-slate-200 text-sm hover:bg-slate-50 ${isDragging && !isDragOverlay ? "opacity-30" : ""} ${isDragOverlay ? "bg-white shadow-lg" : ""} ${isOver && !isDragOverlay ? "ring-1 ring-inset ring-sky-300 bg-sky-50/50" : ""}`}
       >
         <td className="py-2 pl-8 pr-2">
           {isAdmin ? (
@@ -721,6 +729,7 @@ function ProductRow({
     },
     { done: 0, total: 0 }
   );
+  const sortedInitiatives = product.initiatives.slice().sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <>
@@ -770,7 +779,7 @@ function ProductRow({
         <td />
         <td />
       </tr>
-      {open && product.initiatives.map((initiative) => (
+      {open && sortedInitiatives.map((initiative) => (
         <InitiativeRow
           key={initiative.id}
           initiative={initiative}
@@ -834,12 +843,30 @@ export function ProductTree({
     if (!over) return;
 
     const overId = String(over.id);
-    if (!overId.startsWith("product-")) return;
-
-    const targetProductId = overId.replace("product-", "");
     const initiative = allInitiatives.find((i) => i.id === active.id);
-    if (!initiative || initiative.productId === targetProductId) return;
+    if (!initiative) return;
 
+    // Drop on another initiative (same product) → reorder within product (visual order only; priority unchanged)
+    if (!overId.startsWith("product-")) {
+      const targetInitiative = allInitiatives.find((i) => i.id === overId);
+      if (!targetInitiative || initiative.productId !== targetInitiative.productId || initiative.id === targetInitiative.id) return;
+      const product = products.find((p) => p.id === initiative.productId);
+      if (!product) return;
+      const sorted = product.initiatives.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+      const fromIdx = sorted.findIndex((i) => i.id === initiative.id);
+      const toIdx = sorted.findIndex((i) => i.id === targetInitiative.id);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+      const reordered = sorted.filter((i) => i.id !== initiative.id);
+      reordered.splice(toIdx, 0, initiative);
+      const updates = reordered.map((init, i) => ({ id: init.id, domainId: init.domainId, sortOrder: i }));
+      await api.reorderInitiatives(updates);
+      await onRefresh();
+      return;
+    }
+
+    // Drop on product → move initiative to that product
+    const targetProductId = overId.replace("product-", "");
+    if (initiative.productId === targetProductId) return;
     await api.updateInitiative(initiative.id, { productId: targetProductId });
     await onRefresh();
   }
