@@ -9,12 +9,13 @@ type Props = {
   isAdmin: boolean;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
+  onRefreshBoard?: () => Promise<void>;
   quickFilter?: string;
 };
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
 
-export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, quickFilter }: Props) {
+export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, onRefreshBoard, quickFilter }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -88,7 +89,10 @@ export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, 
         isAdmin={isAdmin}
         currentUserId={currentUserId}
         onOpenInitiative={onOpenInitiative}
-        onRefresh={load}
+        onRefresh={async () => {
+          await load();
+          await onRefreshBoard?.();
+        }}
         onAddProduct={async (name) => {
           await api.createProduct({ name, sortOrder: products.length + 1 });
           await load();

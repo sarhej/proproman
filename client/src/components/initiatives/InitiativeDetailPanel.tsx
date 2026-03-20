@@ -238,7 +238,7 @@ export function InitiativeDetailPanel({
     setIsDirty(false);
     setShowUnsavedDialog(false);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedFeatureId(initiative.features[0]?.id ?? "");
+    setSelectedFeatureId(initiative.features?.[0]?.id ?? "");
     setTimelineStart(initiative.startDate ? initiative.startDate.slice(0, 10) : "");
     setTimelineTarget(initiative.targetDate ? initiative.targetDate.slice(0, 10) : "");
     setTimelineMilestone(initiative.milestoneDate ? initiative.milestoneDate.slice(0, 10) : "");
@@ -330,6 +330,29 @@ export function InitiativeDetailPanel({
                 {t("common.save")}
               </Button>
             ) : null}
+            {!readOnly &&
+              (initiative.archivedAt ? (
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    await api.unarchiveInitiative(initiative.id);
+                    await onSaved();
+                  }}
+                >
+                  {t("common.unarchive")}
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    await api.archiveInitiative(initiative.id);
+                    await onSaved();
+                    onClose();
+                  }}
+                >
+                  {t("common.archive")}
+                </Button>
+              ))}
             <NotifyMeButton initiativeId={initiative.id} />
             <ShareButton initiativeId={initiative.id} title={initiative.title} />
             <Button variant="ghost" onClick={tryClose}>
@@ -548,7 +571,7 @@ export function InitiativeDetailPanel({
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_2fr_auto]">
                 <Select value={selectedFeatureId} onChange={(e) => setSelectedFeatureId(e.target.value)} disabled={readOnly}>
                   <option value="">{t("initiative.selectFeature")}</option>
-                  {current.features.map((feature) => (
+                  {(current.features ?? []).map((feature) => (
                     <option key={feature.id} value={feature.id}>
                       {feature.title}
                     </option>
@@ -571,7 +594,7 @@ export function InitiativeDetailPanel({
                 </Select>
                 <Select value={selectedFeatureId} onChange={(e) => setSelectedFeatureId(e.target.value)} disabled={readOnly}>
                   <option value="">{t("initiative.optionalFeature")}</option>
-                  {current.features.map((feature) => (
+                  {(current.features ?? []).map((feature) => (
                     <option key={feature.id} value={feature.id}>
                       {feature.title}
                     </option>
@@ -642,7 +665,7 @@ export function InitiativeDetailPanel({
 
             <div className="grid gap-2 text-sm">
               {tab === "features" &&
-                initiative.features.map((feature) => (
+                (initiative.features ?? []).map((feature) => (
                   <Row
                     key={feature.id}
                     label={`${feature.title} (${feature.status})`}
@@ -658,7 +681,7 @@ export function InitiativeDetailPanel({
                   />
                 ))}
               {tab === "requirements" &&
-                initiative.features.flatMap((feature) =>
+                (initiative.features ?? []).flatMap((feature) =>
                   (feature.requirements ?? []).map((requirement) => (
                     <Row
                       key={requirement.id}
@@ -676,7 +699,7 @@ export function InitiativeDetailPanel({
                   ))
                 )}
               {tab === "decisions" &&
-                initiative.decisions.map((decision) => (
+                (initiative.decisions ?? []).map((decision) => (
                   <Row
                     key={decision.id}
                     label={decision.title}
@@ -691,7 +714,7 @@ export function InitiativeDetailPanel({
                   />
                 ))}
               {tab === "risks" &&
-                initiative.risks.map((risk) => (
+                (initiative.risks ?? []).map((risk) => (
                   <Row
                     key={risk.id}
                     label={`${risk.title} (${risk.probability}/${risk.impact})`}
@@ -706,7 +729,7 @@ export function InitiativeDetailPanel({
                   />
                 ))}
               {tab === "dependencies" &&
-                initiative.outgoingDeps.map((dep) => (
+                (initiative.outgoingDeps ?? []).map((dep) => (
                   (() => {
                     const target = allInitiatives.find((i) => i.id === dep.toInitiativeId);
                     return (
@@ -729,7 +752,7 @@ export function InitiativeDetailPanel({
                   })()
                 ))}
               {tab === "demand-links" &&
-                initiative.demandLinks.map((link) => (
+                (initiative.demandLinks ?? []).map((link) => (
                   <Row
                     key={link.id}
                     label={`${link.demand?.title ?? link.demandId}${link.feature ? ` -> ${link.feature.title}` : ""}`}
@@ -748,7 +771,7 @@ export function InitiativeDetailPanel({
                   />
                 ))}
               {tab === "raci" &&
-                initiative.assignments.map((assignment) => (
+                (initiative.assignments ?? []).map((assignment) => (
                   <Row
                     key={`${assignment.initiativeId}-${assignment.userId}-${assignment.role}`}
                     label={`${assignment.role}: ${assignment.user.name}${assignment.allocation ? ` (${assignment.allocation}%)` : ""}`}

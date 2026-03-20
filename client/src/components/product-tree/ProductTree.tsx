@@ -322,11 +322,7 @@ function FeatureRow({
       <tr className="group/row border-t border-slate-100 text-xs hover:bg-slate-50">
         <td className="py-1.5 pl-12 pr-2">
           <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
-            {reqs.length > 0 ? (
-              open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-            ) : (
-              <span className="inline-block w-[14px]" />
-            )}
+            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           {isAdmin ? (
             <>
@@ -396,7 +392,7 @@ function FeatureRow({
       {open && reqs.map((r) => (
         <RequirementRow key={r.id} requirement={r} isAdmin={isAdmin} onRefresh={onRefresh} />
       ))}
-      {open && isAdmin ? (
+      {(open || reqs.length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-16 pr-2">
             <InlineAdd
@@ -432,7 +428,7 @@ function InitiativeRow({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const impact = avgImpact(initiative);
-  const progress = reqProgress(initiative.features);
+  const progress = reqProgress(initiative.features ?? []);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: initiative.id,
     data: { initiative },
@@ -456,11 +452,7 @@ function InitiativeRow({
             </span>
           ) : null}
           <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
-            {initiative.features.length > 0 ? (
-              open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-            ) : (
-              <span className="inline-block w-[14px]" />
-            )}
+            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           <button
             type="button"
@@ -523,10 +515,10 @@ function InitiativeRow({
           )}
         </td>
       </tr>
-      {open && initiative.features.map((feature) => (
+      {open && (initiative.features ?? []).map((feature) => (
         <FeatureRow key={feature.id} feature={feature} users={users} isAdmin={isAdmin} onRefresh={onRefresh} />
       ))}
-      {open && isAdmin ? (
+      {(open || (initiative.features ?? []).length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-12 pr-2">
             <InlineAdd

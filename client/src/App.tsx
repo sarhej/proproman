@@ -302,6 +302,7 @@ function App() {
                 isAdmin={perms.canEditStructure}
                 currentUserId={user?.id ?? null}
                 onOpenInitiative={(i) => setSelected(i)}
+                onRefreshBoard={board.refresh}
                 quickFilter={board.filters.quick}
               />
             }
