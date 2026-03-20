@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import type { Domain, Initiative, InitiativeStatus, ProductWithHierarchy, User } from "../types/models";
+import type { Domain, Feature, Initiative, InitiativeStatus, ProductWithHierarchy, Requirement, User } from "../types/models";
 import { ProductTree } from "../components/product-tree/ProductTree";
 import { Label, Select } from "../components/ui/Field";
 
@@ -32,6 +32,51 @@ export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, 
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
+
+  const onInitiativeUpdated = useCallback((updated: Initiative) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        const idx = p.initiatives.findIndex((i) => i.id === updated.id);
+        if (idx < 0) return p;
+        const next = [...p.initiatives];
+        next[idx] = updated;
+        return { ...p, initiatives: next };
+      })
+    );
+  }, []);
+
+  const onFeatureUpdated = useCallback((updated: Feature) => {
+    setProducts((prev) =>
+      prev.map((p) => ({
+        ...p,
+        initiatives: p.initiatives.map((i) => {
+          const idx = i.features?.findIndex((f) => f.id === updated.id) ?? -1;
+          if (idx < 0) return i;
+          const next = [...(i.features ?? [])];
+          next[idx] = { ...updated, requirements: next[idx]?.requirements ?? updated.requirements ?? [] };
+          return { ...i, features: next };
+        })
+      }))
+    );
+  }, []);
+
+  const onRequirementUpdated = useCallback((updated: Requirement) => {
+    setProducts((prev) =>
+      prev.map((p) => ({
+        ...p,
+        initiatives: p.initiatives.map((i) => ({
+          ...i,
+          features: (i.features ?? []).map((f) => {
+            const idx = f.requirements?.findIndex((r) => r.id === updated.id) ?? -1;
+            if (idx < 0) return f;
+            const next = [...(f.requirements ?? [])];
+            next[idx] = updated;
+            return { ...f, requirements: next };
+          })
+        }))
+      }))
+    );
+  }, []);
 
   const filtered = useMemo(() => {
     const q = quickFilter?.trim().toLowerCase();
@@ -93,6 +138,9 @@ export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, 
           await load();
           await onRefreshBoard?.();
         }}
+        onInitiativeUpdated={onInitiativeUpdated}
+        onFeatureUpdated={onFeatureUpdated}
+        onRequirementUpdated={onRequirementUpdated}
         onAddProduct={async (name) => {
           await api.createProduct({ name, sortOrder: products.length + 1 });
           await load();

@@ -4,7 +4,7 @@
     "loadingAuth": "Načítání přihlášení...",
     "loadingData": "Načítání dat...",
     "loadingInitiatives": "Načítání iniciativ...",
-    "signInDesc": "Přihlaste se přes Google pro správu priorit domén, dopadu person a plánování B2B2C backlogu.",
+    "signInDesc": "Přihlaste se přes Google pro správu priorit pilířů, dopadu person a plánování B2B2C backlogu.",
     "continueGoogle": "Pokračovat přes Google",
     "loginFailed": "Přihlášení se nezdařilo. Zkuste to znovu nebo kontaktujte podporu.",
     "loginDenied": "Přihlášení bylo odepřeno.",
@@ -24,7 +24,7 @@
     "marketing": "Marketing",
     "planning": "Plánování",
     "admin": "Správa",
-    "domainBoard": "Doménová nástěnka",
+    "domainBoard": "Pilířová nástěnka",
     "priorityGrid": "Prioritní mřížka",
     "raciMatrix": "RACI matice",
     "statusKanban": "Kanban statusů",
@@ -51,14 +51,14 @@
     "logout": "Odhlásit"
   },
   "filters": {
-    "domain": "Doména",
+    "domain": "Pilíř",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
     "quickFilter": "Rychlý filtr",
     "showArchived": "Zobrazit archivované",
     "all": "Vše",
-    "searchPlaceholder": "Hledat název, poznámky, vlastníka, doménu..."
+    "searchPlaceholder": "Hledat název, poznámky, vlastníka, pilíř..."
   },
   "common": {
     "save": "Uložit",
@@ -80,6 +80,12 @@
     "open": "Otevřít",
     "done": "Hotovo",
     "none": "— žádné —",
+    "taskStatus": {
+      "NOT_STARTED": "Otevřít",
+      "IN_PROGRESS": "Rozpracováno",
+      "TESTING": "Testování",
+      "DONE": "Hotovo"
+    },
     "primary": "primární",
     "linked": "Propojeno",
     "previous": "Předchozí",
@@ -119,6 +125,10 @@
     "P1": "Vysoká",
     "P2": "Střední",
     "P3": "Nízká"
+  },
+  "integration": {
+    "label": "Integrace",
+    "labelPlural": "Integrace"
   },
   "commercialType": {
     "CONTRACT_ENABLER": "Enabler smlouvy",
@@ -169,6 +179,7 @@
     "IDEA": "Nápad",
     "PLANNED": "Plánováno",
     "IN_PROGRESS": "Probíhá",
+    "BUSINESS_APPROVAL": "Schválení byznysem",
     "DONE": "Hotovo"
   },
   "assignmentRole": {
@@ -219,7 +230,7 @@
     "title": "Název",
     "description": "Popis",
     "product": "Produkt / Asset",
-    "domain": "Doména",
+    "domain": "Pilíř",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
@@ -311,7 +322,7 @@
     "title": "RACI matice",
     "searchPlaceholder": "Hledat iniciativy...",
     "initiative": "Iniciativa",
-    "domain": "Doména",
+    "domain": "Pilíř",
     "removeUser": "Odebrat {{name}}",
     "addRole": "Přidat {{role}}",
     "noAccountable": "Není přiřazen zodpovědný",
@@ -322,7 +333,7 @@
   },
   "priorityGrid": {
     "title": "Název",
-    "domain": "Doména",
+    "domain": "Pilíř",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
@@ -355,7 +366,7 @@
     "fri": "Pá",
     "sat": "So",
     "sun": "Ne",
-    "domain": "Doména:",
+    "domain": "Pilíř:",
     "owner": "Vlastník:",
     "start": "Začátek:",
     "target": "Cíl:",
@@ -376,7 +387,7 @@
     "month": "Měsíc",
     "quarter": "Kvartál",
     "year": "Rok",
-    "domains": "Domény:",
+    "domains": "Pilíře:",
     "statusLegend": "Stav:",
     "status": {
       "IDEA": "Nápad",
@@ -519,15 +530,15 @@
     "details": "Detaily",
     "page": "Strana {{page}} / {{totalPages}}",
     "entries": "{{total}} záznamů",
-    "domains": "Domény",
+    "domains": "Pilíře",
     "personas": "Persony",
     "revenueStreams": "Tržní toky",
-    "loadingDomains": "Načítání domén...",
+    "loadingDomains": "Načítání pilířů...",
     "loadingPersonas": "Načítání person...",
     "loadingStreams": "Načítání tržních toků...",
     "personaCategoryDesc": "Kategorie určuje seskupení v grafu Kupující x Uživatel. BUYER = horizontální osa, USER = vertikální osa, NONE = vyloučeno z grafu.",
     "iconPlaceholder": "např. heart",
-    "deleteDomain": "Smazat tuto doménu? Iniciativy ji používající ztratí svou doménu.",
+    "deleteDomain": "Smazat tento pilíř? Iniciativy jej používající ztratí svůj pilíř.",
     "deletePersona": "Smazat tuto personu? Data o dopadu budou odstraněna.",
     "deleteStream": "Smazat tento tržní tok?",
     "export": "Export",
@@ -595,9 +606,9 @@
   },
   "notificationSubscriptions": {
     "title": "Moje odběry notifikací",
-    "empty": "Nemáte žádné odběry. Použijte „Upozornit mě“ u iniciativy nebo domény.",
+    "empty": "Nemáte žádné odběry. Použijte „Upozornit mě“ u iniciativy nebo pilíře.",
     "unsubscribe": "Zrušit odběr",
-    "scope": { "GLOBAL": "Vše", "DOMAIN": "Doména", "INITIATIVE": "Iniciativa", "CAMPAIGN": "Kampaň", "FEATURE": "Funkce", "USER": "Uživatel" },
+    "scope": { "GLOBAL": "Vše", "DOMAIN": "Pilíř", "INITIATIVE": "Iniciativa", "CAMPAIGN": "Kampaň", "FEATURE": "Funkce", "USER": "Uživatel" },
     "notifyMe": "Upozornit mě na změny zde"
   },
   "notification": {
@@ -610,7 +621,7 @@
     "feature": { "created": "Funkce \"{{title}}\" byla vytvořena", "updated": "Funkce \"{{title}}\" byla upravena", "deleted": "Funkce \"{{title}}\" byla smazána" },
     "campaign": { "created": "Kampaň \"{{title}}\" byla vytvořena", "updated": "Kampaň \"{{title}}\" byla upravena", "deleted": "Kampaň \"{{title}}\" byla smazána" },
     "product": { "created": "Produkt \"{{title}}\" byl vytvořen", "updated": "Produkt \"{{title}}\" byl upraven", "deleted": "Produkt \"{{title}}\" byl smazán" },
-    "domain": { "created": "Doména \"{{title}}\" byla vytvořena", "updated": "Doména \"{{title}}\" byla upravena", "deleted": "Doména \"{{title}}\" byla smazána" },
+    "domain": { "created": "Pilíř \"{{title}}\" byl vytvořen", "updated": "Pilíř \"{{title}}\" byl upraven", "deleted": "Pilíř \"{{title}}\" byl smazán" },
     "default": "{{type}}: {{title}}"
   }
 }

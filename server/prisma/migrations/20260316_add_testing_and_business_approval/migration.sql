@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "TaskStatus" ADD VALUE 'TESTING' BEFORE 'DONE';
+
+-- AlterEnum
+ALTER TYPE "FeatureStatus" ADD VALUE 'BUSINESS_APPROVAL' BEFORE 'DONE';

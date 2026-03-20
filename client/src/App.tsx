@@ -365,6 +365,17 @@ function App() {
                 initiatives={board.initiatives}
                 onOpenInitiative={(i) => setSelected(i)}
                 onSaved={() => board.refresh()}
+                onFeatureUpdated={(updated) => {
+                  board.setInitiatives((prev) =>
+                    prev.map((i) => {
+                      const idx = i.features?.findIndex((f) => f.id === updated.id) ?? -1;
+                      if (idx < 0) return i;
+                      const next = [...(i.features ?? [])];
+                      next[idx] = { ...updated, requirements: next[idx]?.requirements ?? updated.requirements ?? [] };
+                      return { ...i, features: next };
+                    })
+                  );
+                }}
                 readOnly={!perms.canEditContent}
               />
             }
@@ -418,6 +429,7 @@ function App() {
               personas={board.meta.personas}
               revenueStreams={board.meta.revenueStreams}
               readOnly={!perms.canCreate}
+              adminOnlyFields={perms.isAdmin}
               onSubmit={async (payload) => {
                 await api.createInitiative(payload);
                 setShowCreate(false);
@@ -437,6 +449,7 @@ function App() {
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
         currentUserId={user?.id ?? null}
+        adminOnlyFields={perms.isAdmin}
         readOnly={(() => {
           const roleCode = getRoleCode(user);
           const canEditAsAdmin = roleCode === "SUPER_ADMIN" || roleCode === "ADMIN";

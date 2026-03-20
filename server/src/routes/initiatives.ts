@@ -287,6 +287,13 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     return;
   }
 
+  if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.ADMIN) {
+    delete payload.productId;
+    delete payload.horizon;
+    delete payload.commercialType;
+    delete payload.dealStage;
+  }
+
   await prisma.$transaction(async (tx) => {
     if (payload.personaImpacts) {
       await tx.initiativePersonaImpact.deleteMany({ where: { initiativeId: id } });

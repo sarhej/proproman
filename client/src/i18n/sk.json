@@ -4,7 +4,7 @@
     "loadingAuth": "Načítanie prihlásenia...",
     "loadingData": "Načítanie dát...",
     "loadingInitiatives": "Načítanie iniciatív...",
-    "signInDesc": "Prihláste sa cez Google na správu priorít domén, dopadu persón a plánovanie B2B2C backlogu.",
+    "signInDesc": "Prihláste sa cez Google na správu priorít pilierov, dopadu persón a plánovanie B2B2C backlogu.",
     "continueGoogle": "Pokračovať cez Google",
     "loginFailed": "Prihlásenie zlyhalo. Skúste to znova alebo kontaktujte podporu.",
     "loginDenied": "Prihlásenie bolo odmietnuté.",
@@ -24,7 +24,7 @@
     "marketing": "Marketing",
     "planning": "Plánovanie",
     "admin": "Správa",
-    "domainBoard": "Doménová nástenka",
+    "domainBoard": "Pilierová nástenka",
     "priorityGrid": "Prioritná mriežka",
     "raciMatrix": "RACI matica",
     "statusKanban": "Kanban statusov",
@@ -51,14 +51,14 @@
     "logout": "Odhlásiť"
   },
   "filters": {
-    "domain": "Doména",
+    "domain": "Pilier",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
     "quickFilter": "Rýchly filter",
     "showArchived": "Zobraziť archivované",
     "all": "Všetko",
-    "searchPlaceholder": "Hľadať názov, poznámky, vlastníka, doménu..."
+    "searchPlaceholder": "Hľadať názov, poznámky, vlastníka, pilier..."
   },
   "common": {
     "save": "Uložiť",
@@ -80,6 +80,12 @@
     "open": "Otvoriť",
     "done": "Hotovo",
     "none": "— žiadne —",
+    "taskStatus": {
+      "NOT_STARTED": "Otvoriť",
+      "IN_PROGRESS": "Rozpracované",
+      "TESTING": "Testovanie",
+      "DONE": "Hotovo"
+    },
     "primary": "primárny",
     "linked": "Prepojené",
     "previous": "Predchádzajúce",
@@ -119,6 +125,10 @@
     "P1": "Vysoká",
     "P2": "Stredná",
     "P3": "Nízka"
+  },
+  "integration": {
+    "label": "Integrácia",
+    "labelPlural": "Integrácie"
   },
   "commercialType": {
     "CONTRACT_ENABLER": "Enabler zmluvy",
@@ -169,6 +179,7 @@
     "IDEA": "Nápad",
     "PLANNED": "Plánované",
     "IN_PROGRESS": "Prebieha",
+    "BUSINESS_APPROVAL": "Schválenie biznisom",
     "DONE": "Hotovo"
   },
   "assignmentRole": {
@@ -219,7 +230,7 @@
     "title": "Názov",
     "description": "Popis",
     "product": "Produkt / Asset",
-    "domain": "Doména",
+    "domain": "Pilier",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
@@ -311,7 +322,7 @@
     "title": "RACI matica",
     "searchPlaceholder": "Hľadať iniciatívy...",
     "initiative": "Iniciatíva",
-    "domain": "Doména",
+    "domain": "Pilier",
     "removeUser": "Odobrať {{name}}",
     "addRole": "Pridať {{role}}",
     "noAccountable": "Nie je priradený zodpovedný",
@@ -322,7 +333,7 @@
   },
   "priorityGrid": {
     "title": "Názov",
-    "domain": "Doména",
+    "domain": "Pilier",
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
@@ -355,7 +366,7 @@
     "fri": "Pi",
     "sat": "So",
     "sun": "Ne",
-    "domain": "Doména:",
+    "domain": "Pilier:",
     "owner": "Vlastník:",
     "start": "Začiatok:",
     "target": "Cieľ:",
@@ -376,7 +387,7 @@
     "month": "Mesiac",
     "quarter": "Kvartál",
     "year": "Rok",
-    "domains": "Domény:",
+    "domains": "Piliere:",
     "statusLegend": "Stav:",
     "status": {
       "IDEA": "Nápad",
@@ -481,7 +492,7 @@
     "addFeature": "Pridať funkciu",
     "addInitiative": "Pridať iniciatívu",
     "addProduct": "Pridať produkt / asset",
-    "selectDomain": "Vyberte doménu",
+    "selectDomain": "Vyberte pilier",
     "deleteConfirm": "Zmazať \"{{name}}\"? Toto sa nedá vrátiť späť.",
     "impact": "Dopad",
     "progress": "Pokrok",
@@ -519,15 +530,15 @@
     "details": "Detaily",
     "page": "Strana {{page}} / {{totalPages}}",
     "entries": "{{total}} záznamov",
-    "domains": "Domény",
+    "domains": "Piliere",
     "personas": "Persóny",
     "revenueStreams": "Tržné toky",
-    "loadingDomains": "Načítanie domén...",
+    "loadingDomains": "Načítanie pilierov...",
     "loadingPersonas": "Načítanie persón...",
     "loadingStreams": "Načítanie tržných tokov...",
     "personaCategoryDesc": "Kategória určuje zoskupenie v grafe Kupujúci x Používateľ. BUYER = horizontálna os, USER = vertikálna os, NONE = vylúčené z grafu.",
     "iconPlaceholder": "napr. heart",
-    "deleteDomain": "Zmazať túto doménu? Iniciatívy ju používajúce stratia svoju doménu.",
+    "deleteDomain": "Zmazať tento pilier? Iniciatívy ho používajúce stratia svoj pilier.",
     "deletePersona": "Zmazať túto persónu? Dáta o dopade budú odstránené.",
     "deleteStream": "Zmazať tento tržný tok?",
     "export": "Export",
@@ -595,9 +606,9 @@
   },
   "notificationSubscriptions": {
     "title": "Moje odbery notifikácií",
-    "empty": "Nemáte žiadne odbery. Použite „Upozorni ma“ u iniciatívy alebo domény.",
+    "empty": "Nemáte žiadne odbery. Použite „Upozorni ma“ u iniciatívy alebo piliera.",
     "unsubscribe": "Zrušiť odber",
-    "scope": { "GLOBAL": "Všetko", "DOMAIN": "Doména", "INITIATIVE": "Iniciatíva", "CAMPAIGN": "Kampaň", "FEATURE": "Funkcia", "USER": "Používateľ" },
+    "scope": { "GLOBAL": "Všetko", "DOMAIN": "Pilier", "INITIATIVE": "Iniciatíva", "CAMPAIGN": "Kampaň", "FEATURE": "Funkcia", "USER": "Používateľ" },
     "notifyMe": "Upozorni ma na zmeny tu"
   },
   "notification": {
@@ -610,7 +621,7 @@
     "feature": { "created": "Funkcia \"{{title}}\" bola vytvorená", "updated": "Funkcia \"{{title}}\" bola upravená", "deleted": "Funkcia \"{{title}}\" bola zmazaná" },
     "campaign": { "created": "Kampaň \"{{title}}\" bola vytvorená", "updated": "Kampaň \"{{title}}\" bola upravená", "deleted": "Kampaň \"{{title}}\" bola zmazaná" },
     "product": { "created": "Produkt \"{{title}}\" bol vytvorený", "updated": "Produkt \"{{title}}\" bol upravený", "deleted": "Produkt \"{{title}}\" bol zmazaný" },
-    "domain": { "created": "Doména \"{{title}}\" bola vytvorená", "updated": "Doména \"{{title}}\" bola upravená", "deleted": "Doména \"{{title}}\" bola zmazaná" },
+    "domain": { "created": "Pilier \"{{title}}\" bol vytvorený", "updated": "Pilier \"{{title}}\" bol upravený", "deleted": "Pilier \"{{title}}\" bol zmazaný" },
     "default": "{{type}}: {{title}}"
   }
 }

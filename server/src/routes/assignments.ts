@@ -28,7 +28,7 @@ assignmentsRouter.get("/", async (req, res) => {
   res.json({ assignments });
 });
 
-assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
   const parsed = assignmentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -74,6 +74,97 @@ assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), a
     role: parsed.data.role
   });
   res.status(201).json({ assignment });
+});
+
+const assignmentUpdateSchema = z.object({
+  initiativeId: z.string().min(1),
+  userId: z.string().min(1),
+  role: z.nativeEnum(AssignmentRole),
+  newRole: z.nativeEnum(AssignmentRole).optional(),
+  allocation: z.number().int().min(0).max(100).nullable().optional()
+});
+
+assignmentsRouter.put("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
+  const parsed = assignmentUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { initiativeId, userId, role, newRole, allocation } = parsed.data;
+
+  const existing = await prisma.initiativeAssignment.findUnique({
+    where: {
+      initiativeId_userId_role: { initiativeId, userId, role }
+    }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Assignment not found" });
+    return;
+  }
+
+  if (newRole !== undefined && newRole !== role) {
+    await prisma.$transaction(async (tx) => {
+      await tx.initiativeAssignment.delete({
+        where: { initiativeId_userId_role: { initiativeId, userId, role } }
+      });
+      if (role === AssignmentRole.ACCOUNTABLE) {
+        await tx.initiative.update({
+          where: { id: initiativeId },
+          data: { ownerId: null }
+        });
+      }
+      const assignment = await tx.initiativeAssignment.upsert({
+        where: {
+          initiativeId_userId_role: { initiativeId, userId, role: newRole }
+        },
+        create: {
+          initiativeId,
+          userId,
+          role: newRole,
+          allocation: allocation ?? existing.allocation
+        },
+        update: { allocation: allocation ?? existing.allocation },
+        include: { user: true }
+      });
+      if (newRole === AssignmentRole.ACCOUNTABLE) {
+        await tx.initiative.update({
+          where: { id: initiativeId },
+          data: { ownerId: userId }
+        });
+      }
+      return assignment;
+    });
+    const updated = await prisma.initiativeAssignment.findUnique({
+      where: {
+        initiativeId_userId_role: { initiativeId, userId, role: newRole }
+      },
+      include: { user: true }
+    });
+    await logAudit(req.user!.id, "UPDATED", "ASSIGNMENT", undefined, {
+      initiativeId,
+      userId,
+      fromRole: role,
+      toRole: newRole
+    });
+    return res.json({ assignment: updated });
+  }
+
+  if (allocation !== undefined) {
+    const assignment = await prisma.initiativeAssignment.update({
+      where: { initiativeId_userId_role: { initiativeId, userId, role } },
+      data: { allocation },
+      include: { user: true }
+    });
+    await logAudit(req.user!.id, "UPDATED", "ASSIGNMENT", undefined, {
+      initiativeId,
+      userId,
+      role,
+      allocation
+    });
+    return res.json({ assignment });
+  }
+
+  res.status(400).json({ error: "Provide newRole and/or allocation to update" });
 });
 
 assignmentsRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {

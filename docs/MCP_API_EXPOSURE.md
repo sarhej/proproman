@@ -162,7 +162,9 @@ Overview text for a product lives in the product description, not in a redundant
 
 ### Bootstrap: Dr Digital HUB tree
 
-The **Dr Digital HUB** product is the canonical planning tree with four epics (initiatives):
+The **Dr Digital HUB** product is the canonical planning tree for work we implement in this project. Its epics, features, and requirements are **owned by us**; we check them regularly via MCP, move items through statuses (Planned → In progress → Testing; story → Business approval → Done), and respect dependencies. See **[DR_DIGITAL_HUB_PRODUCT_OWNERSHIP.md](DR_DIGITAL_HUB_PRODUCT_OWNERSHIP.md)** for the full workflow and status flow.
+
+The product has four epics (initiatives):
 
 1. **Epic: Naming & terminology** — stories/tasks 1.1–1.4  
 2. **Epic: Bugs (fix first)** — stories (RACI, Initiative, Admin, Requirements, Accounts) and tasks 2.1–2.9  
@@ -194,7 +196,8 @@ Requires a domain named "Technologický Leader" (or similar); the script creates
 | `drd_list_initiatives` | List initiatives (optional: domainId, ownerId, horizon, priority, isGap). |
 | `drd_get_initiative` | Get one initiative by ID. |
 | `drd_create_initiative` | Create initiative (admin/editor). Optional: productId to assign to a product/asset. |
-| `drd_update_initiative` | Update initiative by ID. Optional: productId to assign to a product/asset. |
+| `drd_update_initiative` | Update initiative by ID. Optional: title, description, notes, productId, domainId, ownerId, priority, horizon, status, commercialType, isGap. |
+| `drd_set_dr_hub_epic_implementation_notes` | Set the Notes field on each Dr Digital HUB epic to the canonical implementation details (no arguments). Use so implementation details are tracked in Product Explorer. |
 | `drd_delete_initiative` | Delete initiative by ID. |
 | **Reference data** | |
 | `drd_list_domains` | List domains. |

@@ -5,6 +5,9 @@ import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
 
+const featureStatusValues = ["IDEA", "PLANNED", "IN_PROGRESS", "BUSINESS_APPROVAL", "DONE"] as const;
+const featureStatusSchema = z.enum(featureStatusValues);
+
 export const featureSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
@@ -12,7 +15,7 @@ export const featureSchema = z.object({
   storyPoints: z.number().int().min(0).nullable().optional(),
   storyType: z.nativeEnum(StoryType).nullable().optional(),
   ownerId: z.string().nullable().optional(),
-  status: z.nativeEnum(FeatureStatus).default(FeatureStatus.IDEA),
+  status: featureStatusSchema.default("IDEA"),
   sortOrder: z.number().int().default(0)
 });
 
@@ -49,16 +52,18 @@ featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  const data: Parameters<typeof prisma.feature.update>[0]["data"] = {};
+  if (parsed.data.title !== undefined) data.title = parsed.data.title;
+  if (parsed.data.description !== undefined) data.description = parsed.data.description ?? null;
+  if (parsed.data.acceptanceCriteria !== undefined) data.acceptanceCriteria = parsed.data.acceptanceCriteria ?? null;
+  if (parsed.data.storyPoints !== undefined) data.storyPoints = parsed.data.storyPoints ?? null;
+  if (parsed.data.storyType !== undefined) data.storyType = parsed.data.storyType ?? null;
+  if (parsed.data.ownerId !== undefined) data.ownerId = parsed.data.ownerId ?? null;
+  if (parsed.data.status !== undefined) data.status = parsed.data.status as FeatureStatus;
+  if (parsed.data.sortOrder !== undefined) data.sortOrder = parsed.data.sortOrder;
   const feature = await prisma.feature.update({
     where: { id },
-    data: {
-      ...parsed.data,
-      description: parsed.data.description ?? undefined,
-      acceptanceCriteria: parsed.data.acceptanceCriteria ?? undefined,
-      storyPoints: parsed.data.storyPoints ?? undefined,
-      storyType: parsed.data.storyType ?? undefined,
-      ownerId: parsed.data.ownerId ?? undefined
-    },
+    data,
     include: { owner: true }
   });
   await logAudit(req.user!.id, "UPDATED", "FEATURE", feature.id);

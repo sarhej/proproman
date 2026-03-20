@@ -79,6 +79,7 @@ enum FeatureStatus {
   IDEA
   PLANNED
   IN_PROGRESS
+  BUSINESS_APPROVAL
   DONE
 }
 
@@ -92,6 +93,7 @@ enum StoryType {
 enum TaskStatus {
   NOT_STARTED
   IN_PROGRESS
+  TESTING
   DONE
 }
 

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { api } from "../../lib/api";
-import type { Demand, Domain, Initiative, InitiativeComment, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, SuccessCriterion, User } from "../../types/models";
+import type { AssignmentRole, Demand, Domain, Initiative, InitiativeAssignment, InitiativeComment, InitiativeKPI, InitiativeMilestone, Persona, Product, RevenueStream, Stakeholder, SuccessCriterion, User } from "../../types/models";
 import type { MilestoneStatus, StakeholderRole, StakeholderType } from "../../types/models";
 import { PersonaRadar } from "../charts/PersonaRadar";
 import { Button } from "../ui/Button";
@@ -96,6 +96,7 @@ type Props = {
   domains: Domain[];
   currentUserId: string | null;
   readOnly: boolean;
+  adminOnlyFields?: boolean;
   onClose: () => void;
   onSaved: () => Promise<void>;
 };
@@ -182,6 +183,7 @@ export function InitiativeDetailPanel({
   domains,
   currentUserId,
   readOnly,
+  adminOnlyFields = true,
   onClose,
   onSaved
 }: Props) {
@@ -227,6 +229,7 @@ export function InitiativeDetailPanel({
   const [newCommentText, setNewCommentText] = useState("");
   const [successCriteria, setSuccessCriteria] = useState<SuccessCriterion[]>([]);
   const [newCriterionTitle, setNewCriterionTitle] = useState("");
+  const [displayInitiative, setDisplayInitiative] = useState<Initiative | null>(null);
 
   const availableDependencies = useMemo(
     () => allInitiatives.filter((i) => i.id !== initiative?.id),
@@ -234,21 +237,35 @@ export function InitiativeDetailPanel({
   );
 
   useEffect(() => {
-    if (!initiative) return;
+    if (!initiative) {
+      setDisplayInitiative(null);
+      return;
+    }
+    let cancelled = false;
+    api.getInitiative(initiative.id).then((r) => {
+      if (!cancelled) setDisplayInitiative(r.initiative);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initiative?.id]);
+
+  useEffect(() => {
+    const current = displayInitiative ?? initiative;
+    if (!current) return;
     setIsDirty(false);
     setShowUnsavedDialog(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedFeatureId(initiative.features?.[0]?.id ?? "");
-    setTimelineStart(initiative.startDate ? initiative.startDate.slice(0, 10) : "");
-    setTimelineTarget(initiative.targetDate ? initiative.targetDate.slice(0, 10) : "");
-    setTimelineMilestone(initiative.milestoneDate ? initiative.milestoneDate.slice(0, 10) : "");
+    setSelectedFeatureId(current.features?.[0]?.id ?? "");
+    setTimelineStart(current.startDate ? current.startDate.slice(0, 10) : "");
+    setTimelineTarget(current.targetDate ? current.targetDate.slice(0, 10) : "");
+    setTimelineMilestone(current.milestoneDate ? current.milestoneDate.slice(0, 10) : "");
     void api.getDemands().then((r) => setDemands(r.demands));
-    void api.getInitiativeComments(initiative.id).then((r) => setComments(r.comments));
-    setSuccessCriteria(initiative.successCriteriaItems ?? []);
-  }, [initiative]);
+    void api.getInitiativeComments(current.id).then((r) => setComments(r.comments));
+    setSuccessCriteria(current.successCriteriaItems ?? []);
+  }, [displayInitiative, initiative]);
 
   if (!initiative) return null;
-  const current = initiative;
+  const current = displayInitiative ?? initiative;
 
   async function createByTab() {
     if (readOnly || !input.trim()) return;
@@ -367,7 +384,7 @@ export function InitiativeDetailPanel({
             <Card className="p-3">
               <InitiativeForm
                 ref={formRef}
-                initiative={initiative}
+                initiative={current}
                 products={products}
                 domains={domains}
                 users={users}
@@ -375,10 +392,12 @@ export function InitiativeDetailPanel({
                 revenueStreams={revenueStreams}
                 currentUserId={currentUserId}
                 readOnly={readOnly}
+                adminOnlyFields={adminOnlyFields}
                 hideSaveButton
                 onDirtyChange={setIsDirty}
                 onSubmit={async (payload) => {
-                  await api.updateInitiative(initiative.id, payload);
+                  const r = await api.updateInitiative(initiative.id, payload);
+                  setDisplayInitiative(r.initiative);
                   setIsDirty(false);
                   await onSaved();
                 }}
@@ -772,21 +791,11 @@ export function InitiativeDetailPanel({
                 ))}
               {tab === "raci" &&
                 (initiative.assignments ?? []).map((assignment) => (
-                  <Row
+                  <RaciAssignmentRow
                     key={`${assignment.initiativeId}-${assignment.userId}-${assignment.role}`}
-                    label={`${assignment.role}: ${assignment.user.name}${assignment.allocation ? ` (${assignment.allocation}%)` : ""}`}
-                    onDelete={
-                      readOnly
-                        ? undefined
-                        : async () => {
-                            await api.removeAssignment({
-                              initiativeId: assignment.initiativeId,
-                              userId: assignment.userId,
-                              role: assignment.role
-                            });
-                            await onSaved();
-                          }
-                    }
+                    assignment={assignment}
+                    readOnly={readOnly}
+                    onSaved={onSaved}
                   />
                 ))}
               {tab === "timeline" && (
@@ -798,6 +807,91 @@ export function InitiativeDetailPanel({
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+const RACI_ROLES: AssignmentRole[] = ["ACCOUNTABLE", "IMPLEMENTER", "CONSULTED", "INFORMED"];
+
+function RaciAssignmentRow({
+  assignment,
+  readOnly,
+  onSaved
+}: {
+  assignment: InitiativeAssignment;
+  readOnly: boolean;
+  onSaved: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [allocationInput, setAllocationInput] = useState(String(assignment.allocation ?? ""));
+  useEffect(() => {
+    setAllocationInput(String(assignment.allocation ?? ""));
+  }, [assignment.allocation]);
+
+  async function updateRole(newRole: AssignmentRole) {
+    if (newRole === assignment.role) return;
+    await api.updateAssignment({
+      initiativeId: assignment.initiativeId,
+      userId: assignment.userId,
+      role: assignment.role,
+      newRole
+    });
+    await onSaved();
+  }
+
+  async function submitAllocation() {
+    const num = allocationInput === "" ? null : Math.min(100, Math.max(0, Number(allocationInput)));
+    if (num === (assignment.allocation ?? null)) return;
+    await api.updateAssignment({
+      initiativeId: assignment.initiativeId,
+      userId: assignment.userId,
+      role: assignment.role,
+      allocation: num
+    });
+    await onSaved();
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded border border-slate-200 px-3 py-2">
+      <span className="min-w-[100px] font-medium">{assignment.user.name}</span>
+      <Select
+        value={assignment.role}
+        onChange={(e) => updateRole(e.target.value as AssignmentRole)}
+        disabled={readOnly}
+        className="w-40"
+      >
+        {RACI_ROLES.map((r) => (
+          <option key={r} value={r}>
+            {t(`assignmentRole.${r}`)}
+          </option>
+        ))}
+      </Select>
+      <Input
+        type="number"
+        min={0}
+        max={100}
+        value={allocationInput}
+        onChange={(e) => setAllocationInput(e.target.value)}
+        onBlur={readOnly ? undefined : submitAllocation}
+        disabled={readOnly}
+        placeholder="%"
+        className="w-16"
+      />
+      {!readOnly && (
+        <Button
+          variant="ghost"
+          onClick={async () => {
+            await api.removeAssignment({
+              initiativeId: assignment.initiativeId,
+              userId: assignment.userId,
+              role: assignment.role
+            });
+            await onSaved();
+          }}
+        >
+          {t("common.remove")}
+        </Button>
+      )}
     </div>
   );
 }

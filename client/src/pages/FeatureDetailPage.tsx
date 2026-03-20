@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Feature, Initiative } from "../types/models";
@@ -9,6 +10,7 @@ type Props = {
   initiatives: Initiative[];
   onOpenInitiative: (initiative: Initiative) => void;
   onSaved?: () => Promise<void>;
+  onFeatureUpdated?: (feature: Feature) => void;
   readOnly?: boolean;
 };
 
@@ -20,10 +22,14 @@ function findFeature(initiatives: Initiative[], featureId: string): { feature: F
   return null;
 }
 
-export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, readOnly }: Props) {
+export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFeatureUpdated, readOnly }: Props) {
+  const { t } = useTranslation();
   const { featureId } = useParams<{ featureId: string }>();
   const [newReqTitle, setNewReqTitle] = useState("");
   const [adding, setAdding] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
   const found = featureId ? findFeature(initiatives, featureId) : null;
 
   if (!featureId) {
@@ -53,6 +59,30 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, read
   const requirementCount = feature.requirements?.length ?? 0;
   const doneCount = feature.requirements?.filter((r) => r.isDone || r.status === "DONE").length ?? 0;
 
+  const startEditTitle = () => {
+    setEditTitleValue(feature.title);
+    setEditingTitle(true);
+  };
+  const saveTitle = async () => {
+    if (!editTitleValue.trim() || editTitleValue === feature.title) {
+      setEditingTitle(false);
+      return;
+    }
+    setSavingTitle(true);
+    try {
+      const res = await api.updateFeature(feature.id, { title: editTitleValue.trim() });
+      setEditingTitle(false);
+      onFeatureUpdated?.({ ...res.feature, requirements: feature.requirements ?? res.feature.requirements ?? [] });
+      await onSaved?.();
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+  const cancelEditTitle = () => {
+    setEditTitleValue(feature.title);
+    setEditingTitle(false);
+  };
+
   return (
     <div className="space-y-4 p-4">
       <nav className="flex items-center gap-2 text-sm text-slate-500">
@@ -68,21 +98,57 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, read
           {initiative.title}
         </button>
         <span aria-hidden>/</span>
-        <span className="font-medium text-slate-800">{feature.title}</span>
+        {editingTitle ? (
+          <span className="font-medium text-slate-800">{editTitleValue || feature.title}</span>
+        ) : (
+          <span className="font-medium text-slate-800">{feature.title}</span>
+        )}
       </nav>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">{feature.title}</h1>
+        <div className="min-w-0 flex-1">
+          {editingTitle ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={editTitleValue}
+                onChange={(e) => setEditTitleValue(e.target.value)}
+                className="text-xl font-semibold flex-1 min-w-[200px]"
+                placeholder="Feature title"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void saveTitle();
+                  if (e.key === "Escape") cancelEditTitle();
+                }}
+              />
+              <Button onClick={saveTitle} disabled={savingTitle || !editTitleValue.trim()}>
+                Save
+              </Button>
+              <Button variant="ghost" onClick={cancelEditTitle} disabled={savingTitle}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold text-slate-900">{feature.title}</h1>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={startEditTitle}
+                  className="mt-1 text-sm text-slate-500 hover:text-sky-600 hover:underline"
+                >
+                  Edit title
+                </button>
+              )}
+            </>
+          )}
           <p className="mt-1 text-sm text-slate-500">
             {product?.name ?? "—"} · {initiative.title}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-            {feature.status}
+            {t(`featureStatus.${feature.status}`)}
           </span>
-          {!readOnly && (
+          {!readOnly && !editingTitle && (
             <Button variant="secondary" onClick={() => onOpenInitiative(initiative)}>
               Open initiative
             </Button>

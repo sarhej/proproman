@@ -115,6 +115,24 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       console.log("Added PENDING enum value to UserRole.");
     }
 
+    // Ensure FeatureStatus has BUSINESS_APPROVAL (20260316_add_testing_and_business_approval) so feature status dropdown works
+    const featureStatusCheck = await pool.query(
+      "SELECT 1 FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'FeatureStatus' AND enumlabel = 'BUSINESS_APPROVAL'"
+    );
+    if (featureStatusCheck.rowCount === 0) {
+      await pool.query("ALTER TYPE \"FeatureStatus\" ADD VALUE 'BUSINESS_APPROVAL'");
+      console.log("Added BUSINESS_APPROVAL to FeatureStatus.");
+    }
+
+    // Ensure TaskStatus has TESTING (20260316_add_testing_and_business_approval)
+    const taskStatusCheck = await pool.query(
+      "SELECT 1 FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE typname = 'TaskStatus' AND enumlabel = 'TESTING'"
+    );
+    if (taskStatusCheck.rowCount === 0) {
+      await pool.query("ALTER TYPE \"TaskStatus\" ADD VALUE 'TESTING'");
+      console.log("Added TESTING to TaskStatus.");
+    }
+
     // Ensure UserEmail table exists (from add_user_email_aliases migration)
     const userEmailCheck = await pool.query(
       "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'UserEmail'"

@@ -205,6 +205,8 @@ export const api = {
     request<{ assignments: InitiativeAssignment[] }>(`/api/assignments${initiativeId ? `?initiativeId=${initiativeId}` : ""}`),
   addAssignment: async (body: unknown) =>
     request<{ assignment: InitiativeAssignment }>("/api/assignments", { method: "POST", body: JSON.stringify(body) }),
+  updateAssignment: async (body: unknown) =>
+    request<{ assignment: InitiativeAssignment }>("/api/assignments", { method: "PUT", body: JSON.stringify(body) }),
   removeAssignment: async (body: unknown) =>
     request<void>("/api/assignments", { method: "DELETE", body: JSON.stringify(body) }),
   getCalendar: async () => request<{ items: CalendarItem[] }>("/api/timeline/calendar"),

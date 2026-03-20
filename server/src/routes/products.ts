@@ -32,7 +32,7 @@ productsRouter.get("/", async (_req, res) => {
           features: {
             include: {
               owner: true,
-              requirements: true,
+              requirements: { include: { assignee: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
               demandLinks: {
                 include: {
                   demand: {

@@ -61,6 +61,8 @@ type Props = {
   onDirtyChange?: (dirty: boolean) => void;
   /** When true, the form does not render its own Save button (e.g. when Save is in the panel header). */
   hideSaveButton?: boolean;
+  /** When false, product, horizon, commercial type and deal stage are disabled (admin-only fields). */
+  adminOnlyFields?: boolean;
 };
 
 export type InitiativeFormHandle = {
@@ -125,12 +127,19 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
   onUnarchive,
   onDirtyChange,
   readOnly,
-  hideSaveButton = false
+  hideSaveButton = false,
+  adminOnlyFields = true
 }, ref) {
   const { t } = useTranslation();
   const [form, setForm] = useState<FormValue>(() => toInitial(initiative, products, domains, personas, revenueStreams));
   const [saving, setSaving] = useState(false);
   const initialRef = useRef<string>(JSON.stringify(toInitial(initiative, products, domains, personas, revenueStreams)));
+
+  useEffect(() => {
+    const next = toInitial(initiative, products, domains, personas, revenueStreams);
+    setForm(next);
+    initialRef.current = JSON.stringify(next);
+  }, [initiative?.id, initiative?.notes, initiative?.title]);
 
   const canSubmit = useMemo(() => form.title.trim().length > 0 && form.domainId, [form.domainId, form.title]);
 
@@ -218,7 +227,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div>
           <Label>{t("initiative.product")}</Label>
-          <Select value={form.productId} onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))} disabled={readOnly}>
+          <Select value={form.productId} onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))} disabled={readOnly || !adminOnlyFields}>
             <option value="">{t("initiative.noProduct")}</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
@@ -273,7 +282,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div>
           <Label>{t("initiative.horizon")}</Label>
-          <Select value={form.horizon} onChange={(e) => setForm((prev) => ({ ...prev, horizon: e.target.value as Horizon }))} disabled={readOnly}>
+          <Select value={form.horizon} onChange={(e) => setForm((prev) => ({ ...prev, horizon: e.target.value as Horizon }))} disabled={readOnly || !adminOnlyFields}>
             <option value="NOW">{t("horizon.NOW")}</option>
             <option value="NEXT">{t("horizon.NEXT")}</option>
             <option value="LATER">{t("horizon.LATER")}</option>
@@ -296,7 +305,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           <Select
             value={form.commercialType}
             onChange={(e) => setForm((prev) => ({ ...prev, commercialType: e.target.value as CommercialType }))}
-            disabled={readOnly}
+            disabled={readOnly || !adminOnlyFields}
           >
             {(["CONTRACT_ENABLER", "CHURN_PREVENTER", "UPSELL_DRIVER", "COMPLIANCE_GATE", "CARE_QUALITY", "COST_REDUCER"] as const).map((c) => (
               <option key={c} value={c}>
@@ -316,7 +325,13 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div className="md:col-span-2">
           <Label>{t("initiative.notes")}</Label>
-          <Textarea rows={2} value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} disabled={readOnly} />
+          <Textarea
+            rows={form.notes?.length ? Math.min(14, Math.max(4, Math.ceil(form.notes.length / 70))) : 2}
+            value={form.notes}
+            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+            disabled={readOnly}
+            className="font-mono text-sm"
+          />
         </div>
         <div>
           <Label>{t("initiative.startDate")}</Label>
@@ -350,7 +365,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div>
           <Label>{t("initiative.dealStage")}</Label>
-          <Select value={form.dealStage} onChange={(e) => setForm((prev) => ({ ...prev, dealStage: e.target.value as DealStage }))} disabled={readOnly}>
+          <Select value={form.dealStage} onChange={(e) => setForm((prev) => ({ ...prev, dealStage: e.target.value as DealStage }))} disabled={readOnly || !adminOnlyFields}>
             {(["DISCOVERY", "PILOT", "CONTRACTING", "ACTIVE", "RENEWAL"] as const).map((s) => (
               <option key={s} value={s}>{t(`dealStage.${s}`)}</option>
             ))}

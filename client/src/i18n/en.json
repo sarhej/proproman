@@ -4,7 +4,7 @@
     "loadingAuth": "Loading authentication...",
     "loadingData": "Loading data...",
     "loadingInitiatives": "Loading initiatives...",
-    "signInDesc": "Sign in with Google to manage domain priorities, persona impact, and B2B2C backlog planning.",
+    "signInDesc": "Sign in with Google to manage pillar priorities, persona impact, and B2B2C backlog planning.",
     "continueGoogle": "Continue with Google",
     "loginFailed": "Sign-in failed. Please try again or contact support if it persists.",
     "loginDenied": "Sign-in was denied.",
@@ -24,7 +24,7 @@
     "marketing": "Marketing",
     "planning": "Planning",
     "admin": "Admin",
-    "domainBoard": "Domain Board",
+    "domainBoard": "Pillar Board",
     "priorityGrid": "Priority Grid",
     "raciMatrix": "RACI Matrix",
     "statusKanban": "Status Kanban",
@@ -51,14 +51,14 @@
     "logout": "Logout"
   },
   "filters": {
-    "domain": "Domain",
+    "domain": "Pillar",
     "owner": "Owner",
     "priority": "Priority",
     "horizon": "Horizon",
     "quickFilter": "Quick filter",
     "showArchived": "Show archived",
     "all": "All",
-    "searchPlaceholder": "Search title, notes, owner, domain..."
+    "searchPlaceholder": "Search title, notes, owner, pillar..."
   },
   "common": {
     "save": "Save",
@@ -80,6 +80,12 @@
     "open": "Open",
     "done": "Done",
     "none": "— none —",
+    "taskStatus": {
+      "NOT_STARTED": "Open",
+      "IN_PROGRESS": "In progress",
+      "TESTING": "Testing",
+      "DONE": "Done"
+    },
     "primary": "primary",
     "linked": "Linked",
     "previous": "Previous",
@@ -119,6 +125,10 @@
     "P1": "High",
     "P2": "Medium",
     "P3": "Low"
+  },
+  "integration": {
+    "label": "Integration",
+    "labelPlural": "Integrations"
   },
   "commercialType": {
     "CONTRACT_ENABLER": "Contract enabler",
@@ -169,6 +179,7 @@
     "IDEA": "Idea",
     "PLANNED": "Planned",
     "IN_PROGRESS": "In progress",
+    "BUSINESS_APPROVAL": "Business approval",
     "DONE": "Done"
   },
   "assignmentRole": {
@@ -219,7 +230,7 @@
     "title": "Title",
     "description": "Description",
     "product": "Product / Asset",
-    "domain": "Domain",
+    "domain": "Pillar",
     "owner": "Owner",
     "priority": "Priority",
     "horizon": "Horizon",
@@ -311,7 +322,7 @@
     "title": "RACI Matrix",
     "searchPlaceholder": "Search initiatives...",
     "initiative": "Initiative",
-    "domain": "Domain",
+    "domain": "Pillar",
     "removeUser": "Remove {{name}}",
     "addRole": "Add {{role}}",
     "noAccountable": "No Accountable assigned",
@@ -322,7 +333,7 @@
   },
   "priorityGrid": {
     "title": "Title",
-    "domain": "Domain",
+    "domain": "Pillar",
     "owner": "Owner",
     "priority": "Priority",
     "horizon": "Horizon",
@@ -355,7 +366,7 @@
     "fri": "Fri",
     "sat": "Sat",
     "sun": "Sun",
-    "domain": "Domain:",
+    "domain": "Pillar:",
     "owner": "Owner:",
     "start": "Start:",
     "target": "Target:",
@@ -376,7 +387,7 @@
     "month": "Month",
     "quarter": "Quarter",
     "year": "Year",
-    "domains": "Domains:",
+    "domains": "Pillars:",
     "statusLegend": "Status:",
     "status": {
       "IDEA": "Idea",
@@ -481,7 +492,7 @@
     "addFeature": "Add feature",
     "addInitiative": "Add initiative",
     "addProduct": "Add product / asset",
-    "selectDomain": "Select domain",
+    "selectDomain": "Select pillar",
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
     "impact": "Impact",
     "progress": "Progress",
@@ -519,15 +530,15 @@
     "details": "Details",
     "page": "Page {{page}} / {{totalPages}}",
     "entries": "{{total}} entries",
-    "domains": "Domains",
+    "domains": "Pillars",
     "personas": "Personas",
     "revenueStreams": "Revenue Streams",
-    "loadingDomains": "Loading domains...",
+    "loadingDomains": "Loading pillars...",
     "loadingPersonas": "Loading personas...",
     "loadingStreams": "Loading revenue streams...",
     "personaCategoryDesc": "Category determines grouping in the Buyer x User chart. BUYER = horizontal axis, USER = vertical axis, NONE = excluded from chart.",
     "iconPlaceholder": "e.g. heart",
-    "deleteDomain": "Delete this domain? Initiatives using it will lose their domain.",
+    "deleteDomain": "Delete this pillar? Initiatives using it will lose their pillar.",
     "deletePersona": "Delete this persona? Impact data using it will be removed.",
     "deleteStream": "Delete this revenue stream?",
     "export": "Export",
@@ -595,9 +606,9 @@
   },
   "notificationSubscriptions": {
     "title": "My notification subscriptions",
-    "empty": "You have no subscriptions. Use \"Notify me\" on an initiative or domain to subscribe.",
+    "empty": "You have no subscriptions. Use \"Notify me\" on an initiative or pillar to subscribe.",
     "unsubscribe": "Unsubscribe",
-    "scope": { "GLOBAL": "All", "DOMAIN": "Domain", "INITIATIVE": "Initiative", "CAMPAIGN": "Campaign", "FEATURE": "Feature", "USER": "User" },
+    "scope": { "GLOBAL": "All", "DOMAIN": "Pillar", "INITIATIVE": "Initiative", "CAMPAIGN": "Campaign", "FEATURE": "Feature", "USER": "User" },
     "notifyMe": "Notify me about changes here"
   },
   "notification": {
@@ -610,7 +621,7 @@
     "feature": { "created": "Feature \"{{title}}\" was created", "updated": "Feature \"{{title}}\" was updated", "deleted": "Feature \"{{title}}\" was deleted" },
     "campaign": { "created": "Campaign \"{{title}}\" was created", "updated": "Campaign \"{{title}}\" was updated", "deleted": "Campaign \"{{title}}\" was deleted" },
     "product": { "created": "Product \"{{title}}\" was created", "updated": "Product \"{{title}}\" was updated", "deleted": "Product \"{{title}}\" was deleted" },
-    "domain": { "created": "Domain \"{{title}}\" was created", "updated": "Domain \"{{title}}\" was updated", "deleted": "Domain \"{{title}}\" was deleted" },
+    "domain": { "created": "Pillar \"{{title}}\" was created", "updated": "Pillar \"{{title}}\" was updated", "deleted": "Pillar \"{{title}}\" was deleted" },
     "default": "{{type}}: {{title}}"
   }
 }

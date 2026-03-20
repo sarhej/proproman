@@ -163,6 +163,7 @@ export function registerTools(server: McpServer) {
         domainId: z.string().optional(),
         productId: z.string().nullable().optional(),
         description: z.string().optional(),
+        notes: z.string().nullable().optional(),
         ownerId: z.string().optional(),
         priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
         horizon: z.enum(["NOW", "NEXT", "LATER"]).optional(),
@@ -179,6 +180,7 @@ export function registerTools(server: McpServer) {
       if (body.domainId !== undefined) data.domainId = body.domainId;
       if (body.productId !== undefined) data.productId = body.productId;
       if (body.description !== undefined) data.description = body.description;
+      if (body.notes !== undefined) data.notes = body.notes;
       if (body.ownerId !== undefined) data.ownerId = body.ownerId;
       if (body.priority !== undefined) data.priority = body.priority;
       if (body.horizon !== undefined) data.horizon = body.horizon;
@@ -187,6 +189,80 @@ export function registerTools(server: McpServer) {
       if (body.isGap !== undefined) data.isGap = body.isGap;
       const initiative = await prisma.initiative.update({ where: { id }, data, include: initiativeInclude });
       return textContent(JSON.stringify(sanitizeUserFields(initiative), null, 2));
+    }
+  );
+
+  // Set implementation notes on each Dr Digital HUB epic (initiative.notes) so they are visible in Product Explorer.
+  const DR_HUB_EPIC_NOTES: Record<string, string> = {
+    "Epic: Accesses & Roles": `Implementation details (Epic: Accesses & Roles)
+
+Archive visibility and placement: archive/unarchive action restricted to Admin (or by role). Move "Archivovat / de-archivovat" button to top bar (horní list) for visibility. Initiative already has PATCH archive/unarchive; ensure UI shows archive only for users with canEditStructure or ADMIN. Files: InitiativeDetailPanel (archive button placement), InitiativeForm or panel header; permission check for archive action.`,
+    "Epic: Naming & terminology": `Implementation details (Epic 1)
+
+• 1.1 Domény → Pilíře: i18n only. Replace "Doména/Domény" with "Pilíř/Pilíře" in CZ. Files: client/src/i18n/cs.json, sk.json, en.json — keys domain, domains, domainBoard, priorityGrid.domain, filters. No API/DB change.
+
+• 1.2 Partner × Klient: Confirm PM usage (Partner = who buys, Klient = who uses). Check i18n and labels; align or doc. No code change if correct.
+
+• 1.3 Integrations / Integrace: i18n only. Use "Integrations" (EN), "Integrace" (CZ). Search for integration/integrac; add/update i18n keys. No API/DB change.
+
+• 1.4 Priority: i18n. Labels Critical/High/Medium/Low. Add priority.P0 = "Critical", etc. in i18n. Use in FiltersBar, PriorityGrid, ProductTree, initiative/requirement selects. Keep P0–P3 in DB; change display only.`,
+    "Epic: Bugs (fix first)": `Implementation details (Epic 2)
+
+RACI: 2.1/2.5 — POST /api/assignments (EDITOR). Verify InitiativeDetailPanel + RaciMatrix Add. 2.2 — PUT /api/assignments (newRole, allocation). Frontend: InitiativeDetailPanel RACI tab, role dropdown + allocation; updateRole and allocation blur call api.updateAssignment. Verify UI.
+
+Iniciativa: 2.3 — Done. InitiativeForm title in Details; api.updateInitiative. Verify title visible/editable. 2.4 — Done. Nav "New initiative" → ?new=1 → modal. Verify placement; optional board CTA.
+
+Admin: 2.6 — Backend: initiative PUT strips productId, horizon, commercialType, dealStage for non-ADMIN. Frontend: InitiativeForm adminOnlyFields; when false those 4 selects disabled. Verify EDITOR sees them disabled. Files: InitiativeForm.tsx, call sites passing adminOnlyFields.
+
+Požadavky: 2.7 — Done. Entry points: ProductTree, FeatureDetailPage, InitiativeDetailPanel, RequirementsPage. POST /api/requirements. Verify all four. 2.8 — Done. RequirementDetailPage taskType "Unspecified" (null). Verify create without type and edit to Unspecified.
+
+Účty: 2.9 — Done. AccountsPage edit name/type; api.updateAccount. Verify; extend form if product needs segment/dealStage/etc.
+
+Edit feature title: Done. FeatureDetailPage editable title, onFeatureUpdated; App merges into board.`,
+    "Epic: Feature/UX requirements": `Implementation details (Epic 3)
+
+Iniciativa – form & fields: 3.1 Show product/asset on initiative cards — InitiativeCard, initiative.product?.name. 3.2 Document upload — new InitiativeDocument or S3; additive. 3.3 Horizont Q1–Q4 — blocked by 4.6. 3.4 CK list — success-criteria exist; link Gantt completion. 3.5 Poznámky → Komentáře — expand comment UI (date, author, formatting). 3.6 Jistota data — blocked 4.1. 3.7 Přiřazení tržeb — blocked 4.2. 3.8 Save in header — move Save to sticky header. 3.9 Archive not delete — PATCH archive; "Show archived" filter. 3.10 Person radar — blocked 4.3.
+
+Gantt: 3.11 Colours by status — use initiative.status not domain. GanttPage, timeline API. 3.12 Completion % — success criteria or completionPercent. 3.13 Views by quarter/year — time range presets. 3.14 Timing export — blocked 4.4.
+
+Milníky: 3.15 Click status box → filter. 3.16 Archive (same as 3.9). 3.17 Chart by status in period. 3.18 Quarter filter (depends 4.6).
+
+Kampaně: 3.19 Concept — blocked 4.5. 3.20 Show campaign date in list. 3.21 Campaign type list — after 4.5.
+
+Účty: 3.22 Link campaign → /campaigns/:id. Produkty: 3.23 Requirements in overview — decision. 3.24 Filters status + impact.`,
+    "Epic: Clarifications needed": `Implementation details (Epic 4)
+
+Product/decision items. After each decision, implement dependent Epic 3 work.
+
+• 4.1 Jistota data — Confirm if used; if not remove (enables 3.6).
+• 4.2 Přiřazení tržeb — Align with product/Jitka (enables 3.7).
+• 4.3 Person radar — Keep or drop (enables 3.10).
+• 4.4 Souřad s timingem z Gantu — Define export/sync target (enables 3.14).
+• 4.5 Kampaně — Align with Nela; placement and type list (enables 3.19, 3.21).
+• 4.6 Horizont Q1–Q4 — Format and rules with Ondra (enables 3.3, 3.18).`
+  };
+
+  server.registerTool(
+    "drd_set_dr_hub_epic_implementation_notes",
+    {
+      title: "Set Dr Digital HUB epic implementation notes",
+      description: "Set the Notes field on each Dr Digital HUB epic (initiative) to the canonical implementation details for that epic. Use this so implementation details are tracked in the product (Product Explorer); open an epic and see Notes in the Details tab. No arguments.",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
+      const product = await prisma.product.findFirst({ where: { name: "Dr Digital HUB" } });
+      if (!product) throw new Error("Product 'Dr Digital HUB' not found. Run db:populate-dr-hub first.");
+      const initiatives = await prisma.initiative.findMany({ where: { productId: product.id } });
+      const updated: string[] = [];
+      for (const init of initiatives) {
+        const notes = DR_HUB_EPIC_NOTES[init.title];
+        if (!notes) continue;
+        await prisma.initiative.update({ where: { id: init.id }, data: { notes } });
+        updated.push(init.title);
+      }
+      return textContent(JSON.stringify({ ok: true, updated }, null, 2));
     }
   );
 
@@ -564,7 +640,7 @@ export function registerTools(server: McpServer) {
     featureId: z.string(),
     title: z.string().min(1),
     description: z.string().nullable().optional(),
-    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"]).optional(),
     isDone: z.boolean().optional(),
     priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
     assigneeId: z.string().nullable().optional(),
@@ -617,7 +693,7 @@ export function registerTools(server: McpServer) {
     featureId: z.string().optional(),
     title: z.string().min(1).optional(),
     description: z.string().nullable().optional(),
-    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"]).optional(),
     isDone: z.boolean().optional(),
     priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
     assigneeId: z.string().nullable().optional(),
@@ -672,7 +748,7 @@ export function registerTools(server: McpServer) {
     title: z.string().min(1),
     externalRef: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
-    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "DONE"]).optional(),
+    status: z.enum(["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"]).optional(),
     isDone: z.boolean().optional(),
     priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
     assigneeId: z.string().nullable().optional(),

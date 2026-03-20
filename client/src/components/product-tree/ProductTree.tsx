@@ -20,6 +20,10 @@ type Props = {
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
+  /** When set, updates merge into local state instead of refetching the whole tree */
+  onInitiativeUpdated?: (initiative: Initiative) => void;
+  onFeatureUpdated?: (feature: Feature) => void;
+  onRequirementUpdated?: (requirement: Requirement) => void;
 };
 
 function avgImpact(initiative: Initiative): number {
@@ -81,6 +85,7 @@ function StatusBadge({ status, color, statusType }: { status: string; color: str
 function statusColor(status: string): string {
   switch (status) {
     case "DONE": return "bg-green-100 text-green-800";
+    case "BUSINESS_APPROVAL": return "bg-amber-100 text-amber-800";
     case "IN_PROGRESS": return "bg-blue-100 text-blue-800";
     case "PLANNED": return "bg-amber-100 text-amber-800";
     case "BLOCKED": return "bg-red-100 text-red-800";
@@ -223,13 +228,19 @@ function DeleteBtn({ onDelete, label }: { onDelete: () => Promise<void>; label: 
 function RequirementRow({
   requirement,
   isAdmin,
-  onRefresh
+  onRefresh,
+  onRequirementUpdated
 }: {
   requirement: Requirement;
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
+  onRequirementUpdated?: (r: Requirement) => void;
 }) {
   const { t } = useTranslation();
+  const refresh = async (res?: { requirement: Requirement }) => {
+    if (onRequirementUpdated && res) onRequirementUpdated(res.requirement);
+    else await onRefresh();
+  };
   return (
     <tr className="group/row border-t border-slate-100 text-xs">
       <td className="py-1.5 pl-16 pr-2">
@@ -238,8 +249,8 @@ function RequirementRow({
           className="mr-1.5 inline-flex"
           disabled={!isAdmin}
           onClick={async () => {
-            await api.updateRequirement(requirement.id, { isDone: !requirement.isDone });
-            await onRefresh();
+            const res = await api.updateRequirement(requirement.id, { isDone: !requirement.isDone });
+            await refresh(res);
           }}
         >
           {requirement.isDone ? (
@@ -254,8 +265,8 @@ function RequirementRow({
               title={requirement.title}
               className={requirement.isDone ? "line-through text-slate-400" : ""}
               onSave={async (newTitle) => {
-                await api.updateRequirement(requirement.id, { title: newTitle });
-                await onRefresh();
+                const res = await api.updateRequirement(requirement.id, { title: newTitle });
+                await refresh(res);
               }}
             />
             <Link to={`/requirements/${requirement.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
@@ -280,8 +291,8 @@ function RequirementRow({
             className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
             value={requirement.priority}
             onChange={async (e) => {
-              await api.updateRequirement(requirement.id, { priority: e.target.value });
-              await onRefresh();
+              const res = await api.updateRequirement(requirement.id, { priority: e.target.value });
+              await refresh(res);
             }}
           >
             <option value="P0">{formatPriority("P0")}</option>
@@ -295,8 +306,35 @@ function RequirementRow({
           </span>
         )}
       </td>
-      <td />
-      <td className="px-2 text-center">{requirement.isDone ? t("common.done") : t("common.open")}</td>
+      <td className="px-2 text-center text-[11px] text-slate-600">
+        {requirement.assignee?.name ?? "—"}
+      </td>
+      <td className="px-2 text-center">
+        {isAdmin ? (
+          <select
+            className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
+            value={requirement.status ?? (requirement.isDone ? "DONE" : "NOT_STARTED")}
+            onChange={async (e) => {
+              const status = e.target.value as "NOT_STARTED" | "IN_PROGRESS" | "TESTING" | "DONE";
+              const res = await api.updateRequirement(requirement.id, { status, isDone: status === "DONE" });
+              await refresh(res);
+            }}
+          >
+            <option value="NOT_STARTED">{t("common.taskStatus.NOT_STARTED")}</option>
+            <option value="IN_PROGRESS">{t("common.taskStatus.IN_PROGRESS")}</option>
+            <option value="TESTING">{t("common.taskStatus.TESTING")}</option>
+            <option value="DONE">{t("common.taskStatus.DONE")}</option>
+          </select>
+        ) : (
+          <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600">
+            {requirement.isDone
+              ? t("common.taskStatus.DONE")
+              : (requirement.status && requirement.status !== "NOT_STARTED"
+                ? t("common.taskStatus." + requirement.status)
+                : t("common.taskStatus.NOT_STARTED"))}
+          </span>
+        )}
+      </td>
     </tr>
   );
 }
@@ -305,17 +343,25 @@ function FeatureRow({
   feature,
   users,
   isAdmin,
-  onRefresh
+  onRefresh,
+  onFeatureUpdated,
+  onRequirementUpdated
 }: {
   feature: Feature;
   users: User[];
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
+  onFeatureUpdated?: (f: Feature) => void;
+  onRequirementUpdated?: (r: Requirement) => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const reqs = feature.requirements ?? [];
   const done = reqs.filter((r) => r.isDone).length;
+  const refreshFeature = async (res?: { feature: Feature }) => {
+    if (onFeatureUpdated && res) onFeatureUpdated({ ...res.feature, requirements: feature.requirements });
+    else await onRefresh();
+  };
 
   return (
     <>
@@ -330,8 +376,8 @@ function FeatureRow({
                 title={feature.title}
                 className="font-medium"
                 onSave={async (newTitle) => {
-                  await api.updateFeature(feature.id, { title: newTitle });
-                  await onRefresh();
+                  const res = await api.updateFeature(feature.id, { title: newTitle });
+                  await refreshFeature(res);
                 }}
               />
               <Link to={`/features/${feature.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
@@ -356,8 +402,8 @@ function FeatureRow({
               className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
               value={feature.ownerId ?? ""}
               onChange={async (e) => {
-                await api.updateFeature(feature.id, { ownerId: e.target.value || null });
-                await onRefresh();
+                const res = await api.updateFeature(feature.id, { ownerId: e.target.value || null });
+                await refreshFeature(res);
               }}
             >
               <option value="">{t("common.none")}</option>
@@ -375,13 +421,14 @@ function FeatureRow({
               className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
               value={feature.status}
               onChange={async (e) => {
-                await api.updateFeature(feature.id, { status: e.target.value });
-                await onRefresh();
+                const res = await api.updateFeature(feature.id, { status: e.target.value });
+                await refreshFeature(res);
               }}
             >
               <option value="IDEA">{t("featureStatus.IDEA")}</option>
               <option value="PLANNED">{t("featureStatus.PLANNED")}</option>
               <option value="IN_PROGRESS">{t("featureStatus.IN_PROGRESS")}</option>
+              <option value="BUSINESS_APPROVAL">{t("featureStatus.BUSINESS_APPROVAL")}</option>
               <option value="DONE">{t("featureStatus.DONE")}</option>
             </select>
           ) : (
@@ -390,7 +437,7 @@ function FeatureRow({
         </td>
       </tr>
       {open && reqs.map((r) => (
-        <RequirementRow key={r.id} requirement={r} isAdmin={isAdmin} onRefresh={onRefresh} />
+        <RequirementRow key={r.id} requirement={r} isAdmin={isAdmin} onRefresh={onRefresh} onRequirementUpdated={onRequirementUpdated} />
       ))}
       {(open || reqs.length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
@@ -416,6 +463,9 @@ function InitiativeRow({
   isAdmin,
   onOpen,
   onRefresh,
+  onInitiativeUpdated,
+  onFeatureUpdated,
+  onRequirementUpdated,
   isDragOverlay
 }: {
   initiative: Initiative;
@@ -423,9 +473,16 @@ function InitiativeRow({
   isAdmin: boolean;
   onOpen: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
+  onInitiativeUpdated?: (i: Initiative) => void;
+  onFeatureUpdated?: (f: Feature) => void;
+  onRequirementUpdated?: (r: Requirement) => void;
   isDragOverlay?: boolean;
 }) {
   const { t } = useTranslation();
+  const refreshInitiative = async (res?: { initiative: Initiative }) => {
+    if (onInitiativeUpdated && res) onInitiativeUpdated(res.initiative);
+    else await onRefresh();
+  };
   const [open, setOpen] = useState(false);
   const impact = avgImpact(initiative);
   const progress = reqProgress(initiative.features ?? []);
@@ -481,8 +538,8 @@ function InitiativeRow({
               className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
               value={initiative.ownerId ?? ""}
               onChange={async (e) => {
-                await api.updateInitiative(initiative.id, { ownerId: e.target.value || null });
-                await onRefresh();
+                const res = await api.updateInitiative(initiative.id, { ownerId: e.target.value || null });
+                await refreshInitiative(res);
               }}
             >
               <option value="">{t("common.none")}</option>
@@ -500,8 +557,8 @@ function InitiativeRow({
               className="rounded border border-slate-200 px-1 py-0.5 text-[10px]"
               value={initiative.status}
               onChange={async (e) => {
-                await api.updateInitiative(initiative.id, { status: e.target.value });
-                await onRefresh();
+                const res = await api.updateInitiative(initiative.id, { status: e.target.value });
+                await refreshInitiative(res);
               }}
             >
               <option value="IDEA">{t("status.IDEA")}</option>
@@ -516,7 +573,7 @@ function InitiativeRow({
         </td>
       </tr>
       {open && (initiative.features ?? []).map((feature) => (
-        <FeatureRow key={feature.id} feature={feature} users={users} isAdmin={isAdmin} onRefresh={onRefresh} />
+        <FeatureRow key={feature.id} feature={feature} users={users} isAdmin={isAdmin} onRefresh={onRefresh} onFeatureUpdated={onFeatureUpdated} onRequirementUpdated={onRequirementUpdated} />
       ))}
       {(open || (initiative.features ?? []).length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
@@ -632,7 +689,10 @@ function ProductRow({
   isAdmin,
   currentUserId,
   onOpenInitiative,
-  onRefresh
+  onRefresh,
+  onInitiativeUpdated,
+  onFeatureUpdated,
+  onRequirementUpdated
 }: {
   product: ProductWithHierarchy;
   users: User[];
@@ -641,6 +701,9 @@ function ProductRow({
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
+  onInitiativeUpdated?: (i: Initiative) => void;
+  onFeatureUpdated?: (f: Feature) => void;
+  onRequirementUpdated?: (r: Requirement) => void;
 }) {
   const [open, setOpen] = useState(true);
   const { setNodeRef, isOver } = useDroppable({ id: `product-${product.id}` });
@@ -701,6 +764,9 @@ function ProductRow({
           isAdmin={isAdmin}
           onOpen={onOpenInitiative}
           onRefresh={onRefresh}
+          onInitiativeUpdated={onInitiativeUpdated}
+          onFeatureUpdated={onFeatureUpdated}
+          onRequirementUpdated={onRequirementUpdated}
         />
       ))}
       {open && isAdmin ? (
@@ -728,6 +794,9 @@ export function ProductTree({
   currentUserId,
   onOpenInitiative,
   onRefresh,
+  onInitiativeUpdated,
+  onFeatureUpdated,
+  onRequirementUpdated,
   onAddProduct
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
@@ -785,6 +854,9 @@ export function ProductTree({
                 currentUserId={currentUserId}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}
+                onInitiativeUpdated={onInitiativeUpdated}
+                onFeatureUpdated={onFeatureUpdated}
+                onRequirementUpdated={onRequirementUpdated}
               />
             ))}
             {products.length === 0 && (

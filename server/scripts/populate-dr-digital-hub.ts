@@ -200,6 +200,27 @@ async function main() {
       console.log("Created Bugs feature:", feat.title, "+", bugGroups[g].requirements.length, "requirements");
     }
     }
+
+    // Ensure "Editovat název funkce na obrazovce funkce" exists (idempotent for existing DrD Hub)
+    const editTitleFeatureTitle = "Editovat název funkce na obrazovce funkce";
+    const existingEditTitle = await prisma.feature.findFirst({
+      where: { initiativeId: bugsInit.id, title: editTitleFeatureTitle }
+    });
+    if (!existingEditTitle) {
+      const editTitleFeat = await prisma.feature.create({
+        data: {
+          initiativeId: bugsInit.id,
+          title: editTitleFeatureTitle,
+          status: FeatureStatus.PLANNED,
+          sortOrder: 100
+        }
+      });
+      await ensureRequirement(editTitleFeat.id, "Feature title editable on feature detail page", {
+        description: "On FeatureDetailPage, feature title is editable (inline or Edit toggle); same behaviour as product tree.",
+        priority: Priority.P2
+      });
+      console.log("Created Bugs feature:", editTitleFeat.title, "+ 1 requirement");
+    }
   }
 
   // --- Epic: Feature/UX requirements ---

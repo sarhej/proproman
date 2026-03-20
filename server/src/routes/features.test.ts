@@ -110,6 +110,12 @@ describe("features API – validation edge cases", () => {
       expect(result.success).toBe(true);
     });
 
+    it("accepts status BUSINESS_APPROVAL (string from client)", () => {
+      const result = partialSchema.safeParse({ status: "BUSINESS_APPROVAL" });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.status).toBe("BUSINESS_APPROVAL");
+    });
+
     it("rejects partial title empty string", () => {
       const result = partialSchema.safeParse({ title: "" });
       expect(result.success).toBe(false);

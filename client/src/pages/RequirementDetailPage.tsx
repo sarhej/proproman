@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
-import type { Initiative, Priority, Requirement, TaskStatus, User } from "../types/models";
+import type { Initiative, Priority, Requirement, TaskStatus, TaskType, User } from "../types/models";
 import { formatPriority } from "../lib/format";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 
 const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
-const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "DONE"];
+const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"];
 
 type Props = {
   initiatives: Initiative[];
@@ -57,6 +57,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const [editStatus, setEditStatus] = useState<TaskStatus>("NOT_STARTED");
   const [editAssigneeId, setEditAssigneeId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editTaskType, setEditTaskType] = useState<TaskType | null>(null);
 
   const found = requirementId ? findRequirement(initiatives, requirementId) : null;
 
@@ -69,7 +70,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     setEditStatus(r.status ?? "NOT_STARTED");
     setEditAssigneeId(r.assigneeId ?? null);
     setEditDueDate(toDateOnly(r.dueDate));
-  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate]);
+    setEditTaskType(r.taskType ?? null);
+  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate, found?.requirement.taskType]);
 
   useEffect(() => {
     if (editing && users.length === 0) {
@@ -125,7 +127,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         status: editStatus,
         isDone: editStatus === "DONE",
         assigneeId: editAssigneeId || null,
-        dueDate: fromDateOnly(editDueDate)
+        dueDate: fromDateOnly(editDueDate),
+        taskType: editTaskType
       });
       await onSaved?.();
       setEditing(false);
@@ -141,6 +144,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     setEditStatus(requirement.status ?? "NOT_STARTED");
     setEditAssigneeId(requirement.assigneeId ?? null);
     setEditDueDate(toDateOnly(requirement.dueDate));
+    setEditTaskType(requirement.taskType ?? null);
     setEditing(false);
   };
 
@@ -212,7 +216,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {s === "DONE" ? "Done" : s === "NOT_STARTED" ? "Open" : "In progress"}
+                      {s === "DONE" ? "Done" : s === "NOT_STARTED" ? "Open" : s === "TESTING" ? "Testing" : "In progress"}
                     </option>
                   ))}
                 </Select>
@@ -233,7 +237,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                     isDone ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
                   }`}
                 >
-                  {isDone ? "Done" : requirement.status ?? "Open"}
+                  {isDone ? "Done" : requirement.status === "TESTING" ? "Testing" : requirement.status === "NOT_STARTED" ? "Open" : requirement.status === "IN_PROGRESS" ? "In progress" : requirement.status ?? "Open"}
                 </span>
                 {!readOnly && (
                   <>
@@ -348,6 +352,24 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 )}
               </div>
               <div>
+                <Label>Type</Label>
+                {editing ? (
+                  <Select
+                    value={editTaskType ?? ""}
+                    onChange={(e) => setEditTaskType(e.target.value === "" ? null : (e.target.value as TaskType))}
+                    className="mt-1"
+                  >
+                    <option value="">Unspecified</option>
+                    <option value="TASK">TASK</option>
+                    <option value="SPIKE">SPIKE</option>
+                    <option value="QA">QA</option>
+                    <option value="DESIGN">DESIGN</option>
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">{requirement.taskType ?? "Unspecified"}</p>
+                )}
+              </div>
+              <div>
                 <Label>Feature</Label>
                 <p className="mt-1 text-sm">
                   <Link to={`/features/${feature.id}`} className="text-sky-600 hover:underline">
@@ -411,18 +433,18 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 <dt className="text-slate-500">State</dt>
                 <dd className="font-medium text-slate-800">
                   {editing
-                    ? (editStatus === "DONE" ? "Done" : editStatus === "NOT_STARTED" ? "Open" : "In progress")
+                    ? (editStatus === "DONE" ? "Done" : editStatus === "NOT_STARTED" ? "Open" : editStatus === "TESTING" ? "Testing" : "In progress")
                     : isDone
                       ? "Done"
-                      : requirement.status ?? "Open"}
+                      : requirement.status === "TESTING" ? "Testing" : requirement.status === "NOT_STARTED" ? "Open" : requirement.status === "IN_PROGRESS" ? "In progress" : requirement.status ?? "Open"}
                 </dd>
               </div>
-              {requirement.taskType && (
-                <div>
-                  <dt className="text-slate-500">Type</dt>
-                  <dd className="font-medium text-slate-800">{requirement.taskType}</dd>
-                </div>
-              )}
+              <div>
+                <dt className="text-slate-500">Type</dt>
+                <dd className="font-medium text-slate-800">
+                  {editing ? (editTaskType ?? "Unspecified") : (requirement.taskType ?? "Unspecified")}
+                </dd>
+              </div>
             </dl>
           </div>
 
