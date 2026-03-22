@@ -3,6 +3,12 @@ import { FeatureStatus, Horizon, Prisma, Priority, StoryType, TaskStatus, TaskTy
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
 import { initiativeInclude } from "../routes/serializers.js";
+import {
+  compileBriefJson,
+  compileBriefMarkdown,
+  loadCapabilitiesForBrief,
+  type BriefMode
+} from "../services/ontologyBrief.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
 const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
@@ -1015,6 +1021,78 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         orderBy: { id: "asc" }
       });
       return textContent(JSON.stringify(links, null, 2));
+    }
+  );
+
+  // --- Ontology / agent brief (Tymio) ---
+  server.registerTool(
+    "tymio_get_agent_brief",
+    {
+      title: "Get compiled agent capability brief",
+      description:
+        "Returns the hub capability ontology as Markdown or JSON. Use before proposing new features. mode=compact (ACTIVE only) or full (ACTIVE+DRAFT).",
+      inputSchema: z.object({
+        mode: z.enum(["compact", "full"]).default("compact"),
+        format: z.enum(["md", "json"]).default("md")
+      })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const mode = args.mode as BriefMode;
+      const caps = await loadCapabilitiesForBrief(mode);
+      if (args.format === "json") {
+        const { content } = compileBriefJson(mode, caps);
+        return textContent(content);
+      }
+      const { content } = compileBriefMarkdown(mode, caps);
+      return textContent(content);
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_capabilities",
+    {
+      title: "List hub capabilities (ontology)",
+      description: "List product capabilities with bindings. Optional status filter: ACTIVE, DRAFT, DEPRECATED.",
+      inputSchema: z.object({
+        status: z.enum(["ACTIVE", "DRAFT", "DEPRECATED"]).optional()
+      })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      const capabilities = await prisma.capability.findMany({
+        where: args.status ? { status: args.status } : undefined,
+        include: { bindings: { orderBy: [{ bindingType: "asc" }, { bindingKey: "asc" }] } },
+        orderBy: [{ sortOrder: "asc" }, { slug: "asc" }]
+      });
+      return textContent(JSON.stringify({ capabilities }, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_get_capability",
+    {
+      title: "Get one capability by id or slug",
+      description: "Fetch a single capability and its bindings.",
+      inputSchema: z.object({
+        id: z.string().optional(),
+        slug: z.string().optional()
+      })
+    },
+    async (args, ctx) => {
+      getUserFromCtx(ctx);
+      if (!args.id && !args.slug) throw new Error("Provide id or slug");
+      const cap = args.id
+        ? await prisma.capability.findUnique({
+            where: { id: args.id },
+            include: { bindings: { orderBy: [{ bindingType: "asc" }, { bindingKey: "asc" }] } }
+          })
+        : await prisma.capability.findUnique({
+            where: { slug: args.slug! },
+            include: { bindings: { orderBy: [{ bindingType: "asc" }, { bindingKey: "asc" }] } }
+          });
+      if (!cap) return textContent(JSON.stringify({ error: "Not found" }));
+      return textContent(JSON.stringify({ capability: cap }, null, 2));
     }
   );
 }

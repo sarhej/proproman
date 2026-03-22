@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { drdFetch, hasApiKey } from "./api.js";
+import { drdFetch, drdFetchText, hasApiKey } from "./api.js";
 
 const server = new McpServer({
   name: "drd-hub",
@@ -266,6 +266,70 @@ server.registerTool(
   async () => {
     const data = await drdFetch<{ revenueStreams: unknown[] }>("/api/revenue-streams");
     return textContent(JSON.stringify(data.revenueStreams, null, 2));
+  }
+);
+
+server.registerTool(
+  "tymio_get_agent_brief",
+  {
+    title: "Get compiled agent capability brief",
+    description:
+      "Returns the hub capability ontology as Markdown or JSON. mode=compact|full, format=md|json.",
+    inputSchema: z.object({
+      mode: z.enum(["compact", "full"]).default("compact"),
+      format: z.enum(["md", "json"]).default("md")
+    })
+  },
+  async (args) => {
+    const params = new URLSearchParams({ mode: args.mode, format: args.format });
+    const q = params.toString();
+    if (args.format === "md") {
+      const text = await drdFetchText(`/api/ontology/brief?${q}`);
+      return textContent(text);
+    }
+    const raw = await drdFetchText(`/api/ontology/brief?${q}`);
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return textContent(JSON.stringify(parsed, null, 2));
+    } catch {
+      return textContent(raw);
+    }
+  }
+);
+
+server.registerTool(
+  "tymio_list_capabilities",
+  {
+    title: "List hub capabilities (ontology)",
+    description: "Optional status: ACTIVE, DRAFT, DEPRECATED.",
+    inputSchema: z.object({ status: z.enum(["ACTIVE", "DRAFT", "DEPRECATED"]).optional() })
+  },
+  async (args) => {
+    const params = new URLSearchParams();
+    if (args.status) params.set("status", args.status);
+    const q = params.toString();
+    const data = await drdFetch<{ capabilities: unknown[] }>(`/api/ontology/capabilities${q ? `?${q}` : ""}`);
+    return textContent(JSON.stringify(data, null, 2));
+  }
+);
+
+server.registerTool(
+  "tymio_get_capability",
+  {
+    title: "Get one capability by id or slug",
+    description: "Provide id or slug.",
+    inputSchema: z.object({ id: z.string().optional(), slug: z.string().optional() })
+  },
+  async (args) => {
+    if (args.id) {
+      const data = await drdFetch<{ capability: unknown }>(`/api/ontology/capabilities/${args.id}`);
+      return textContent(JSON.stringify(data, null, 2));
+    }
+    if (args.slug) {
+      const data = await drdFetch<{ capability: unknown }>(`/api/ontology/capabilities/by-slug/${encodeURIComponent(args.slug)}`);
+      return textContent(JSON.stringify(data, null, 2));
+    }
+    throw new Error("Provide id or slug");
   }
 );
 

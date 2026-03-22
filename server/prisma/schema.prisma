@@ -759,3 +759,70 @@ model McpOAuthClient {
 
   @@index([clientId])
 }
+
+enum CapabilityStatus {
+  ACTIVE
+  DRAFT
+  DEPRECATED
+}
+
+enum BindingType {
+  ROUTE
+  PAGE
+  API_ROUTE
+  MCP_TOOL
+  PRISMA_MODEL
+  FILE_GLOB
+  INFRA
+}
+
+/// Product capability in user language; binds to routes, MCP tools, models, etc.
+model Capability {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  title            String
+  description      String?
+  userJob          String?
+  synonyms         Json?
+  doNotConfuseWith String?
+  status           CapabilityStatus  @default(DRAFT)
+  parentId         String?
+  parent           Capability?       @relation("CapabilityHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children         Capability[]      @relation("CapabilityHierarchy")
+  bindings         CapabilityBinding[]
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([parentId])
+  @@index([status])
+}
+
+model CapabilityBinding {
+  id           String      @id @default(cuid())
+  capabilityId String
+  capability   Capability  @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+  bindingType  BindingType
+  bindingKey   String
+  notes        String?
+  isPrimary    Boolean     @default(false)
+  generated    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([capabilityId, bindingType, bindingKey])
+  @@index([capabilityId])
+  @@index([bindingType, bindingKey])
+}
+
+/// Latest compiled agent brief per format + mode (upsert on compile).
+model CompiledBrief {
+  id          String   @id @default(cuid())
+  format      String
+  mode        String
+  contentHash String
+  content     String   @db.Text
+  generatedAt DateTime @default(now())
+
+  @@unique([format, mode])
+}

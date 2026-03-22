@@ -30,7 +30,10 @@ import type {
   UserRole,
   Account,
   NotificationRule,
-  UserNotificationSubscription
+  UserNotificationSubscription,
+  Capability,
+  CapabilityBinding,
+  CapabilityStatus
 } from "../types/models";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -377,4 +380,43 @@ export const api = {
     }),
   clearData: async () =>
     request<{ ok: boolean; message: string }>("/api/admin/clear", { method: "POST" }),
+
+  getOntologyCapabilities: async (status?: CapabilityStatus) => {
+    const q = status ? `?status=${status}` : "";
+    return request<{ capabilities: (Capability & { bindings: CapabilityBinding[] })[] }>(`/api/ontology/capabilities${q}`);
+  },
+  getOntologyCapability: async (id: string) =>
+    request<{ capability: Capability & { bindings: CapabilityBinding[] } }>(`/api/ontology/capabilities/${id}`),
+  createOntologyCapability: async (body: Record<string, unknown>) =>
+    request<{ capability: Capability & { bindings: CapabilityBinding[] } }>("/api/ontology/capabilities", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  updateOntologyCapability: async (id: string, body: Record<string, unknown>) =>
+    request<{ capability: Capability & { bindings: CapabilityBinding[] } }>(`/api/ontology/capabilities/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }),
+  deleteOntologyCapability: async (id: string) => request<void>(`/api/ontology/capabilities/${id}`, { method: "DELETE" }),
+  createOntologyBinding: async (body: Record<string, unknown>) =>
+    request<{ binding: CapabilityBinding }>("/api/ontology/bindings", { method: "POST", body: JSON.stringify(body) }),
+  deleteOntologyBinding: async (id: string) => request<void>(`/api/ontology/bindings/${id}`, { method: "DELETE" }),
+  compileOntologyBrief: async () => request<{ ok: boolean; message: string }>("/api/ontology/compile", { method: "POST", body: "{}" }),
+  refreshOntologyBindings: async () =>
+    request<{ ok: boolean; capabilitiesUpserted: number; bindingsUpserted: number }>("/api/ontology/refresh-bindings", {
+      method: "POST",
+      body: "{}"
+    }),
+  exportOntologyBriefFile: async (body?: { path?: string; mode?: "compact" | "full" }) =>
+    request<{ ok: boolean; path: string; bytes: number }>("/api/ontology/export-file", {
+      method: "POST",
+      body: JSON.stringify(body ?? {})
+    }),
+  getOntologyBriefText: async (format: "md" | "json", mode: "compact" | "full") => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
+    const params = new URLSearchParams({ format, mode });
+    const response = await fetch(`${baseUrl}/api/ontology/brief?${params}`, { credentials: "include" });
+    if (!response.ok) throw new Error(`Brief failed: ${response.status}`);
+    return response.text();
+  },
 };

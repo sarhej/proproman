@@ -1,94 +1,39 @@
-# DD Product Board
+# Tymio
 
-Persona-driven backlog manager for Doctor Digital with B2B2C prioritization.
+**Multi-tenant product and project management hub** — [tymio.app](https://tymio.app)
+
+Full documentation: **[docs/HUB.md](docs/HUB.md)** (scope, architecture, multi-tenancy, development, deployment, MCP, security).
 
 ## Stack
 
-- Frontend: React + Vite + TypeScript + Tailwind
-- Backend: Express + TypeScript + Prisma
-- DB: PostgreSQL
-- Auth: Google OAuth (session-based)
-- Deploy: Railway single service
+- Frontend: React + Vite + TypeScript + Tailwind  
+- Backend: Express + TypeScript + Prisma  
+- Database: PostgreSQL  
+- Auth: Google OAuth (sessions)  
+- Agents: MCP at `/mcp` (OAuth) + optional stdio MCP in `mcp/`
 
-## Local setup
-
-1. Install dependencies:
+## Quick start
 
 ```bash
 npm install
-```
-
-2. Copy env values:
-
-```bash
 cp server/.env.example server/.env
-```
-
-3. Configure `DATABASE_URL`, Google OAuth credentials and callback URL.
-   - Temporary local fallback (optional): set `ALLOW_DEV_AUTH=true` in `server/.env`.
-4. Copy frontend env values:
-
-```bash
 cp client/.env.example client/.env
-```
-
-5. If you use temporary local fallback, also set `VITE_ENABLE_DEV_LOGIN=true` in `client/.env`.
-
-6. Generate Prisma client and apply schema:
-
-```bash
+# Configure DATABASE_URL, SESSION_SECRET, Google OAuth (see docs/HUB.md)
 npm run db:generate
 npm run db:migrate --workspace server -- --name init
-```
-
-7. Seed data from CIO + spreadsheet:
-
-```bash
-npm run db:seed
-```
-
-8. Start app:
-
-```bash
+npm run db:seed    # optional demo data only
 npm run dev
 ```
 
-9. Temporary local fallback login (development only):
-   - Click `Temporary local dev login` on the sign-in screen.
-   - This route is blocked in production and disabled unless `ALLOW_DEV_AUTH=true`.
+Optional local auth: `ALLOW_DEV_AUTH=true` in `server/.env` and `VITE_ENABLE_DEV_LOGIN=true` in `client/.env` (development only).
 
-## Railway deploy
+## MCP (Cursor and agents)
 
-1. Create Railway project and add PostgreSQL service.
-2. Set service root directory to repository root.
-3. Add environment variables from `server/.env.example`.
-4. Set `GOOGLE_CALLBACK_URL` to `https://<your-railway-domain>/api/auth/google/callback`.
-5. Deploy.
-6. Run migrations and seed:
+- **Remote:** point MCP at `https://<your-host>/mcp` — OAuth with Google.  
+- **Local stdio:** build `mcp/` and use `API_KEY` + `DRD_API_KEY`; see [mcp/README.md](mcp/README.md).
 
-```bash
-npm run db:generate
-npm run db:migrate --workspace server -- --name init
-npm run db:seed
-```
+Details and Google redirect URIs: **[docs/HUB.md](docs/HUB.md)** §6.
 
-For the notification matrix / in-app messages release, see [docs/DEPLOYMENT_NOTIFICATION_MATRIX.md](docs/DEPLOYMENT_NOTIFICATION_MATRIX.md) (migration is additive; optional `db:seed-notification-rules`).
+## Deploy
 
-## Agents & MCP
-
-The project APIs are exposed as **MCP (Model Context Protocol)** tools so agents (e.g. in Cursor) can call DrD Hub programmatically.
-
-- **Remote (recommended):** The Express server serves an MCP endpoint at `/mcp` with **OAuth 2.1 (Google login)**. Add `"url": "https://<your-domain>/mcp"` in Cursor; no API key—Cursor discovers OAuth and opens the browser. See [docs/MCP_API_EXPOSURE.md](docs/MCP_API_EXPOSURE.md).
-- **Local / stdio:** The `mcp/` package runs as a separate process and calls the API with an API key. Set `API_KEY` on the server and `DRD_API_KEY` in Cursor config; see [mcp/README.md](mcp/README.md).
-
-For both options, Cursor config (local + remote) and Google redirect URI for MCP are in [docs/MCP_API_EXPOSURE.md](docs/MCP_API_EXPOSURE.md).
-
-## Views
-
-- Domain Board (drag and drop by domain)
-- Priority Grid
-- Owner Board
-- Stakeholder Heatmap
-- Buyer x User Matrix
-- Gaps view
-- Initiative detail panel with Features, Decisions, Risks, Dependencies
+Railway (or any Node host): Postgres, env from `server/.env.example`, set `GOOGLE_CALLBACK_URL` and `CLIENT_URL`, run migrations. Do **not** run full `db:seed` in production.

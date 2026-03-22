@@ -429,6 +429,45 @@ export type Campaign = {
   links: CampaignLink[];
 };
 
+export type CapabilityStatus = "ACTIVE" | "DRAFT" | "DEPRECATED";
+
+export type BindingType =
+  | "ROUTE"
+  | "PAGE"
+  | "API_ROUTE"
+  | "MCP_TOOL"
+  | "PRISMA_MODEL"
+  | "FILE_GLOB"
+  | "INFRA";
+
+export type CapabilityBinding = {
+  id: string;
+  capabilityId: string;
+  bindingType: BindingType;
+  bindingKey: string;
+  notes: string | null;
+  isPrimary: boolean;
+  generated: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Capability = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  userJob: string | null;
+  synonyms: string[] | null;
+  doNotConfuseWith: string | null;
+  status: CapabilityStatus;
+  parentId: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  bindings?: CapabilityBinding[];
+};
+
 export type MetaPayload = {
   domains: Domain[];
   personas: Persona[];

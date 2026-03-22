@@ -4,14 +4,20 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./en.json";
 import cs from "./cs.json";
 import sk from "./sk.json";
+import uk from "./uk.json";
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: { en: { translation: en }, cs: { translation: cs }, sk: { translation: sk } },
-    fallbackLng: "cs",
-    lng: localStorage.getItem("lang") || "cs",
+    resources: {
+      en: { translation: en },
+      cs: { translation: cs },
+      sk: { translation: sk },
+      uk: { translation: uk },
+    },
+    fallbackLng: "en",
+    lng: localStorage.getItem("lang") || "en",
     interpolation: { escapeValue: false },
     detection: {
       order: ["localStorage", "navigator"],

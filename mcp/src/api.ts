@@ -29,6 +29,19 @@ export async function drdFetch<T>(
   return (await res.json()) as T;
 }
 
+/** Plain text body (e.g. Markdown agent brief). */
+export async function drdFetchText(path: string, init?: RequestInit): Promise<string> {
+  const res = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: { ...headers(), ...(init?.headers ?? ({} as HeadersInit)) }
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`DrD API ${res.status}: ${errBody || res.statusText}`);
+  }
+  return res.text();
+}
+
 export function getBaseUrl(): string {
   return baseUrl;
 }

@@ -17,6 +17,7 @@ const ALL_ENTITY_KEYS = [
   "decisions", "risks", "demands", "demandLinks", "dependencies",
   "campaigns", "assets", "campaignLinks",
   "milestones", "kpis", "stakeholders",
+  "capabilities", "capabilityBindings", "compiledBriefs",
 ] as const;
 
 type EntityKey = typeof ALL_ENTITY_KEYS[number];
@@ -55,6 +56,9 @@ importExportRouter.get("/export", async (req, res) => {
       milestones: () => prisma.initiativeMilestone.findMany({ orderBy: { sequence: "asc" } }),
       kpis: () => prisma.initiativeKPI.findMany({ orderBy: { createdAt: "asc" } }),
       stakeholders: () => prisma.stakeholder.findMany({ orderBy: { createdAt: "asc" } }),
+      capabilities: () => prisma.capability.findMany({ orderBy: [{ sortOrder: "asc" }, { slug: "asc" }] }),
+      capabilityBindings: () => prisma.capabilityBinding.findMany({ orderBy: [{ bindingType: "asc" }, { bindingKey: "asc" }] }),
+      compiledBriefs: () => prisma.compiledBrief.findMany({ orderBy: [{ format: "asc" }, { mode: "asc" }] }),
     };
 
     const payload: Record<string, unknown> = {
@@ -944,6 +948,7 @@ function buildCounts(data: any): Record<string, number> {
     "initiatives", "features", "requirements", "decisions", "risks",
     "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
     "milestones", "kpis", "stakeholders",
+    "capabilities", "capabilityBindings", "compiledBriefs",
   ];
   const result: Record<string, number> = {};
   for (const k of keys) {

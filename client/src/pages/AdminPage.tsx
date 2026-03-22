@@ -1,3 +1,4 @@
+import { OntologyTab } from "./admin/OntologyTab";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
@@ -30,12 +31,12 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
-const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION"] as const;
+const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION", "CAPABILITY", "CAPABILITY_BINDING", "COMPILED_BRIEF"] as const;
 const AUDIT_ACTIONS: AuditAction[] = ["CREATED", "UPDATED", "DELETED", "STATUS_CHANGED", "ROLE_CHANGED", "LOGIN"];
 const RECIPIENT_KINDS: NotificationRecipientKind[] = ["OBJECT_OWNER", "OBJECT_ROLE", "GLOBAL_ROLE", "OBJECT_ASSIGNEE"];
 const DELIVERY_CHANNELS: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
 
-type Tab = "users" | "activity" | "settings" | "data" | "notificationRules";
+type Tab = "users" | "activity" | "settings" | "data" | "notificationRules" | "ontology";
 
 export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
   const { t } = useTranslation();
@@ -46,7 +47,8 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
     { key: "settings", label: t("admin.settings") },
     { key: "data", label: t("admin.data") },
     { key: "activity", label: t("admin.activity") },
-    { key: "notificationRules", label: t("admin.notificationRules") }
+    { key: "notificationRules", label: t("admin.notificationRules") },
+    { key: "ontology", label: t("admin.ontology") }
   ];
 
   return (
@@ -67,6 +69,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
       {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
       {tab === "notificationRules" && <NotificationRulesTab />}
+      {tab === "ontology" && <OntologyTab />}
     </div>
   );
 }
@@ -1198,6 +1201,7 @@ const EXPORT_ENTITY_GROUPS: { label: string; keys: string[] }[] = [
   { label: "Business", keys: ["accounts", "partners", "demands", "demandLinks"] },
   { label: "Product", keys: ["initiatives", "features", "requirements", "decisions", "risks", "dependencies"] },
   { label: "Marketing", keys: ["campaigns", "assets", "campaignLinks"] },
+  { label: "Ontology", keys: ["capabilities", "capabilityBindings", "compiledBriefs"] },
 ];
 const ALL_EXPORT_KEYS = EXPORT_ENTITY_GROUPS.flatMap((g) => g.keys);
 
@@ -1348,7 +1352,13 @@ function DataTab() {
           {EXPORT_ENTITY_GROUPS.map((group) => {
             const allGroupSelected = group.keys.every((k) => exportEntities.has(k));
             const someGroupSelected = group.keys.some((k) => exportEntities.has(k));
-            const groupLabelKey: Record<string, string> = { Core: "admin.entityCore", Business: "admin.entityBusiness", Product: "admin.entityProduct", Marketing: "admin.entityMarketing" };
+            const groupLabelKey: Record<string, string> = {
+              Core: "admin.entityCore",
+              Business: "admin.entityBusiness",
+              Product: "admin.entityProduct",
+              Marketing: "admin.entityMarketing",
+              Ontology: "admin.ontology"
+            };
             return (
               <div key={group.label} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 w-20 cursor-pointer">

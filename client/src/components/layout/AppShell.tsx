@@ -77,7 +77,7 @@ const navSections: NavSection[] = [
   }
 ];
 
-const LANGS = ["en", "cs", "sk"] as const;
+const LANGS = ["en", "cs", "sk", "uk"] as const;
 
 type Props = {
   user: User;

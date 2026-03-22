@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
 import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetailPanel";
@@ -154,7 +154,11 @@ function App() {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("app.pendingTitle")}</h2>
           <p className="mb-1 text-sm text-slate-600">
-            {t("app.pendingMsg", { email: user.email })}
+            <Trans
+              i18nKey="app.pendingMsg"
+              values={{ email: user.email }}
+              components={{ 1: <strong className="font-semibold text-slate-800" /> }}
+            />
           </p>
           <p className="mb-6 text-sm text-slate-500">
             {t("app.pendingDesc")}
