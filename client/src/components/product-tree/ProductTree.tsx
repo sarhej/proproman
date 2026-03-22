@@ -19,6 +19,8 @@ type Props = {
   isAdmin: boolean;
   /** Show add-initiative (matches POST /api/initiatives: EDITOR+) */
   canCreateInitiative: boolean;
+  /** "initiative" | "epic" for product-row counts and add button (Product Explorer toggle) */
+  terminology?: "initiative" | "epic";
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -607,12 +609,15 @@ function InlineAddInitiative({
   productId,
   domains,
   currentUserId,
-  onRefresh
+  onRefresh,
+  addLabel
 }: {
   productId: string;
   domains: Domain[];
   currentUserId: string | null;
   onRefresh: () => Promise<void>;
+  /** Override collapsed button label (e.g. "Add epic") */
+  addLabel?: string;
 }) {
   const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
@@ -626,7 +631,7 @@ function InlineAddInitiative({
         className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-800"
         onClick={() => setAdding(true)}
       >
-        <Plus size={12} /> {t("productTree.addInitiative")}
+        <Plus size={12} /> {addLabel ?? t("productTree.addInitiative")}
       </button>
     );
   }
@@ -698,6 +703,7 @@ function ProductRow({
   domains,
   isAdmin,
   canCreateInitiative,
+  terminology = "initiative",
   currentUserId,
   onOpenInitiative,
   onRefresh,
@@ -710,6 +716,7 @@ function ProductRow({
   domains: Domain[];
   isAdmin: boolean;
   canCreateInitiative: boolean;
+  terminology?: "initiative" | "epic";
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -717,6 +724,7 @@ function ProductRow({
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(true);
   const { setNodeRef, isOver } = useDroppable({ id: `product-${product.id}` });
   const allImpacts = product.initiatives.flatMap((i) => i.personaImpacts?.map((p) => p.impact) ?? []);
@@ -753,7 +761,14 @@ function ProductRow({
             product.name
           )}
           <span className="ml-2 text-xs font-normal text-slate-500">
-            {product.initiatives.length} initiative{product.initiatives.length !== 1 ? "s" : ""}
+            {product.initiatives.length}{" "}
+            {product.initiatives.length === 1
+              ? terminology === "epic"
+                ? t("productTree.epicLabel")
+                : t("productTree.initiativeLabel")
+              : terminology === "epic"
+                ? t("productTree.epicLabelPlural")
+                : t("productTree.initiativeLabelPlural")}
           </span>
           {canCreateInitiative && product.initiatives.length === 0 ? (
             <span className="ml-2 inline-flex items-center align-middle">
@@ -762,6 +777,7 @@ function ProductRow({
                 domains={domains}
                 currentUserId={currentUserId}
                 onRefresh={onRefresh}
+                addLabel={terminology === "epic" ? t("productTree.addEpic") : undefined}
               />
             </span>
           ) : null}
@@ -800,6 +816,7 @@ function ProductRow({
               domains={domains}
               currentUserId={currentUserId}
               onRefresh={onRefresh}
+              addLabel={terminology === "epic" ? t("productTree.addEpic") : undefined}
             />
           </td>
           <td colSpan={5} />
@@ -815,6 +832,7 @@ export function ProductTree({
   domains,
   isAdmin,
   canCreateInitiative,
+  terminology = "initiative",
   currentUserId,
   onOpenInitiative,
   onRefresh,
@@ -894,6 +912,7 @@ export function ProductTree({
                 domains={domains}
                 isAdmin={isAdmin}
                 canCreateInitiative={canCreateInitiative}
+                terminology={terminology}
                 currentUserId={currentUserId}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}

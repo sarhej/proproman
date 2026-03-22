@@ -85,13 +85,13 @@ Some teams run a small **stdio** MCP process that proxies to the hub over REST. 
 - `DRD_API_BASE_URL=https://tymio.app`
 - `DRD_API_KEY=<same value as server API_KEY>`
 
-That process exposes **only a subset** of tools (see section 5). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp`.
+That process exposes **only a subset** of tools (see section 6). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp`.
 
 ---
 
 ## 4. MCP tool names (remote server at `/mcp`)
 
-Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook.
+Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook. **What “capabilities” and bindings mean in the product** — and how they map to REST — is spelled out in **§5**.
 
 **Ontology and playbook**
 
@@ -132,7 +132,71 @@ Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` 
 
 ---
 
-## 5. Stdio MCP subset (when using `DRD_API_BASE_URL`)
+## 5. Ontology and capabilities (what they are, why agents care)
+
+Tymio’s **ontology** is a **semantic map of product capabilities**: things users (and agents) can do in the hub, described in plain language and **bound** to concrete implementation hooks (routes, pages, MCP tools, Prisma models, etc.). It is **not** the same as a **Product** entity in the database (product line / surface for initiatives).
+
+### 5.1 Core concepts
+
+| Concept | Meaning |
+|--------|---------|
+| **Capability** | One named “thing the hub offers”: stable `slug` (kebab-case), `title`, optional `description`, **user job** (what the user is trying to accomplish), optional synonyms and “do not confuse with”, `status`, `sortOrder`, optional parent for hierarchy. |
+| **Binding** | Links a capability to an artifact: a **type** + **key** (e.g. MCP tool name, app route). Optional `notes`, `isPrimary`, and `generated` (true when seeded from the codebase manifest). |
+| **Compiled brief** | A **Markdown or JSON** document aggregating capabilities (and their bindings) for agents. Stored in the DB after an admin **compile**; also computable on the fly via GET. |
+
+**Statuses:** `ACTIVE` (in use), `DRAFT` (work in progress), `DEPRECATED` (phasing out).
+
+**Binding types** (use the key as the identifier for that layer):
+
+- **`ROUTE`** — Client route path (e.g. `/product-explorer`, `/admin`).
+- **`PAGE`** — Frontend page component name (e.g. `AdminPage`).
+- **`API_ROUTE`** — REST path pattern where relevant.
+- **`MCP_TOOL`** — MCP tool name (e.g. `drd_list_initiatives`, `tymio_get_agent_brief`).
+- **`PRISMA_MODEL`** — Data model name (e.g. `Initiative`, `Requirement`).
+- **`FILE_GLOB`** — Repository file patterns when documented.
+- **`INFRA`** — Pointer to infra or code modules (e.g. MCP registration file).
+
+### 5.2 Where data lives and who can change it
+
+- **Storage:** PostgreSQL — `Capability`, `CapabilityBinding`, and `CompiledBrief` (cached compiled output).
+- **UI:** **Admin** (role `ADMIN` / `SUPER_ADMIN`) → **Ontology** tab: list/edit capabilities and bindings, **Refresh default bindings**, **Compile & store briefs**, preview/export Markdown.
+- **Code manifest:** The server ships a **default capability list** (slugs, titles, user jobs, and generated bindings to routes/tools/models). **“Refresh default bindings”** calls `POST /api/ontology/refresh-bindings`, which **upserts** those defaults and marks matching bindings as `generated`. It does not wipe arbitrary custom capabilities you added by hand; it aligns the known default set with the manifest.
+
+### 5.3 REST API (`/api/ontology`, all routes require authentication)
+
+| Method | Path | Who | Purpose |
+|--------|------|-----|---------|
+| `GET` | `/capabilities` | Any signed-in user | List capabilities; optional query `status` = `ACTIVE`, `DRAFT`, or `DEPRECATED`. Includes bindings. |
+| `GET` | `/capabilities/:id` | Any | One capability by id. |
+| `GET` | `/capabilities/by-slug/:slug` | Any | One capability by slug. |
+| `GET` | `/brief` | Any | Compiled brief: `format=md` (default) or `json`; `mode=compact` (default, **ACTIVE only**) or `full` (**ACTIVE + DRAFT**); optional `cached=true` to serve last stored compile if present. |
+| `POST` | `/capabilities` | Admin | Create capability. |
+| `PUT` | `/capabilities/:id` | Admin | Update capability (slug not changed here). |
+| `DELETE` | `/capabilities/:id` | Admin | Delete capability (cascades bindings). |
+| `POST` | `/bindings` | Admin | Add binding. |
+| `DELETE` | `/bindings/:id` | Admin | Remove binding. |
+| `POST` | `/compile` | Admin | Regenerate and **store** compiled briefs (compact + full, Markdown + JSON). |
+| `POST` | `/refresh-bindings` | Admin | Run default manifest upsert (see §5.2). |
+| `POST` | `/export-file` | Admin | Write Markdown brief to a path on the **server filesystem** (default in repo deployments: `context/AGENT_BRIEF.md`). On **hosted** environments without a writable repo checkout, prefer **`GET /brief`** or MCP **`tymio_get_agent_brief`** instead of relying on export. |
+
+Base URL: `https://tymio.app/api/ontology` (same auth as the rest of `/api`).
+
+### 5.4 MCP tools tied to ontology
+
+- **`tymio_list_capabilities`** — List capabilities (aligned with hub data).
+- **`tymio_get_capability`** — One capability by `id` or `slug`.
+- **`tymio_get_agent_brief`** — Compiled brief (same idea as `GET /api/ontology/brief`; parameters depend on server implementation).
+
+Use these when you need a **structured map** of surfaces and tools without parsing the UI.
+
+### 5.5 How agents should use this
+
+1. **Before** proposing new features or assuming a screen exists, call **`tymio_get_agent_brief`** or **`GET /api/ontology/brief`** (or list capabilities) so your plan matches **existing** routes, models, and MCP tools.
+2. After **shipping** API or MCP changes, a human with admin access should **refresh default bindings** and **recompile** briefs (or update capabilities manually) so the ontology stays truthful — see checklist §12.
+
+---
+
+## 6. Stdio MCP subset (when using `DRD_API_BASE_URL`)
 
 If the client uses the **stdio** bridge against `https://tymio.app`, expect **only**:
 
@@ -142,7 +206,7 @@ If the client uses the **stdio** bridge against `https://tymio.app`, expect **on
 
 ---
 
-## 6. REST endpoints agents often need
+## 7. REST endpoints agents often need
 
 All under `https://tymio.app/api` unless noted. All require auth unless documented otherwise.
 
@@ -151,16 +215,13 @@ All under `https://tymio.app/api` unless noted. All require auth unless document
 - `GET|POST /features`, `GET|PATCH|DELETE /features/:id`, etc.
 - `GET|POST /requirements`, …
 - `GET|POST /products`, … (create/update products for multi-surface taxonomies)
-- Ontology (typically **admin** for mutating compile/refresh):  
-  `GET /ontology/capabilities`, `GET /ontology/brief?format=md|json&mode=compact|full`,  
-  `POST /ontology/compile`, `POST /ontology/refresh-bindings`, `POST /ontology/export-file`  
-  (exact auth: follow response codes if you are not admin).
+- **Ontology:** full path and roles are documented in **§5** (`/api/ontology/...`).
 
 Use **GET** `/agent/coding-guide` with the same auth as above for the playbook as raw Markdown.
 
 ---
 
-## 7. Mental model (minimum vocabulary)
+## 8. Mental model (minimum vocabulary)
 
 - **Domain** (pillar): strategic grouping for initiatives on boards.
 - **Product:** product line / asset — groups initiatives (**not** a SaaS tenant). This is what you use for separate **apps/surfaces** in plain language (multiple products = multiple surfaces), unless the org defines otherwise.
@@ -172,7 +233,7 @@ Use **GET** `/agent/coding-guide` with the same auth as above for the playbook a
 
 ---
 
-## 8. Roles (respect least privilege)
+## 9. Roles (respect least privilege)
 
 `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `MARKETING`, `VIEWER`, `PENDING`.
 
@@ -185,9 +246,9 @@ Never assume **SUPER_ADMIN** unless the connected identity is one.
 
 ---
 
-## 9. Playbook — read what was asked, implement, update Tymio
+## 10. Playbook — read what was asked, implement, update Tymio
 
-1. Use **`tymio_get_agent_brief`** (remote MCP) or **`GET /ontology/brief`** to see how capabilities map to routes and tools.
+1. Use **`tymio_get_agent_brief`** (remote MCP) or **`GET /api/ontology/brief`** (see **§5**) to see how capabilities map to routes, models, and MCP tools.
 2. Use **`drd_meta`** or **`GET /meta`** for IDs and taxonomy (only after you are authenticated).
 3. List and drill into **`drd_list_initiatives`**, **`drd_get_initiative`**, **`drd_list_features`**, **`drd_list_requirements`** (remote MCP or REST equivalents).
 4. Read **notes** on initiatives/features when present (acceptance criteria, analysis).
@@ -195,7 +256,7 @@ Never assume **SUPER_ADMIN** unless the connected identity is one.
 
 ---
 
-## 10. Google Cloud Console (for operators)
+## 11. Google Cloud Console (for operators)
 
 For production at **tymio.app**, the OAuth web client should include:
 
@@ -206,10 +267,10 @@ For production at **tymio.app**, the OAuth web client should include:
 
 ---
 
-## 11. Checklist before closing an agent task
+## 12. Checklist before closing an agent task
 
 - [ ] Tymio initiative/feature/requirement IDs cited or updated if the task was tracked in the hub.
-- [ ] If the **API surface** changed, ontology/brief refreshed or updated in Admin (human step).
+- [ ] If the **API surface** changed, **ontology** updated: admin **Refresh default bindings** / **Compile** where applicable, or manual capability/binding edits (see **§5**).
 - [ ] No destructive demo seeds or unreviewed imports against **production**.
 - [ ] If MCP/REST was unavailable, you stated that clearly and gave the user **UI + API_KEY + MCP** setup options — you did **not** claim tenant data was created without a successful authenticated call.
 

@@ -503,4 +503,6 @@ export type GanttTask = {
   owner?: string | null;
   progress: number;
   dependencies: string[];
+  /** When API provides it (e.g. after DB migration), shown in Gantt tooltip */
+  timelineExtended?: boolean;
 };

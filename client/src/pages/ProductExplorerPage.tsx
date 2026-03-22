@@ -17,6 +17,19 @@ type Props = {
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
 
+const TERMINOLOGY_KEY = "productTree.terminology";
+type Terminology = "initiative" | "epic";
+
+function getStoredTerminology(): Terminology {
+  try {
+    const v = localStorage.getItem(TERMINOLOGY_KEY);
+    if (v === "epic" || v === "initiative") return v;
+  } catch {
+    /* ignore */
+  }
+  return "initiative";
+}
+
 export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserId, onOpenInitiative, onRefreshBoard, quickFilter }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
@@ -24,6 +37,7 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
   const [domains, setDomains] = useState<Domain[]>([]);
   const [statusFilter, setStatusFilter] = useState<InitiativeStatus | "">("");
   const [impactFilter, setImpactFilter] = useState<"any" | "with">("any");
+  const [terminology, setTerminology] = useState<Terminology>(getStoredTerminology);
 
   async function load() {
     const [prodResult, metaResult] = await Promise.all([api.getProducts(), api.getMeta()]);
@@ -80,11 +94,12 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
     );
   }, []);
 
+  const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+
   const filtered = useMemo(() => {
     const q = quickFilter?.trim().toLowerCase();
-    return products.map((product) => ({
-      ...product,
-      initiatives: product.initiatives.filter((initiative) => {
+    return products.map((product) => {
+      const initiatives = product.initiatives.filter((initiative) => {
         if (statusFilter && initiative.status !== statusFilter) return false;
         if (impactFilter === "with") {
           const hasPersona = (initiative.personaImpacts?.length ?? 0) > 0;
@@ -105,8 +120,10 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
           if (!hay.includes(q)) return false;
         }
         return true;
-      })
-    }));
+      });
+      initiatives.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99));
+      return { ...product, initiatives };
+    });
   }, [products, quickFilter, statusFilter, impactFilter]);
 
   return (
@@ -128,9 +145,43 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
             <option value="with">{t("productTree.withImpact")}</option>
           </Select>
         </div>
+        <div className="flex items-center gap-2">
+          <Label>{t("productTree.terminologyLabel")}</Label>
+          <span className="inline-flex rounded border border-slate-200 bg-slate-50 p-0.5 text-xs">
+            <button
+              type="button"
+              className={`rounded px-2 py-1 ${terminology === "initiative" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              onClick={() => {
+                setTerminology("initiative");
+                try {
+                  localStorage.setItem(TERMINOLOGY_KEY, "initiative");
+                } catch {
+                  /* ignore */
+                }
+              }}
+            >
+              {t("productTree.initiativeLabel")}
+            </button>
+            <button
+              type="button"
+              className={`rounded px-2 py-1 ${terminology === "epic" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              onClick={() => {
+                setTerminology("epic");
+                try {
+                  localStorage.setItem(TERMINOLOGY_KEY, "epic");
+                } catch {
+                  /* ignore */
+                }
+              }}
+            >
+              {t("productTree.epicLabel")}
+            </button>
+          </span>
+        </div>
       </div>
       <ProductTree
         products={filtered}
+        terminology={terminology}
         users={users}
         domains={domains}
         isAdmin={isAdmin}

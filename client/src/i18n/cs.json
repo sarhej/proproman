@@ -259,6 +259,9 @@
     "discard": "Zahodit",
     "saveAndClose": "Uložit a zavřít",
     "personaRadar": "Radar person",
+    "personaRadarNoPersonas": "Nejsou definované persony — přidejte je v administraci.",
+    "personaRadarEmpty": "Zatím žádné skóre dopadu na persony — nastavte dopad v detailu iniciativy.",
+    "personaRadarLegend": "Měřítko 1–5 na personu (vyšší = silnější dopad).",
     "comments": "Komentáře",
     "addComment": "Přidat komentář...",
     "dependsOn": "Závisí na",
@@ -399,6 +402,7 @@
       "BLOCKED": "Blokováno"
     },
     "prolongedNote": "Iniciativa platí pro dané období. Práce pokračující do dalšího období má být založena jako nová navazující iniciativa s novými cíli.",
+    "timelineExtended": "Časová osa prodloužena — práce pokračuje mimo původní období.",
     "empty": "Žádné iniciativy s datem zahájení a cílem k zobrazení."
   },
   "kpiDashboard": {
@@ -499,6 +503,12 @@
     "impact": "Dopad",
     "progress": "Pokrok",
     "withImpact": "S dopadem",
+    "terminologyLabel": "Označení",
+    "initiativeLabel": "iniciativa",
+    "initiativeLabelPlural": "iniciativy",
+    "epicLabel": "epic",
+    "epicLabelPlural": "epicy",
+    "addEpic": "Přidat epic",
     "empty": "Žádné produkty / assety. Vytvořte první."
   },
   "admin": {

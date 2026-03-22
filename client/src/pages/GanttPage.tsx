@@ -44,7 +44,7 @@ function darken(hex: string, amount = 0.2): string {
   return `#${dr.toString(16).padStart(2, "0")}${dg.toString(16).padStart(2, "0")}${db.toString(16).padStart(2, "0")}`;
 }
 
-function toGanttTasks(raw: GanttTask[], allIds: Set<string>): (Task & { domain?: string })[] {
+function toGanttTasks(raw: GanttTask[], allIds: Set<string>): (Task & { domain?: string; timelineExtended?: boolean })[] {
   return raw
     .filter((t) => t.startDate && t.targetDate)
     .map((t) => {
@@ -63,6 +63,7 @@ function toGanttTasks(raw: GanttTask[], allIds: Set<string>): (Task & { domain?:
         dependencies: t.dependencies.filter((d) => allIds.has(d)),
         isDisabled: true,
         domain: t.domain,
+        timelineExtended: t.timelineExtended,
         styles: {
           backgroundColor: bg,
           backgroundSelectedColor: lighten(bg, 0.15),
@@ -73,12 +74,17 @@ function toGanttTasks(raw: GanttTask[], allIds: Set<string>): (Task & { domain?:
     });
 }
 
-function CustomTooltip({ task }: { task: Task & { domain?: string }; fontSize: string; fontFamily: string }) {
+function CustomTooltip({ task }: { task: Task & { domain?: string; timelineExtended?: boolean }; fontSize: string; fontFamily: string }) {
+  const { t } = useTranslation();
   const pct = Math.round(task.progress);
+  const extended = (task as Task & { timelineExtended?: boolean }).timelineExtended;
   return (
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg" style={{ minWidth: 200 }}>
       <p className="mb-1 text-sm font-semibold text-slate-900">{task.name}</p>
       {task.domain ? <p className="mb-0.5 text-xs text-slate-500">{task.domain}</p> : null}
+      {extended ? (
+        <p className="mb-0.5 text-xs font-medium text-amber-700">{t("gantt.timelineExtended")}</p>
+      ) : null}
       <p className="text-xs text-slate-500">
         {task.start.toLocaleDateString()} &ndash; {task.end.toLocaleDateString()}
       </p>

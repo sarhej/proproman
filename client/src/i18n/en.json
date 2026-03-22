@@ -259,6 +259,9 @@
     "discard": "Discard",
     "saveAndClose": "Save & Close",
     "personaRadar": "Persona Radar",
+    "personaRadarNoPersonas": "No personas defined — add personas in Admin to use the radar.",
+    "personaRadarEmpty": "No persona impact scores yet — set impact in the initiative detail panel.",
+    "personaRadarLegend": "Scale 1–5 per persona (higher = stronger impact).",
     "comments": "Comments",
     "addComment": "Add a comment...",
     "dependsOn": "Depends on",
@@ -399,6 +402,7 @@
       "BLOCKED": "Blocked"
     },
     "prolongedNote": "Initiatives are for a fixed period. Work continuing into the next period should be added as a new follow-up initiative with new goals.",
+    "timelineExtended": "Timeline extended — work continues beyond the original window.",
     "empty": "No initiatives with start and target dates to display."
   },
   "kpiDashboard": {
@@ -499,6 +503,12 @@
     "impact": "Impact",
     "progress": "Progress",
     "withImpact": "With impact",
+    "terminologyLabel": "Labels",
+    "initiativeLabel": "initiative",
+    "initiativeLabelPlural": "initiatives",
+    "epicLabel": "epic",
+    "epicLabelPlural": "epics",
+    "addEpic": "Add epic",
     "empty": "No products / assets found. Create one to get started."
   },
   "admin": {
