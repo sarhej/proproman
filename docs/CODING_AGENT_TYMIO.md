@@ -2,7 +2,7 @@
 
 **Audience:** Autonomous or interactive coding agents (Cursor, Claude Code, CI scripts) that need to **model work in Tymio**, **read what the org asked for**, and **map implementation back to the hub**.
 
-**Standalone handoff (paste into an agent without this repo):** [CODING_AGENT_HANDOFF_TYMIO_APP.md](./CODING_AGENT_HANDOFF_TYMIO_APP.md) — `https://tymio.app` URLs and MCP paths only.
+**Standalone handoff (paste into an agent without this repo):** [CODING_AGENT_HANDOFF_TYMIO_APP.md](./CODING_AGENT_HANDOFF_TYMIO_APP.md) — `https://tymio.app` URLs, MCP paths, **§2 (401 + MCP must be connected + “applications” = Products)**, and stdio vs remote tool limits.
 
 **Canonical product overview:** [HUB.md](./HUB.md)  
 **Generated ontology brief (repo file):** [context/AGENT_BRIEF.md](../context/AGENT_BRIEF.md) (do not hand-edit as source of truth; regenerate from the hub)
@@ -25,7 +25,7 @@
 ## 2. Mental model (minimum vocabulary)
 
 - **Domain** (“pillar” in UI): strategic grouping for initiatives on boards.
-- **Product** (in DB): **product line / asset**, not a SaaS tenant. Groups initiatives in Product Explorer.
+- **Product** (in DB): **product line / asset**, not a SaaS tenant. Groups initiatives in Product Explorer. There is **no separate “Application” entity** — multiple customer-facing or internal **apps/surfaces** are usually modeled as **multiple products** unless the org agrees otherwise.
 - **Initiative:** roadmap item (often an **epic**); has priority, horizon, status, domain, owner, assignments, **features**, links to accounts/partners/demands/campaigns.
 - **Feature:** deliverable under an initiative; holds **requirements** (delivery granularity).
 - **Requirement:** checkable work item under a feature (kanban, detail pages).

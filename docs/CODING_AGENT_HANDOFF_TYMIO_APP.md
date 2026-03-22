@@ -23,9 +23,39 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 
 ---
 
-## 2. How to connect an agent
+## 2. Read first: live access, auth, and “applications”
 
-### 2.1 Remote MCP (recommended when the client supports HTTP MCP + OAuth)
+### 2.1 Nothing on the tenant works without authentication
+
+- **`GET https://tymio.app/api/meta` (and almost all `/api/*`) returns 401** unless you send a **valid session cookie** (browser) or **`Authorization: Bearer <API_KEY>`** where the deployment has **`API_KEY`** set. There is **no** public, anonymous meta or write API.
+- If your environment has **no** API key and **no** browser session, you **cannot** create or list products, initiatives, etc. via REST. Say so explicitly to the user; do not imply data was changed on their tenant.
+
+### 2.2 MCP tools only exist when the client is connected
+
+- Tools such as **`drd_meta`**, **`drd_create_product`**, **`tymio_get_agent_brief`** are available **only** if this chat/agent runtime has a **working Tymio MCP** configuration (remote URL + OAuth, or stdio + `DRD_API_BASE_URL` + `DRD_API_KEY`).
+- If **`user-tymio` / `tymio` tools are missing, not registered, or calls fail with connection/auth errors**, you are **not** connected to Tymio. You **must not** behave as if MCP mutations ran successfully. Tell the user to enable remote MCP (`https://tymio.app/mcp` + Google) or provide **`DRD_API_KEY`** (same value as server **`API_KEY`**) for stdio/scripts.
+
+### 2.3 “Applications” in everyday language → **Product** in Tymio
+
+- Tymio has **no separate “Application” (or “App”) entity** in the hub. The field that groups roadmap work for a **surface** (e.g. landing site, admin UI, internal playground) is **Product** — in the model it is a **product line / asset**, not a SaaS tenant.
+- If someone asks for **three applications** (e.g. Landing, Admin, Playground), the correct mapping is usually **three Products**, each holding its own initiatives/features — unless the organization explicitly uses another convention.
+- After creating products, initiatives belong under a **Domain** (pillar) and a **Product**; use **`drd_meta`** / **`GET /api/meta`** for `domainId` / `productId` when automating.
+
+### 2.4 If you cannot connect
+
+Give the user **actionable** options:
+
+1. **UI:** As **Admin / Super admin** (or **Editor** where allowed), create products and initiatives in **Product Explorer** (or equivalent admin surfaces).
+2. **REST:** User exports **`API_KEY`** from deployment secrets and runs scripts with **`Authorization: Bearer …`** to `https://tymio.app/api/...`.
+3. **MCP:** User configures Cursor (or another client) with **remote** `https://tymio.app/mcp` and completes OAuth, or runs the **stdio** MCP with **`DRD_API_BASE_URL`** + **`DRD_API_KEY`**.
+
+Do **not** add repository-only helper scripts unless the user’s repo and workflow expect them; this handoff does not assume a checkout. Prefer documenting the **API/MCP/UI** paths above.
+
+---
+
+## 3. How to connect an agent
+
+### 3.1 Remote MCP (recommended when the client supports HTTP MCP + OAuth)
 
 - **Endpoint:** `POST https://tymio.app/mcp`
 - **Auth:** OAuth 2.1 with Google, scoped for MCP (`mcp:tools`). Unauthenticated calls receive **401** with pointers to the metadata URL above; follow the client’s MCP OAuth flow (e.g. Cursor “URL” server config).
@@ -43,23 +73,23 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 }
 ```
 
-### 2.2 REST API (curl, scripts, or agents without MCP)
+### 3.2 REST API (curl, scripts, or agents without MCP)
 
 - **Base:** `https://tymio.app/api`
 - **Auth:** Logged-in **session cookie** from the browser, or **`Authorization: Bearer <API_KEY>`** when the deployment has `API_KEY` configured (automation user; role is fixed server-side).
 
-### 2.3 Local stdio MCP package (optional)
+### 3.3 Local stdio MCP package (optional)
 
 Some teams run a small **stdio** MCP process that proxies to the hub over REST. Point it at production by setting:
 
 - `DRD_API_BASE_URL=https://tymio.app`
 - `DRD_API_KEY=<same value as server API_KEY>`
 
-That process exposes **only a subset** of tools (see section 4). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp`.
+That process exposes **only a subset** of tools (see section 5). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp`.
 
 ---
 
-## 3. MCP tool names (remote server at `/mcp`)
+## 4. MCP tool names (remote server at `/mcp`)
 
 Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook.
 
@@ -102,24 +132,25 @@ Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` 
 
 ---
 
-## 4. Stdio MCP subset (when using `DRD_API_BASE_URL`)
+## 5. Stdio MCP subset (when using `DRD_API_BASE_URL`)
 
 If the client uses the **stdio** bridge against `https://tymio.app`, expect **only**:
 
 `drd_health`, `drd_meta`, `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`, `drd_list_domains`, `drd_list_products`, `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`, `tymio_get_coding_agent_guide`, `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability`.
 
-For features, requirements, timeline, campaigns, etc., use **remote MCP** or **REST** (`/api/...`).
+**Note:** **`drd_create_product`** is **not** in the stdio subset — use **remote MCP** or **REST** `POST /api/products` with a Bearer token to create products from automation.
 
 ---
 
-## 5. REST endpoints agents often need
+## 6. REST endpoints agents often need
 
-All under `https://tymio.app/api` unless noted.
+All under `https://tymio.app/api` unless noted. All require auth unless documented otherwise.
 
-- `GET /meta` — domains, products, users, accounts, partners, personas, revenue streams.
+- `GET /meta` — domains, products, users, accounts, partners, personas, revenue streams. Response shape is JSON; products are typically under a **`products`** array (confirm in your tenant’s response if you write a parser).
 - `GET|POST /initiatives`, `GET|PATCH|DELETE /initiatives/:id`, etc.
 - `GET|POST /features`, `GET|PATCH|DELETE /features/:id`, etc.
 - `GET|POST /requirements`, …
+- `GET|POST /products`, … (create/update products for multi-surface taxonomies)
 - Ontology (typically **admin** for mutating compile/refresh):  
   `GET /ontology/capabilities`, `GET /ontology/brief?format=md|json&mode=compact|full`,  
   `POST /ontology/compile`, `POST /ontology/refresh-bindings`, `POST /ontology/export-file`  
@@ -129,10 +160,10 @@ Use **GET** `/agent/coding-guide` with the same auth as above for the playbook a
 
 ---
 
-## 6. Mental model (minimum vocabulary)
+## 7. Mental model (minimum vocabulary)
 
 - **Domain** (pillar): strategic grouping for initiatives on boards.
-- **Product:** product line / asset — groups initiatives (not a SaaS tenant).
+- **Product:** product line / asset — groups initiatives (**not** a SaaS tenant). This is what you use for separate **apps/surfaces** in plain language (multiple products = multiple surfaces), unless the org defines otherwise.
 - **Initiative:** roadmap item (often epic-level); links to features, domain, product, owners, optional commercial links.
 - **Feature:** deliverable under an initiative.
 - **Requirement:** finest checkable work item under a feature (status, kanban).
@@ -141,7 +172,7 @@ Use **GET** `/agent/coding-guide` with the same auth as above for the playbook a
 
 ---
 
-## 7. Roles (respect least privilege)
+## 8. Roles (respect least privilege)
 
 `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `MARKETING`, `VIEWER`, `PENDING`.
 
@@ -154,17 +185,17 @@ Never assume **SUPER_ADMIN** unless the connected identity is one.
 
 ---
 
-## 8. Playbook — read what was asked, implement, update Tymio
+## 9. Playbook — read what was asked, implement, update Tymio
 
 1. Use **`tymio_get_agent_brief`** (remote MCP) or **`GET /ontology/brief`** to see how capabilities map to routes and tools.
-2. Use **`drd_meta`** or **`GET /meta`** for IDs and taxonomy.
+2. Use **`drd_meta`** or **`GET /meta`** for IDs and taxonomy (only after you are authenticated).
 3. List and drill into **`drd_list_initiatives`**, **`drd_get_initiative`**, **`drd_list_features`**, **`drd_list_requirements`** (remote MCP or REST equivalents).
 4. Read **notes** on initiatives/features when present (acceptance criteria, analysis).
 5. After shipping, update requirement/initiative state with the appropriate **`drd_update_*`** tools or REST PATCHes.
 
 ---
 
-## 9. Google Cloud Console (for operators)
+## 10. Google Cloud Console (for operators)
 
 For production at **tymio.app**, the OAuth web client should include:
 
@@ -175,11 +206,12 @@ For production at **tymio.app**, the OAuth web client should include:
 
 ---
 
-## 10. Checklist before closing an agent task
+## 11. Checklist before closing an agent task
 
 - [ ] Tymio initiative/feature/requirement IDs cited or updated if the task was tracked in the hub.
 - [ ] If the **API surface** changed, ontology/brief refreshed or updated in Admin (human step).
 - [ ] No destructive demo seeds or unreviewed imports against **production**.
+- [ ] If MCP/REST was unavailable, you stated that clearly and gave the user **UI + API_KEY + MCP** setup options — you did **not** claim tenant data was created without a successful authenticated call.
 
 ---
 
