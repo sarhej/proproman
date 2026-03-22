@@ -9,12 +9,13 @@ const path = require("path");
 const schemaPath = path.join(__dirname, "../prisma/schema.prisma");
 
 function run(label, fn) {
-  console.log(`[pre-deploy] ${label}...`);
+  const safe = String(label);
+  console.log("[pre-deploy]", safe + "...");
   try {
     fn();
-    console.log(`[pre-deploy] ${label} OK`);
+    console.log("[pre-deploy]", safe, "OK");
   } catch (e) {
-    console.error(`[pre-deploy] ${label} FAILED:`, e.message || e);
+    console.error("[pre-deploy]", safe, "FAILED:", e?.message ?? e);
     if (e.stdout) console.error(e.stdout.toString());
     if (e.stderr) console.error(e.stderr.toString());
     process.exit(1);
