@@ -742,6 +742,16 @@ function ProductRow({
           <span className="ml-2 text-xs font-normal text-slate-500">
             {product.initiatives.length} initiative{product.initiatives.length !== 1 ? "s" : ""}
           </span>
+          {isAdmin && product.initiatives.length === 0 ? (
+            <span className="ml-2 inline-flex items-center align-middle">
+              <InlineAddInitiative
+                productId={product.id}
+                domains={domains}
+                currentUserId={currentUserId}
+                onRefresh={onRefresh}
+              />
+            </span>
+          ) : null}
           {isAdmin ? (
             <DeleteBtn label={product.name} onDelete={async () => { await api.deleteProduct(product.id); await onRefresh(); }} />
           ) : null}
@@ -769,7 +779,7 @@ function ProductRow({
           onRequirementUpdated={onRequirementUpdated}
         />
       ))}
-      {open && isAdmin ? (
+      {open && isAdmin && product.initiatives.length > 0 ? (
         <tr className="border-t border-slate-100 text-xs">
           <td className="py-1 pl-8 pr-2">
             <InlineAddInitiative
