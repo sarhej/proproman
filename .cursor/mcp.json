@@ -1,10 +1,19 @@
 {
   "mcpServers": {
-    "drd-hub": {
+    "tymio-local": {
       "url": "http://localhost:8080/mcp"
     },
-    "drd-hub-remote": {
+    "tymio-remote": {
       "url": "https://drdhub.up.railway.app/mcp"
+    },
+    "tymio-stdio": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp/dist/index.js"],
+      "env": {
+        "DRD_API_BASE_URL": "http://localhost:8080"
+      },
+      "envFile": "${workspaceFolder}/server/.env"
     }
   }
 }

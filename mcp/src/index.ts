@@ -1,5 +1,5 @@
 /**
- * DrD Hub MCP Server — exposes project APIs as MCP tools for agents.
+ * Tymio MCP server (stdio) — exposes hub REST APIs as MCP tools for agents.
  * Set DRD_API_BASE_URL and DRD_API_KEY in the environment.
  */
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { drdFetch, drdFetchText, hasApiKey } from "./api.js";
 
 const server = new McpServer({
-  name: "drd-hub",
+  name: "tymio-hub",
   version: "1.0.0"
 });
 
@@ -20,8 +20,8 @@ function textContent(text: string) {
 server.registerTool(
   "drd_health",
   {
-    title: "DrD API health check",
-    description: "Check if the DrD Hub API is reachable.",
+    title: "Tymio API health check",
+    description: "Check if the Tymio hub API is reachable.",
     inputSchema: z.object({})
   },
   async () => {
@@ -33,7 +33,7 @@ server.registerTool(
 server.registerTool(
   "drd_meta",
   {
-    title: "Get DrD meta",
+    title: "Get Tymio meta",
     description: "Get meta data: domains, products, accounts, partners, personas, revenue streams, users.",
     inputSchema: z.object({})
   },

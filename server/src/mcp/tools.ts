@@ -53,14 +53,14 @@ export function registerTools(server: McpServer) {
   // --- Health ---
   server.registerTool(
     "drd_health",
-    { title: "DrD API health check", description: "Check if the DrD Hub API is reachable.", inputSchema: z.object({}) },
+    { title: "Tymio API health check", description: "Check if the Tymio hub API is reachable.", inputSchema: z.object({}) },
     async () => textContent(JSON.stringify({ ok: true }))
   );
 
   // --- Meta ---
   server.registerTool(
     "drd_meta",
-    { title: "Get DrD meta", description: "Get meta data: domains, products, accounts, partners, personas, revenue streams, users.", inputSchema: z.object({}) },
+    { title: "Get Tymio meta", description: "Get meta data: domains, products, accounts, partners, personas, revenue streams, users.", inputSchema: z.object({}) },
     async (_args, ctx) => {
       getUserFromCtx(ctx);
       const [domains, personas, revenueStreams, users, products, accounts, partners] = await Promise.all([
@@ -198,7 +198,7 @@ export function registerTools(server: McpServer) {
     }
   );
 
-  // Set implementation notes on each Dr Digital HUB epic (initiative.notes) so they are visible in Product Explorer.
+  // Set implementation notes on each Tymio demo hub epic (initiative.notes) so they are visible in Product Explorer.
   const DR_HUB_EPIC_NOTES: Record<string, string> = {
     "Epic: Accesses & Roles": `Implementation details (Epic: Accesses & Roles)
 
@@ -251,15 +251,15 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   server.registerTool(
     "drd_set_dr_hub_epic_implementation_notes",
     {
-      title: "Set Dr Digital HUB epic implementation notes",
-      description: "Set the Notes field on each Dr Digital HUB epic (initiative) to the canonical implementation details for that epic. Use this so implementation details are tracked in the product (Product Explorer); open an epic and see Notes in the Details tab. No arguments.",
+      title: "Set Tymio demo hub epic implementation notes",
+      description: "Set the Notes field on each Tymio demo hub epic (initiative) to the canonical implementation details for that epic. Use this so implementation details are tracked in the product (Product Explorer); open an epic and see Notes in the Details tab. No arguments.",
       inputSchema: z.object({})
     },
     async (_args, ctx) => {
       const { role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
-      const product = await prisma.product.findFirst({ where: { name: "Dr Digital HUB" } });
-      if (!product) throw new Error("Product 'Dr Digital HUB' not found. Run db:populate-dr-hub first.");
+      const product = await prisma.product.findFirst({ where: { name: "Tymio demo hub" } });
+      if (!product) throw new Error("Product 'Tymio demo hub' not found. Run db:populate-tymio-demo --workspace server first.");
       const initiatives = await prisma.initiative.findMany({ where: { productId: product.id } });
       const updated: string[] = [];
       for (const init of initiatives) {

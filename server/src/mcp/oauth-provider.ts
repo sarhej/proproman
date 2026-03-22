@@ -5,6 +5,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { logAudit } from "../services/audit.js";
+import { autoRoleForGoogleEmail } from "../auth/googleAutoRole.js";
 import type {
   OAuthServerProvider,
   AuthorizationParams
@@ -29,13 +30,6 @@ const JWT_SECRET_RAW = env.MCP_JWT_SECRET ?? env.SESSION_SECRET;
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_RAW);
 const TOKEN_TTL = 3600; // 1 hour
 const REFRESH_TTL = 60 * 60 * 24 * 14; // 14 days
-
-function roleForEmail(email: string): UserRole | null {
-  if (email === "s@strt.vc") return UserRole.SUPER_ADMIN;
-  if (email.endsWith("@drdigital.care")) return UserRole.EDITOR;
-  if (email.endsWith("@ehtmedic.cz")) return UserRole.EDITOR;
-  return null;
-}
 
 // --- Client store: in-memory map hydrated from DB at startup so client_id survives deploys ---
 
@@ -123,7 +117,7 @@ async function resolveOrCreateUser(profile: { email: string; name: string; googl
     return linked;
   }
 
-  const autoRole = roleForEmail(email) ?? UserRole.PENDING;
+  const autoRole = autoRoleForGoogleEmail(email) ?? UserRole.PENDING;
   const created = await prisma.user.create({
     data: {
       email, name, avatarUrl, googleId, role: autoRole, lastLoginAt: new Date(),
@@ -158,7 +152,7 @@ async function verifyJwt(token: string): Promise<jose.JWTPayload & { userId: str
 
 // --- The provider ---
 
-export class DrdOAuthProvider implements OAuthServerProvider {
+export class TymioOAuthProvider implements OAuthServerProvider {
   skipLocalPkceValidation = false;
 
   get clientsStore(): OAuthRegisteredClientsStore {

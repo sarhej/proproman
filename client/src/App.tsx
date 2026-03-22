@@ -86,7 +86,7 @@ function App() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
-            <img src="/logo.png" alt="Dr. Digital" className="h-8" />
+            <img src="/logo.png" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <p className="mb-4 text-sm text-slate-600">
@@ -142,7 +142,7 @@ function App() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center">
           <div className="mb-4 flex items-center justify-center gap-3">
-            <img src="/logo.png" alt="Dr. Digital" className="h-8" />
+            <img src="/logo.png" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <div className="mb-4 flex justify-center">

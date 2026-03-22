@@ -14,7 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-notification-rules": "tsx prisma/seed-notification-rules.ts",
-    "db:populate-dr-hub": "tsx scripts/populate-dr-digital-hub.ts",
+    "db:populate-tymio-demo": "tsx scripts/populate-tymio-demo-hub.ts",
     "ontology:refresh": "tsx scripts/ontology-refresh.ts"
   },
   "prisma": {

@@ -1,9 +1,9 @@
 /**
- * Populates the Dr Digital HUB asset in the Hub: product, links initiatives,
- * creates features and requirements from the analysis (Dr.D-Hub-updates-ANALYSIS).
+ * Populates the Tymio demo hub asset: product, linked initiatives,
+ * features and requirements (idempotent where noted).
  *
- * Run: npm run db:populate-dr-hub --workspace server
- * Or from server: npx tsx scripts/populate-dr-digital-hub.ts
+ * Run: npm run db:populate-tymio-demo --workspace server
+ * Or from server: npx tsx scripts/populate-tymio-demo-hub.ts
  * Requires DATABASE_URL (e.g. from server/.env).
  */
 import path from "node:path";
@@ -17,7 +17,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const PRODUCT_NAME = "Dr Digital HUB";
+const PRODUCT_NAME = "Tymio demo hub";
 /** Must match your Hub domain (e.g. "Technologický Leader" or "Technologický lídr" from seed). */
 const DOMAIN_NAME = "Technologický Leader";
 /** Epics only (Initiative = Epic). No summary initiative; overview lives in product description. */
@@ -201,7 +201,7 @@ async function main() {
     }
     }
 
-    // Ensure "Editovat název funkce na obrazovce funkce" exists (idempotent for existing DrD Hub)
+    // Ensure "Editovat název funkce na obrazovce funkce" exists (idempotent for existing demo hub)
     const editTitleFeatureTitle = "Editovat název funkce na obrazovce funkce";
     const existingEditTitle = await prisma.feature.findFirst({
       where: { initiativeId: bugsInit.id, title: editTitleFeatureTitle }
@@ -334,7 +334,7 @@ async function main() {
     }
   }
 
-  console.log("Done. Dr Digital HUB product, initiatives linked, features and requirements created.");
+  console.log("Done. Tymio demo hub product, initiatives linked, features and requirements created.");
 }
 
 main()

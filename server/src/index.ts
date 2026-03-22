@@ -1,4 +1,4 @@
-// DrD Hub (deploy trigger: watchPatterns include /server/**)
+// Tymio API (deploy trigger: watchPatterns include /server/**)
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";

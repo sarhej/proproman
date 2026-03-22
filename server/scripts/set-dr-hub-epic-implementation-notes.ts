@@ -1,5 +1,5 @@
 /**
- * Sets implementation notes on each Dr Digital HUB epic (initiative) so that
+ * Sets implementation notes on each Tymio demo hub epic (initiative) so that
  * implementation details are tracked in the product (Product Explorer / initiative panel)
  * rather than only in docs.
  *
@@ -16,7 +16,7 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const prisma = new PrismaClient();
 
-const PRODUCT_NAME = "Dr Digital HUB";
+const PRODUCT_NAME = "Tymio demo hub";
 
 const EPIC_NOTES: Record<string, string> = {
   "Epic: Accesses & Roles": `Implementation details (Epic: Accesses & Roles)
@@ -76,7 +76,7 @@ async function main() {
     where: { name: PRODUCT_NAME }
   });
   if (!product) {
-    throw new Error(`Product "${PRODUCT_NAME}" not found. Run populate-dr-digital-hub first.`);
+    throw new Error(`Product "${PRODUCT_NAME}" not found. Run db:populate-tymio-demo --workspace server first.`);
   }
 
   const initiatives = await prisma.initiative.findMany({
@@ -96,7 +96,7 @@ async function main() {
     console.log("Updated notes for:", init.title);
   }
 
-  console.log("Done. Open Product Explorer → Dr Digital HUB → open each epic to see implementation notes in Notes.");
+  console.log("Done. Open Product Explorer → Tymio demo hub → open each epic to see implementation notes in Notes.");
 }
 
 main()

@@ -4,13 +4,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { logAudit } from "../services/audit.js";
-
-function roleForEmail(email: string): UserRole | null {
-  if (email === "s@strt.vc") return UserRole.SUPER_ADMIN;
-  if (email.endsWith("@drdigital.care")) return UserRole.EDITOR;
-  if (email.endsWith("@ehtmedic.cz")) return UserRole.EDITOR;
-  return null;
-}
+import { autoRoleForGoogleEmail } from "./googleAutoRole.js";
 
 passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
@@ -91,7 +85,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
             return done(null, linked);
           }
 
-          const autoRole = roleForEmail(email) ?? UserRole.PENDING;
+          const autoRole = autoRoleForGoogleEmail(email) ?? UserRole.PENDING;
 
           const created = await prisma.user.create({
             data: {

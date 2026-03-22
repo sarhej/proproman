@@ -58,21 +58,21 @@ async function main() {
 
   // ─── Uživatelé ─────────────────────────────────────────────────
   const teamDefs: { name: string; email: string; aliases?: string[]; role: UserRole }[] = [
-    { name: "Ondrej Svoboda", email: "ondrej.svoboda@drdigital.care", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
+    { name: "Ondrej Svoboda", email: "ondrej.svoboda@demo.tymio.app", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
     { name: "Sergej Fedorovic", email: "s@strt.vc", aliases: ["sarhej@gmail.com"], role: UserRole.SUPER_ADMIN },
-    { name: "Nela Mataseje", email: "nela.mataseje@drdigital.care", role: UserRole.EDITOR },
-    { name: "Vaclav Cerny", email: "vaclav.cerny@drdigital.care", role: UserRole.EDITOR },
-    { name: "Michael Mladek", email: "michael.mladek@drdigital.care", role: UserRole.EDITOR },
-    { name: "Jakub Justra", email: "jakub.justra@drdigital.care", role: UserRole.EDITOR },
-    { name: "Adela Hlouskova", email: "adela.hlouskova@drdigital.care", role: UserRole.EDITOR },
-    { name: "Zdenek Trtil", email: "zdenek.trtil@drdigital.care", role: UserRole.EDITOR },
+    { name: "Nela Mataseje", email: "nela.mataseje@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Vaclav Cerny", email: "vaclav.cerny@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Michael Mladek", email: "michael.mladek@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Jakub Justra", email: "jakub.justra@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Adela Hlouskova", email: "adela.hlouskova@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Zdenek Trtil", email: "zdenek.trtil@demo.tymio.app", role: UserRole.EDITOR },
     { name: "Ales Zarsky", email: "ales.zarsky@gmail.com", role: UserRole.VIEWER },
     { name: "Jitka Pekarkova", email: "jitka.projektak@gmail.com", role: UserRole.SUPER_ADMIN },
-    { name: "David", email: "david@drdigital.care", role: UserRole.EDITOR },
-    { name: "Martina Dvorakova", email: "dvorakova@drdigital.care", role: UserRole.EDITOR },
+    { name: "David", email: "david@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Martina Dvorakova", email: "dvorakova@demo.tymio.app", role: UserRole.EDITOR },
     { name: "Pavel Lukes", email: "pavel@lukes.pro", role: UserRole.EDITOR },
-    { name: "Marek Dvorak", email: "marek.dvorak@drdigital.care", role: UserRole.EDITOR },
-    { name: "Filip Zavadil", email: "filip.zavadil@drdigital.care", role: UserRole.EDITOR },
+    { name: "Marek Dvorak", email: "marek.dvorak@demo.tymio.app", role: UserRole.EDITOR },
+    { name: "Filip Zavadil", email: "filip.zavadil@demo.tymio.app", role: UserRole.EDITOR },
   ];
 
   const users = await Promise.all(
@@ -116,7 +116,7 @@ async function main() {
   // ─── Produkty ──────────────────────────────────────────────────
   const products = await Promise.all(
     [
-      { name: "Doctor Digital App", description: "Mobilní a webová aplikace pro pacienty a lékaře", sortOrder: 1 },
+      { name: "Tymio app", description: "Mobilní a webová aplikace pro pacienty a lékaře", sortOrder: 1 },
       { name: "B2B Platforma", description: "Portál pro zaměstnavatele, pojišťovny a orgány státní správy", sortOrder: 2 },
       { name: "Integrační platforma", description: "Partnerské API, eGov a integrace pojišťoven", sortOrder: 3 },
     ].map((p) => prisma.product.create({ data: p }))
@@ -230,7 +230,7 @@ async function main() {
       problemStatement: "Pacienti a lékaři potřebují plnohodnotnou webovou aplikaci doplňující mobilní app pro správu zdravotních záznamů, objednávky a chat z desktopu.",
       successCriteria: "Pacienti mohou z webu řešit vše, co z mobilní aplikace. Roste počet konzultací z desktopového rozhraní.",
       description: "Plnohodnotná webová aplikace umožňující pacientům spravovat zdravotní záznamy, objednávat se k lékaři a komunikovat s lékaři z desktopu. Zahrnuje timeline zdraví, objednávkový systém a secure messaging.",
-      product: "Doctor Digital App", domain: "Klient", owner: "David",
+      product: "Tymio app", domain: "Klient", owner: "David",
       priority: Priority.P1, horizon: Horizon.NOW, status: InitiativeStatus.IN_PROGRESS,
       commercialType: CommercialType.CARE_QUALITY,
       startDate: "2026-03-01", targetDate: "2026-06-30", milestoneDate: "2026-05-01",
@@ -263,10 +263,10 @@ async function main() {
     // ── 2. Sdílení profilů / Dětský profil (Klient) ────────────
     {
       title: "Skupina Rodina (Dětský profil)",
-      problemStatement: "Umožnit uživatelům spravovat zdravotní péči celé rodiny v rámci jednoho účtu a zajistit dostupnější, rychlejší a koordinovanější péči přes Dr. Digital.",
+      problemStatement: "Umožnit uživatelům spravovat zdravotní péči celé rodiny v rámci jednoho účtu a zajistit dostupnější, rychlejší a koordinovanější péči přes Tymio.",
       successCriteria: "Hlava rodiny může pozvat členy do aplikace a spravovat dětské profily. Přístup k datům jiného člena rodiny je možný pouze na základě souhlasu. Zvýšený engagement, retence a počet řešených případů na domácnost.",
       description: "Zavedení funkce Skupina Rodina - hlava rodiny pozve členy domácnosti do aplikace a spravuje jejich zdravotní agendu (děti, rodiče) na základě jasně definovaných oprávnění a oboustranných souhlasů. Dětský profil lze založit od narození.",
-      product: "Doctor Digital App", domain: "Klient", owner: "Kuba",
+      product: "Tymio app", domain: "Klient", owner: "Kuba",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.IDEA,
       commercialType: CommercialType.CARE_QUALITY,
       startDate: "2026-06-01", targetDate: "2026-10-15", milestoneDate: "2026-08-01",
@@ -300,15 +300,15 @@ async function main() {
         { title: "Komplexní UX (nepochopení procesu souhlasu)", probability: "MEDIUM", impact: "MEDIUM", mitigation: "Pilotní test před plošným rolloutem. Interní školení týmu.", owner: "David" },
         { title: "Technická složitost (role, přechod dítě → dospělý účet)", probability: "LOW", impact: "HIGH", mitigation: "Postupné nasazení. Stabilizovaná pediatrie před spuštěním.", owner: "Kuba" },
       ],
-      notes: "Potřebné zdroje: Technický návrh (role, oprávnění, architektura dat), UX návrh (onboarding rodiny, souhlasy), vývoj BE+FE, QA + pilotní test, propojení z B2C. Právní: audit pediatrie, nastavení souhlasů. Dr. Digital Medical: procesy, stabilizovaná pediatrie, školení.",
+      notes: "Potřebné zdroje: Technický návrh (role, oprávnění, architektura dat), UX návrh (onboarding rodiny, souhlasy), vývoj BE+FE, QA + pilotní test, propojení z B2C. Právní: audit pediatrie, nastavení souhlasů. Tymio Medical: procesy, stabilizovaná pediatrie, školení.",
     },
     // ── 3. Jsme klinika plná lidí (Klient) ─────────────────────
     {
       title: "Jsme klinika plná lidí",
-      problemStatement: "Ukazujeme, že DrD nejsou náhodní nebo virtuální doktoři, ale živí lidé, tým, který spolupracuje, sdílí know-how a pomáhá klientům.",
-      successCriteria: "Klienti dokáží spojit konkrétní tváře s DrD. Lékaři jsou přirozeně citováni v médiích. Roste důvěra v online prostředí (komentáře, zpětná vazba, NPS). Web obsahuje profily klíčových odborníků.",
+      problemStatement: "Ukazujeme, že lidé v týmu Tymio nejsou náhodní nebo virtuální doktoři, ale živí lidé, tým, který spolupracuje, sdílí know-how a pomáhá klientům.",
+      successCriteria: "Klienti dokáží spojit konkrétní tváře s Tymio. Lékaři jsou přirozeně citováni v médiích. Roste důvěra v online prostředí (komentáře, zpětná vazba, NPS). Web obsahuje profily klíčových odborníků.",
       description: "Budujeme důvěru skrze konkrétní tváře a příběhy, posilujeme vnímání odbornosti a lidskosti, propojujeme medical tým s HQ i navenek, odlišujeme se od neosobních telemedicínských řešení. Nejde jen o fotky - jde o reputaci značky jako skutečné kliniky.",
-      product: "Doctor Digital App", domain: "Klient", owner: "Nelca",
+      product: "Tymio app", domain: "Klient", owner: "Nelca",
       priority: Priority.P1, horizon: Horizon.NOW, status: InitiativeStatus.IN_PROGRESS,
       commercialType: CommercialType.CARE_QUALITY,
       startDate: "2026-01-15", targetDate: "2026-06-30", milestoneDate: "2026-03-31",
@@ -318,22 +318,22 @@ async function main() {
       revenueWeights: { B2B: 15, B2G2C: 15, B2C: 50, Pojištění: 10, B2B2C: 10 },
       raci: { accountable: "Nelca", implementer: "Marek", consulted: ["Ondra"], informed: ["Kuba", "Adela"] },
       features: [
-        { title: "Profily lékařů na webu", description: "Profesionální profily s fotkami a popisem specializace na webu DrD.", status: FeatureStatus.DONE, startDate: "2026-01-15", targetDate: "2026-02-28", requirements: ["Profesionální fotografie", "Medailonky lékařů + sester", "SEO optimalizace"] },
-        { title: "Ambasadorský program DrD", description: "3-5 hlavních ambasadorů DrD pro PR a odborné komentáře v médiích.", status: FeatureStatus.IN_PROGRESS, startDate: "2026-02-01", targetDate: "2026-03-31", requirements: ["Výběr ambasadorů", "Mediální příprava lékařů", "Kvartální plán výstupů"] },
+        { title: "Profily lékařů na webu", description: "Profesionální profily s fotkami a popisem specializace na webu Tymio.", status: FeatureStatus.DONE, startDate: "2026-01-15", targetDate: "2026-02-28", requirements: ["Profesionální fotografie", "Medailonky lékařů + sester", "SEO optimalizace"] },
+        { title: "Ambasadorský program Tymio", description: "3-5 hlavních ambasadorů Tymio pro PR a odborné komentáře v médiích.", status: FeatureStatus.IN_PROGRESS, startDate: "2026-02-01", targetDate: "2026-03-31", requirements: ["Výběr ambasadorů", "Mediální příprava lékařů", "Kvartální plán výstupů"] },
         { title: "Video rozhovory s medical týmem", description: "Série video rozhovorů a reels s lékaři a sestrami pro sociální sítě.", status: FeatureStatus.PLANNED, startDate: "2026-03-01", targetDate: "2026-05-31", requirements: ["Produkce focení a videa", "Redakční plán", "Spolupráce medical × marketing"] },
       ],
       milestones: [
         { title: "Vlastní fotky na webu s popisem kdo co dělá - HOTOVO", targetDate: "2026-02-28", status: MilestoneStatus.DONE, owner: "Nelca" },
-        { title: "Definovat 3-5 hlavních ambasadorů DrD - HOTOVO s Lesensky", targetDate: "2026-02-28", status: MilestoneStatus.DONE, owner: "Nelca" },
+        { title: "Definovat 3-5 hlavních ambasadorů Tymio - HOTOVO s Lesensky", targetDate: "2026-02-28", status: MilestoneStatus.DONE, owner: "Nelca" },
         { title: "Spustit rozhovory s medical týmem", targetDate: "2026-04-30", status: MilestoneStatus.TODO, owner: "Nelca" },
       ],
       kpis: [
-        { title: "Mediální výstupy s DrD experty měsíčně", targetValue: "3", currentValue: "1", unit: "výstupy/měsíc", targetDate: "2026-06-30" },
+        { title: "Mediální výstupy s experty Tymio měsíčně", targetValue: "3", currentValue: "1", unit: "výstupy/měsíc", targetDate: "2026-06-30" },
         { title: "NPS skóre", targetValue: "93", currentValue: "92.6", unit: "%", targetDate: "2026-06-30" },
       ],
       stakeholders: [
         { name: "CEO", role: StakeholderRole.DECISION_MAKER, type: StakeholderType.INTERNAL },
-        { name: "Marek Dvořák", role: StakeholderRole.AMBASSADOR, type: StakeholderType.INTERNAL, organization: "Dr. Digital" },
+        { name: "Marek Dvořák", role: StakeholderRole.AMBASSADOR, type: StakeholderType.INTERNAL, organization: "Tymio" },
         { name: "Lesensky.cz", role: StakeholderRole.REVIEWER, type: StakeholderType.EXTERNAL, organization: "PR agentura" },
       ],
       risks: [
@@ -345,10 +345,10 @@ async function main() {
     // ── 4. Checklist všech věcí / nastavení očekávání (Klient) ──
     {
       title: "Checklist všech věcí / nastavení očekávání",
-      problemStatement: "V jakémkoliv momentu, kdy klient přijde do kontaktu s Dr. Digital, má správně nastavená očekávání.",
+      problemStatement: "V jakémkoliv momentu, kdy klient přijde do kontaktu s Tymio, má správně nastavená očekávání.",
       successCriteria: "Klienti budou přesně vědět, za co platí. Správné disclaimery na správném místě. Klient vždy ví, zda je dotaz u sestřiček, lékaře nebo musí doplnit něco pacient (UBER efekt).",
       description: "Systematický přístup k nastavení očekávání ve všech kontaktních bodech: web, landing page, registrace, odeslání dotazu, eRecept, termín, prevence. Zahrnuje revizi UX textů, disclaimerů, potvrzovacích obrazovek a notifikací.",
-      product: "Doctor Digital App", domain: "Klient", owner: "Kuba",
+      product: "Tymio app", domain: "Klient", owner: "Kuba",
       priority: Priority.P1, horizon: Horizon.NOW, status: InitiativeStatus.IN_PROGRESS,
       commercialType: CommercialType.CHURN_PREVENTER,
       startDate: "2026-02-01", targetDate: "2026-06-30", milestoneDate: "2026-04-15",
@@ -383,9 +383,9 @@ async function main() {
     // ── 5. B2G2C - kraje (Tržby) ───────────────────────────────
     {
       title: "B2G2C (kraje)",
-      problemStatement: "Org. složky státu nakupují Dr. Digital pro své občany.",
+      problemStatement: "Org. složky státu nakupují Tymio pro své občany.",
       successCriteria: "500 000 lidí v dosahu. Pozitivní mediální výstup. 0 kritických připomínek před spuštěním.",
-      description: "Prodej a nasazení služby Dr. Digital pro orgány státní správy - kraje, města a municipality. Zahrnuje jednání se zastupitelstvy, mediální management (zejména po Znojmu), a onboarding přes ambasadory z orgánů.",
+      description: "Prodej a nasazení služby Tymio pro orgány státní správy - kraje, města a municipality. Zahrnuje jednání se zastupitelstvy, mediální management (zejména po Znojmu), a onboarding přes ambasadory z orgánů.",
       product: "B2B Platforma", domain: "Tržby", owner: "Adela",
       priority: Priority.P1, horizon: Horizon.NOW, status: InitiativeStatus.IN_PROGRESS,
       commercialType: CommercialType.CONTRACT_ENABLER,
@@ -419,14 +419,14 @@ async function main() {
         { title: "Změna vedení orgánu", probability: "LOW", impact: "HIGH", mitigation: "Budovat vztahy na více úrovních.", owner: "Adela" },
         { title: "Launch ohrozí funkčnost stávajícího portfolia", probability: "LOW", impact: "HIGH", mitigation: "Špatný planning změn - zavést kvartální rolling budget.", owner: "Ondra" },
       ],
-      notes: "Potřebné zdroje: ambasador z orgánu, svazy/asociace/partneři, tým Dr. Digital. Neupřímnost v týmu = neřekneme si problémy - to je kulturní riziko.",
+      notes: "Potřebné zdroje: ambasador z orgánu, svazy/asociace/partneři, tým Tymio. Neupřímnost v týmu = neřekneme si problémy - to je kulturní riziko.",
     },
     // ── 6. Telco B2B (Tržby) ───────────────────────────────────
     {
-      title: "Distribuce DRD přes telekomunikační společnosti",
+      title: "Distribuce Tymio přes telekomunikační společnosti",
       problemStatement: "Rozjezd obchodní spolupráce a distribuce přes telekomunikační společnosti.",
       successCriteria: "Maximálně automatizované procesy: onboarding, platby, provize, storno, změna balíčku. Zasmluvněná první telco společnost, běžící pilotní program prodeje bez vážnějších chyb.",
-      description: "White-label zdravotní služby pro české telco operátory. Embed DrD služeb do zaměstnaneckých benefit balíčků telco společností.",
+      description: "White-label zdravotní služby pro české telco operátory. Embed služeb Tymio do zaměstnaneckých benefit balíčků telco společností.",
       product: "B2B Platforma", domain: "Tržby", owner: "Vasek",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.PLANNED,
       commercialType: CommercialType.CONTRACT_ENABLER,
@@ -451,7 +451,7 @@ async function main() {
       ],
       stakeholders: [
         { name: "Vedení telco společností", role: StakeholderRole.DECISION_MAKER, type: StakeholderType.EXTERNAL },
-        { name: "Ondra", role: StakeholderRole.SPONSOR, type: StakeholderType.INTERNAL, organization: "Dr. Digital" },
+        { name: "Ondra", role: StakeholderRole.SPONSOR, type: StakeholderType.INTERNAL, organization: "Tymio" },
       ],
       risks: [
         { title: "Chyby v procesech a aplikaci - telco je náročný partner", probability: "MEDIUM", impact: "HIGH", mitigation: "Odladit všechny procesy na menších partnerech.", owner: "Ondra" },
@@ -462,8 +462,8 @@ async function main() {
     // ── 7. 20 firem / B2B obchod (Tržby) ───────────────────────
     {
       title: "20 firem (B2B obchod)",
-      problemStatement: "Společnosti a instituce nakupují službu Dr. Digital pro své zaměstnance. Cílem je 20 nových firem, z toho 10 velkých nad 3000 zaměstnanců.",
-      successCriteria: "20 nových firem jako zákazníků DrD, 10 velkých firem nad 3000 zaměstnanců. Pozitivní povědomí o DrD skrz B2B trh.",
+      problemStatement: "Společnosti a instituce nakupují službu Tymio pro své zaměstnance. Cílem je 20 nových firem, z toho 10 velkých nad 3000 zaměstnanců.",
+      successCriteria: "20 nových firem jako zákazníků Tymio, 10 velkých firem nad 3000 zaměstnanců. Pozitivní povědomí o Tymio skrz B2B trh.",
       description: "Škálování B2B prodeje na 20 simultánních klientů. Zahrnuje automatizaci onboardingu, komunikační materiály, partnerství s benefitními společnostmi, a stabilní analytiku pro klienty.",
       product: "B2B Platforma", domain: "Tržby", owner: "Adela",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.PLANNED,
@@ -547,9 +547,9 @@ async function main() {
     // ── 9. B2B2C makléři, platby, pilot B2C (Tržby) ────────────
     {
       title: "B2B2C (makléři, platby, pilot B2C, VIP balíček)",
-      problemStatement: "Postavení efektivních procesů a rozjezd distribuce DRD přes makléře, případně napřímo (B2C) v rámci kampaňových příležitostí.",
+      problemStatement: "Postavení efektivních procesů a rozjezd distribuce Tymio přes makléře, případně napřímo (B2C) v rámci kampaňových příležitostí.",
       successCriteria: "Maximálně automatizované procesy: onboarding, platby, provize, storno, změna balíčku. Zasmluvněný první makléř, běžící pilotní program. Pozitivní zpětná vazba. Spuštěná vlastní kampaň na bývalé B2B klienty.",
-      description: "Distribuce DrD přes makléře (Broker Trust), zavedení platebních procesů, provizního systému a pilotní B2C prodej z odpadu B2B. Budování vlastního kmene klientů.",
+      description: "Distribuce Tymio přes makléře (Broker Trust), zavedení platebních procesů, provizního systému a pilotní B2C prodej z odpadu B2B. Budování vlastního kmene klientů.",
       product: "B2B Platforma", domain: "Tržby", owner: "Vasek",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.PLANNED,
       commercialType: CommercialType.UPSELL_DRIVER,
@@ -585,10 +585,10 @@ async function main() {
     // ── 10. Za hranice obvyklého (Nad rámec) ────────────────────
     {
       title: "Za hranice obvyklého (push, očkování, bonusy)",
-      problemStatement: "Posouváme roli Dr. Digital z poskytovatele péče na aktivního zdravotního partnera - proaktivně upozorňujeme klienty na příležitosti a preventivní kroky.",
-      successCriteria: "Klienti vnímají DrD jako aktivního partnera. Roste využívání bonusů pojišťoven. Roste proočkovanost a účast na prevenci. XY % otevření notifikací, XY % využitých bonusů.",
+      problemStatement: "Posouváme roli Tymio z poskytovatele péče na aktivního zdravotního partnera - proaktivně upozorňujeme klienty na příležitosti a preventivní kroky.",
+      successCriteria: "Klienti vnímají Tymio jako aktivního partnera. Roste využívání bonusů pojišťoven. Roste proočkovanost a účast na prevenci. XY % otevření notifikací, XY % využitých bonusů.",
       description: "Proaktivní upozornění na bonusy zdravotních pojišťoven, blížící se termíny očkování/přeočkování, preventivní prohlídky. Jít za hranice obvyklého telemedicínského servisu.",
-      product: "Doctor Digital App", domain: "Nad rámec obvyklého", owner: "Nelca",
+      product: "Tymio app", domain: "Nad rámec obvyklého", owner: "Nelca",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.IDEA,
       commercialType: CommercialType.CARE_QUALITY,
       startDate: "2026-03-01", targetDate: "2026-06-30", milestoneDate: "2026-05-01",
@@ -609,7 +609,7 @@ async function main() {
       ],
       kpis: [
         { title: "Otevření notifikací", targetValue: "50", currentValue: "0", unit: "%", targetDate: "2026-06-30" },
-        { title: "Využité bonusy přes DrD", targetValue: "100", currentValue: "0", unit: "bonusů", targetDate: "2026-06-30" },
+        { title: "Využité bonusy přes Tymio", targetValue: "100", currentValue: "0", unit: "bonusů", targetDate: "2026-06-30" },
         { title: "Proočkovanost klientů", targetValue: "80", currentValue: "0", unit: "%", targetDate: "2026-06-30" },
       ],
       stakeholders: [
@@ -627,10 +627,10 @@ async function main() {
     // ── 11. Medicínské guidelines (Nad rámec) ──────────────────
     {
       title: "Medicínské guidelines",
-      problemStatement: "Dr. Digital jako poskytovatel telemedicíny hledá nejrychlejší a nejefektivnější způsoby péče, a proto je pro bezpečí pacientů i z legislativních důvodů naší povinností vytvořit vlastní telemedicínské guidelines.",
-      successCriteria: "Komplexní popis JAK nakládáme se zdravotními případy, PROČ tak s nimi nakládáme. Jasně nastavena odpovědnost (Dr. Digital, lékařů i sester). Konkurenční výhoda. Razítko právní kanceláře nebo profesora z akademie věd.",
+      problemStatement: "Tymio jako poskytovatel telemedicíny hledá nejrychlejší a nejefektivnější způsoby péče, a proto je pro bezpečí pacientů i z legislativních důvodů naší povinností vytvořit vlastní telemedicínské guidelines.",
+      successCriteria: "Komplexní popis JAK nakládáme se zdravotními případy, PROČ tak s nimi nakládáme. Jasně nastavena odpovědnost (Tymio, lékařů i sester). Konkurenční výhoda. Razítko právní kanceláře nebo profesora z akademie věd.",
       description: "Evidence-based systém klinického rozhodování. Vlastní telemedicínské guidelines, protože spoléhat na jejich vytvoření státním aparátem je nejisté. Zahrnuje mapování stávajících postupů, právní audit, konzultace s lékaři.",
-      product: "Doctor Digital App", domain: "Nad rámec obvyklého", owner: "Kuba",
+      product: "Tymio app", domain: "Nad rámec obvyklého", owner: "Kuba",
       priority: Priority.P2, horizon: Horizon.NEXT, status: InitiativeStatus.IDEA,
       commercialType: CommercialType.COMPLIANCE_GATE,
       startDate: "2026-03-01", targetDate: "2026-11-30", milestoneDate: "2026-09-01",
@@ -668,7 +668,7 @@ async function main() {
     // ── 12. Marketingová podpora obchodu (B2B) ─────────────────
     {
       title: "Marketingová podpora obchodu",
-      problemStatement: "Hledáme způsoby, jak pomoct obchodu lépe prezentovat DrD - dodáváme, co obchod potřebuje a současně komunikujeme naše why a hodnoty.",
+      problemStatement: "Hledáme způsoby, jak pomoct obchodu lépe prezentovat Tymio - dodáváme, co obchod potřebuje a současně komunikujeme naše why a hodnoty.",
       successCriteria: "Obchod používá jednotnou aktualizovanou prezentaci. Existuje základní B2B toolkit (prezentace, 1-pager, case study, FAQ). Roste počet kvalifikovaných sales leadů. Zkracuje se čas přípravy podkladů.",
       description: "Strategická marketingová podpora B2B obchodu: jednotná prezentace, B2B toolkit, case studies, eventová podpora, landing page. Sjednocení messagingu (why, hodnoty, positioning). Posílení důvěryhodnosti značky při jednáních.",
       product: "B2B Platforma", domain: "B2B", owner: "Nelca",
@@ -709,7 +709,7 @@ async function main() {
     {
       title: "Nahradit Eurocross",
       problemStatement: "Postavit asistenční služby pro dlouhodobé pojištění cizinců v Uniqa.",
-      successCriteria: "Během 2HOY2026 jsme v Uniqa a nově sjednané smlouvy obsluhujeme jako asistenční služba my. DrD získá novou schopnost a budeme ji moci nabídnout i dalším pojišťovnám. Naučíme se dělat zdravotní asistenci v zahraničí.",
+      successCriteria: "Během 2HOY2026 jsme v Uniqa a nově sjednané smlouvy obsluhujeme jako asistenční služba my. Tymio získá novou schopnost a budeme ji moci nabídnout i dalším pojišťovnám. Naučíme se dělat zdravotní asistenci v zahraničí.",
       description: "Nahrazení Eurocross jako poskytovatele asistenčních služeb pro Uniqa pojištění cizinců. Stavba modulárního systému: call centrum 24/7 (CZ/EN/VN/UA/RU), billing, data a analytika, nasmlouvání sítě zdravotních zařízení, online evidence případů.",
       product: "Integrační platforma", domain: "Tržby", owner: "Ondra",
       priority: Priority.P1, horizon: Horizon.NEXT, status: InitiativeStatus.PLANNED,
@@ -900,7 +900,7 @@ async function main() {
 
   const demands = await Promise.all([
     prisma.demand.create({
-      data: { title: "Uniqa: nahrazení Eurocross asistenčními službami DrD", description: "Uniqa požaduje plné převzetí asistenčních služeb pro pojištění cizinců od Eurocross.", sourceType: DemandSourceType.ACCOUNT, status: DemandStatus.APPROVED, urgency: 5, accountId: acc["Uniqa pojištění cizinců"].id, ownerId: u.Ondra.id },
+      data: { title: "Uniqa: nahrazení Eurocross asistenčními službami Tymio", description: "Uniqa požaduje plné převzetí asistenčních služeb pro pojištění cizinců od Eurocross.", sourceType: DemandSourceType.ACCOUNT, status: DemandStatus.APPROVED, urgency: 5, accountId: acc["Uniqa pojištění cizinců"].id, ownerId: u.Ondra.id },
     }),
     prisma.demand.create({
       data: { title: "OZP: smlouva na internu a dermatologii", description: "Výběrové řízení na Magistrátu hl. m. Prahy pro smlouvu s OZP.", sourceType: DemandSourceType.ACCOUNT, status: DemandStatus.VALIDATING, urgency: 5, accountId: acc["OZP (Oborová zdravotní pojišťovna)"].id, ownerId: u.Ondra.id },
@@ -909,7 +909,7 @@ async function main() {
       data: { title: "UNION SK: smlouva na internu a dermatologii", description: "Přímá smlouva s UNION pojišťovnou na Slovensku bez výběrového řízení.", sourceType: DemandSourceType.ACCOUNT, status: DemandStatus.VALIDATING, urgency: 4, accountId: acc["UNION pojišťovna SK"].id, ownerId: u.Ondra.id },
     }),
     prisma.demand.create({
-      data: { title: "Broker Trust: zasmluvnění a spuštění distribuce", description: "Broker Trust požaduje dokumentaci, procesy a technické řešení pro zahájení distribuce DrD přes makléře.", sourceType: DemandSourceType.PARTNER, status: DemandStatus.NEW, urgency: 4, partnerId: par["Broker Trust"].id, ownerId: u.Vasek.id },
+      data: { title: "Broker Trust: zasmluvnění a spuštění distribuce", description: "Broker Trust požaduje dokumentaci, procesy a technické řešení pro zahájení distribuce Tymio přes makléře.", sourceType: DemandSourceType.PARTNER, status: DemandStatus.NEW, urgency: 4, partnerId: par["Broker Trust"].id, ownerId: u.Vasek.id },
     }),
     prisma.demand.create({
       data: { title: "B2G2C: pozitivní mediální obraz po Znojmu", description: "Nutnost vyžehlit mediální obraz po situaci ve Znojmě před dalším rozšířením do krajů.", sourceType: DemandSourceType.INTERNAL, status: DemandStatus.APPROVED, urgency: 5, ownerId: u.Adela.id },
@@ -937,7 +937,7 @@ async function main() {
 
   // ─── Závislosti ───────────────────────────────────────────────
   const depPairs = [
-    { from: "Distribuce DRD přes telekomunikační společnosti", to: "20 firem (B2B obchod)", desc: "Telco partneři se počítají do cíle 20 B2B klientů" },
+    { from: "Distribuce Tymio přes telekomunikační společnosti", to: "20 firem (B2B obchod)", desc: "Telco partneři se počítají do cíle 20 B2B klientů" },
     { from: "Skupina Rodina (Dětský profil)", to: "Webové rozhraní", desc: "Rodinné profily potřebují webové rozhraní pro desktopovou správu" },
     { from: "B2B2C (makléři, platby, pilot B2C, VIP balíček)", to: "Marketingová podpora obchodu", desc: "B2B2C distribuce vyžaduje hotové obchodní materiály" },
     { from: "Nahradit Eurocross", to: "Úhrady z pojišťoven - interna a dermatologie (CZ + SK)", desc: "Eurocross nahrazení závisí na funkčním vykazování pojišťovnám" },

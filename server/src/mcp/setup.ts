@@ -6,14 +6,14 @@ import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { env } from "../env.js";
-import { DrdOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
+import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
 import { registerTools } from "./tools.js";
 
-const provider = new DrdOAuthProvider();
+const provider = new TymioOAuthProvider();
 
 function createMcpServer(): McpServer {
   const server = new McpServer(
-    { name: "drd-hub", version: "1.0.0" },
+    { name: "tymio-hub", version: "1.0.0" },
     { capabilities: { logging: {} } }
   );
   registerTools(server);
@@ -37,7 +37,7 @@ export function mountMcp(app: express.Express): void {
       issuerUrl,
       resourceServerUrl,
       scopesSupported: ["mcp:tools"],
-      resourceName: "DrD Hub MCP"
+      resourceName: "Tymio MCP"
     })
   );
 
