@@ -7,7 +7,6 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  useDraggable,
   useDroppable,
   DragOverlay
 } from "@dnd-kit/core";
@@ -99,19 +98,6 @@ function ReqCard({ item, isDragging }: { item: CardItem; isDragging?: boolean })
   );
 }
 
-function DraggableReqCard({ item, disabled }: { item: CardItem; disabled?: boolean }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.requirement.id,
-    disabled: !!disabled
-  });
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <ReqCard item={item} isDragging={isDragging} />
-    </div>
-  );
-}
-
 function SortableReqCard({ item, disabled }: { item: CardItem; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.requirement.id,
@@ -178,9 +164,6 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
   const [layoutEpoch, setLayoutEpoch] = useState(0);
   const [columnItemIds, setColumnItemIds] = useState<Record<string, string[]>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [initiativeFilter, setInitiativeFilter] = useState("");
-  const [featureFilter, setFeatureFilter] = useState("");
-  const [search, setSearch] = useState("");
 
   const load = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -237,58 +220,10 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
   const allItems = useMemo(() => (product ? flattenRequirements(product) : []), [product]);
   const itemByReqId = useMemo(() => new Map(allItems.map((i) => [i.requirement.id, i])), [allItems]);
 
-  const filteredItems = useMemo(() => {
-    return allItems.filter((item) => {
-      if (initiativeFilter && item.initiativeTitle !== initiativeFilter) return false;
-      if (featureFilter && item.featureTitle !== featureFilter) return false;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
-        if (
-          !item.requirement.title.toLowerCase().includes(q) &&
-          !item.featureTitle.toLowerCase().includes(q) &&
-          !item.initiativeTitle.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [allItems, initiativeFilter, featureFilter, search]);
-
-  const boardDnDEnabled = !initiativeFilter && !featureFilter && !search.trim();
-
-  const filteredItemsByColumn = useMemo(() => {
-    const map = new Map<string, CardItem[]>();
-    map.set(UNASSIGNED, []);
-    for (const col of columns) map.set(col.id, []);
-    for (const item of filteredItems) {
-      const cid = item.requirement.executionColumnId;
-      if (cid && map.has(cid)) {
-        map.get(cid)!.push(item);
-      } else {
-        map.get(UNASSIGNED)!.push(item);
-      }
-    }
-    return map;
-  }, [filteredItems, columns]);
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
-
-  function mergeRequirementIntoProduct(prev: ProductWithHierarchy, updated: Requirement): ProductWithHierarchy {
-    return {
-      ...prev,
-      initiatives: prev.initiatives.map((i) => ({
-        ...i,
-        features: (i.features ?? []).map((f) => ({
-          ...f,
-          requirements: (f.requirements ?? []).map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
-        }))
-      }))
-    };
-  }
 
   async function persistLayout(map: Record<string, string[]>) {
     if (!productId) return;
@@ -313,22 +248,6 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
     if (readOnly || !productId) return;
     const { active, over } = event;
     if (!over) return;
-
-    if (!boardDnDEnabled) {
-      const overId = String(over.id);
-      if (!overId.startsWith("column-")) return;
-      const targetCol = overId.replace("column-", "");
-      const reqId = String(active.id);
-      const targetColumnId = targetCol === UNASSIGNED ? null : targetCol;
-      try {
-        const res = await api.updateRequirement(reqId, { executionColumnId: targetColumnId });
-        setProduct((prev) => (prev ? mergeRequirementIntoProduct(prev, res.requirement) : prev));
-        onRefreshBoardSilent?.();
-      } catch {
-        await load({ silent: true });
-      }
-      return;
-    }
 
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
@@ -370,20 +289,6 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
 
   const activeItem = activeId ? itemByReqId.get(activeId) ?? null : null;
 
-  const initiativeTitles = useMemo(() => {
-    const s = new Set<string>();
-    for (const i of product?.initiatives ?? []) s.add(i.title);
-    return [...s].sort();
-  }, [product]);
-
-  const featureTitles = useMemo(() => {
-    const s = new Set<string>();
-    for (const i of product?.initiatives ?? []) {
-      for (const f of i.features ?? []) s.add(f.title);
-    }
-    return [...s].sort();
-  }, [product]);
-
   if (!productId) {
     return <p className="p-4 text-sm text-slate-500">{t("executionBoard.missingProduct")}</p>;
   }
@@ -422,26 +327,13 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
                 {t("executionBoard.boardLabel")}: {selectedBoard.name} · {selectedBoard.provider} · {selectedBoard.syncState}
               </p>
             ) : null}
-            {!boardDnDEnabled ? (
-              <p className="mt-1 text-xs text-amber-700">
-                {t("executionBoard.clearFiltersToReorder")}
-              </p>
-            ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/product-explorer"
-              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              {t("executionBoard.backToExplorer")}
-            </Link>
-            <Link
-              to={`/products/${productId}/board-settings${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`}
-              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              {t("executionBoard.boardSettings")}
-            </Link>
-          </div>
+          <Link
+            to="/product-explorer"
+            className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            {t("executionBoard.backToExplorer")}
+          </Link>
         </div>
 
         {boards.length > 1 ? (
@@ -466,117 +358,47 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
             </Link>
           </div>
         ) : (
-          <>
-            <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
-              <div>
-                <Label>{t("executionBoard.filterInitiative")}</Label>
-                <Select value={initiativeFilter} onChange={(e) => setInitiativeFilter(e.target.value)}>
-                  <option value="">{t("filters.all")}</option>
-                  {initiativeTitles.map((title) => (
-                    <option key={title} value={title}>
-                      {title}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <Label>{t("executionBoard.filterFeature")}</Label>
-                <Select value={featureFilter} onChange={(e) => setFeatureFilter(e.target.value)}>
-                  <option value="">{t("filters.all")}</option>
-                  {featureTitles.map((title) => (
-                    <option key={title} value={title}>
-                      {title}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="min-w-[200px] flex-1">
-                <Label>{t("common.search")}</Label>
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              <DroppableColumn
-                columnId={UNASSIGNED}
-                title={t("executionBoard.unassigned")}
-                subtitle={t("executionBoard.unassignedHint")}
-                count={
-                  boardDnDEnabled
-                    ? columnItemIds[UNASSIGNED]?.length ?? 0
-                    : filteredItemsByColumn.get(UNASSIGNED)?.length ?? 0
-                }
-              >
-                {boardDnDEnabled ? (
-                  <SortableContext
-                    items={columnItemIds[UNASSIGNED] ?? []}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {(columnItemIds[UNASSIGNED] ?? []).map((rid) => {
-                      const item = itemByReqId.get(rid);
-                      if (!item) return null;
-                      return readOnly ? (
-                        <ReqCard key={rid} item={item} />
-                      ) : (
-                        <SortableReqCard key={rid} item={item} disabled={false} />
-                      );
-                    })}
-                  </SortableContext>
-                ) : (
-                  (filteredItemsByColumn.get(UNASSIGNED) ?? []).map((item) =>
-                    readOnly ? (
-                      <ReqCard key={item.requirement.id} item={item} />
-                    ) : (
-                      <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
-                    )
-                  )
-                )}
-              </DroppableColumn>
-              {columns.map((col) => (
-                <DroppableColumn
-                  key={col.id}
-                  columnId={col.id}
-                  title={col.name}
-                  subtitle={`PM ${col.mappedStatus.replaceAll("_", " ")}`}
-                  count={
-                    boardDnDEnabled
-                      ? columnItemIds[col.id]?.length ?? 0
-                      : filteredItemsByColumn.get(col.id)?.length ?? 0
-                  }
-                >
-                  {boardDnDEnabled ? (
-                    <SortableContext
-                      items={columnItemIds[col.id] ?? []}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {(columnItemIds[col.id] ?? []).map((rid) => {
-                        const item = itemByReqId.get(rid);
-                        if (!item) return null;
-                        return readOnly ? (
-                          <ReqCard key={rid} item={item} />
-                        ) : (
-                          <SortableReqCard key={rid} item={item} disabled={false} />
-                        );
-                      })}
-                    </SortableContext>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            <DroppableColumn
+              columnId={UNASSIGNED}
+              title={t("executionBoard.unassigned")}
+              subtitle={t("executionBoard.unassignedHint")}
+              count={columnItemIds[UNASSIGNED]?.length ?? 0}
+            >
+              <SortableContext items={columnItemIds[UNASSIGNED] ?? []} strategy={verticalListSortingStrategy}>
+                {(columnItemIds[UNASSIGNED] ?? []).map((rid) => {
+                  const item = itemByReqId.get(rid);
+                  if (!item) return null;
+                  return readOnly ? (
+                    <ReqCard key={rid} item={item} />
                   ) : (
-                    (filteredItemsByColumn.get(col.id) ?? []).map((item) =>
-                      readOnly ? (
-                        <ReqCard key={item.requirement.id} item={item} />
-                      ) : (
-                        <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
-                      )
-                    )
-                  )}
-                </DroppableColumn>
-              ))}
-            </div>
-          </>
+                    <SortableReqCard key={rid} item={item} disabled={false} />
+                  );
+                })}
+              </SortableContext>
+            </DroppableColumn>
+            {columns.map((col) => (
+              <DroppableColumn
+                key={col.id}
+                columnId={col.id}
+                title={col.name}
+                subtitle={`PM ${col.mappedStatus.replaceAll("_", " ")}`}
+                count={columnItemIds[col.id]?.length ?? 0}
+              >
+                <SortableContext items={columnItemIds[col.id] ?? []} strategy={verticalListSortingStrategy}>
+                  {(columnItemIds[col.id] ?? []).map((rid) => {
+                    const item = itemByReqId.get(rid);
+                    if (!item) return null;
+                    return readOnly ? (
+                      <ReqCard key={rid} item={item} />
+                    ) : (
+                      <SortableReqCard key={rid} item={item} disabled={false} />
+                    );
+                  })}
+                </SortableContext>
+              </DroppableColumn>
+            ))}
+          </div>
         )}
       </div>
       <DragOverlay>

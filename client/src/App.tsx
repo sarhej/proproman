@@ -57,7 +57,9 @@ function App() {
   const hideFilters =
     location.pathname === "/gantt" ||
     location.pathname.startsWith("/features/") ||
-    location.pathname.startsWith("/requirements/");
+    location.pathname.startsWith("/requirements/") ||
+    location.pathname.includes("/execution-board") ||
+    location.pathname.includes("/board-settings");
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,

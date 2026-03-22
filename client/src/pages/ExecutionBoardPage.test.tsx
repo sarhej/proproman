@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ExecutionBoardPage } from "./ExecutionBoardPage";
 import { api } from "../lib/api";
@@ -263,100 +263,6 @@ describe("ExecutionBoardPage", () => {
     expect(within(boardSelect!).getByRole("option", { name: /Secondary/ })).toBeInTheDocument();
   });
 
-  it("filters cards by search query", async () => {
-    renderBoard();
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
-    });
-    expect(await screen.findByText("Task One")).toBeInTheDocument();
-    expect(screen.getByText("Other Task")).toBeInTheDocument();
-
-    const search = screen.getByRole("searchbox");
-    fireEvent.change(search, { target: { value: "Other" } });
-    await waitFor(() => {
-      expect(screen.queryByText("Task One")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText("Other Task")).toBeInTheDocument();
-  });
-
-  it("filters by initiative title", async () => {
-    const product = minimalProduct();
-    product.initiatives.push({
-      ...product.initiatives[0]!,
-      id: "i2",
-      title: "Other Initiative",
-      features: [
-        {
-          id: "f2",
-          initiativeId: "i2",
-          title: "Lonely Feature",
-          status: "IDEA",
-          sortOrder: 0,
-          requirements: [
-            {
-              id: "r3",
-              featureId: "f2",
-              title: "Only Here",
-              isDone: false,
-              priority: "P2",
-              sortOrder: 0
-            }
-          ]
-        }
-      ]
-    });
-    mockApi.getProducts.mockResolvedValue({ products: [product] });
-
-    renderBoard();
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
-    });
-    expect(await screen.findByText("Only Here")).toBeInTheDocument();
-
-    const initSelect = screen.getAllByRole("combobox")[0]!;
-    fireEvent.change(initSelect, { target: { value: "Other Initiative" } });
-    await waitFor(() => {
-      expect(screen.queryByText("Task One")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText("Only Here")).toBeInTheDocument();
-  });
-
-  it("filters by feature title", async () => {
-    const product = minimalProduct();
-    product.initiatives[0]!.features!.push({
-      id: "f2",
-      initiativeId: "i1",
-      title: "Other Feature",
-      status: "IDEA",
-      sortOrder: 1,
-      requirements: [
-        {
-          id: "r3",
-          featureId: "f2",
-          title: "Feature Two Task",
-          isDone: false,
-          priority: "P2",
-          sortOrder: 0
-        }
-      ]
-    });
-    mockApi.getProducts.mockResolvedValue({ products: [product] });
-
-    renderBoard();
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
-    });
-    expect(await screen.findByText("Feature Two Task")).toBeInTheDocument();
-
-    const featureSelects = screen.getAllByRole("combobox");
-    const featureSelect = featureSelects[1]!;
-    fireEvent.change(featureSelect, { target: { value: "Other Feature" } });
-    await waitFor(() => {
-      expect(screen.queryByText("Task One")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText("Feature Two Task")).toBeInTheDocument();
-  });
-
   it("shows loading until APIs resolve", async () => {
     let resolveProducts!: (v: { products: ProductWithHierarchy[] }) => void;
     const productsPromise = new Promise<{ products: ProductWithHierarchy[] }>((r) => {
@@ -373,12 +279,4 @@ describe("ExecutionBoardPage", () => {
     });
   });
 
-  it("renders board settings link with boardId query when board selected", async () => {
-    renderBoard();
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
-    });
-    const settings = screen.getByRole("link", { name: /board settings/i });
-    expect(settings.getAttribute("href")).toContain("boardId=b1");
-  });
 });
