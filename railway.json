@@ -3,7 +3,17 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile",
-    "watchPatterns": ["/server/**", "/client/**", "/docs/**", "/Dockerfile", "/package.json", "/package-lock.json"]
+    "watchPatterns": [
+      "/server/**",
+      "/client/**",
+      "/mcp/**",
+      "/docs/**",
+      "/Dockerfile",
+      "/.dockerignore",
+      "/railway.json",
+      "/package.json",
+      "/package-lock.json"
+    ]
   },
   "deploy": {
     "preDeployCommand": "node server/scripts/pre-deploy.cjs",
