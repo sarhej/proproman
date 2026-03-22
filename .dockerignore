@@ -5,6 +5,7 @@ client/dist
 .git
 .env
 .env.*
+# Exclude loose Markdown from context, but ship docs/ for coding-agent guide in production image
 *.md
-docs
+!docs/**
 .DS_Store
