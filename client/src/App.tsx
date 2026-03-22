@@ -491,10 +491,8 @@ function App() {
                 <AdminPage
                   currentUser={user}
                   quickFilter={board.filters.quick}
-                  onMetaChanged={() => {
-                    void board.refresh();
-                    void uiSettings.refresh();
-                  }}
+                  onMetaChanged={() => void board.refresh()}
+                  onUiSettingsChanged={() => void uiSettings.refresh()}
                 />
               }
             />

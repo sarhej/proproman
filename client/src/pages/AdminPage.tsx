@@ -40,7 +40,18 @@ const DELIVERY_CHANNELS: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATS
 
 type Tab = "users" | "activity" | "settings" | "data" | "notificationRules" | "ontology";
 
-export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { currentUser: User; quickFilter?: string; onMetaChanged?: () => void }) {
+export function AdminPage({
+  currentUser,
+  quickFilter,
+  onMetaChanged,
+  onUiSettingsChanged
+}: {
+  currentUser: User;
+  quickFilter?: string;
+  onMetaChanged?: () => void;
+  /** Nav visibility saves: refresh shell settings only (avoid full board loading flash). */
+  onUiSettingsChanged?: () => void;
+}) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("users");
 
@@ -67,7 +78,9 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
         ))}
       </div>
       {tab === "users" && <UsersTab currentUser={currentUser} quickFilter={quickFilter} />}
-      {tab === "settings" && <SettingsTab currentUser={currentUser} onMetaChanged={onMetaChanged} />}
+      {tab === "settings" && (
+        <SettingsTab currentUser={currentUser} onMetaChanged={onMetaChanged} onUiSettingsChanged={onUiSettingsChanged} />
+      )}
       {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
       {tab === "notificationRules" && <NotificationRulesTab />}
@@ -904,7 +917,15 @@ const PERSONA_CAT_COLORS: Record<PersonaCategory, string> = {
   NONE: "bg-gray-100 text-gray-600"
 };
 
-function SettingsTab({ currentUser, onMetaChanged }: { currentUser: User; onMetaChanged?: () => void }) {
+function SettingsTab({
+  currentUser,
+  onMetaChanged,
+  onUiSettingsChanged
+}: {
+  currentUser: User;
+  onMetaChanged?: () => void;
+  onUiSettingsChanged?: () => void;
+}) {
   const { t } = useTranslation();
   const [section, setSection] = useState<"domains" | "personas" | "revenue" | "views">("domains");
   const sections: { key: typeof section; label: string }[] = [
@@ -930,12 +951,12 @@ function SettingsTab({ currentUser, onMetaChanged }: { currentUser: User; onMeta
       {section === "domains" && <DomainsSection onChanged={onMetaChanged} />}
       {section === "personas" && <PersonasSection onChanged={onMetaChanged} />}
       {section === "revenue" && <RevenueStreamsSection onChanged={onMetaChanged} />}
-      {section === "views" && currentUser.role === "SUPER_ADMIN" && <NavViewsSection onChanged={onMetaChanged} />}
+      {section === "views" && currentUser.role === "SUPER_ADMIN" && <NavViewsSection onSaved={onUiSettingsChanged} />}
     </div>
   );
 }
 
-function NavViewsSection({ onChanged }: { onChanged?: () => void }) {
+function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
   const { t } = useTranslation();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -976,7 +997,7 @@ function NavViewsSection({ onChanged }: { onChanged?: () => void }) {
     try {
       await api.updateUiSettings({ hiddenNavPaths: Array.from(next) });
       setHidden(next);
-      onChanged?.();
+      onSaved?.();
     } catch (e) {
       setErr((e as Error).message);
       void load();
