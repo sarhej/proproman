@@ -210,6 +210,7 @@ function App() {
           <FiltersBar
             domains={board.meta.domains}
             users={board.meta.users}
+            labelSuggestions={board.meta.labelSuggestions}
             filters={board.filters}
             onChange={(patch) => board.setFilters((prev) => ({ ...prev, ...patch }))}
           />

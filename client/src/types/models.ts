@@ -158,6 +158,7 @@ export type Feature = {
   title: string;
   description?: string | null;
   acceptanceCriteria?: string | null;
+  labels?: string[] | null;
   storyPoints?: number | null;
   storyType?: StoryType | null;
   ownerId?: string | null;
@@ -478,6 +479,7 @@ export type MetaPayload = {
   products: Product[];
   accounts: Account[];
   partners: Partner[];
+  labelSuggestions: string[];
 };
 
 export type CalendarItem = {

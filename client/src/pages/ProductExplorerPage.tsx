@@ -48,6 +48,12 @@ function initiativeMatchesBoardFilters(i: Initiative, f: BoardFilters | undefine
   return true;
 }
 
+function matchesAnyLabel(itemLabels: string[] | null | undefined, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  const normalized = (itemLabels ?? []).map((label) => label.trim().toLowerCase());
+  return selected.some((label) => normalized.includes(label));
+}
+
 export function ProductExplorerPage({
   isAdmin,
   canCreateInitiative,
@@ -126,6 +132,7 @@ export function ProductExplorerPage({
 
   const filtered = useMemo(() => {
     const q = quickFilter?.trim().toLowerCase();
+    const selectedLabels = (boardFilters?.labels ?? []).map((label) => label.trim().toLowerCase()).filter(Boolean);
     return products.map((product) => {
       let initiatives = product.initiatives.filter((initiative) => {
         if (!initiativeMatchesBoardFilters(initiative, boardFilters)) return false;
@@ -138,13 +145,40 @@ export function ProductExplorerPage({
         return true;
       });
 
-      if (q) {
+      if (selectedLabels.length > 0) {
         initiatives = initiatives
-          .map((initiative) => {
-            const initSelf = [
+          .flatMap((initiative) => {
+            const narrowedFeatures = (initiative.features ?? []).flatMap((feature) => {
+                const featureMatched = matchesAnyLabel(feature.labels, selectedLabels);
+                const matchedRequirements = (feature.requirements ?? []).filter((requirement) =>
+                  matchesAnyLabel(requirement.labels, selectedLabels)
+                );
+
+                if (featureMatched) {
+                  return [{
+                    ...feature,
+                    requirements: matchedRequirements.length > 0 ? matchedRequirements : feature.requirements ?? []
+                  }];
+                }
+                if (matchedRequirements.length > 0) return [{ ...feature, requirements: matchedRequirements }];
+                return [];
+              });
+
+            if (narrowedFeatures.length === 0) return [];
+            return [{ ...initiative, features: narrowedFeatures }];
+          })
+          ;
+      }
+
+      if (q) {
+        const requirementMatches = (r: Requirement) =>
+          [r.title, r.description ?? "", r.externalRef ?? "", ...(r.labels ?? [])].join(" ").toLowerCase().includes(q);
+
+        initiatives = initiatives
+          .flatMap((initiative) => {
+            // “Headline” match: keep the whole epic (all features & requirements) on purpose.
+            const initHeadlineMatch = [
               initiative.title,
-              initiative.description ?? "",
-              initiative.notes ?? "",
               initiative.owner?.name ?? "",
               initiative.domain?.name ?? "",
               product.name
@@ -153,28 +187,40 @@ export function ProductExplorerPage({
               .toLowerCase()
               .includes(q);
 
-            if (initSelf) return initiative;
+            if (initHeadlineMatch) return [initiative];
+
+            const initBodyMatch = [initiative.description ?? "", initiative.notes ?? ""]
+              .join(" ")
+              .toLowerCase()
+              .includes(q);
 
             const features = initiative.features ?? [];
-            const narrowedFeatures = features
-              .map((f) => {
-                const featSelf = [f.title, f.description ?? "", f.acceptanceCriteria ?? ""]
+            const narrowedFeatures = features.flatMap((f) => {
+                const featSelf = [f.title, f.description ?? "", f.acceptanceCriteria ?? "", ...(f.labels ?? [])]
                   .join(" ")
                   .toLowerCase()
                   .includes(q);
-                if (featSelf) return f;
-                const reqs = (f.requirements ?? []).filter((r) =>
-                  [r.title, r.description ?? "", r.externalRef ?? ""].join(" ").toLowerCase().includes(q)
-                );
-                if (reqs.length === 0) return null;
-                return { ...f, requirements: reqs };
-              })
-              .filter((f): f is Feature => f !== null);
+                const allReqs = f.requirements ?? [];
+                const matchedReqs = allReqs.filter(requirementMatches);
 
-            if (narrowedFeatures.length === 0) return null;
-            return { ...initiative, features: narrowedFeatures };
+                if (featSelf) {
+                  // Feature matched: show only requirements that also match when possible,
+                  // so siblings without the term stay hidden. If the hit was only on feature
+                  // fields, keep all requirements under that feature.
+                  return [{ ...f, requirements: matchedReqs.length > 0 ? matchedReqs : allReqs }];
+                }
+
+                if (matchedReqs.length === 0) return [];
+                return [{ ...f, requirements: matchedReqs }];
+              });
+
+            if (narrowedFeatures.length === 0) {
+              if (initBodyMatch) return [initiative];
+              return [];
+            }
+            return [{ ...initiative, features: narrowedFeatures }];
           })
-          .filter((i): i is Initiative => i !== null);
+          ;
       }
 
       initiatives.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99));

@@ -24,8 +24,12 @@ async function canUserEditInitiative(userId: string, userRole: UserRole, initiat
 }
 
 initiativesRouter.get("/", async (req, res) => {
-  const { domainId, ownerId, horizon, priority, isGap, archived } = req.query;
+  const { domainId, ownerId, horizon, priority, isGap, archived, labels } = req.query;
   const where: Prisma.InitiativeWhereInput = {};
+  const selectedLabels = (Array.isArray(labels) ? labels : [labels])
+    .flatMap((value) => (typeof value === "string" ? value.split(",") : []))
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
 
   if (typeof domainId === "string") where.domainId = domainId;
   if (typeof ownerId === "string") where.ownerId = ownerId;
@@ -40,6 +44,18 @@ initiativesRouter.get("/", async (req, res) => {
     where.archivedAt = { not: null };
   } else {
     where.archivedAt = null;
+  }
+  if (selectedLabels.length > 0) {
+    const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+    where.AND = [
+      ...existingAnd,
+      {
+        OR: selectedLabels.flatMap((label) => [
+          { features: { some: { labels: { array_contains: [label] } } } },
+          { features: { some: { requirements: { some: { labels: { array_contains: [label] } } } } } }
+        ])
+      }
+    ];
   }
 
   const initiatives = await prisma.initiative.findMany({

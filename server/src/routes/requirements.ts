@@ -4,9 +4,8 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
-import { requirementReorderSchema } from "./schemas.js";
+import { labelsSchema, requirementReorderSchema } from "./schemas.js";
 
-const labelsSchema = z.array(z.string()).nullable().optional();
 const metadataSchema = z.record(z.unknown()).nullable().optional();
 
 export const requirementSchema = z.object({

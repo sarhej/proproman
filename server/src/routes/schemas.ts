@@ -1,6 +1,12 @@
 import { CommercialType, DateConfidence, DealStage, Horizon, InitiativeStatus, Priority, StrategicTier } from "@prisma/client";
 import { z } from "zod";
 
+export const labelsSchema = z
+  .array(z.string().trim().min(1).transform((value) => value.toLowerCase()))
+  .transform((values) => values.filter((value, index, all) => all.indexOf(value) === index))
+  .nullable()
+  .optional();
+
 export const initiativeInputSchema = z.object({
   title: z.string().min(1),
   productId: z.string().nullable().optional(),

@@ -6,6 +6,7 @@ import type { Initiative, Priority, Requirement, TaskStatus, TaskType, User } fr
 import { formatPriority } from "../lib/format";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
+import { LabelEditor } from "../components/ui/LabelEditor";
 
 const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
 const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"];
@@ -61,6 +62,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
+  const [savingLabels, setSavingLabels] = useState(false);
 
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -94,6 +97,10 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         .catch(() => {});
     }
   }, [editing]);
+
+  useEffect(() => {
+    void api.getMeta().then((meta) => setLabelSuggestions(meta.labelSuggestions ?? [])).catch(() => {});
+  }, []);
 
   if (!requirementId) {
     return (
@@ -354,6 +361,29 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 )}
               </p>
             )}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <Label>{t("labels.title")}</Label>
+            <p className="mt-0.5 text-xs text-slate-500">{t("labels.requirementHint")}</p>
+            <div className="mt-1.5">
+              <LabelEditor
+                labels={requirement.labels ?? []}
+                suggestions={labelSuggestions}
+                disabled={savingLabels || readOnly}
+                readOnly={readOnly}
+                placeholder={t("labels.placeholder")}
+                onChange={async (labels) => {
+                  setSavingLabels(true);
+                  try {
+                    await api.updateRequirement(requirement.id, { labels });
+                    await onSaved?.();
+                  } finally {
+                    setSavingLabels(false);
+                  }
+                }}
+              />
+            </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4">

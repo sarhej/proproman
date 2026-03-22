@@ -22,6 +22,14 @@ const ALL_ENTITY_KEYS = [
 
 type EntityKey = typeof ALL_ENTITY_KEYS[number];
 
+function normalizeLabels(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value, index, all) => value.length > 0 && all.indexOf(value) === index);
+}
+
 importExportRouter.get("/export", async (req, res) => {
   try {
     // ?entities=users,products,initiatives  (comma-separated, omit for all)
@@ -605,6 +613,7 @@ async function mergeImport(data: any) {
           targetDate: f.targetDate ? new Date(f.targetDate) : null,
           milestoneDate: f.milestoneDate ? new Date(f.milestoneDate) : null,
           dateConfidence: f.dateConfidence ?? null, sortOrder: f.sortOrder ?? 0,
+          labels: normalizeLabels(f.labels),
         };
         if (match) {
           await tx.feature.update({ where: { id: match.id }, data: fData });
@@ -621,7 +630,14 @@ async function mergeImport(data: any) {
       for (const r of data.requirements) {
         const resolvedFeatId = idMap.get(r.featureId);
         const match = existingRequirements.find((er) => er.title === r.title && (resolvedFeatId ? er.featureId === resolvedFeatId : true));
-        const rData = { featureId: resolvedFeatId!, title: r.title, description: r.description ?? null, isDone: r.isDone ?? false, priority: r.priority ?? "P2" };
+        const rData = {
+          featureId: resolvedFeatId!,
+          title: r.title,
+          description: r.description ?? null,
+          isDone: r.isDone ?? false,
+          priority: r.priority ?? "P2",
+          labels: normalizeLabels(r.labels)
+        };
         if (match) {
           await tx.requirement.update({ where: { id: match.id }, data: rData });
           idMap.set(r.id, match.id);
@@ -793,6 +809,7 @@ async function importFeatures(tx: any, features: any[], idMap: Map<string, strin
         targetDate: f.targetDate ? new Date(f.targetDate) : null,
         milestoneDate: f.milestoneDate ? new Date(f.milestoneDate) : null,
         dateConfidence: f.dateConfidence ?? null, sortOrder: f.sortOrder ?? 0,
+        labels: normalizeLabels(f.labels),
       },
     });
     idMap.set(f.id, created.id);
@@ -802,7 +819,14 @@ async function importFeatures(tx: any, features: any[], idMap: Map<string, strin
 async function importRequirements(tx: any, requirements: any[], idMap: Map<string, string>) {
   for (const r of requirements) {
     const created = await tx.requirement.create({
-      data: { featureId: idMap.get(r.featureId)!, title: r.title, description: r.description ?? null, isDone: r.isDone ?? false, priority: r.priority ?? "P2" },
+      data: {
+        featureId: idMap.get(r.featureId)!,
+        title: r.title,
+        description: r.description ?? null,
+        isDone: r.isDone ?? false,
+        priority: r.priority ?? "P2",
+        labels: normalizeLabels(r.labels)
+      },
     });
     idMap.set(r.id, created.id);
   }

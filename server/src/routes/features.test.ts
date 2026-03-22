@@ -20,6 +20,7 @@ describe("features API – validation edge cases", () => {
         title: "Full feature",
         description: "Desc",
         acceptanceCriteria: "AC1",
+        labels: ["MVP", "Tech-Debt", "mvp"],
         storyPoints: 5,
         storyType: StoryType.FUNCTIONAL,
         ownerId: "user-1",
@@ -31,6 +32,7 @@ describe("features API – validation edge cases", () => {
         expect(result.data.storyPoints).toBe(5);
         expect(result.data.storyType).toBe(StoryType.FUNCTIONAL);
         expect(result.data.status).toBe(FeatureStatus.IN_PROGRESS);
+        expect(result.data.labels).toEqual(["mvp", "tech-debt"]);
       }
     });
 
@@ -81,6 +83,7 @@ describe("features API – validation edge cases", () => {
         title: "X",
         description: null,
         acceptanceCriteria: null,
+        labels: null,
         storyPoints: null,
         storyType: null,
         ownerId: null

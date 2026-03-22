@@ -7,6 +7,7 @@ export type BoardFilters = {
   ownerId?: string;
   priority?: string;
   horizon?: string;
+  labels?: string[];
   isGap?: boolean;
   archived?: boolean;
   quick?: string;
@@ -25,6 +26,7 @@ export function useBoardData(enabled = true) {
     if (filters.ownerId) params.set("ownerId", filters.ownerId);
     if (filters.priority) params.set("priority", filters.priority);
     if (filters.horizon) params.set("horizon", filters.horizon);
+    if (filters.labels && filters.labels.length > 0) params.set("labels", filters.labels.join(","));
     if (typeof filters.isGap === "boolean") params.set("isGap", String(filters.isGap));
     if (filters.archived === true) params.set("archived", "true");
     return params;
@@ -69,8 +71,9 @@ export function useBoardData(enabled = true) {
         ...initiative.features.flatMap((f) => [
           f.title,
           f.description ?? "",
+          ...(f.labels ?? []),
           f.acceptanceCriteria ?? "",
-          ...(f.requirements ?? []).flatMap((r) => [r.title, r.description ?? "", r.externalRef ?? ""])
+          ...(f.requirements ?? []).flatMap((r) => [r.title, r.description ?? "", r.externalRef ?? "", ...(r.labels ?? [])])
         ])
       ]
         .join(" ")

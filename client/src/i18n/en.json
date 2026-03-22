@@ -56,6 +56,8 @@
     "owner": "Owner",
     "priority": "Priority",
     "horizon": "Horizon",
+    "labels": "Labels",
+    "labelsPlaceholder": "Add or select labels...",
     "quickFilter": "Quick filter",
     "showArchived": "Show archived",
     "all": "All",
@@ -669,6 +671,15 @@
     "descriptionHint": "Use for extra UI states, clarifications, or secondary links. Put one primary exact node in external reference.",
     "externalRef": "External reference",
     "externalRefHint": "Single primary link (e.g. exact Figma node for this UI state). Optional until you edit."
+  },
+  "labels": {
+    "title": "Labels",
+    "add": "Add",
+    "placeholder": "e.g. mvp, tech-debt",
+    "none": "No labels yet.",
+    "removeOne": "Remove label {{label}}",
+    "featureHint": "Use labels like mvp, launch-blocker, or tech-debt even when the feature has no requirements yet.",
+    "requirementHint": "Use labels for slices such as mvp, qa, migration, or compliance."
   },
   "lang": {
     "en": "English",

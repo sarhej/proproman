@@ -56,6 +56,8 @@
     "owner": "Vlastník",
     "priority": "Priorita",
     "horizon": "Horizont",
+    "labels": "Štítky",
+    "labelsPlaceholder": "Přidat nebo vybrat štítky...",
     "quickFilter": "Rychlý filtr",
     "showArchived": "Zobrazit archivované",
     "all": "Vše",
@@ -669,6 +671,15 @@
     "descriptionHint": "Další stavy UI, upřesnění nebo vedlejší odkazy. Jeden hlavní přesný uzel dejte do externí reference.",
     "externalRef": "Externí reference",
     "externalRefHint": "Jeden primární odkaz (např. přesný uzel Figmy pro tento stav UI)."
+  },
+  "labels": {
+    "title": "Štítky",
+    "add": "Přidat",
+    "placeholder": "např. mvp, tech-debt",
+    "none": "Zatím bez štítků.",
+    "removeOne": "Odebrat štítek {{label}}",
+    "featureHint": "Používejte štítky jako mvp, launch-blocker nebo tech-debt i když feature ještě nemá požadavky.",
+    "requirementHint": "Štítky použijte pro řezy jako mvp, qa, migrace nebo compliance."
   },
   "lang": {
     "en": "English",

@@ -431,6 +431,7 @@ model Feature {
   title              String
   description        String?
   acceptanceCriteria String?
+  labels             Json?
   storyPoints        Int?
   storyType          StoryType?
   initiativeId       String

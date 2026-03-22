@@ -18,6 +18,15 @@ metaRouter.get("/", async (_req, res) => {
     prisma.account.findMany({ orderBy: { name: "asc" } }),
     prisma.partner.findMany({ orderBy: { name: "asc" } })
   ]);
+  const [features, requirements] = await Promise.all([
+    prisma.feature.findMany({ select: { labels: true } }),
+    prisma.requirement.findMany({ select: { labels: true } })
+  ]);
+  const labelSuggestions = [...features, ...requirements]
+    .flatMap((item) => (Array.isArray(item.labels) ? item.labels.filter((v): v is string => typeof v === "string" && v.trim().length > 0) : []))
+    .map((label) => label.trim())
+    .filter((label, index, all) => all.indexOf(label) === index)
+    .sort((a, b) => a.localeCompare(b));
 
   res.json({
     domains,
@@ -26,6 +35,7 @@ metaRouter.get("/", async (_req, res) => {
     users,
     products,
     accounts,
-    partners
+    partners,
+    labelSuggestions
   });
 });

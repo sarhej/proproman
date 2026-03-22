@@ -1,10 +1,10 @@
-import { FeatureStatus, StoryType } from "@prisma/client";
+import { FeatureStatus, Prisma, StoryType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
-import { featureReorderSchema } from "./schemas.js";
+import { featureReorderSchema, labelsSchema } from "./schemas.js";
 
 const featureStatusValues = ["IDEA", "PLANNED", "IN_PROGRESS", "BUSINESS_APPROVAL", "DONE"] as const;
 const featureStatusSchema = z.enum(featureStatusValues);
@@ -13,6 +13,7 @@ export const featureSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   acceptanceCriteria: z.string().nullable().optional(),
+  labels: labelsSchema,
   storyPoints: z.number().int().min(0).nullable().optional(),
   storyType: z.nativeEnum(StoryType).nullable().optional(),
   ownerId: z.string().nullable().optional(),
@@ -79,6 +80,7 @@ featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => 
       ...parsed.data,
       description: parsed.data.description ?? null,
       acceptanceCriteria: parsed.data.acceptanceCriteria ?? null,
+      labels: parsed.data.labels === null ? Prisma.JsonNull : ((parsed.data.labels ?? undefined) as Prisma.InputJsonValue),
       storyPoints: parsed.data.storyPoints ?? null,
       storyType: parsed.data.storyType ?? null,
       ownerId: parsed.data.ownerId ?? null
@@ -100,6 +102,7 @@ featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   if (parsed.data.title !== undefined) data.title = parsed.data.title;
   if (parsed.data.description !== undefined) data.description = parsed.data.description ?? null;
   if (parsed.data.acceptanceCriteria !== undefined) data.acceptanceCriteria = parsed.data.acceptanceCriteria ?? null;
+  if (parsed.data.labels !== undefined) data.labels = parsed.data.labels === null ? Prisma.JsonNull : (parsed.data.labels as Prisma.InputJsonValue);
   if (parsed.data.storyPoints !== undefined) data.storyPoints = parsed.data.storyPoints ?? null;
   if (parsed.data.storyType !== undefined) data.storyType = parsed.data.storyType ?? null;
   if (parsed.data.ownerId !== undefined) data.ownerId = parsed.data.ownerId ?? null;

@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import type { Feature, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Textarea } from "../components/ui/Field";
+import { LabelEditor } from "../components/ui/LabelEditor";
 
 type Props = {
   initiatives: Initiative[];
@@ -34,8 +35,14 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
   const [editDesc, setEditDesc] = useState("");
   const [editAC, setEditAC] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
+  const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
+  const [savingLabels, setSavingLabels] = useState(false);
   const found = featureId ? findFeature(initiatives, featureId) : null;
   const featureForSync = found?.feature ?? null;
+
+  useEffect(() => {
+    void api.getMeta().then((meta) => setLabelSuggestions(meta.labelSuggestions ?? [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!featureForSync || editingDetails) return;
@@ -261,6 +268,35 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
             </div>
           </div>
         )}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-700">{t("labels.title")}</h2>
+            <p className="text-xs text-slate-500">{t("labels.featureHint")}</p>
+          </div>
+        </div>
+        <LabelEditor
+          labels={feature.labels ?? []}
+          suggestions={labelSuggestions}
+          disabled={savingLabels || readOnly}
+          readOnly={readOnly}
+          placeholder={t("labels.placeholder")}
+          onChange={async (labels) => {
+            setSavingLabels(true);
+            try {
+              const res = await api.updateFeature(feature.id, { labels });
+              onFeatureUpdated?.({
+                ...res.feature,
+                requirements: feature.requirements ?? res.feature.requirements ?? []
+              });
+              await onSaved?.();
+            } finally {
+              setSavingLabels(false);
+            }
+          }}
+        />
       </section>
 
       <section>

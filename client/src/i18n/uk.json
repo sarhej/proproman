@@ -56,6 +56,8 @@
     "owner": "Власник",
     "priority": "Пріоритет",
     "horizon": "Горизонт",
+    "labels": "Мітки",
+    "labelsPlaceholder": "Додати або вибрати мітки...",
     "quickFilter": "Швидкий фільтр",
     "showArchived": "Показати архівні",
     "all": "Усі",
@@ -669,6 +671,15 @@
     "descriptionHint": "Додаткові стани UI, уточнення або другорядні посилання. Один основний точний вузол — у зовнішній посиланні.",
     "externalRef": "Зовнішнє посилання",
     "externalRefHint": "Одне основне посилання (напр. точний вузол Figma для цього стану UI)."
+  },
+  "labels": {
+    "title": "Мітки",
+    "add": "Додати",
+    "placeholder": "напр. mvp, tech-debt",
+    "none": "Міток ще немає.",
+    "removeOne": "Прибрати мітку {{label}}",
+    "featureHint": "Використовуйте мітки на кшталт mvp, launch-blocker або tech-debt навіть коли у фічі ще немає вимог.",
+    "requirementHint": "Використовуйте мітки для зрізів на кшталт mvp, qa, migration або compliance."
   },
   "lang": {
     "en": "English",

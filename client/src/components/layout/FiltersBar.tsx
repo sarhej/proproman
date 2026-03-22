@@ -1,16 +1,19 @@
 import { useTranslation } from "react-i18next";
 import type { Domain, User } from "../../types/models";
 import { formatPriority } from "../../lib/format";
+import { LabelEditor } from "../ui/LabelEditor";
 import { Input, Label, Select } from "../ui/Field";
 
 type Props = {
   domains: Domain[];
   users: User[];
+  labelSuggestions?: string[];
   filters: {
     domainId?: string;
     ownerId?: string;
     priority?: string;
     horizon?: string;
+    labels?: string[];
     isGap?: boolean;
     archived?: boolean;
     quick?: string;
@@ -18,7 +21,7 @@ type Props = {
   onChange: (patch: Partial<Props["filters"]>) => void;
 };
 
-export function FiltersBar({ domains, users, filters, onChange }: Props) {
+export function FiltersBar({ domains, users, labelSuggestions = [], filters, onChange }: Props) {
   const { t } = useTranslation();
   const selectedDomain = filters.domainId ? domains.find((d) => d.id === filters.domainId) : null;
 
@@ -32,6 +35,15 @@ export function FiltersBar({ domains, users, filters, onChange }: Props) {
           onChange={(e) => onChange({ quick: e.target.value || undefined })}
           className="w-full text-base"
         />
+        <div className="mt-3">
+          <Label>{t("filters.labels")}</Label>
+          <LabelEditor
+            labels={filters.labels ?? []}
+            suggestions={labelSuggestions}
+            placeholder={t("filters.labelsPlaceholder")}
+            onChange={(labels) => onChange({ labels: labels.length > 0 ? labels : undefined })}
+          />
+        </div>
       </div>
       {/* Desktop: full filter grid */}
       <div className="hidden lg:grid grid-cols-6 gap-3">
@@ -106,6 +118,15 @@ export function FiltersBar({ domains, users, filters, onChange }: Props) {
             />
             {t("filters.showArchived")}
           </label>
+        </div>
+        <div className="col-span-6">
+          <Label>{t("filters.labels")}</Label>
+          <LabelEditor
+            labels={filters.labels ?? []}
+            suggestions={labelSuggestions}
+            placeholder={t("filters.labelsPlaceholder")}
+            onChange={(labels) => onChange({ labels: labels.length > 0 ? labels : undefined })}
+          />
         </div>
       </div>
     </div>
