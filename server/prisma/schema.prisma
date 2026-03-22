@@ -774,6 +774,10 @@ enum BindingType {
   PRISMA_MODEL
   FILE_GLOB
   INFRA
+  /// Figma file/node identifier (see docs/DESIGN_REFERENCES.md)
+  FIGMA_NODE
+  /// Tool-agnostic design URL or stable id (Figma, Penpot, brief doc, …)
+  DESIGN_REF
 }
 
 /// Product capability in user language; binds to routes, MCP tools, models, etc.

@@ -325,6 +325,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         </div>
         <div className="md:col-span-2">
           <Label>{t("initiative.notes")}</Label>
+          <p className="mb-1 text-xs text-slate-500">{t("initiative.notesDesignHint")}</p>
           <Textarea
             rows={form.notes?.length ? Math.min(14, Math.max(4, Math.ceil(form.notes.length / 70))) : 2}
             value={form.notes}

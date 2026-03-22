@@ -64,3 +64,19 @@ export const updatePositionsSchema = z.array(
     sortOrder: z.number().int()
   })
 );
+
+/** Reorder features within one initiative: must include every feature id for that initiative exactly once. */
+export const featureReorderSchema = z.array(
+  z.object({
+    id: z.string(),
+    sortOrder: z.number().int()
+  })
+);
+
+/** Reorder requirements within one feature: must include every requirement id for that feature exactly once. */
+export const requirementReorderSchema = z.array(
+  z.object({
+    id: z.string(),
+    sortOrder: z.number().int()
+  })
+);

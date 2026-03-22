@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
+import { requirementReorderSchema } from "./schemas.js";
 
 const labelsSchema = z.array(z.string()).nullable().optional();
 const metadataSchema = z.record(z.unknown()).nullable().optional();
@@ -28,6 +29,49 @@ export const requirementSchema = z.object({
 
 export const requirementsRouter = Router();
 requirementsRouter.use(requireAuth);
+
+requirementsRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
+  const parsed = requirementReorderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  if (parsed.data.length === 0) {
+    res.status(400).json({ error: "Empty reorder payload" });
+    return;
+  }
+  const payloadIds = parsed.data.map((u) => u.id);
+  if (new Set(payloadIds).size !== payloadIds.length) {
+    res.status(400).json({ error: "Duplicate requirement ids in reorder payload" });
+    return;
+  }
+  const first = await prisma.requirement.findUnique({
+    where: { id: parsed.data[0].id },
+    select: { featureId: true }
+  });
+  if (!first) {
+    res.status(400).json({ error: "Unknown requirement" });
+    return;
+  }
+  const siblings = await prisma.requirement.findMany({
+    where: { featureId: first.featureId },
+    select: { id: true }
+  });
+  const expected = new Set(siblings.map((s) => s.id));
+  if (expected.size !== payloadIds.length || !payloadIds.every((id) => expected.has(id))) {
+    res.status(400).json({ error: "Payload must list every requirement in the feature exactly once" });
+    return;
+  }
+  await prisma.$transaction(
+    parsed.data.map((u) =>
+      prisma.requirement.update({
+        where: { id: u.id },
+        data: { sortOrder: u.sortOrder }
+      })
+    )
+  );
+  res.json({ ok: true });
+});
 
 requirementsRouter.get("/", async (req, res) => {
   const featureId = typeof req.query.featureId === "string" ? req.query.featureId : undefined;

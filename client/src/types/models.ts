@@ -438,7 +438,9 @@ export type BindingType =
   | "MCP_TOOL"
   | "PRISMA_MODEL"
   | "FILE_GLOB"
-  | "INFRA";
+  | "INFRA"
+  | "FIGMA_NODE"
+  | "DESIGN_REF";
 
 export type CapabilityBinding = {
   id: string;

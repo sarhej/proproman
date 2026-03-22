@@ -155,6 +155,10 @@ Tymio’s **ontology** is a **semantic map of product capabilities**: things use
 - **`PRISMA_MODEL`** — Data model name (e.g. `Initiative`, `Requirement`).
 - **`FILE_GLOB`** — Repository file patterns when documented.
 - **`INFRA`** — Pointer to infra or code modules (e.g. MCP registration file).
+- **`FIGMA_NODE`** (optional) — Stable Figma file + node identifier for a **capability** (not a backlog row). Prefer `fileKey:nodeId` with the node id in Figma’s colon form (from a share URL, replace hyphens in `node-id` with colons). Example: `AbCdEfGhIj:1:234`.
+- **`DESIGN_REF`** (optional) — Tool-agnostic design anchor: full `https://…` URL, Penpot link, Confluence/Notion page, or a short stable id your team agrees on.
+
+**Backlog vs ontology for design:** Row-level links (initiative / feature / requirement) still live in **`notes`**, **`description`**, **`externalRef`** as in **`docs/DESIGN_REFERENCES.md`**. **`FIGMA_NODE` / `DESIGN_REF`** bindings attach **design context to a capability** so agents and briefs can cite “this surface ↔ this frame” alongside routes and MCP tools. Use both when a capability spans many screens and you want one canonical design anchor on the capability itself.
 
 ### 5.2 Where data lives and who can change it
 

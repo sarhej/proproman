@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -59,6 +59,11 @@ function reqProgress(features: Feature[]) {
     }
   }
   return { done, total };
+}
+
+/** Stable sibling order (matches API `orderBy: sortOrder, title`). */
+function sortSiblingsByOrder<T extends { sortOrder: number; title: string }>(items: T[]): T[] {
+  return items.slice().sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 }
 
 function DemandBadges({ links }: { links: Initiative["demandLinks"] }) {
@@ -229,13 +234,55 @@ function DeleteBtn({ onDelete, label }: { onDelete: () => Promise<void>; label: 
   );
 }
 
+function ReorderArrows({
+  index,
+  count,
+  onMove
+}: {
+  index: number;
+  count: number;
+  onMove: (delta: -1 | 1) => void | Promise<void>;
+}) {
+  const { t } = useTranslation();
+  if (count < 2) return null;
+  return (
+    <span
+      className="mx-0.5 inline-flex flex-col items-center align-middle text-slate-400"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="rounded p-0 leading-none hover:bg-slate-200 hover:text-slate-700 disabled:opacity-25 disabled:hover:bg-transparent"
+        disabled={index <= 0}
+        title={t("productTree.moveUp")}
+        aria-label={t("productTree.moveUp")}
+        onClick={() => void onMove(-1)}
+      >
+        <ChevronUp size={12} strokeWidth={2.5} />
+      </button>
+      <button
+        type="button"
+        className="-mt-0.5 rounded p-0 leading-none hover:bg-slate-200 hover:text-slate-700 disabled:opacity-25 disabled:hover:bg-transparent"
+        disabled={index >= count - 1}
+        title={t("productTree.moveDown")}
+        aria-label={t("productTree.moveDown")}
+        onClick={() => void onMove(1)}
+      >
+        <ChevronDown size={12} strokeWidth={2.5} />
+      </button>
+    </span>
+  );
+}
+
 function RequirementRow({
   requirement,
+  orderedSiblingRequirements,
   isAdmin,
   onRefresh,
   onRequirementUpdated
 }: {
   requirement: Requirement;
+  orderedSiblingRequirements: Requirement[];
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
   onRequirementUpdated?: (r: Requirement) => void;
@@ -245,6 +292,19 @@ function RequirementRow({
     if (onRequirementUpdated && res) onRequirementUpdated(res.requirement);
     else await onRefresh();
   };
+  const reqIndex = orderedSiblingRequirements.findIndex((r) => r.id === requirement.id);
+  async function reorderRequirement(delta: -1 | 1) {
+    const idx = orderedSiblingRequirements.findIndex((r) => r.id === requirement.id);
+    const ni = idx + delta;
+    if (idx < 0 || ni < 0 || ni >= orderedSiblingRequirements.length) return;
+    const next = orderedSiblingRequirements.slice();
+    const tmp = next[idx]!;
+    next[idx] = next[ni]!;
+    next[ni] = tmp;
+    const updates = next.map((r, i) => ({ id: r.id, sortOrder: i }));
+    await api.reorderRequirements(updates);
+    await onRefresh();
+  }
   return (
     <tr className="group/row border-t border-slate-100 text-xs">
       <td className="py-1.5 pl-16 pr-2">
@@ -263,6 +323,9 @@ function RequirementRow({
             <Circle size={14} className="text-slate-400" />
           )}
         </button>
+        {isAdmin ? (
+          <ReorderArrows index={reqIndex} count={orderedSiblingRequirements.length} onMove={reorderRequirement} />
+        ) : null}
         {isAdmin ? (
           <>
             <EditableTitle
@@ -345,6 +408,7 @@ function RequirementRow({
 
 function FeatureRow({
   feature,
+  orderedSiblingFeatures,
   users,
   isAdmin,
   onRefresh,
@@ -352,6 +416,7 @@ function FeatureRow({
   onRequirementUpdated
 }: {
   feature: Feature;
+  orderedSiblingFeatures: Feature[];
   users: User[];
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
@@ -360,12 +425,25 @@ function FeatureRow({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const reqs = feature.requirements ?? [];
+  const reqs = sortSiblingsByOrder(feature.requirements ?? []);
   const done = reqs.filter((r) => r.isDone).length;
   const refreshFeature = async (res?: { feature: Feature }) => {
     if (onFeatureUpdated && res) onFeatureUpdated({ ...res.feature, requirements: feature.requirements });
     else await onRefresh();
   };
+  const featIndex = orderedSiblingFeatures.findIndex((f) => f.id === feature.id);
+  async function reorderFeature(delta: -1 | 1) {
+    const idx = orderedSiblingFeatures.findIndex((f) => f.id === feature.id);
+    const ni = idx + delta;
+    if (idx < 0 || ni < 0 || ni >= orderedSiblingFeatures.length) return;
+    const next = orderedSiblingFeatures.slice();
+    const tmp = next[idx]!;
+    next[idx] = next[ni]!;
+    next[ni] = tmp;
+    const updates = next.map((f, i) => ({ id: f.id, sortOrder: i }));
+    await api.reorderFeatures(updates);
+    await onRefresh();
+  }
 
   return (
     <>
@@ -374,6 +452,9 @@ function FeatureRow({
           <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
             {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
+          {isAdmin ? (
+            <ReorderArrows index={featIndex} count={orderedSiblingFeatures.length} onMove={reorderFeature} />
+          ) : null}
           {isAdmin ? (
             <>
               <EditableTitle
@@ -441,7 +522,14 @@ function FeatureRow({
         </td>
       </tr>
       {open && reqs.map((r) => (
-        <RequirementRow key={r.id} requirement={r} isAdmin={isAdmin} onRefresh={onRefresh} onRequirementUpdated={onRequirementUpdated} />
+        <RequirementRow
+          key={r.id}
+          requirement={r}
+          orderedSiblingRequirements={reqs}
+          isAdmin={isAdmin}
+          onRefresh={onRefresh}
+          onRequirementUpdated={onRequirementUpdated}
+        />
       ))}
       {(open || reqs.length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
@@ -503,6 +591,8 @@ function InitiativeRow({
     setNodeRef(node);
     setDroppableRef(node);
   };
+
+  const orderedFeatures = sortSiblingsByOrder(initiative.features ?? []);
 
   return (
     <>
@@ -584,9 +674,19 @@ function InitiativeRow({
           )}
         </td>
       </tr>
-      {open && (initiative.features ?? []).map((feature) => (
-        <FeatureRow key={feature.id} feature={feature} users={users} isAdmin={isAdmin} onRefresh={onRefresh} onFeatureUpdated={onFeatureUpdated} onRequirementUpdated={onRequirementUpdated} />
-      ))}
+      {open &&
+        orderedFeatures.map((feature) => (
+          <FeatureRow
+            key={feature.id}
+            feature={feature}
+            orderedSiblingFeatures={orderedFeatures}
+            users={users}
+            isAdmin={isAdmin}
+            onRefresh={onRefresh}
+            onFeatureUpdated={onFeatureUpdated}
+            onRequirementUpdated={onRequirementUpdated}
+          />
+        ))}
       {(open || (initiative.features ?? []).length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-12 pr-2">

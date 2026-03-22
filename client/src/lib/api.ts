@@ -141,6 +141,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(body)
     }),
+  reorderFeatures: async (rows: Array<{ id: string; sortOrder: number }>) =>
+    request<{ ok: boolean }>("/api/features/reorder", {
+      method: "POST",
+      body: JSON.stringify(rows)
+    }),
   deleteFeature: async (id: string) =>
     request<void>(`/api/features/${id}`, {
       method: "DELETE"
@@ -203,6 +208,11 @@ export const api = {
     request<{ requirement: Requirement }>("/api/requirements", { method: "POST", body: JSON.stringify(body) }),
   updateRequirement: async (id: string, body: unknown) =>
     request<{ requirement: Requirement }>(`/api/requirements/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  reorderRequirements: async (rows: Array<{ id: string; sortOrder: number }>) =>
+    request<{ ok: boolean }>("/api/requirements/reorder", {
+      method: "POST",
+      body: JSON.stringify(rows)
+    }),
   deleteRequirement: async (id: string) => request<void>(`/api/requirements/${id}`, { method: "DELETE" }),
   getAssignments: async (initiativeId?: string) =>
     request<{ assignments: InitiativeAssignment[] }>(`/api/assignments${initiativeId ? `?initiativeId=${initiativeId}` : ""}`),

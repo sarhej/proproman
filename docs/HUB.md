@@ -17,6 +17,8 @@ Sample data and labels in the codebase may still reflect a particular industry; 
 - **Go-to-market context (optional modules):** Accounts, partners, demands linked to work items; campaigns and assets linked to initiatives and accounts.
 - **Automation:** Same capabilities exposed to AI agents through **MCP** (Model Context Protocol) with the same permissions as interactive users.
 
+**Design references (Figma, etc.):** Where to put links in the backlog, and when to add optional ontology binding types **`FIGMA_NODE`** / **`DESIGN_REF`** on a capability, is documented in [DESIGN_REFERENCES.md](./DESIGN_REFERENCES.md) (tenant checklist + key formats).
+
 ### 1.2 Multi-tenancy — target vs today
 
 | Aspect | Target (Tymio) | Today (this codebase) |

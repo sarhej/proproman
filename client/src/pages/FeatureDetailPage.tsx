@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Feature, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Field";
+import { Input, Label, Textarea } from "../components/ui/Field";
 
 type Props = {
   initiatives: Initiative[];
@@ -30,7 +30,23 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editDesc, setEditDesc] = useState("");
+  const [editAC, setEditAC] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
   const found = featureId ? findFeature(initiatives, featureId) : null;
+  const featureForSync = found?.feature ?? null;
+
+  useEffect(() => {
+    if (!featureForSync || editingDetails) return;
+    setEditDesc(featureForSync.description ?? "");
+    setEditAC(featureForSync.acceptanceCriteria ?? "");
+  }, [
+    featureForSync?.id,
+    featureForSync?.description,
+    featureForSync?.acceptanceCriteria,
+    editingDetails
+  ]);
 
   if (!featureId) {
     return (
@@ -156,12 +172,96 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
         </div>
       </div>
 
-      {feature.description ? (
-        <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-700">Description</h2>
-          <p className="text-sm text-slate-600">{feature.description}</p>
-        </section>
-      ) : null}
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-700">{t("featureDetail.description")}</h2>
+          {!readOnly && !editingDetails ? (
+            <Button variant="secondary" type="button" onClick={() => setEditingDetails(true)}>
+              {t("featureDetail.editDetails")}
+            </Button>
+          ) : null}
+        </div>
+        {editingDetails && !readOnly ? (
+          <div className="space-y-4">
+            <div>
+              <p className="mb-1 text-xs text-slate-500">{t("featureDetail.descriptionHint")}</p>
+              <Textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                rows={5}
+                className="font-mono text-sm"
+              />
+            </div>
+            <div>
+              <Label>{t("featureDetail.acceptanceCriteria")}</Label>
+              <p className="mb-1 text-xs text-slate-500">{t("featureDetail.acceptanceCriteriaHint")}</p>
+              <Textarea
+                value={editAC}
+                onChange={(e) => setEditAC(e.target.value)}
+                rows={4}
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                disabled={savingDetails}
+                onClick={async () => {
+                  setSavingDetails(true);
+                  try {
+                    const res = await api.updateFeature(feature.id, {
+                      description: editDesc.trim() || null,
+                      acceptanceCriteria: editAC.trim() || null
+                    });
+                    onFeatureUpdated?.({
+                      ...res.feature,
+                      requirements: feature.requirements ?? res.feature.requirements ?? []
+                    });
+                    setEditingDetails(false);
+                    await onSaved?.();
+                  } finally {
+                    setSavingDetails(false);
+                  }
+                }}
+              >
+                {t("featureDetail.saveDetails")}
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                disabled={savingDetails}
+                onClick={() => {
+                  setEditDesc(feature.description ?? "");
+                  setEditAC(feature.acceptanceCriteria ?? "");
+                  setEditingDetails(false);
+                }}
+              >
+                {t("featureDetail.cancelEdit")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm text-slate-600">
+            <div>
+              {feature.description ? (
+                <p className="whitespace-pre-wrap">{feature.description}</p>
+              ) : (
+                <p className="italic text-slate-400">{t("common.none")}</p>
+              )}
+            </div>
+            <div>
+              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+                {t("featureDetail.acceptanceCriteria")}
+              </p>
+              {feature.acceptanceCriteria ? (
+                <p className="whitespace-pre-wrap">{feature.acceptanceCriteria}</p>
+              ) : (
+                <p className="italic text-slate-400">{t("common.none")}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-700">

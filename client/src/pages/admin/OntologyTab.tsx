@@ -11,7 +11,9 @@ const BINDING_TYPES: BindingType[] = [
   "MCP_TOOL",
   "PRISMA_MODEL",
   "FILE_GLOB",
-  "INFRA"
+  "INFRA",
+  "FIGMA_NODE",
+  "DESIGN_REF"
 ];
 
 const STATUSES: CapabilityStatus[] = ["ACTIVE", "DRAFT", "DEPRECATED"];
@@ -350,6 +352,13 @@ export function OntologyTab() {
 
               <div className="border-t pt-4">
                 <h3 className="mb-2 text-sm font-semibold">{t("admin.ontology.bindings")}</h3>
+                <details className="mb-3 rounded border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm">
+                  <summary className="cursor-pointer font-medium text-sky-900">{t("admin.ontology.tenantGuideBindingsSummary")}</summary>
+                  <div className="mt-2 space-y-2 text-xs text-slate-700">
+                    <p className="whitespace-pre-wrap">{t("admin.ontology.tenantGuideBindingsBody")}</p>
+                    <p className="whitespace-pre-wrap font-mono text-[11px] text-slate-600">{t("admin.ontology.tenantGuideBindingsExamples")}</p>
+                  </div>
+                </details>
                 <div className="mb-3 flex flex-wrap gap-2">
                   <select className="rounded border px-2 py-1 text-sm" value={newBindType} onChange={(e) => setNewBindType(e.target.value as BindingType)}>
                     {BINDING_TYPES.map((bt) => (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Initiative, Priority, Requirement, TaskStatus, TaskType, User } from "../types/models";
@@ -43,7 +44,17 @@ function fromDateOnly(dateStr: string): string | null {
   return `${dateStr}T00:00:00.000Z`;
 }
 
+function isHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, readOnly }: Props) {
+  const { t } = useTranslation();
   const { requirementId } = useParams<{ requirementId: string }>();
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,6 +69,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const [editAssigneeId, setEditAssigneeId] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState("");
   const [editTaskType, setEditTaskType] = useState<TaskType | null>(null);
+  const [editExternalRef, setEditExternalRef] = useState("");
 
   const found = requirementId ? findRequirement(initiatives, requirementId) : null;
 
@@ -66,12 +78,13 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     const r = found.requirement;
     setEditTitle(r.title);
     setEditDescription(r.description ?? "");
+    setEditExternalRef(r.externalRef ?? "");
     setEditPriority(r.priority);
     setEditStatus(r.status ?? "NOT_STARTED");
     setEditAssigneeId(r.assigneeId ?? null);
     setEditDueDate(toDateOnly(r.dueDate));
     setEditTaskType(r.taskType ?? null);
-  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate, found?.requirement.taskType]);
+  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.externalRef, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate, found?.requirement.taskType]);
 
   useEffect(() => {
     if (editing && users.length === 0) {
@@ -123,6 +136,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       await api.updateRequirement(requirement.id, {
         title: editTitle.trim(),
         description: editDescription.trim() || null,
+        externalRef: editExternalRef.trim() || null,
         priority: editPriority,
         status: editStatus,
         isDone: editStatus === "DONE",
@@ -140,6 +154,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const handleCancel = () => {
     setEditTitle(requirement.title);
     setEditDescription(requirement.description ?? "");
+    setEditExternalRef(requirement.externalRef ?? "");
     setEditPriority(requirement.priority);
     setEditStatus(requirement.status ?? "NOT_STARTED");
     setEditAssigneeId(requirement.assigneeId ?? null);
@@ -292,7 +307,38 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         {/* Main column */}
         <div className="min-w-0 flex-1 space-y-6">
           <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <Label>Description</Label>
+            <Label>{t("requirementDetail.externalRef")}</Label>
+            <p className="mt-0.5 text-xs text-slate-500">{t("requirementDetail.externalRefHint")}</p>
+            {editing ? (
+              <Input
+                value={editExternalRef}
+                onChange={(e) => setEditExternalRef(e.target.value)}
+                className="mt-1.5 font-mono text-sm"
+                placeholder="https://..."
+              />
+            ) : requirement.externalRef ? (
+              <p className="mt-1.5 text-sm">
+                {isHttpUrl(requirement.externalRef) ? (
+                  <a
+                    href={requirement.externalRef.trim()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-600 hover:underline break-all"
+                  >
+                    {requirement.externalRef}
+                  </a>
+                ) : (
+                  <span className="font-mono text-slate-700">{requirement.externalRef}</span>
+                )}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-sm italic text-slate-400">{t("common.none")}</p>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <Label>{t("common.description")}</Label>
+            <p className="mt-0.5 text-xs text-slate-500">{t("requirementDetail.descriptionHint")}</p>
             {editing ? (
               <Textarea
                 value={editDescription}

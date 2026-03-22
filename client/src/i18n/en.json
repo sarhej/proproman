@@ -239,6 +239,7 @@
     "status": "Status",
     "commercial": "Commercial Type",
     "notes": "Notes",
+    "notesDesignHint": "Use for section-level design links (e.g. primary Figma section), design status, and related frames — keep the main description product-facing.",
     "startDate": "Start Date",
     "targetDate": "Target Date",
     "milestoneDate": "Milestone Date",
@@ -509,6 +510,8 @@
     "epicLabel": "epic",
     "epicLabelPlural": "epics",
     "addEpic": "Add epic",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
     "empty": "No products / assets found. Create one to get started."
   },
   "admin": {
@@ -615,6 +618,9 @@
     "ontology.titlePrompt": "Display title:",
     "ontology.deleteConfirm": "Delete capability \"{{title}}\" and all bindings?",
     "ontology.removeBindingConfirm": "Remove this binding?",
+    "ontology.tenantGuideBindingsSummary": "How design bindings work (optional)",
+    "ontology.tenantGuideBindingsBody": "Use backlog fields for row-level links: initiative notes, feature description, requirement external reference. Add FIGMA_NODE or DESIGN_REF here when you want the same design anchor on the capability itself so it appears in the compiled agent brief next to routes and MCP tools. After edits, use “Compile & store briefs” above.\n\nFull tenant playbook: docs/DESIGN_REFERENCES.md in the repository.",
+    "ontology.tenantGuideBindingsExamples": "FIGMA_NODE — key: fileKey:1:234 (from figma.com/design/<fileKey>/… ; take node-id from the URL and replace hyphens with colons).\nDESIGN_REF — key: full https://… URL or a short stable id your team documents.",
     "ontology.previewTitle": "Compact brief (Markdown)",
     "ontology.exportedTo": "Wrote agent brief to:\n{{path}}",
     "notificationRules": "Notification rules",
@@ -646,6 +652,20 @@
     "importSuccessReload": " Reloading page...",
     "importFailed": "Import failed. Transaction was rolled back. No data was changed.",
     "clearFailed": "Clear failed. Transaction was rolled back."
+  },
+  "featureDetail": {
+    "description": "Description",
+    "descriptionHint": "Summary plus primary exact design link (e.g. Figma frame). Name ontology themes (templates, flows, controls) in text, not only URLs.",
+    "acceptanceCriteria": "Acceptance criteria",
+    "acceptanceCriteriaHint": "Keep testable / behavioral criteria here — not a link dump.",
+    "editDetails": "Edit description & criteria",
+    "saveDetails": "Save",
+    "cancelEdit": "Cancel"
+  },
+  "requirementDetail": {
+    "descriptionHint": "Use for extra UI states, clarifications, or secondary links. Put one primary exact node in external reference.",
+    "externalRef": "External reference",
+    "externalRefHint": "Single primary link (e.g. exact Figma node for this UI state). Optional until you edit."
   },
   "lang": {
     "en": "English",

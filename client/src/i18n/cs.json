@@ -239,6 +239,7 @@
     "status": "Status",
     "commercial": "Komerční typ",
     "notes": "Poznámky",
+    "notesDesignHint": "Odkazy na design na úrovni sekce (např. hlavní Figma sekce), stav designu — popis iniciativy nechte produktově orientovaný.",
     "startDate": "Datum zahájení",
     "targetDate": "Cílové datum",
     "milestoneDate": "Datum milníku",
@@ -509,6 +510,8 @@
     "epicLabel": "epic",
     "epicLabelPlural": "epicy",
     "addEpic": "Přidat epic",
+    "moveUp": "Posunout nahoru",
+    "moveDown": "Posunout dolů",
     "empty": "Žádné produkty / assety. Vytvořte první."
   },
   "admin": {
@@ -615,6 +618,9 @@
     "ontology.titlePrompt": "Zobrazovaný název:",
     "ontology.deleteConfirm": "Smazat capability „{{title}}“ a všechny vazby?",
     "ontology.removeBindingConfirm": "Odstranit tuto vazbu?",
+    "ontology.tenantGuideBindingsSummary": "Jak fungují designové vazby (volitelné)",
+    "ontology.tenantGuideBindingsBody": "Pro odkazy u konkrétních položek backlogu používejte poznámky u iniciativy, popis u feature a externí referenci u požadavku. Typy FIGMA_NODE nebo DESIGN_REF přidejte u capability, chcete-li stejný designový kotvu také v přeloženém agent briefu vedle rout a MCP nástrojů. Po úpravách použijte výše „Zkompilovat a uložit briefy“.\n\nKompletní návod pro tenanty: docs/DESIGN_REFERENCES.md v repozitáři.",
+    "ontology.tenantGuideBindingsExamples": "FIGMA_NODE — klíč: fileKey:1:234 (z figma.com/design/<fileKey>/… ; z node-id v URL nahraďte pomlčky dvojtečkami).\nDESIGN_REF — klíč: celá URL https://… nebo krátké stabilní ID, které si tým domluví.",
     "ontology.previewTitle": "Kompaktní brief (Markdown)",
     "ontology.exportedTo": "Agent brief zapsán do:\n{{path}}",
     "notificationRules": "Pravidla notifikací",
@@ -646,6 +652,20 @@
     "importSuccessReload": " Načítání stránky...",
     "importFailed": "Import selhal. Transakce byla vrácena zpět. Žádná data nebyla změněna.",
     "clearFailed": "Mazání selhalo. Transakce byla vrácena zpět."
+  },
+  "featureDetail": {
+    "description": "Popis",
+    "descriptionHint": "Shrnutí a přesný odkaz na design (např. Figma frame). Ontologická témata (šablony, toky) pište i textem, ne jen URL.",
+    "acceptanceCriteria": "Akceptační kritéria",
+    "acceptanceCriteriaHint": "Pouze testovatelné / chování — ne seznam odkazů.",
+    "editDetails": "Upravit popis a kritéria",
+    "saveDetails": "Uložit",
+    "cancelEdit": "Zrušit"
+  },
+  "requirementDetail": {
+    "descriptionHint": "Další stavy UI, upřesnění nebo vedlejší odkazy. Jeden hlavní přesný uzel dejte do externí reference.",
+    "externalRef": "Externí reference",
+    "externalRefHint": "Jeden primární odkaz (např. přesný uzel Figmy pro tento stav UI)."
   },
   "lang": {
     "en": "English",

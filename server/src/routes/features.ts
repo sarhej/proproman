@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
+import { featureReorderSchema } from "./schemas.js";
 
 const featureStatusValues = ["IDEA", "PLANNED", "IN_PROGRESS", "BUSINESS_APPROVAL", "DONE"] as const;
 const featureStatusSchema = z.enum(featureStatusValues);
@@ -21,6 +22,49 @@ export const featureSchema = z.object({
 
 export const featuresRouter = Router();
 featuresRouter.use(requireAuth);
+
+featuresRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
+  const parsed = featureReorderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  if (parsed.data.length === 0) {
+    res.status(400).json({ error: "Empty reorder payload" });
+    return;
+  }
+  const payloadIds = parsed.data.map((u) => u.id);
+  if (new Set(payloadIds).size !== payloadIds.length) {
+    res.status(400).json({ error: "Duplicate feature ids in reorder payload" });
+    return;
+  }
+  const first = await prisma.feature.findUnique({
+    where: { id: parsed.data[0].id },
+    select: { initiativeId: true }
+  });
+  if (!first) {
+    res.status(400).json({ error: "Unknown feature" });
+    return;
+  }
+  const siblings = await prisma.feature.findMany({
+    where: { initiativeId: first.initiativeId },
+    select: { id: true }
+  });
+  const expected = new Set(siblings.map((s) => s.id));
+  if (expected.size !== payloadIds.length || !payloadIds.every((id) => expected.has(id))) {
+    res.status(400).json({ error: "Payload must list every feature in the initiative exactly once" });
+    return;
+  }
+  await prisma.$transaction(
+    parsed.data.map((u) =>
+      prisma.feature.update({
+        where: { id: u.id },
+        data: { sortOrder: u.sortOrder }
+      })
+    )
+  );
+  res.json({ ok: true });
+});
 
 featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);

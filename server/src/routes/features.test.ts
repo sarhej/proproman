@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { FeatureStatus, StoryType } from "@prisma/client";
 import { featureSchema } from "./features.js";
+import { featureReorderSchema } from "./schemas.js";
 
 describe("features API – validation edge cases", () => {
   describe("POST body (full schema)", () => {
@@ -118,6 +119,21 @@ describe("features API – validation edge cases", () => {
 
     it("rejects partial title empty string", () => {
       const result = partialSchema.safeParse({ title: "" });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("featureReorderSchema", () => {
+    it("accepts a valid reorder payload", () => {
+      const result = featureReorderSchema.safeParse([
+        { id: "a", sortOrder: 0 },
+        { id: "b", sortOrder: 1 }
+      ]);
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects non-integer sortOrder", () => {
+      const result = featureReorderSchema.safeParse([{ id: "a", sortOrder: 1.5 }]);
       expect(result.success).toBe(false);
     });
   });

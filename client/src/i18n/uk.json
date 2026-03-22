@@ -239,6 +239,7 @@
     "status": "Статус",
     "commercial": "Комерційний тип",
     "notes": "Нотатки",
+    "notesDesignHint": "Посилання на дизайн рівня секції (напр. основна секція Figma), статус дизайну — опис ініціативи лишайте орієнтованим на продукт.",
     "startDate": "Дата початку",
     "targetDate": "Цільова дата",
     "milestoneDate": "Дата етапу",
@@ -509,6 +510,8 @@
     "epicLabel": "епік",
     "epicLabelPlural": "епіки",
     "addEpic": "Додати епік",
+    "moveUp": "Вгору",
+    "moveDown": "Вниз",
     "empty": "Продуктів / активів не знайдено. Створіть перший."
   },
   "admin": {
@@ -615,6 +618,9 @@
     "ontology.titlePrompt": "Відображувана назва:",
     "ontology.deleteConfirm": "Видалити можливість «{{title}}» і всі прив’язки?",
     "ontology.removeBindingConfirm": "Прибрати цю прив’язку?",
+    "ontology.tenantGuideBindingsSummary": "Як працюють прив’язки до дизайну (необов’язково)",
+    "ontology.tenantGuideBindingsBody": "Для посилань на рівні елементів беклогу використовуйте нотатки ініціативи, опис фічі та зовнішнє посилання вимоги. Додайте FIGMA_NODE або DESIGN_REF до capability, якщо потрібна та сама дизайн-якір у зібраному agent brief поруч із маршрутами та MCP-інструментами. Після змін натисніть «Compile & store briefs» вище.\n\nПовний посібник для тенанта: docs/DESIGN_REFERENCES.md у репозиторії.",
+    "ontology.tenantGuideBindingsExamples": "FIGMA_NODE — ключ: fileKey:1:234 (з figma.com/design/<fileKey>/… ; у node-id з URL замініть дефіси на двокрапки).\nDESIGN_REF — ключ: повна URL https://… або короткий стабільний ідентифікатор, який погоджує команда.",
     "ontology.previewTitle": "Стислий бриф (Markdown)",
     "ontology.exportedTo": "Бриф для агента записано в:\n{{path}}",
     "notificationRules": "Правила сповіщень",
@@ -646,6 +652,20 @@
     "importSuccessReload": " Перезавантаження сторінки…",
     "importFailed": "Імпорт не вдався. Транзакцію скасовано. Дані не змінено.",
     "clearFailed": "Очищення не вдалося. Транзакцію скасовано."
+  },
+  "featureDetail": {
+    "description": "Опис",
+    "descriptionHint": "Короткий зміст і точне посилання на дизайн (напр. кадр Figma). Онтологічні теми (шаблони, потоки) зазначайте текстом, не лише URL.",
+    "acceptanceCriteria": "Критерії приймання",
+    "acceptanceCriteriaHint": "Лише перевірювана поведінка — не список посилань.",
+    "editDetails": "Редагувати опис і критерії",
+    "saveDetails": "Зберегти",
+    "cancelEdit": "Скасувати"
+  },
+  "requirementDetail": {
+    "descriptionHint": "Додаткові стани UI, уточнення або другорядні посилання. Один основний точний вузол — у зовнішній посиланні.",
+    "externalRef": "Зовнішнє посилання",
+    "externalRefHint": "Одне основне посилання (напр. точний вузол Figma для цього стану UI)."
   },
   "lang": {
     "en": "English",
