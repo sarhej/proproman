@@ -68,7 +68,7 @@ describe("RequirementDetailPage – edge cases", () => {
   it("shows 'Missing requirement ID' when route param is missing", () => {
     renderWithRoute("/requirements", []);
     expect(screen.getByText("Missing requirement ID.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to product explorer/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /back to products/i })).toHaveAttribute(
       "href",
       "/product-explorer"
     );
@@ -77,7 +77,7 @@ describe("RequirementDetailPage – edge cases", () => {
   it("shows 'Requirement not found' when requirementId is not in initiatives", () => {
     renderWithRoute("/requirements/non-existent-id", []);
     expect(screen.getByText("Requirement not found.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to product explorer/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /back to products/i })).toHaveAttribute(
       "href",
       "/product-explorer"
     );

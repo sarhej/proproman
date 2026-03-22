@@ -11,6 +11,8 @@ export type BoardFilters = {
   isGap?: boolean;
   archived?: boolean;
   quick?: string;
+  /** When true, quick search scans descriptions, notes, labels, etc.; when false/undefined, titles only */
+  searchInAllFields?: boolean;
 };
 
 export function useBoardData(enabled = true) {
@@ -59,28 +61,40 @@ export function useBoardData(enabled = true) {
     if (!quick) return initiatives;
 
     const wantsGap = quick.includes("gap");
+    const allFields = filters.searchInAllFields === true;
     return initiatives.filter((initiative) => {
       if (wantsGap && !initiative.isGap) return false;
-      const haystack = [
-        initiative.title,
-        initiative.description ?? "",
-        initiative.notes ?? "",
-        initiative.domain?.name ?? "",
-        initiative.owner?.name ?? "",
-        initiative.product?.name ?? "",
-        ...initiative.features.flatMap((f) => [
-          f.title,
-          f.description ?? "",
-          ...(f.labels ?? []),
-          f.acceptanceCriteria ?? "",
-          ...(f.requirements ?? []).flatMap((r) => [r.title, r.description ?? "", r.externalRef ?? "", ...(r.labels ?? [])])
-        ])
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(quick);
+      const haystack = allFields
+        ? [
+            initiative.title,
+            initiative.description ?? "",
+            initiative.notes ?? "",
+            initiative.domain?.name ?? "",
+            initiative.owner?.name ?? "",
+            initiative.product?.name ?? "",
+            ...initiative.features.flatMap((f) => [
+              f.title,
+              f.description ?? "",
+              ...(f.labels ?? []),
+              f.acceptanceCriteria ?? "",
+              ...(f.requirements ?? []).flatMap((r) => [
+                r.title,
+                r.description ?? "",
+                r.externalRef ?? "",
+                ...(r.labels ?? [])
+              ])
+            ])
+          ]
+        : [
+            initiative.title,
+            ...initiative.features.flatMap((f) => [
+              f.title,
+              ...(f.requirements ?? []).map((r) => r.title)
+            ])
+          ];
+      return haystack.join(" ").toLowerCase().includes(quick);
     });
-  }, [filters.quick, initiatives]);
+  }, [filters.quick, filters.searchInAllFields, initiatives]);
 
   return {
     meta,

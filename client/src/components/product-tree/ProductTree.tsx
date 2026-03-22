@@ -7,7 +7,7 @@ import {
   PointerSensor, TouchSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay
 } from "@dnd-kit/core";
-import type { Domain, Feature, Initiative, ProductWithHierarchy, Requirement, User } from "../../types/models";
+import type { Domain, Feature, Initiative, ProductWithHierarchy, Requirement, TopLevelItemType, User } from "../../types/models";
 import { api } from "../../lib/api";
 import { formatPriority } from "../../lib/format";
 import { DomainBadge } from "../ui/DomainBadge";
@@ -408,6 +408,7 @@ function RequirementRow({
           </span>
         )}
       </td>
+      <td />
     </tr>
   );
 }
@@ -547,6 +548,7 @@ function FeatureRow({
             <StatusBadge status={feature.status} color={statusColor(feature.status)} statusType="feature" />
           )}
         </td>
+        <td />
       </tr>
       {displayOpen && reqs.map((r) => (
         <RequirementRow
@@ -569,7 +571,7 @@ function FeatureRow({
               }}
             />
           </td>
-          <td colSpan={5} />
+          <td colSpan={6} />
         </tr>
       ) : null}
     </>
@@ -721,6 +723,7 @@ function InitiativeRow({
             <StatusBadge status={initiative.status} color={statusColor(initiative.status)} statusType="initiative" />
           )}
         </td>
+        <td />
       </tr>
       {displayOpen &&
         orderedFeatures.map((feature) => (
@@ -749,7 +752,7 @@ function InitiativeRow({
               }}
             />
           </td>
-          <td colSpan={5} />
+          <td colSpan={6} />
         </tr>
       ) : null}
     </>
@@ -967,6 +970,61 @@ function ProductRow({
         </td>
         <td />
         <td />
+        <td className="px-2 align-top text-[11px] text-slate-600">
+          <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700">
+            {t(`topLevelItem.${((product.itemType ?? "PRODUCT") as TopLevelItemType).toLowerCase()}`)}
+          </span>
+          {isAdmin ? (
+            <select
+              className="mt-1 block w-full max-w-[9rem] rounded border border-slate-200 px-1 py-0.5 text-[10px]"
+              value={product.itemType ?? "PRODUCT"}
+              onChange={async (e) => {
+                await api.updateProduct(product.id, { itemType: e.target.value as TopLevelItemType });
+                await onRefresh();
+              }}
+            >
+              <option value="PRODUCT">{t("topLevelItem.product")}</option>
+              <option value="SYSTEM">{t("topLevelItem.system")}</option>
+            </select>
+          ) : null}
+          <div className="mt-2 flex flex-col gap-1">
+            {(product.executionBoards?.length ?? 0) > 0 ? (
+              <>
+                <span className="text-[10px] text-slate-500">
+                  {(product.executionBoards ?? []).find((b) => b.isDefault)?.provider ??
+                    product.executionBoards![0]!.provider}{" "}
+                  ·{" "}
+                  {(product.executionBoards ?? []).find((b) => b.isDefault)?.syncState ??
+                    product.executionBoards![0]!.syncState}
+                </span>
+                <Link to={`/products/${product.id}/execution-board`} className="text-sky-600 hover:underline">
+                  {t("executionBoard.openBoard")}
+                </Link>
+                {canCreateInitiative ? (
+                  <Link to={`/products/${product.id}/board-settings`} className="text-sky-600 hover:underline">
+                    {t("executionBoard.boardSettings")}
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <span className="text-[10px] text-amber-800">{t("executionBoard.noBoardShort")}</span>
+                {canCreateInitiative ? (
+                  <button
+                    type="button"
+                    className="text-left text-[11px] text-sky-600 hover:underline"
+                    onClick={async () => {
+                      await api.createExecutionBoard(product.id, { name: t("executionBoard.defaultBoardName") });
+                      await onRefresh();
+                    }}
+                  >
+                    {t("executionBoard.createBoard")}
+                  </button>
+                ) : null}
+              </>
+            )}
+          </div>
+        </td>
       </tr>
       {displayOpen && sortedInitiatives.map((initiative) => (
         <InitiativeRow
@@ -995,7 +1053,7 @@ function ProductRow({
               addLabel={terminology === "epic" ? t("productTree.addEpic") : undefined}
             />
           </td>
-          <td colSpan={5} />
+          <td colSpan={6} />
         </tr>
       ) : null}
     </>
@@ -1072,7 +1130,7 @@ export function ProductTree({
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[900px] text-left">
+        <table className="w-full min-w-[1040px] text-left">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500">
               <th className="px-2 py-2">{t("common.name")}</th>
@@ -1081,6 +1139,7 @@ export function ProductTree({
               <th className="px-2 py-2">{t("demands.title")}</th>
               <th className="px-2 py-2 text-center">{t("initiative.owner")}</th>
               <th className="px-2 py-2 text-center">{t("common.status")}</th>
+              <th className="px-2 py-2 w-[200px]">{t("executionBoard.deliveryColumn")}</th>
             </tr>
           </thead>
           <tbody>
@@ -1106,7 +1165,7 @@ export function ProductTree({
             ))}
             {products.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-400">
                   {t("productTree.empty")}
                 </td>
               </tr>
@@ -1116,7 +1175,7 @@ export function ProductTree({
                 <td className="py-2 pl-2 pr-2">
                   <InlineAdd placeholder={t("productTree.addProduct")} onAdd={onAddProduct} />
                 </td>
-                <td colSpan={5} />
+                <td colSpan={6} />
               </tr>
             ) : null}
           </tbody>

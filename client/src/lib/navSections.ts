@@ -53,10 +53,7 @@ export const navSections: NavSection[] = [
   },
   {
     labelKey: "nav.structure",
-    items: [
-      { to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network },
-      { to: "/requirements/kanban", labelKey: "nav.requirementsKanban", icon: KanbanSquare }
-    ]
+    items: [{ to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network }]
   },
   {
     labelKey: "nav.commercial",

@@ -33,7 +33,8 @@ import { KpiDashboardPage } from "./pages/KpiDashboardPage";
 import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
 import { FeatureDetailPage } from "./pages/FeatureDetailPage";
 import { RequirementDetailPage } from "./pages/RequirementDetailPage";
-import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
+import { ExecutionBoardPage } from "./pages/ExecutionBoardPage";
+import { BoardSettingsPage } from "./pages/BoardSettingsPage";
 import type { Initiative, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
 
@@ -53,7 +54,10 @@ function App() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const hideFilters = location.pathname === "/gantt";
+  const hideFilters =
+    location.pathname === "/gantt" ||
+    location.pathname.startsWith("/features/") ||
+    location.pathname.startsWith("/requirements/");
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,
@@ -459,20 +463,20 @@ function App() {
               />
             }
           />
+          <Route path="/requirements/kanban" element={<Navigate to="/product-explorer" replace />} />
           <Route
-            path="/requirements/kanban"
+            path="/products/:productId/execution-board"
             element={
-              <ViewRoute user={user} path="/requirements/kanban" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <RequirementsKanbanPage
-                  initiatives={board.initiatives}
-                  onMoveRequirement={async (id, isDone) => {
-                    await api.updateRequirement(id, {
-                      isDone,
-                      status: isDone ? "DONE" : "NOT_STARTED"
-                    });
-                    await board.refresh();
-                  }}
-                />
+              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <ExecutionBoardPage onRefreshBoard={() => board.refresh()} readOnly={!perms.canEditContent} />
+              </ViewRoute>
+            }
+          />
+          <Route
+            path="/products/:productId/board-settings"
+            element={
+              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <BoardSettingsPage isAdmin={perms.canEditContent} onRefreshBoard={() => board.refresh()} />
               </ViewRoute>
             }
           />

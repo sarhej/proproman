@@ -107,7 +107,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       <div className="p-4">
         <p className="text-slate-600">Missing requirement ID.</p>
         <Link to="/product-explorer" className="text-sky-600 hover:underline">
-          Back to Product Explorer
+          {t("productExplorerPage.backTo")}
         </Link>
       </div>
     );
@@ -118,7 +118,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       <div className="p-4">
         <p className="text-slate-600">Requirement not found.</p>
         <Link to="/product-explorer" className="text-sky-600 hover:underline">
-          Back to Product Explorer
+          {t("productExplorerPage.backTo")}
         </Link>
       </div>
     );
@@ -176,7 +176,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
         <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
           <Link to="/product-explorer" className="hover:text-slate-700">
-            Product Explorer
+            {t("productExplorerPage.breadcrumb")}
           </Link>
           <span aria-hidden>/</span>
           <button

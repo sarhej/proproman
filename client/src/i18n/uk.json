@@ -33,8 +33,7 @@
     "heatmap": "Теплова карта",
     "buyerUser": "Покупець × Користувач",
     "gaps": "Прогалини",
-    "productExplorer": "Огляд продукту / активу",
-    "requirementsKanban": "Kanban вимог",
+    "productExplorer": "Продукти та системи",
     "accounts": "Облікові записи",
     "demands": "Запити",
     "partners": "Партнери",
@@ -60,6 +59,7 @@
     "labelsPlaceholder": "Додати або вибрати мітки...",
     "quickFilter": "Швидкий фільтр",
     "showArchived": "Показати архівні",
+    "searchInAllFields": "Шукати в усіх полях",
     "all": "Усі",
     "searchPlaceholder": "Пошук за назвою, нотатками, власником, стовпом…"
   },
@@ -500,7 +500,7 @@
     "addRequirement": "Додати вимогу",
     "addFeature": "Додати функцію",
     "addInitiative": "Додати ініціативу",
-    "addProduct": "Додати продукт / актив",
+    "addProduct": "Додати продукт або систему",
     "selectDomain": "Оберіть стовп",
     "deleteConfirm": "Видалити «{{name}}»? Цю дію не скасувати.",
     "impact": "Вплив",
@@ -517,7 +517,47 @@
     "expandAll": "Розгорнути все",
     "collapseAll": "Згорнути все",
     "expandedWhileQuickFilter": "Дерево розгорнуто через швидкий фільтр. Очистіть фільтр, щоб згорнути рядки вручну.",
-    "empty": "Продуктів / активів не знайдено. Створіть перший."
+    "empty": "Продуктів чи систем не знайдено. Створіть перший."
+  },
+  "topLevelItem": {
+    "product": "Продукт",
+    "system": "Система"
+  },
+  "executionBoard": {
+    "title": "Дошка виконання",
+    "deliveryColumn": "Постачання",
+    "missingProduct": "Не вказано продукт.",
+    "productNotFound": "Продукт або систему не знайдено.",
+    "backToExplorer": "Назад до Продуктів та систем",
+    "boardLabel": "Дошка",
+    "boardSettings": "Налаштування дошки",
+    "openBoard": "Відкрити дошку",
+    "selectBoard": "Дошка",
+    "default": "за замовчуванням",
+    "noBoard": "Ще немає дошки виконання. Створіть її в налаштуваннях.",
+    "noBoardShort": "Без дошки",
+    "createBoardHint": "Створити дошку в налаштуваннях",
+    "createBoard": "Створити дошку",
+    "defaultBoardName": "Постачання",
+    "deleteColumnConfirm": "Видалити колонку «{{name}}»? Вимоги в цій колонці стануть без призначення.",
+    "filterInitiative": "Ініціатива",
+    "filterFeature": "Функція",
+    "unassigned": "Без призначення",
+    "unassignedHint": "Не в колонці дошки"
+  },
+  "boardSettings": {
+    "title": "Налаштування дошки",
+    "columnsTitle": "Колонки",
+    "order": "Порядок",
+    "pmStatus": "PM-статус",
+    "defaultColumn": "За замовчуванням",
+    "newColumnName": "Назва нової колонки",
+    "addColumn": "Додати колонку"
+  },
+  "productExplorerPage": {
+    "title": "Продукти та системи",
+    "backTo": "Назад до Продуктів та систем",
+    "breadcrumb": "Продукти та системи"
   },
   "admin": {
     "users": "Користувачі",

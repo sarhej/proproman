@@ -33,8 +33,7 @@
     "heatmap": "Heatmapa",
     "buyerUser": "Kupujúci x Používateľ",
     "gaps": "Medzery",
-    "productExplorer": "Produkty / Assety",
-    "requirementsKanban": "Kanban po\u017eiadavkov",
+    "productExplorer": "Produkty a systémy",
     "accounts": "Účty",
     "demands": "Požiadavky",
     "partners": "Partneri",
@@ -60,6 +59,7 @@
     "labelsPlaceholder": "Pridať alebo vybrať štítky...",
     "quickFilter": "Rýchly filter",
     "showArchived": "Zobraziť archivované",
+    "searchInAllFields": "Hľadať vo všetkých poliach",
     "all": "Všetko",
     "searchPlaceholder": "Hľadať názov, poznámky, vlastníka, pilier..."
   },
@@ -500,7 +500,7 @@
     "addRequirement": "Pridať požiadavku",
     "addFeature": "Pridať funkciu",
     "addInitiative": "Pridať iniciatívu",
-    "addProduct": "Pridať produkt / asset",
+    "addProduct": "Pridať produkt alebo systém",
     "selectDomain": "Vyberte pilier",
     "deleteConfirm": "Zmazať \"{{name}}\"? Toto sa nedá vrátiť späť.",
     "impact": "Dopad",
@@ -517,7 +517,47 @@
     "expandAll": "Rozbaliť všetko",
     "collapseAll": "Zbaliť všetko",
     "expandedWhileQuickFilter": "Strom je rozbalený kvôli rýchlemu filtru. Vymažte filter, ak chcete riadky zbaliť ručne.",
-    "empty": "Žiadne produkty / assety. Vytvorte prvý."
+    "empty": "Žiadne produkty ani systémy. Vytvorte prvý."
+  },
+  "topLevelItem": {
+    "product": "Produkt",
+    "system": "Systém"
+  },
+  "executionBoard": {
+    "title": "Exekučná nástenka",
+    "deliveryColumn": "Dodávka",
+    "missingProduct": "Chýba produkt.",
+    "productNotFound": "Produkt alebo systém sa nenašiel.",
+    "backToExplorer": "Späť na Produkty a systémy",
+    "boardLabel": "Nástenka",
+    "boardSettings": "Nastavenie nástenky",
+    "openBoard": "Otvoriť nástenku",
+    "selectBoard": "Nástenka",
+    "default": "predvolená",
+    "noBoard": "Zatiaľ žiadna exekučná nástenka. Vytvorte ju v nastavení.",
+    "noBoardShort": "Bez nástenky",
+    "createBoardHint": "Vytvoriť nástenku v nastavení",
+    "createBoard": "Vytvoriť nástenku",
+    "defaultBoardName": "Dodávka",
+    "deleteColumnConfirm": "Zmazať stĺpec „{{name}}“? Požiadavky v tomto stĺpci budú nepriradené.",
+    "filterInitiative": "Iniciatíva",
+    "filterFeature": "Funkcia",
+    "unassigned": "Nepriradené",
+    "unassignedHint": "Nie je v stĺpci nástenky"
+  },
+  "boardSettings": {
+    "title": "Nastavenie nástenky",
+    "columnsTitle": "Stĺpce",
+    "order": "Poradie",
+    "pmStatus": "PM status",
+    "defaultColumn": "Predvolený",
+    "newColumnName": "Názov nového stĺpca",
+    "addColumn": "Pridať stĺpec"
+  },
+  "productExplorerPage": {
+    "title": "Produkty a systémy",
+    "backTo": "Späť na Produkty a systémy",
+    "breadcrumb": "Produkty a systémy"
   },
   "admin": {
     "users": "Používatelia",

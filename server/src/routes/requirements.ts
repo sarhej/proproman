@@ -5,6 +5,7 @@ import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
 import { labelsSchema, requirementReorderSchema } from "./schemas.js";
+import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
 
 const metadataSchema = z.record(z.unknown()).nullable().optional();
 
@@ -23,7 +24,8 @@ export const requirementSchema = z.object({
   blockedReason: z.string().nullable().optional(),
   externalRef: z.string().nullable().optional(),
   metadata: metadataSchema,
-  sortOrder: z.number().int().default(0)
+  sortOrder: z.number().int().default(0),
+  executionColumnId: z.union([z.string().min(1), z.null()]).optional()
 });
 
 export const requirementsRouter = Router();
@@ -82,7 +84,8 @@ requirementsRouter.get("/", async (req, res) => {
           initiative: true
         }
       },
-      assignee: true
+      assignee: true,
+      executionColumn: true
     },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
   });
@@ -95,10 +98,36 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  let columnPatch: { executionColumnId: string | null; status: TaskStatus; isDone: boolean } | null = null;
+  if (parsed.data.executionColumnId !== undefined && parsed.data.executionColumnId !== null) {
+    try {
+      const applied = await applyExecutionColumn(parsed.data.featureId, parsed.data.executionColumnId);
+      columnPatch = {
+        executionColumnId: applied.executionColumnId,
+        status: applied.status!,
+        isDone: applied.isDone!
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg === "UNKNOWN_COLUMN") {
+        res.status(400).json({ error: "Unknown execution column" });
+        return;
+      }
+      if (msg === "COLUMN_PRODUCT_MISMATCH") {
+        res.status(400).json({ error: "Execution column does not belong to this product" });
+        return;
+      }
+      throw e;
+    }
+  }
   const requirement = await prisma.requirement.create({
     data: {
-      ...parsed.data,
+      featureId: parsed.data.featureId,
+      title: parsed.data.title,
       description: parsed.data.description ?? null,
+      status: columnPatch?.status ?? parsed.data.status,
+      isDone: columnPatch?.isDone ?? parsed.data.isDone,
+      priority: parsed.data.priority,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
       assigneeId: parsed.data.assigneeId ?? null,
       estimate: parsed.data.estimate ?? null,
@@ -106,9 +135,11 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
       taskType: parsed.data.taskType ?? null,
       blockedReason: parsed.data.blockedReason ?? null,
       externalRef: parsed.data.externalRef ?? null,
-      metadata: parsed.data.metadata === null ? Prisma.JsonNull : ((parsed.data.metadata ?? undefined) as Prisma.InputJsonValue)
+      metadata: parsed.data.metadata === null ? Prisma.JsonNull : ((parsed.data.metadata ?? undefined) as Prisma.InputJsonValue),
+      sortOrder: parsed.data.sortOrder,
+      executionColumnId: columnPatch?.executionColumnId ?? parsed.data.executionColumnId ?? null
     },
-    include: { assignee: true }
+    include: { assignee: true, executionColumn: true }
   });
   await logAudit(req.user!.id, "CREATED", "REQUIREMENT", requirement.id, { featureId: parsed.data.featureId, title: requirement.title });
   res.status(201).json({ requirement });
@@ -121,6 +152,16 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  const existing = await prisma.requirement.findUnique({
+    where: { id },
+    select: { featureId: true }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Requirement not found" });
+    return;
+  }
+  const featureId = parsed.data.featureId ?? existing.featureId;
+
   const updateData: Prisma.RequirementUncheckedUpdateInput = {};
   if (parsed.data.featureId !== undefined) updateData.featureId = parsed.data.featureId;
   if (parsed.data.title !== undefined) updateData.title = parsed.data.title;
@@ -137,10 +178,35 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   if (parsed.data.externalRef !== undefined) updateData.externalRef = parsed.data.externalRef;
   if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata === null ? Prisma.JsonNull : (parsed.data.metadata as Prisma.InputJsonValue);
   if (parsed.data.sortOrder !== undefined) updateData.sortOrder = parsed.data.sortOrder;
+
+  if (parsed.data.executionColumnId !== undefined) {
+    if (parsed.data.executionColumnId === null) {
+      updateData.executionColumnId = null;
+    } else {
+      try {
+        const applied = await applyExecutionColumn(featureId, parsed.data.executionColumnId);
+        updateData.executionColumnId = applied.executionColumnId;
+        if (applied.status !== undefined) updateData.status = applied.status;
+        if (applied.isDone !== undefined) updateData.isDone = applied.isDone;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg === "UNKNOWN_COLUMN") {
+          res.status(400).json({ error: "Unknown execution column" });
+          return;
+        }
+        if (msg === "COLUMN_PRODUCT_MISMATCH") {
+          res.status(400).json({ error: "Execution column does not belong to this product" });
+          return;
+        }
+        throw e;
+      }
+    }
+  }
+
   const requirement = await prisma.requirement.update({
     where: { id },
     data: updateData,
-    include: { assignee: true }
+    include: { assignee: true, executionColumn: true }
   });
   await logAudit(req.user!.id, "UPDATED", "REQUIREMENT", id, { featureId: requirement.featureId, title: requirement.title });
   res.json({ requirement });

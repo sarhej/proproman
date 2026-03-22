@@ -33,8 +33,7 @@
     "heatmap": "Heatmapa",
     "buyerUser": "Kupující x Uživatel",
     "gaps": "Mezery",
-    "productExplorer": "Produkty / Assety",
-    "requirementsKanban": "Kanban po\u017eadavk\u016f",
+    "productExplorer": "Produkty a systémy",
     "accounts": "Účty",
     "demands": "Požadavky",
     "partners": "Partneři",
@@ -60,6 +59,7 @@
     "labelsPlaceholder": "Přidat nebo vybrat štítky...",
     "quickFilter": "Rychlý filtr",
     "showArchived": "Zobrazit archivované",
+    "searchInAllFields": "Hledat ve všech polích",
     "all": "Vše",
     "searchPlaceholder": "Hledat název, poznámky, vlastníka, pilíř..."
   },
@@ -500,7 +500,7 @@
     "addRequirement": "Přidat požadavek",
     "addFeature": "Přidat funkci",
     "addInitiative": "Přidat iniciativu",
-    "addProduct": "Přidat produkt / asset",
+    "addProduct": "Přidat produkt nebo systém",
     "selectDomain": "Vyberte doménu",
     "deleteConfirm": "Smazat \"{{name}}\"? Toto nelze vrátit zpět.",
     "impact": "Dopad",
@@ -517,7 +517,47 @@
     "expandAll": "Rozbalit vše",
     "collapseAll": "Sbalit vše",
     "expandedWhileQuickFilter": "Strom je rozbalený kvůli rychlému filtru. Filtr smažte, chcete-li řádky ručně sbalit.",
-    "empty": "Žádné produkty / assety. Vytvořte první."
+    "empty": "Žádné produkty ani systémy. Vytvořte první."
+  },
+  "topLevelItem": {
+    "product": "Produkt",
+    "system": "Systém"
+  },
+  "executionBoard": {
+    "title": "Exekuční nástěnka",
+    "deliveryColumn": "Dodávka",
+    "missingProduct": "Chybí produkt.",
+    "productNotFound": "Produkt nebo systém nenalezen.",
+    "backToExplorer": "Zpět na Produkty a systémy",
+    "boardLabel": "Nástěnka",
+    "boardSettings": "Nastavení nástěnky",
+    "openBoard": "Otevřít nástěnku",
+    "selectBoard": "Nástěnka",
+    "default": "výchozí",
+    "noBoard": "Zatím žádná exekuční nástěnka. Vytvořte ji v nastavení.",
+    "noBoardShort": "Bez nástěnky",
+    "createBoardHint": "Vytvořit nástěnku v nastavení",
+    "createBoard": "Vytvořit nástěnku",
+    "defaultBoardName": "Dodávka",
+    "deleteColumnConfirm": "Smazat sloupec „{{name}}“? Požadavky v tomto sloupci budou nepřiřazené.",
+    "filterInitiative": "Iniciativa",
+    "filterFeature": "Funkce",
+    "unassigned": "Nepřiřazeno",
+    "unassignedHint": "Není ve sloupci nástěnky"
+  },
+  "boardSettings": {
+    "title": "Nastavení nástěnky",
+    "columnsTitle": "Sloupce",
+    "order": "Pořadí",
+    "pmStatus": "PM status",
+    "defaultColumn": "Výchozí",
+    "newColumnName": "Název nového sloupce",
+    "addColumn": "Přidat sloupec"
+  },
+  "productExplorerPage": {
+    "title": "Produkty a systémy",
+    "backTo": "Zpět na Produkty a systémy",
+    "breadcrumb": "Produkty a systémy"
   },
   "admin": {
     "users": "Uživatelé",

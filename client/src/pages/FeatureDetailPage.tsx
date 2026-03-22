@@ -60,7 +60,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
       <div className="p-4">
         <p className="text-slate-600">Missing feature ID.</p>
         <Link to="/product-explorer" className="text-sky-600 hover:underline">
-          Back to Product Explorer
+          {t("productExplorerPage.backTo")}
         </Link>
       </div>
     );
@@ -71,7 +71,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
       <div className="p-4">
         <p className="text-slate-600">Feature not found.</p>
         <Link to="/product-explorer" className="text-sky-600 hover:underline">
-          Back to Product Explorer
+          {t("productExplorerPage.backTo")}
         </Link>
       </div>
     );
@@ -110,7 +110,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
     <div className="space-y-4 p-4">
       <nav className="flex items-center gap-2 text-sm text-slate-500">
         <Link to="/product-explorer" className="hover:text-slate-700">
-          Product Explorer
+          {t("productExplorerPage.breadcrumb")}
         </Link>
         <span aria-hidden>/</span>
         <button

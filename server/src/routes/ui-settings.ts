@@ -17,7 +17,6 @@ export const MANAGED_NAV_PATHS = [
   "/buyer-user",
   "/gaps",
   "/product-explorer",
-  "/requirements/kanban",
   "/accounts",
   "/demands",
   "/partners",

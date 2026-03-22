@@ -33,7 +33,9 @@ import type {
   UserNotificationSubscription,
   Capability,
   CapabilityBinding,
-  CapabilityStatus
+  CapabilityStatus,
+  ExecutionBoard,
+  ExecutionColumn
 } from "../types/models";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -184,6 +186,37 @@ export const api = {
   updateProduct: async (id: string, body: unknown) =>
     request<{ product: Product }>(`/api/products/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteProduct: async (id: string) => request<void>(`/api/products/${id}`, { method: "DELETE" }),
+  getExecutionBoards: async (productId: string) =>
+    request<{ boards: ExecutionBoard[] }>(`/api/products/${productId}/execution-boards`),
+  createExecutionBoard: async (productId: string, body: unknown) =>
+    request<{ board: ExecutionBoard }>(`/api/products/${productId}/execution-boards`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  updateExecutionBoard: async (boardId: string, body: unknown) =>
+    request<{ board: ExecutionBoard }>(`/api/execution-boards/${boardId}`, {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }),
+  deleteExecutionBoard: async (boardId: string) =>
+    request<void>(`/api/execution-boards/${boardId}`, { method: "DELETE" }),
+  createExecutionColumn: async (boardId: string, body: unknown) =>
+    request<{ column: ExecutionColumn }>(`/api/execution-boards/${boardId}/columns`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  updateExecutionColumn: async (columnId: string, body: unknown) =>
+    request<{ column: ExecutionColumn }>(`/api/execution-columns/${columnId}`, {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }),
+  deleteExecutionColumn: async (columnId: string) =>
+    request<void>(`/api/execution-columns/${columnId}`, { method: "DELETE" }),
+  reorderExecutionColumns: async (boardId: string, rows: Array<{ id: string; sortOrder: number }>) =>
+    request<{ ok: boolean }>(`/api/execution-boards/${boardId}/columns/reorder`, {
+      method: "POST",
+      body: JSON.stringify(rows)
+    }),
   getAccounts: async () => request<{ accounts: Account[] }>("/api/accounts"),
   createAccount: async (body: unknown) =>
     request<{ account: Account }>("/api/accounts", { method: "POST", body: JSON.stringify(body) }),

@@ -19,6 +19,8 @@ import {
   PersonaCategory,
   Priority,
   PrismaClient,
+  TaskStatus,
+  TopLevelItemType,
   StakeholderRole,
   StakeholderType,
   StrategicTier,
@@ -116,12 +118,45 @@ async function main() {
   // ─── Produkty ──────────────────────────────────────────────────
   const products = await Promise.all(
     [
-      { name: "Tymio app", description: "Mobilní a webová aplikace pro pacienty a lékaře", sortOrder: 1 },
-      { name: "B2B Platforma", description: "Portál pro zaměstnavatele, pojišťovny a orgány státní správy", sortOrder: 2 },
-      { name: "Integrační platforma", description: "Partnerské API, eGov a integrace pojišťoven", sortOrder: 3 },
+      {
+        name: "Tymio app",
+        description: "Mobilní a webová aplikace pro pacienty a lékaře",
+        sortOrder: 1,
+        itemType: TopLevelItemType.PRODUCT
+      },
+      {
+        name: "B2B Platforma",
+        description: "Portál pro zaměstnavatele, pojišťovny a orgány státní správy",
+        sortOrder: 2,
+        itemType: TopLevelItemType.PRODUCT
+      },
+      {
+        name: "Integrační platforma",
+        description: "Partnerské API, eGov a integrace pojišťoven",
+        sortOrder: 3,
+        itemType: TopLevelItemType.SYSTEM
+      }
     ].map((p) => prisma.product.create({ data: p }))
   );
   const prod = Object.fromEntries(products.map((p) => [p.name, p]));
+
+  for (const p of products) {
+    await prisma.executionBoard.create({
+      data: {
+        productId: p.id,
+        name: "Delivery",
+        isDefault: true,
+        columns: {
+          create: [
+            { name: "Backlog", sortOrder: 0, mappedStatus: TaskStatus.NOT_STARTED, isDefault: true },
+            { name: "In progress", sortOrder: 1, mappedStatus: TaskStatus.IN_PROGRESS, isDefault: false },
+            { name: "Testing", sortOrder: 2, mappedStatus: TaskStatus.TESTING, isDefault: false },
+            { name: "Done", sortOrder: 3, mappedStatus: TaskStatus.DONE, isDefault: false }
+          ]
+        }
+      }
+    });
+  }
 
   // ─── Domény (pilíře z workshopu Kalhov) ────────────────────────
   const domains = await Promise.all(

@@ -33,8 +33,7 @@
     "heatmap": "Heatmap",
     "buyerUser": "Buyer x User",
     "gaps": "Gaps",
-    "productExplorer": "Product / Asset Explorer",
-    "requirementsKanban": "Requirements Kanban",
+    "productExplorer": "Products & Systems",
     "accounts": "Accounts",
     "demands": "Demands",
     "partners": "Partners",
@@ -60,6 +59,7 @@
     "labelsPlaceholder": "Add or select labels...",
     "quickFilter": "Quick filter",
     "showArchived": "Show archived",
+    "searchInAllFields": "Search in all fields",
     "all": "All",
     "searchPlaceholder": "Search title, notes, owner, pillar..."
   },
@@ -500,7 +500,7 @@
     "addRequirement": "Add requirement",
     "addFeature": "Add feature",
     "addInitiative": "Add initiative",
-    "addProduct": "Add product / asset",
+    "addProduct": "Add product or system",
     "selectDomain": "Select pillar",
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
     "impact": "Impact",
@@ -517,7 +517,47 @@
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
     "expandedWhileQuickFilter": "Tree is expanded for the quick filter. Clear the filter to fold rows manually.",
-    "empty": "No products / assets found. Create one to get started."
+    "empty": "No products or systems found. Create one to get started."
+  },
+  "topLevelItem": {
+    "product": "Product",
+    "system": "System"
+  },
+  "executionBoard": {
+    "title": "Execution board",
+    "deliveryColumn": "Delivery",
+    "missingProduct": "Missing product.",
+    "productNotFound": "Product or system not found.",
+    "backToExplorer": "Back to Products & Systems",
+    "boardLabel": "Board",
+    "boardSettings": "Board settings",
+    "openBoard": "Open board",
+    "selectBoard": "Board",
+    "default": "default",
+    "noBoard": "No execution board yet. Create one in board settings.",
+    "noBoardShort": "No board",
+    "createBoardHint": "Create a board in settings",
+    "createBoard": "Create board",
+    "defaultBoardName": "Delivery",
+    "deleteColumnConfirm": "Delete column \"{{name}}\"? Requirements in this column become unassigned.",
+    "filterInitiative": "Initiative",
+    "filterFeature": "Feature",
+    "unassigned": "Unassigned",
+    "unassignedHint": "Not on a board column"
+  },
+  "boardSettings": {
+    "title": "Board settings",
+    "columnsTitle": "Columns",
+    "order": "Order",
+    "pmStatus": "PM status",
+    "defaultColumn": "Default",
+    "newColumnName": "New column name",
+    "addColumn": "Add column"
+  },
+  "productExplorerPage": {
+    "title": "Products & Systems",
+    "backTo": "Back to Products & Systems",
+    "breadcrumb": "Products & Systems"
   },
   "admin": {
     "users": "Users",

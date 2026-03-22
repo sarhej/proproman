@@ -136,13 +136,13 @@ const DEFAULT_CAPABILITIES: {
   {
     slug: "feature-requirement-detail",
     title: "Feature and requirement detail",
-    userJob: "Edit a single feature or requirement; kanban for requirements.",
+    userJob: "Edit a single feature or requirement; execution boards are opened per product or system from Products & Systems.",
     status: "ACTIVE",
     sortOrder: 110,
     bindings: [
       { type: "ROUTE", key: "/features/:featureId" },
       { type: "ROUTE", key: "/requirements/:requirementId" },
-      { type: "ROUTE", key: "/requirements/kanban", isPrimary: true },
+      { type: "ROUTE", key: "/product-explorer", isPrimary: true },
       { type: "MCP_TOOL", key: "drd_list_features" },
       { type: "MCP_TOOL", key: "drd_list_requirements" }
     ]

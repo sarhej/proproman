@@ -127,16 +127,48 @@ export type MilestoneStatus = "TODO" | "IN_PROGRESS" | "DONE" | "BLOCKED";
 export type StakeholderRole = "DECISION_MAKER" | "SPONSOR" | "REVIEWER" | "AMBASSADOR" | "LEGAL" | "MEDICAL";
 export type StakeholderType = "INTERNAL" | "EXTERNAL";
 
+export type TopLevelItemType = "PRODUCT" | "SYSTEM";
+export type BoardProvider = "INTERNAL" | "TRELLO" | "JIRA" | "NOTION";
+export type BoardSyncState = "HEALTHY" | "ERROR" | "DISCONNECTED";
+
+export type ExecutionColumn = {
+  id: string;
+  boardId: string;
+  name: string;
+  sortOrder: number;
+  mappedStatus: TaskStatus;
+  isDefault: boolean;
+  externalRef?: string | null;
+};
+
+export type ExecutionBoard = {
+  id: string;
+  productId: string;
+  name: string;
+  provider: BoardProvider;
+  isDefault: boolean;
+  syncState: BoardSyncState;
+  externalRef?: string | null;
+  config?: Record<string, unknown> | null;
+  columns: ExecutionColumn[];
+};
+
 export type Product = {
   id: string;
   name: string;
   description?: string | null;
   sortOrder: number;
+  itemType?: TopLevelItemType;
 };
 
 export type ProductWithHierarchy = Product & {
   initiatives: Initiative[];
+  executionBoards?: ExecutionBoard[];
+  /** Server-computed counts of requirements by PM status (TaskStatus) for this product's tree */
+  requirementStatusCounts?: Partial<Record<TaskStatus, number>>;
 };
+
+export type RequirementStatusCounts = Partial<Record<TaskStatus, number>>;
 
 export type PersonaImpact = {
   initiativeId: string;
@@ -192,6 +224,8 @@ export type Requirement = {
   externalRef?: string | null;
   metadata?: Record<string, unknown> | null;
   sortOrder: number;
+  executionColumnId?: string | null;
+  executionColumn?: ExecutionColumn | null;
   feature?: Feature | null;
 };
 

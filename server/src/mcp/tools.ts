@@ -1,5 +1,15 @@
 import { z } from "zod";
-import { FeatureStatus, Horizon, Prisma, Priority, StoryType, TaskStatus, TaskType, UserRole } from "@prisma/client";
+import {
+  FeatureStatus,
+  Horizon,
+  Prisma,
+  Priority,
+  StoryType,
+  TaskStatus,
+  TaskType,
+  TopLevelItemType,
+  UserRole
+} from "@prisma/client";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
 import { initiativeInclude } from "../routes/serializers.js";
@@ -10,6 +20,7 @@ import {
   loadCapabilitiesForBrief,
   type BriefMode
 } from "../services/ontologyBrief.js";
+import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
 const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
@@ -294,7 +305,16 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   server.registerTool(
     "drd_list_products",
     { title: "List products", description: "List all products (with hierarchy).", inputSchema: z.object({}) },
-    async (_args, ctx) => { getUserFromCtx(ctx); return textContent(JSON.stringify((await prisma.product.findMany({ orderBy: { sortOrder: "asc" } })), null, 2)); }
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const products = await prisma.product.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          executionBoards: { include: { columns: { orderBy: { sortOrder: "asc" } } } }
+        }
+      });
+      return textContent(JSON.stringify(sanitizeUserFields(products), null, 2));
+    }
   );
 
   server.registerTool(
@@ -305,7 +325,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       inputSchema: z.object({
         name: z.string().min(1),
         description: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional()
+        sortOrder: z.number().int().optional(),
+        itemType: z.enum(["PRODUCT", "SYSTEM"]).optional()
       })
     },
     async (body, ctx) => {
@@ -315,7 +336,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         data: {
           name: body.name,
           description: body.description ?? null,
-          sortOrder: body.sortOrder ?? 0
+          sortOrder: body.sortOrder ?? 0,
+          itemType: (body.itemType as TopLevelItemType) ?? TopLevelItemType.PRODUCT
         }
       });
       return textContent(JSON.stringify(product, null, 2));
@@ -331,16 +353,23 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         id: z.string(),
         name: z.string().min(1).optional(),
         description: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional()
+        sortOrder: z.number().int().optional(),
+        itemType: z.enum(["PRODUCT", "SYSTEM"]).optional()
       })
     },
     async ({ id, ...body }, ctx) => {
       const { role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.SUPER_ADMIN);
-      const data: { name?: string; description?: string | null; sortOrder?: number } = {};
+      const data: {
+        name?: string;
+        description?: string | null;
+        sortOrder?: number;
+        itemType?: TopLevelItemType;
+      } = {};
       if (body.name !== undefined) data.name = body.name;
       if (body.description !== undefined) data.description = body.description;
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      if (body.itemType !== undefined) data.itemType = body.itemType as TopLevelItemType;
       const product = await prisma.product.update({ where: { id }, data });
       return textContent(JSON.stringify(product, null, 2));
     }
@@ -359,6 +388,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         const product = await prisma.product.findUnique({
           where: { id: args.productId },
           include: {
+            executionBoards: {
+              include: { columns: { orderBy: { sortOrder: "asc" } } },
+              orderBy: { createdAt: "asc" }
+            },
             initiatives: {
               orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
               include: {
@@ -370,7 +403,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
                     owner: { select: userPublicSelect },
                     requirements: {
                       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-                      include: { assignee: { select: userPublicSelect } }
+                      include: {
+                        assignee: { select: userPublicSelect },
+                        executionColumn: true
+                      }
                     }
                   }
                 }
@@ -384,6 +420,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const product = await prisma.product.findFirst({
         orderBy: { sortOrder: "asc" },
         include: {
+          executionBoards: {
+            include: { columns: { orderBy: { sortOrder: "asc" } } },
+            orderBy: { createdAt: "asc" }
+          },
           initiatives: {
             orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
             include: {
@@ -395,7 +435,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
                   owner: { select: userPublicSelect },
                   requirements: {
                     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-                    include: { assignee: { select: userPublicSelect } }
+                    include: {
+                      assignee: { select: userPublicSelect },
+                      executionColumn: true
+                    }
                   }
                 }
               }
@@ -635,7 +678,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         where: args.featureId ? { featureId: args.featureId } : undefined,
         include: {
           feature: { include: { initiative: { select: { id: true, title: true, domain: { select: { id: true, name: true, color: true } } } } } },
-          assignee: { select: userPublicSelect }
+          assignee: { select: userPublicSelect },
+          executionColumn: true
         },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
       });
@@ -658,7 +702,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     blockedReason: z.string().nullable().optional(),
     externalRef: z.string().nullable().optional(),
     metadata: z.record(z.unknown()).nullable().optional(),
-    sortOrder: z.number().int().optional()
+    sortOrder: z.number().int().optional(),
+    executionColumnId: z.string().nullable().optional()
   };
 
   server.registerTool(
@@ -671,13 +716,26 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     async (body, ctx) => {
       const { role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      let status = body.status ? (body.status as TaskStatus) : TaskStatus.NOT_STARTED;
+      let isDone = body.isDone ?? false;
+      let executionColumnId: string | null | undefined = undefined;
+      if (body.executionColumnId !== undefined) {
+        if (body.executionColumnId === null) {
+          executionColumnId = null;
+        } else {
+          const applied = await applyExecutionColumn(body.featureId, body.executionColumnId);
+          status = applied.status!;
+          isDone = applied.isDone!;
+          executionColumnId = applied.executionColumnId;
+        }
+      }
       const requirement = await prisma.requirement.create({
         data: {
           featureId: body.featureId,
           title: body.title,
           description: body.description ?? null,
-          status: body.status ? (body.status as TaskStatus) : TaskStatus.NOT_STARTED,
-          isDone: body.isDone ?? false,
+          status,
+          isDone,
           priority: (body.priority as Priority) ?? Priority.P2,
           assigneeId: body.assigneeId ?? null,
           dueDate: body.dueDate ? new Date(body.dueDate) : null,
@@ -687,9 +745,14 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
           blockedReason: body.blockedReason ?? null,
           externalRef: body.externalRef ?? null,
           metadata: body.metadata === null ? Prisma.JsonNull : ((body.metadata ?? undefined) as Prisma.InputJsonValue),
-          sortOrder: body.sortOrder ?? 0
+          sortOrder: body.sortOrder ?? 0,
+          ...(executionColumnId !== undefined ? { executionColumnId } : {})
         },
-        include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+        include: {
+          feature: { select: { id: true, title: true, initiativeId: true } },
+          assignee: { select: userPublicSelect },
+          executionColumn: true
+        }
       });
       return textContent(JSON.stringify(sanitizeUserFields(requirement), null, 2));
     }
@@ -711,7 +774,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     blockedReason: z.string().nullable().optional(),
     externalRef: z.string().nullable().optional(),
     metadata: z.record(z.unknown()).nullable().optional(),
-    sortOrder: z.number().int().optional()
+    sortOrder: z.number().int().optional(),
+    executionColumnId: z.string().nullable().optional()
   });
 
   server.registerTool(
@@ -725,6 +789,12 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { id, ...body } = updateRequirementSchema.parse(args);
       const { role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const existing = await prisma.requirement.findUnique({
+        where: { id },
+        select: { featureId: true }
+      });
+      if (!existing) throw new Error("Requirement not found");
+      const featureId = body.featureId ?? existing.featureId;
       const data: Prisma.RequirementUncheckedUpdateInput = {};
       if (body.featureId !== undefined) data.featureId = body.featureId;
       if (body.title !== undefined) data.title = body.title;
@@ -741,10 +811,24 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       if (body.externalRef !== undefined) data.externalRef = body.externalRef;
       if (body.metadata !== undefined) data.metadata = body.metadata === null ? Prisma.JsonNull : (body.metadata as Prisma.InputJsonValue);
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      if (body.executionColumnId !== undefined) {
+        if (body.executionColumnId === null) {
+          data.executionColumnId = null;
+        } else {
+          const applied = await applyExecutionColumn(featureId, body.executionColumnId);
+          data.executionColumnId = applied.executionColumnId;
+          if (applied.status !== undefined) data.status = applied.status;
+          if (applied.isDone !== undefined) data.isDone = applied.isDone;
+        }
+      }
       const requirement = await prisma.requirement.update({
         where: { id },
         data,
-        include: { feature: { select: { id: true, title: true, initiativeId: true } }, assignee: { select: userPublicSelect } }
+        include: {
+          feature: { select: { id: true, title: true, initiativeId: true } },
+          assignee: { select: userPublicSelect },
+          executionColumn: true
+        }
       });
       return textContent(JSON.stringify(sanitizeUserFields(requirement), null, 2));
     }

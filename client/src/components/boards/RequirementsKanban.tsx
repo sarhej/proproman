@@ -220,7 +220,7 @@ export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="space-y-4 p-4">
-        <h1 className="text-xl font-semibold text-slate-900">{t("nav.requirementsKanban")}</h1>
+        <h1 className="text-xl font-semibold text-slate-900">{t("executionBoard.title")}</h1>
 
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
           <div>

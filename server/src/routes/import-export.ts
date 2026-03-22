@@ -12,7 +12,7 @@ const EXPORT_VERSION = 1;
 /* ── Export ────────────────────────────────────────────────────────── */
 
 const ALL_ENTITY_KEYS = [
-  "users", "products", "domains", "personas", "revenueStreams",
+  "users", "products", "executionBoards", "executionColumns", "domains", "personas", "revenueStreams",
   "accounts", "partners", "initiatives", "features", "requirements",
   "decisions", "risks", "demands", "demandLinks", "dependencies",
   "campaigns", "assets", "campaignLinks",
@@ -45,6 +45,8 @@ importExportRouter.get("/export", async (req, res) => {
     const fetchers: Record<EntityKey, () => Promise<unknown[]>> = {
       users: () => prisma.user.findMany({ include: { emails: true }, orderBy: { createdAt: "asc" } }),
       products: () => prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
+      executionBoards: () => prisma.executionBoard.findMany({ orderBy: { createdAt: "asc" } }),
+      executionColumns: () => prisma.executionColumn.findMany({ orderBy: [{ boardId: "asc" }, { sortOrder: "asc" }] }),
       domains: () => prisma.domain.findMany({ orderBy: { sortOrder: "asc" } }),
       personas: () => prisma.persona.findMany(),
       revenueStreams: () => prisma.revenueStream.findMany(),
@@ -106,7 +108,7 @@ importExportRouter.post("/import", async (req, res) => {
   // For replace mode, check that at least one entity array is provided
   if (mode === "replace") {
     const entityKeys = [
-      "users", "products", "domains", "personas", "revenueStreams",
+      "users", "products", "executionBoards", "executionColumns", "domains", "personas", "revenueStreams",
       "accounts", "partners", "initiatives", "features", "requirements",
       "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
       "milestones", "kpis", "stakeholders",
@@ -262,8 +264,52 @@ async function replaceImport(data: any) {
 
     if (has("products")) {
       for (const p of data.products) {
-        const created = await tx.product.create({ data: { name: p.name, description: p.description ?? null, sortOrder: p.sortOrder ?? 0 } });
+        const created = await tx.product.create({
+          data: {
+            name: p.name,
+            description: p.description ?? null,
+            sortOrder: p.sortOrder ?? 0,
+            itemType: p.itemType ?? "PRODUCT"
+          }
+        });
         idMap.set(p.id, created.id);
+      }
+    }
+
+    if (has("executionBoards")) {
+      for (const b of data.executionBoards) {
+        const productId = idMap.get(b.productId);
+        if (!productId) continue;
+        const created = await tx.executionBoard.create({
+          data: {
+            productId,
+            name: b.name,
+            provider: b.provider ?? "INTERNAL",
+            isDefault: b.isDefault ?? false,
+            syncState: b.syncState ?? "HEALTHY",
+            externalRef: b.externalRef ?? null,
+            config: b.config === undefined || b.config === null ? undefined : b.config
+          }
+        });
+        idMap.set(b.id, created.id);
+      }
+    }
+
+    if (has("executionColumns")) {
+      for (const c of data.executionColumns) {
+        const boardId = idMap.get(c.boardId);
+        if (!boardId) continue;
+        const created = await tx.executionColumn.create({
+          data: {
+            boardId,
+            name: c.name,
+            sortOrder: c.sortOrder ?? 0,
+            mappedStatus: c.mappedStatus,
+            isDefault: c.isDefault ?? false,
+            externalRef: c.externalRef ?? null
+          }
+        });
+        idMap.set(c.id, created.id);
       }
     }
 
@@ -465,10 +511,24 @@ async function mergeImport(data: any) {
       for (const p of data.products) {
         const match = existingProducts.find((ep) => ep.name === p.name);
         if (match) {
-          await tx.product.update({ where: { id: match.id }, data: { description: p.description ?? null, sortOrder: p.sortOrder ?? 0 } });
+          await tx.product.update({
+            where: { id: match.id },
+            data: {
+              description: p.description ?? null,
+              sortOrder: p.sortOrder ?? 0,
+              itemType: p.itemType ?? "PRODUCT"
+            }
+          });
           idMap.set(p.id, match.id);
         } else {
-          const created = await tx.product.create({ data: { name: p.name, description: p.description ?? null, sortOrder: p.sortOrder ?? 0 } });
+          const created = await tx.product.create({
+            data: {
+              name: p.name,
+              description: p.description ?? null,
+              sortOrder: p.sortOrder ?? 0,
+              itemType: p.itemType ?? "PRODUCT"
+            }
+          });
           idMap.set(p.id, created.id);
         }
       }
@@ -634,9 +694,11 @@ async function mergeImport(data: any) {
           featureId: resolvedFeatId!,
           title: r.title,
           description: r.description ?? null,
+          status: r.status ?? "NOT_STARTED",
           isDone: r.isDone ?? false,
           priority: r.priority ?? "P2",
-          labels: normalizeLabels(r.labels)
+          labels: normalizeLabels(r.labels),
+          executionColumnId: mapId(idMap, r.executionColumnId)
         };
         if (match) {
           await tx.requirement.update({ where: { id: match.id }, data: rData });
@@ -823,9 +885,19 @@ async function importRequirements(tx: any, requirements: any[], idMap: Map<strin
         featureId: idMap.get(r.featureId)!,
         title: r.title,
         description: r.description ?? null,
+        status: r.status ?? "NOT_STARTED",
         isDone: r.isDone ?? false,
         priority: r.priority ?? "P2",
-        labels: normalizeLabels(r.labels)
+        labels: normalizeLabels(r.labels),
+        assigneeId: mapId(idMap, r.assigneeId),
+        dueDate: r.dueDate ? new Date(r.dueDate) : null,
+        estimate: r.estimate ?? null,
+        taskType: r.taskType ?? null,
+        blockedReason: r.blockedReason ?? null,
+        externalRef: r.externalRef ?? null,
+        metadata: r.metadata === undefined || r.metadata === null ? undefined : r.metadata,
+        sortOrder: r.sortOrder ?? 0,
+        executionColumnId: mapId(idMap, r.executionColumnId)
       },
     });
     idMap.set(r.id, created.id);
@@ -968,7 +1040,7 @@ function summarize(payload: Record<string, unknown>): Record<string, number> {
 
 function buildCounts(data: any): Record<string, number> {
   const keys = [
-    "users", "products", "domains", "personas", "revenueStreams", "accounts", "partners",
+    "users", "products", "executionBoards", "executionColumns", "domains", "personas", "revenueStreams", "accounts", "partners",
     "initiatives", "features", "requirements", "decisions", "risks",
     "demands", "demandLinks", "dependencies", "campaigns", "assets", "campaignLinks",
     "milestones", "kpis", "stakeholders",

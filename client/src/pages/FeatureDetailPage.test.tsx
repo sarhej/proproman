@@ -58,7 +58,7 @@ describe("FeatureDetailPage – edge cases", () => {
   it("shows 'Missing feature ID' when route param is missing", () => {
     renderWithRoute("/features", []);
     expect(screen.getByText("Missing feature ID.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to product explorer/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /back to products/i })).toHaveAttribute(
       "href",
       "/product-explorer"
     );
@@ -67,7 +67,7 @@ describe("FeatureDetailPage – edge cases", () => {
   it("shows 'Feature not found' when featureId is not in initiatives", () => {
     renderWithRoute("/features/non-existent-id", []);
     expect(screen.getByText("Feature not found.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to product explorer/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /back to products/i })).toHaveAttribute(
       "href",
       "/product-explorer"
     );

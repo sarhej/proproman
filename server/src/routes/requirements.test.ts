@@ -139,6 +139,35 @@ describe("requirements API – validation edge cases", () => {
       expect(result.success).toBe(false);
     });
 
+    it("accepts executionColumnId string", () => {
+      const result = requirementSchema.safeParse({
+        featureId: "feat-1",
+        title: "X",
+        executionColumnId: "col-uuid-1"
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.executionColumnId).toBe("col-uuid-1");
+    });
+
+    it("accepts executionColumnId null", () => {
+      const result = requirementSchema.safeParse({
+        featureId: "feat-1",
+        title: "X",
+        executionColumnId: null
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.executionColumnId).toBeNull();
+    });
+
+    it("rejects executionColumnId empty string", () => {
+      const result = requirementSchema.safeParse({
+        featureId: "feat-1",
+        title: "X",
+        executionColumnId: ""
+      });
+      expect(result.success).toBe(false);
+    });
+
     it("accepts negative sortOrder (schema allows any integer)", () => {
       const result = requirementSchema.safeParse({
         featureId: "feat-1",
@@ -187,6 +216,21 @@ describe("requirements API – validation edge cases", () => {
 
     it("rejects partial title empty string", () => {
       const result = partialSchema.safeParse({ title: "" });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts executionColumnId in partial update", () => {
+      const result = partialSchema.safeParse({ executionColumnId: "col-1" });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts clearing executionColumnId with null", () => {
+      const result = partialSchema.safeParse({ executionColumnId: null });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects partial executionColumnId empty string", () => {
+      const result = partialSchema.safeParse({ executionColumnId: "" });
       expect(result.success).toBe(false);
     });
   });

@@ -171,35 +171,41 @@ export function ProductExplorerPage({
       }
 
       if (q) {
+        const allFields = boardFilters?.searchInAllFields === true;
         const requirementMatches = (r: Requirement) =>
-          [r.title, r.description ?? "", r.externalRef ?? "", ...(r.labels ?? [])].join(" ").toLowerCase().includes(q);
+          allFields
+            ? [r.title, r.description ?? "", r.externalRef ?? "", ...(r.labels ?? [])].join(" ").toLowerCase().includes(q)
+            : (r.title ?? "").toLowerCase().includes(q);
 
         initiatives = initiatives
           .flatMap((initiative) => {
             // “Headline” match: keep the whole epic (all features & requirements) on purpose.
-            const initHeadlineMatch = [
-              initiative.title,
-              initiative.owner?.name ?? "",
-              initiative.domain?.name ?? "",
-              product.name
-            ]
-              .join(" ")
-              .toLowerCase()
-              .includes(q);
+            const initHeadlineMatch = allFields
+              ? [
+                  initiative.title,
+                  initiative.owner?.name ?? "",
+                  initiative.domain?.name ?? "",
+                  product.name
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(q)
+              : (initiative.title ?? "").toLowerCase().includes(q);
 
             if (initHeadlineMatch) return [initiative];
 
-            const initBodyMatch = [initiative.description ?? "", initiative.notes ?? ""]
-              .join(" ")
-              .toLowerCase()
-              .includes(q);
+            const initBodyMatch = allFields
+              ? [initiative.description ?? "", initiative.notes ?? ""].join(" ").toLowerCase().includes(q)
+              : false;
 
             const features = initiative.features ?? [];
             const narrowedFeatures = features.flatMap((f) => {
-                const featSelf = [f.title, f.description ?? "", f.acceptanceCriteria ?? "", ...(f.labels ?? [])]
-                  .join(" ")
-                  .toLowerCase()
-                  .includes(q);
+                const featSelf = allFields
+                  ? [f.title, f.description ?? "", f.acceptanceCriteria ?? "", ...(f.labels ?? [])]
+                      .join(" ")
+                      .toLowerCase()
+                      .includes(q)
+                  : (f.title ?? "").toLowerCase().includes(q);
                 const allReqs = f.requirements ?? [];
                 const matchedReqs = allReqs.filter(requirementMatches);
 

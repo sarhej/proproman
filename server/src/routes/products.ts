@@ -3,13 +3,31 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
-import { UserRole } from "@prisma/client";
+import { TaskStatus, TopLevelItemType, UserRole } from "@prisma/client";
 
 const productSchema = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),
-  sortOrder: z.number().int().default(0)
+  sortOrder: z.number().int().default(0),
+  itemType: z.nativeEnum(TopLevelItemType).optional()
 });
+
+function statusCountsForProduct(initiatives: { features?: { requirements?: { status: TaskStatus }[] }[] }[]) {
+  const counts: Record<TaskStatus, number> = {
+    [TaskStatus.NOT_STARTED]: 0,
+    [TaskStatus.IN_PROGRESS]: 0,
+    [TaskStatus.TESTING]: 0,
+    [TaskStatus.DONE]: 0
+  };
+  for (const init of initiatives) {
+    for (const feat of init.features ?? []) {
+      for (const req of feat.requirements ?? []) {
+        counts[req.status] = (counts[req.status] ?? 0) + 1;
+      }
+    }
+  }
+  return counts;
+}
 
 export const productsRouter = Router();
 productsRouter.use(requireAuth);
@@ -17,6 +35,10 @@ productsRouter.use(requireAuth);
 productsRouter.get("/", async (_req, res) => {
   const products = await prisma.product.findMany({
     include: {
+      executionBoards: {
+        include: { columns: { orderBy: { sortOrder: "asc" } } },
+        orderBy: { createdAt: "asc" }
+      },
       initiatives: {
         include: {
           owner: true,
@@ -32,7 +54,10 @@ productsRouter.get("/", async (_req, res) => {
           features: {
             include: {
               owner: true,
-              requirements: { include: { assignee: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+              requirements: {
+                include: { assignee: true, executionColumn: true },
+                orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
+              },
               demandLinks: {
                 include: {
                   demand: {
@@ -49,7 +74,11 @@ productsRouter.get("/", async (_req, res) => {
     },
     orderBy: { sortOrder: "asc" }
   });
-  res.json({ products });
+  const enriched = products.map((p) => ({
+    ...p,
+    requirementStatusCounts: statusCountsForProduct(p.initiatives)
+  }));
+  res.json({ products: enriched });
 });
 
 productsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
@@ -60,8 +89,10 @@ productsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
   }
   const product = await prisma.product.create({
     data: {
-      ...parsed.data,
-      description: parsed.data.description ?? null
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      sortOrder: parsed.data.sortOrder,
+      itemType: parsed.data.itemType ?? TopLevelItemType.PRODUCT
     }
   });
   await logAudit(req.user!.id, "CREATED", "PRODUCT", product.id, { name: product.name });
@@ -81,7 +112,8 @@ productsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
     data: {
       name: parsed.data.name,
       description: parsed.data.description ?? undefined,
-      sortOrder: parsed.data.sortOrder
+      sortOrder: parsed.data.sortOrder,
+      itemType: parsed.data.itemType
     }
   });
   const changes =
