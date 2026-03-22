@@ -279,4 +279,12 @@ describe("ExecutionBoardPage", () => {
     });
   });
 
+  it("renders board settings link with boardId query when board selected", async () => {
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
+    });
+    const settings = screen.getByRole("link", { name: /board settings/i });
+    expect(settings.getAttribute("href")).toContain("boardId=b1");
+  });
 });

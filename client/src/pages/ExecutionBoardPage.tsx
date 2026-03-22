@@ -328,12 +328,20 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
               </p>
             ) : null}
           </div>
-          <Link
-            to="/product-explorer"
-            className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            {t("executionBoard.backToExplorer")}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/product-explorer"
+              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              {t("executionBoard.backToExplorer")}
+            </Link>
+            <Link
+              to={`/products/${productId}/board-settings${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`}
+              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              {t("executionBoard.boardSettings")}
+            </Link>
+          </div>
         </div>
 
         {boards.length > 1 ? (
