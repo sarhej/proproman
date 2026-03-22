@@ -7,6 +7,8 @@ import { Label, Select } from "../components/ui/Field";
 
 type Props = {
   isAdmin: boolean;
+  /** EDITOR+ can create initiatives per API; structure edits stay isAdmin-only */
+  canCreateInitiative: boolean;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefreshBoard?: () => Promise<void>;
@@ -15,7 +17,7 @@ type Props = {
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
 
-export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, onRefreshBoard, quickFilter }: Props) {
+export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserId, onOpenInitiative, onRefreshBoard, quickFilter }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -132,6 +134,7 @@ export function ProductExplorerPage({ isAdmin, currentUserId, onOpenInitiative, 
         users={users}
         domains={domains}
         isAdmin={isAdmin}
+        canCreateInitiative={canCreateInitiative}
         currentUserId={currentUserId}
         onOpenInitiative={onOpenInitiative}
         onRefresh={async () => {

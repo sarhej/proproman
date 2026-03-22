@@ -347,6 +347,7 @@ function App() {
               <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
                 <ProductExplorerPage
                   isAdmin={perms.canEditStructure}
+                  canCreateInitiative={perms.canEditContent}
                   currentUserId={user?.id ?? null}
                   onOpenInitiative={(i) => setSelected(i)}
                   onRefreshBoard={board.refresh}

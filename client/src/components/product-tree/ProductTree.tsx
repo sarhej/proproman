@@ -17,6 +17,8 @@ type Props = {
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
+  /** Show add-initiative (matches POST /api/initiatives: EDITOR+) */
+  canCreateInitiative: boolean;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -687,6 +689,7 @@ function ProductRow({
   users,
   domains,
   isAdmin,
+  canCreateInitiative,
   currentUserId,
   onOpenInitiative,
   onRefresh,
@@ -698,6 +701,7 @@ function ProductRow({
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
+  canCreateInitiative: boolean;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -742,7 +746,7 @@ function ProductRow({
           <span className="ml-2 text-xs font-normal text-slate-500">
             {product.initiatives.length} initiative{product.initiatives.length !== 1 ? "s" : ""}
           </span>
-          {isAdmin && product.initiatives.length === 0 ? (
+          {canCreateInitiative && product.initiatives.length === 0 ? (
             <span className="ml-2 inline-flex items-center align-middle">
               <InlineAddInitiative
                 productId={product.id}
@@ -779,7 +783,7 @@ function ProductRow({
           onRequirementUpdated={onRequirementUpdated}
         />
       ))}
-      {open && isAdmin && product.initiatives.length > 0 ? (
+      {open && canCreateInitiative && product.initiatives.length > 0 ? (
         <tr className="border-t border-slate-100 text-xs">
           <td className="py-1 pl-8 pr-2">
             <InlineAddInitiative
@@ -801,6 +805,7 @@ export function ProductTree({
   users,
   domains,
   isAdmin,
+  canCreateInitiative,
   currentUserId,
   onOpenInitiative,
   onRefresh,
@@ -861,6 +866,7 @@ export function ProductTree({
                 users={users}
                 domains={domains}
                 isAdmin={isAdmin}
+                canCreateInitiative={canCreateInitiative}
                 currentUserId={currentUserId}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}
