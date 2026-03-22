@@ -2,6 +2,8 @@
 
 **Audience:** Autonomous or interactive coding agents (Cursor, Claude Code, CI scripts) that need to **model work in Tymio**, **read what the org asked for**, and **map implementation back to the hub**.
 
+**Standalone handoff (paste into an agent without this repo):** [CODING_AGENT_HANDOFF_TYMIO_APP.md](./CODING_AGENT_HANDOFF_TYMIO_APP.md) — `https://tymio.app` URLs and MCP paths only.
+
 **Canonical product overview:** [HUB.md](./HUB.md)  
 **Generated ontology brief (repo file):** [context/AGENT_BRIEF.md](../context/AGENT_BRIEF.md) (do not hand-edit as source of truth; regenerate from the hub)
 
