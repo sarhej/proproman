@@ -270,6 +270,20 @@ server.registerTool(
 );
 
 server.registerTool(
+  "tymio_get_coding_agent_guide",
+  {
+    title: "Get Tymio coding agent playbook (Markdown)",
+    description:
+      "Full docs/CODING_AGENT_TYMIO.md: MCP usage, as-is to Tymio, feature lifecycle. Call at session start when automating this hub.",
+    inputSchema: z.object({})
+  },
+  async () => {
+    const md = await drdFetchText("/api/agent/coding-guide");
+    return textContent(md);
+  }
+);
+
+server.registerTool(
   "tymio_get_agent_brief",
   {
     title: "Get compiled agent capability brief",

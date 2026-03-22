@@ -165,6 +165,7 @@ const DEFAULT_CAPABILITIES: {
     bindings: [
       { type: "MCP_TOOL", key: "drd_meta", isPrimary: true },
       { type: "MCP_TOOL", key: "drd_list_initiatives" },
+      { type: "MCP_TOOL", key: "tymio_get_coding_agent_guide" },
       { type: "MCP_TOOL", key: "tymio_get_agent_brief" },
       { type: "MCP_TOOL", key: "tymio_list_capabilities" },
       { type: "MCP_TOOL", key: "tymio_get_capability" },

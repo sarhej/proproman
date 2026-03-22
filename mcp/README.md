@@ -46,6 +46,6 @@ Or from `mcp/`: `npm run build` && `npm run start`. The process uses **stdio**; 
 
 ## Tools
 
-**Ontology (Tymio):** `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` — see [docs/HUB.md](../docs/HUB.md) §6.1.
+**Ontology / playbook (Tymio):** `tymio_get_coding_agent_guide` (full [CODING_AGENT_TYMIO.md](../docs/CODING_AGENT_TYMIO.md) from server), `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` — see [docs/HUB.md](../docs/HUB.md) §6.1.
 
 **Backlog / data (historical `drd_*` prefix):** health, meta, initiatives, features, requirements, domains, products, accounts, partners, demands, campaigns, timeline, assignments, stakeholders, etc. Full list: `server/src/mcp/tools.ts` and `mcp/src/index.ts` (stdio subset).

@@ -3,6 +3,7 @@ import { FeatureStatus, Horizon, Prisma, Priority, StoryType, TaskStatus, TaskTy
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
 import { initiativeInclude } from "../routes/serializers.js";
+import { readCodingAgentGuide } from "../lib/codingAgentGuide.js";
 import {
   compileBriefJson,
   compileBriefMarkdown,
@@ -1025,6 +1026,21 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   // --- Ontology / agent brief (Tymio) ---
+  server.registerTool(
+    "tymio_get_coding_agent_guide",
+    {
+      title: "Get Tymio coding agent playbook (Markdown)",
+      description:
+        "Returns the full docs/CODING_AGENT_TYMIO.md: how to use Tymio via MCP and UI, as-is to structured work, and feature lifecycle. Call at session start when automating this hub.",
+      inputSchema: z.object({})
+    },
+    async (_args, ctx) => {
+      getUserFromCtx(ctx);
+      const md = await readCodingAgentGuide();
+      return textContent(md);
+    }
+  );
+
   server.registerTool(
     "tymio_get_agent_brief",
     {

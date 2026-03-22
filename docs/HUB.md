@@ -133,7 +133,8 @@ Tool names currently use the historical prefix `drd_` (e.g. `drd_list_initiative
 The hub stores **product capabilities** (user-language semantics) and **bindings** to routes, MCP tools, and Prisma models. A **compiler** produces Markdown and JSON briefs for agents.
 
 - **REST:** `GET /api/ontology/capabilities`, `GET /api/ontology/brief?format=md|json&mode=compact|full`, admin-only `POST /api/ontology/compile`, `POST /api/ontology/refresh-bindings`, `POST /api/ontology/export-file`.
-- **MCP:** `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` (same auth as other tools).
+- **MCP:** `tymio_get_coding_agent_guide` (full playbook Markdown), `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` (same auth as other tools).
+- **REST:** `GET /api/agent/coding-guide` (authenticated) returns the same playbook as `text/markdown`.
 - **Admin UI:** Admin → **Ontology** tab.
 - **Repo export:** default path `context/AGENT_BRIEF.md` (see `context/README.md`).
 - **CLI:** `npm run ontology:refresh --workspace server` (requires `DATABASE_URL`).
@@ -168,3 +169,5 @@ Run `npm audit` and your SAST pipeline regularly.
 ## 9. Documentation in this repo
 
 This file is the **single product and engineering overview**. There is no separate archive: older documents were removed in favor of this consolidation.
+
+**Coding agents / automation:** see **[docs/CODING_AGENT_TYMIO.md](./CODING_AGENT_TYMIO.md)** for end-to-end use (MCP, REST, ontology brief, “as-is → Tymio”, feature lifecycle).

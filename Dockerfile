@@ -36,6 +36,7 @@ COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/package.json ./server/package.json
 COPY --from=builder /app/server/prisma ./server/prisma
 COPY --from=builder /app/server/scripts ./server/scripts
+COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/package.json ./client/package.json
 
