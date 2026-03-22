@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import type { BoardFilters } from "../hooks/useBoardData";
 import type { Domain, Feature, Initiative, InitiativeStatus, ProductWithHierarchy, Requirement, User } from "../types/models";
 import { ProductTree } from "../components/product-tree/ProductTree";
 import { Label, Select } from "../components/ui/Field";
@@ -13,6 +14,8 @@ type Props = {
   onOpenInitiative: (initiative: Initiative) => void;
   onRefreshBoard?: () => Promise<void>;
   quickFilter?: string;
+  /** Same filters as the nav FiltersBar (pillar, owner, priority, horizon, archived, …) — applied to epics in the tree */
+  boardFilters?: BoardFilters;
 };
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
@@ -30,7 +33,30 @@ function getStoredTerminology(): Terminology {
   return "initiative";
 }
 
-export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserId, onOpenInitiative, onRefreshBoard, quickFilter }: Props) {
+function initiativeMatchesBoardFilters(i: Initiative, f: BoardFilters | undefined): boolean {
+  if (!f) return true;
+  if (f.domainId && i.domainId !== f.domainId) return false;
+  if (f.ownerId && (i.ownerId ?? "") !== f.ownerId) return false;
+  if (f.priority && i.priority !== f.priority) return false;
+  if (f.horizon && i.horizon !== f.horizon) return false;
+  if (typeof f.isGap === "boolean" && i.isGap !== f.isGap) return false;
+  if (f.archived === true) {
+    if (!i.archivedAt) return false;
+  } else if (i.archivedAt) {
+    return false;
+  }
+  return true;
+}
+
+export function ProductExplorerPage({
+  isAdmin,
+  canCreateInitiative,
+  currentUserId,
+  onOpenInitiative,
+  onRefreshBoard,
+  quickFilter,
+  boardFilters
+}: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -38,6 +64,8 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
   const [statusFilter, setStatusFilter] = useState<InitiativeStatus | "">("");
   const [impactFilter, setImpactFilter] = useState<"any" | "with">("any");
   const [terminology, setTerminology] = useState<Terminology>(getStoredTerminology);
+  const [expandAllTick, setExpandAllTick] = useState(0);
+  const [collapseAllTick, setCollapseAllTick] = useState(0);
 
   async function load() {
     const [prodResult, metaResult] = await Promise.all([api.getProducts(), api.getMeta()]);
@@ -99,32 +127,60 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
   const filtered = useMemo(() => {
     const q = quickFilter?.trim().toLowerCase();
     return products.map((product) => {
-      const initiatives = product.initiatives.filter((initiative) => {
+      let initiatives = product.initiatives.filter((initiative) => {
+        if (!initiativeMatchesBoardFilters(initiative, boardFilters)) return false;
         if (statusFilter && initiative.status !== statusFilter) return false;
         if (impactFilter === "with") {
           const hasPersona = (initiative.personaImpacts?.length ?? 0) > 0;
           const hasRevenue = (initiative.revenueWeights?.length ?? 0) > 0;
           if (!hasPersona && !hasRevenue) return false;
         }
-        if (q) {
-          const hay = [
-            initiative.title,
-            initiative.description ?? "",
-            initiative.owner?.name ?? "",
-            initiative.domain?.name ?? "",
-            product.name,
-            ...initiative.features.map((f) => f.title)
-          ]
-            .join(" ")
-            .toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
         return true;
       });
+
+      if (q) {
+        initiatives = initiatives
+          .map((initiative) => {
+            const initSelf = [
+              initiative.title,
+              initiative.description ?? "",
+              initiative.notes ?? "",
+              initiative.owner?.name ?? "",
+              initiative.domain?.name ?? "",
+              product.name
+            ]
+              .join(" ")
+              .toLowerCase()
+              .includes(q);
+
+            if (initSelf) return initiative;
+
+            const features = initiative.features ?? [];
+            const narrowedFeatures = features
+              .map((f) => {
+                const featSelf = [f.title, f.description ?? "", f.acceptanceCriteria ?? ""]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(q);
+                if (featSelf) return f;
+                const reqs = (f.requirements ?? []).filter((r) =>
+                  [r.title, r.description ?? "", r.externalRef ?? ""].join(" ").toLowerCase().includes(q)
+                );
+                if (reqs.length === 0) return null;
+                return { ...f, requirements: reqs };
+              })
+              .filter((f): f is Feature => f !== null);
+
+            if (narrowedFeatures.length === 0) return null;
+            return { ...initiative, features: narrowedFeatures };
+          })
+          .filter((i): i is Initiative => i !== null);
+      }
+
       initiatives.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99));
       return { ...product, initiatives };
     });
-  }, [products, quickFilter, statusFilter, impactFilter]);
+  }, [products, quickFilter, statusFilter, impactFilter, boardFilters]);
 
   return (
     <div className="space-y-3">
@@ -178,9 +234,29 @@ export function ProductExplorerPage({ isAdmin, canCreateInitiative, currentUserI
             </button>
           </span>
         </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
+          <button
+            type="button"
+            className="text-xs font-medium text-sky-700 hover:underline"
+            onClick={() => setExpandAllTick((n) => n + 1)}
+          >
+            {t("productTree.expandAll")}
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            type="button"
+            className="text-xs font-medium text-sky-700 hover:underline"
+            onClick={() => setCollapseAllTick((n) => n + 1)}
+          >
+            {t("productTree.collapseAll")}
+          </button>
+        </div>
       </div>
       <ProductTree
         products={filtered}
+        expandAllSignal={expandAllTick}
+        collapseAllSignal={collapseAllTick}
+        quickFilter={quickFilter}
         terminology={terminology}
         users={users}
         domains={domains}

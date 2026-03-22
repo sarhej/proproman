@@ -512,6 +512,9 @@
     "addEpic": "Add epic",
     "moveUp": "Move up",
     "moveDown": "Move down",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "expandedWhileQuickFilter": "Tree is expanded for the quick filter. Clear the filter to fold rows manually.",
     "empty": "No products / assets found. Create one to get started."
   },
   "admin": {

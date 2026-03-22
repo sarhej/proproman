@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import type { Initiative, MetaPayload } from "../types/models";
 
-type Filters = {
+export type BoardFilters = {
   domainId?: string;
   ownerId?: string;
   priority?: string;
@@ -15,7 +15,7 @@ type Filters = {
 export function useBoardData(enabled = true) {
   const [meta, setMeta] = useState<MetaPayload | null>(null);
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<BoardFilters>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +66,12 @@ export function useBoardData(enabled = true) {
         initiative.domain?.name ?? "",
         initiative.owner?.name ?? "",
         initiative.product?.name ?? "",
-        ...initiative.features.map((f) => f.title)
+        ...initiative.features.flatMap((f) => [
+          f.title,
+          f.description ?? "",
+          f.acceptanceCriteria ?? "",
+          ...(f.requirements ?? []).flatMap((r) => [r.title, r.description ?? "", r.externalRef ?? ""])
+        ])
       ]
         .join(" ")
         .toLowerCase();

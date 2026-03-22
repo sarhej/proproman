@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, ChevronUp, CheckCircle2, Circle, GripVertical, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,6 +21,12 @@ type Props = {
   canCreateInitiative: boolean;
   /** "initiative" | "epic" for product-row counts and add button (Product Explorer toggle) */
   terminology?: "initiative" | "epic";
+  /** Increment (e.g. from parent state) to expand every product / initiative / feature row */
+  expandAllSignal?: number;
+  /** Increment to collapse all of the above */
+  collapseAllSignal?: number;
+  /** When non-empty, matching rows stay expanded; products with no filtered children stay collapsed */
+  quickFilter?: string;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
@@ -413,7 +419,10 @@ function FeatureRow({
   isAdmin,
   onRefresh,
   onFeatureUpdated,
-  onRequirementUpdated
+  onRequirementUpdated,
+  expandAllSignal,
+  collapseAllSignal,
+  searchActive
 }: {
   feature: Feature;
   orderedSiblingFeatures: Feature[];
@@ -422,9 +431,19 @@ function FeatureRow({
   onRefresh: () => Promise<void>;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
+  expandAllSignal?: number;
+  collapseAllSignal?: number;
+  searchActive?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (expandAllSignal && expandAllSignal > 0) setOpen(true);
+  }, [expandAllSignal]);
+  useEffect(() => {
+    if (collapseAllSignal && collapseAllSignal > 0) setOpen(false);
+  }, [collapseAllSignal]);
+  const displayOpen = searchActive ? true : open;
   const reqs = sortSiblingsByOrder(feature.requirements ?? []);
   const done = reqs.filter((r) => r.isDone).length;
   const refreshFeature = async (res?: { feature: Feature }) => {
@@ -449,8 +468,16 @@ function FeatureRow({
     <>
       <tr className="group/row border-t border-slate-100 text-xs hover:bg-slate-50">
         <td className="py-1.5 pl-12 pr-2">
-          <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
-            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <button
+            type="button"
+            className={`mr-1 inline-flex items-center ${searchActive ? "cursor-default text-slate-500" : ""}`}
+            title={searchActive ? t("productTree.expandedWhileQuickFilter") : undefined}
+            onClick={() => {
+              if (searchActive) return;
+              setOpen(!open);
+            }}
+          >
+            {displayOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           {isAdmin ? (
             <ReorderArrows index={featIndex} count={orderedSiblingFeatures.length} onMove={reorderFeature} />
@@ -521,7 +548,7 @@ function FeatureRow({
           )}
         </td>
       </tr>
-      {open && reqs.map((r) => (
+      {displayOpen && reqs.map((r) => (
         <RequirementRow
           key={r.id}
           requirement={r}
@@ -531,7 +558,7 @@ function FeatureRow({
           onRequirementUpdated={onRequirementUpdated}
         />
       ))}
-      {(open || reqs.length === 0) && isAdmin ? (
+      {(displayOpen || reqs.length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-16 pr-2">
             <InlineAdd
@@ -558,7 +585,10 @@ function InitiativeRow({
   onInitiativeUpdated,
   onFeatureUpdated,
   onRequirementUpdated,
-  isDragOverlay
+  isDragOverlay,
+  expandAllSignal,
+  collapseAllSignal,
+  searchActive
 }: {
   initiative: Initiative;
   users: User[];
@@ -569,6 +599,9 @@ function InitiativeRow({
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
   isDragOverlay?: boolean;
+  expandAllSignal?: number;
+  collapseAllSignal?: number;
+  searchActive?: boolean;
 }) {
   const { t } = useTranslation();
   const refreshInitiative = async (res?: { initiative: Initiative }) => {
@@ -576,6 +609,13 @@ function InitiativeRow({
     else await onRefresh();
   };
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!isDragOverlay && expandAllSignal && expandAllSignal > 0) setOpen(true);
+  }, [expandAllSignal, isDragOverlay]);
+  useEffect(() => {
+    if (!isDragOverlay && collapseAllSignal && collapseAllSignal > 0) setOpen(false);
+  }, [collapseAllSignal, isDragOverlay]);
+  const displayOpen = searchActive && !isDragOverlay ? true : open;
   const impact = avgImpact(initiative);
   const progress = reqProgress(initiative.features ?? []);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -610,8 +650,16 @@ function InitiativeRow({
               <GripVertical size={14} />
             </span>
           ) : null}
-          <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
-            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <button
+            type="button"
+            className={`mr-1 inline-flex items-center ${searchActive && !isDragOverlay ? "cursor-default text-slate-500" : ""}`}
+            title={searchActive && !isDragOverlay ? t("productTree.expandedWhileQuickFilter") : undefined}
+            onClick={() => {
+              if (searchActive && !isDragOverlay) return;
+              setOpen(!open);
+            }}
+          >
+            {displayOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           <button
             type="button"
@@ -674,7 +722,7 @@ function InitiativeRow({
           )}
         </td>
       </tr>
-      {open &&
+      {displayOpen &&
         orderedFeatures.map((feature) => (
           <FeatureRow
             key={feature.id}
@@ -685,9 +733,12 @@ function InitiativeRow({
             onRefresh={onRefresh}
             onFeatureUpdated={onFeatureUpdated}
             onRequirementUpdated={onRequirementUpdated}
+            expandAllSignal={expandAllSignal}
+            collapseAllSignal={collapseAllSignal}
+            searchActive={searchActive && !isDragOverlay}
           />
         ))}
-      {(open || (initiative.features ?? []).length === 0) && isAdmin ? (
+      {(displayOpen || (initiative.features ?? []).length === 0) && isAdmin ? (
         <tr className="border-t border-slate-50 text-xs">
           <td className="py-1 pl-12 pr-2">
             <InlineAdd
@@ -809,7 +860,10 @@ function ProductRow({
   onRefresh,
   onInitiativeUpdated,
   onFeatureUpdated,
-  onRequirementUpdated
+  onRequirementUpdated,
+  expandAllSignal,
+  collapseAllSignal,
+  searchActive
 }: {
   product: ProductWithHierarchy;
   users: User[];
@@ -823,9 +877,20 @@ function ProductRow({
   onInitiativeUpdated?: (i: Initiative) => void;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
+  expandAllSignal?: number;
+  collapseAllSignal?: number;
+  searchActive?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (expandAllSignal && expandAllSignal > 0) setOpen(true);
+  }, [expandAllSignal]);
+  useEffect(() => {
+    if (collapseAllSignal && collapseAllSignal > 0) setOpen(false);
+  }, [collapseAllSignal]);
+  const hasFilteredChildren = product.initiatives.length > 0;
+  const displayOpen = searchActive ? hasFilteredChildren : open;
   const { setNodeRef, isOver } = useDroppable({ id: `product-${product.id}` });
   const allImpacts = product.initiatives.flatMap((i) => i.personaImpacts?.map((p) => p.impact) ?? []);
   const avgProductImpact = allImpacts.length ? +(allImpacts.reduce((a, b) => a + b, 0) / allImpacts.length).toFixed(1) : 0;
@@ -846,8 +911,16 @@ function ProductRow({
         className={`group/row border-t-2 border-slate-300 text-sm font-semibold transition-colors ${isOver ? "bg-sky-100" : "bg-slate-50"}`}
       >
         <td className="py-2.5 pl-2 pr-2">
-          <button type="button" className="mr-1 inline-flex items-center" onClick={() => setOpen(!open)}>
-            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <button
+            type="button"
+            className={`mr-1 inline-flex items-center ${searchActive ? "cursor-default text-slate-500" : ""}`}
+            title={searchActive ? t("productTree.expandedWhileQuickFilter") : undefined}
+            onClick={() => {
+              if (searchActive) return;
+              setOpen(!open);
+            }}
+          >
+            {displayOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
           {isAdmin ? (
             <EditableTitle
@@ -895,7 +968,7 @@ function ProductRow({
         <td />
         <td />
       </tr>
-      {open && sortedInitiatives.map((initiative) => (
+      {displayOpen && sortedInitiatives.map((initiative) => (
         <InitiativeRow
           key={initiative.id}
           initiative={initiative}
@@ -906,9 +979,12 @@ function ProductRow({
           onInitiativeUpdated={onInitiativeUpdated}
           onFeatureUpdated={onFeatureUpdated}
           onRequirementUpdated={onRequirementUpdated}
+          expandAllSignal={expandAllSignal}
+          collapseAllSignal={collapseAllSignal}
+          searchActive={searchActive}
         />
       ))}
-      {open && canCreateInitiative && product.initiatives.length > 0 ? (
+      {displayOpen && canCreateInitiative && product.initiatives.length > 0 ? (
         <tr className="border-t border-slate-100 text-xs">
           <td className="py-1 pl-8 pr-2">
             <InlineAddInitiative
@@ -933,6 +1009,9 @@ export function ProductTree({
   isAdmin,
   canCreateInitiative,
   terminology = "initiative",
+  expandAllSignal,
+  collapseAllSignal,
+  quickFilter,
   currentUserId,
   onOpenInitiative,
   onRefresh,
@@ -942,6 +1021,7 @@ export function ProductTree({
   onAddProduct
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
+  const searchActive = Boolean(quickFilter?.trim());
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1013,6 +1093,9 @@ export function ProductTree({
                 isAdmin={isAdmin}
                 canCreateInitiative={canCreateInitiative}
                 terminology={terminology}
+                expandAllSignal={expandAllSignal}
+                collapseAllSignal={collapseAllSignal}
+                searchActive={searchActive}
                 currentUserId={currentUserId}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}

@@ -512,6 +512,9 @@
     "addEpic": "Přidat epic",
     "moveUp": "Posunout nahoru",
     "moveDown": "Posunout dolů",
+    "expandAll": "Rozbalit vše",
+    "collapseAll": "Sbalit vše",
+    "expandedWhileQuickFilter": "Strom je rozbalený kvůli rychlému filtru. Filtr smažte, chcete-li řádky ručně sbalit.",
     "empty": "Žádné produkty / assety. Vytvořte první."
   },
   "admin": {

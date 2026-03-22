@@ -352,6 +352,7 @@ function App() {
                   onOpenInitiative={(i) => setSelected(i)}
                   onRefreshBoard={board.refresh}
                   quickFilter={board.filters.quick}
+                  boardFilters={board.filters}
                 />
               </ViewRoute>
             }
