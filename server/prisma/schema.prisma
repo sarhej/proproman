@@ -520,16 +520,18 @@ model Requirement {
   blockedReason      String?
   externalRef        String?
   metadata           Json?
-  sortOrder          Int               @default(0)
-  executionColumnId  String?
-  feature            Feature           @relation(fields: [featureId], references: [id], onDelete: Cascade)
-  assignee           User?             @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  executionColumn    ExecutionColumn?  @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  sortOrder            Int               @default(0)
+  executionSortOrder   Int               @default(0)
+  executionColumnId    String?
+  feature              Feature           @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  assignee             User?             @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  executionColumn      ExecutionColumn?  @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   @@index([assigneeId])
   @@index([executionColumnId])
+  @@index([executionColumnId, executionSortOrder])
 }
 
 model Decision {

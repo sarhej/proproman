@@ -1,4 +1,5 @@
 import {
+  closestCorners,
   DndContext,
   type DragEndEvent,
   type DragStartEvent,
@@ -10,11 +11,13 @@ import {
   useDroppable,
   DragOverlay
 } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
-import type { ExecutionBoard, ProductWithHierarchy, Requirement } from "../types/models";
+import type { ExecutionBoard, ExecutionColumn, ProductWithHierarchy, Requirement } from "../types/models";
 import { Card } from "../components/ui/Card";
 import { Label, Select } from "../components/ui/Field";
 
@@ -42,6 +45,40 @@ function flattenRequirements(product: ProductWithHierarchy): CardItem[] {
   return out;
 }
 
+/** Column keys: UNASSIGNED + each execution column id for the selected board. */
+export function buildColumnItemIds(
+  product: ProductWithHierarchy,
+  boardColumns: ExecutionColumn[]
+): Record<string, string[]> {
+  const items = flattenRequirements(product);
+  const byId = new Map(items.map((x) => [x.requirement.id, x.requirement]));
+  const map: Record<string, string[]> = { [UNASSIGNED]: [] };
+  for (const c of boardColumns) map[c.id] = [];
+  for (const item of items) {
+    const cid = item.requirement.executionColumnId;
+    const key = cid && map[cid] !== undefined ? cid : UNASSIGNED;
+    map[key].push(item.requirement.id);
+  }
+  for (const k of Object.keys(map)) {
+    map[k].sort((a, b) => {
+      const ra = byId.get(a)!;
+      const rb = byId.get(b)!;
+      const eso = (ra.executionSortOrder ?? 0) - (rb.executionSortOrder ?? 0);
+      if (eso !== 0) return eso;
+      return a.localeCompare(b);
+    });
+  }
+  return map;
+}
+
+function findColumnKeyForDragId(id: string, columnItemIds: Record<string, string[]>): string | null {
+  if (id.startsWith("column-")) return id.slice("column-".length);
+  for (const [key, ids] of Object.entries(columnItemIds)) {
+    if (ids.includes(id)) return key;
+  }
+  return null;
+}
+
 function ReqCard({ item, isDragging }: { item: CardItem; isDragging?: boolean }) {
   const r = item.requirement;
   return (
@@ -67,7 +104,23 @@ function DraggableReqCard({ item, disabled }: { item: CardItem; disabled?: boole
     id: item.requirement.id,
     disabled: !!disabled
   });
-  const style = transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined;
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <ReqCard item={item} isDragging={isDragging} />
+    </div>
+  );
+}
+
+function SortableReqCard({ item, disabled }: { item: CardItem; disabled?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.requirement.id,
+    disabled: !!disabled
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <ReqCard item={item} isDragging={isDragging} />
@@ -110,36 +163,43 @@ function DroppableColumn({
 }
 
 type Props = {
-  onRefreshBoard?: () => Promise<void>;
+  /** Sync initiatives/meta without toggling global loading */
+  onRefreshBoardSilent?: () => void;
   readOnly?: boolean;
 };
 
-export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
+export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
   const { t } = useTranslation();
   const { productId } = useParams<{ productId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [product, setProduct] = useState<ProductWithHierarchy | null>(null);
   const [boards, setBoards] = useState<ExecutionBoard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [layoutEpoch, setLayoutEpoch] = useState(0);
+  const [columnItemIds, setColumnItemIds] = useState<Record<string, string[]>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [initiativeFilter, setInitiativeFilter] = useState("");
   const [featureFilter, setFeatureFilter] = useState("");
   const [search, setSearch] = useState("");
 
-  const load = useCallback(async () => {
-    if (!productId) return;
-    setLoading(true);
-    try {
-      const [{ products }, { boards: bds }] = await Promise.all([
-        api.getProducts(),
-        api.getExecutionBoards(productId)
-      ]);
-      setProduct(products.find((p) => p.id === productId) ?? null);
-      setBoards(bds);
-    } finally {
-      setLoading(false);
-    }
-  }, [productId]);
+  const load = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!productId) return;
+      if (!opts?.silent) setLoading(true);
+      try {
+        const [{ products }, { boards: bds }] = await Promise.all([
+          api.getProducts(),
+          api.getExecutionBoards(productId)
+        ]);
+        setProduct(products.find((p) => p.id === productId) ?? null);
+        setBoards(bds);
+        setLayoutEpoch((e) => e + 1);
+      } finally {
+        if (!opts?.silent) setLoading(false);
+      }
+    },
+    [productId]
+  );
 
   useEffect(() => {
     void load();
@@ -161,7 +221,21 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
     setSearchParams(next);
   };
 
+  const columns = useMemo(
+    () => selectedBoard?.columns.slice().sort((a, b) => a.sortOrder - b.sortOrder) ?? [],
+    [selectedBoard]
+  );
+
+  useEffect(() => {
+    if (!product || !columns.length) {
+      setColumnItemIds({});
+      return;
+    }
+    setColumnItemIds(buildColumnItemIds(product, columns));
+  }, [layoutEpoch, product, columns]);
+
   const allItems = useMemo(() => (product ? flattenRequirements(product) : []), [product]);
+  const itemByReqId = useMemo(() => new Map(allItems.map((i) => [i.requirement.id, i])), [allItems]);
 
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
@@ -181,14 +255,12 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
     });
   }, [allItems, initiativeFilter, featureFilter, search]);
 
-  const columns = useMemo(() => selectedBoard?.columns.slice().sort((a, b) => a.sortOrder - b.sortOrder) ?? [], [selectedBoard]);
+  const boardDnDEnabled = !initiativeFilter && !featureFilter && !search.trim();
 
-  const itemsByColumn = useMemo(() => {
+  const filteredItemsByColumn = useMemo(() => {
     const map = new Map<string, CardItem[]>();
     map.set(UNASSIGNED, []);
-    for (const col of columns) {
-      map.set(col.id, []);
-    }
+    for (const col of columns) map.set(col.id, []);
     for (const item of filteredItems) {
       const cid = item.requirement.executionColumnId;
       if (cid && map.has(cid)) {
@@ -205,39 +277,98 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
+  function mergeRequirementIntoProduct(prev: ProductWithHierarchy, updated: Requirement): ProductWithHierarchy {
+    return {
+      ...prev,
+      initiatives: prev.initiatives.map((i) => ({
+        ...i,
+        features: (i.features ?? []).map((f) => ({
+          ...f,
+          requirements: (f.requirements ?? []).map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
+        }))
+      }))
+    };
+  }
+
+  async function persistLayout(map: Record<string, string[]>) {
+    if (!productId) return;
+    const body = {
+      productId,
+      columns: [
+        { executionColumnId: null as string | null, requirementIds: map[UNASSIGNED] ?? [] },
+        ...columns.map((c) => ({ executionColumnId: c.id, requirementIds: map[c.id] ?? [] }))
+      ]
+    };
+    try {
+      await api.saveExecutionBoardLayout(body);
+      await load({ silent: true });
+      onRefreshBoardSilent?.();
+    } catch {
+      await load({ silent: true });
+    }
+  }
+
   async function onDragEnd(event: DragEndEvent) {
     setActiveId(null);
     if (readOnly || !productId) return;
     const { active, over } = event;
     if (!over) return;
-    const overId = String(over.id);
-    if (!overId.startsWith("column-")) return;
-    const targetCol = overId.replace("column-", "");
-    const reqId = String(active.id);
-    const targetColumnId = targetCol === UNASSIGNED ? null : targetCol;
-    try {
-      const res = await api.updateRequirement(reqId, { executionColumnId: targetColumnId });
-      setProduct((prev) => {
-        if (!prev) return prev;
-        const updated = res.requirement;
-        return {
-          ...prev,
-          initiatives: prev.initiatives.map((i) => ({
-            ...i,
-            features: (i.features ?? []).map((f) => ({
-              ...f,
-              requirements: (f.requirements ?? []).map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
-            }))
-          }))
-        };
-      });
-      await onRefreshBoard?.();
-    } catch {
-      await load();
+
+    if (!boardDnDEnabled) {
+      const overId = String(over.id);
+      if (!overId.startsWith("column-")) return;
+      const targetCol = overId.replace("column-", "");
+      const reqId = String(active.id);
+      const targetColumnId = targetCol === UNASSIGNED ? null : targetCol;
+      try {
+        const res = await api.updateRequirement(reqId, { executionColumnId: targetColumnId });
+        setProduct((prev) => (prev ? mergeRequirementIntoProduct(prev, res.requirement) : prev));
+        onRefreshBoardSilent?.();
+      } catch {
+        await load({ silent: true });
+      }
+      return;
     }
+
+    const activeIdStr = String(active.id);
+    const overIdStr = String(over.id);
+    let activeContainer = findColumnKeyForDragId(activeIdStr, columnItemIds);
+    let overContainer = findColumnKeyForDragId(overIdStr, columnItemIds);
+    if (!overContainer && overIdStr.startsWith("column-")) {
+      overContainer = overIdStr.slice("column-".length);
+    }
+    if (!activeContainer || !overContainer) return;
+
+    let nextMap = { ...columnItemIds };
+
+    if (activeContainer === overContainer) {
+      const items = [...(nextMap[activeContainer] ?? [])];
+      const oldIndex = items.indexOf(activeIdStr);
+      const newIndex = items.indexOf(overIdStr);
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+      nextMap = { ...nextMap, [overContainer]: arrayMove(items, oldIndex, newIndex) };
+    } else {
+      const from = [...(nextMap[activeContainer] ?? [])];
+      const to = [...(nextMap[overContainer] ?? [])];
+      const fromIdx = from.indexOf(activeIdStr);
+      if (fromIdx < 0) return;
+      const [removed] = from.splice(fromIdx, 1);
+      let insertAt: number;
+      if (overIdStr.startsWith("column-")) {
+        insertAt = to.length;
+      } else {
+        insertAt = to.indexOf(overIdStr);
+        if (insertAt < 0) insertAt = to.length;
+      }
+      to.splice(insertAt, 0, removed);
+      nextMap = { ...nextMap, [activeContainer]: from, [overContainer]: to };
+    }
+
+    setColumnItemIds(nextMap);
+    await persistLayout(nextMap);
   }
 
-  const activeItem = activeId ? filteredItems.find((i) => i.requirement.id === activeId) : null;
+  const activeItem = activeId ? itemByReqId.get(activeId) ?? null : null;
 
   const initiativeTitles = useMemo(() => {
     const s = new Set<string>();
@@ -273,7 +404,12 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
   }
 
   return (
-    <DndContext sensors={sensors} onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
+      onDragEnd={onDragEnd}
+    >
       <div className="space-y-4 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -284,6 +420,11 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
             {selectedBoard ? (
               <p className="mt-1 text-xs text-slate-500">
                 {t("executionBoard.boardLabel")}: {selectedBoard.name} · {selectedBoard.provider} · {selectedBoard.syncState}
+              </p>
+            ) : null}
+            {!boardDnDEnabled ? (
+              <p className="mt-1 text-xs text-amber-700">
+                {t("executionBoard.clearFiltersToReorder")}
               </p>
             ) : null}
           </div>
@@ -365,13 +506,34 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
                 columnId={UNASSIGNED}
                 title={t("executionBoard.unassigned")}
                 subtitle={t("executionBoard.unassignedHint")}
-                count={itemsByColumn.get(UNASSIGNED)?.length ?? 0}
+                count={
+                  boardDnDEnabled
+                    ? columnItemIds[UNASSIGNED]?.length ?? 0
+                    : filteredItemsByColumn.get(UNASSIGNED)?.length ?? 0
+                }
               >
-                {(itemsByColumn.get(UNASSIGNED) ?? []).map((item) =>
-                  readOnly ? (
-                    <ReqCard key={item.requirement.id} item={item} />
-                  ) : (
-                    <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
+                {boardDnDEnabled ? (
+                  <SortableContext
+                    items={columnItemIds[UNASSIGNED] ?? []}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {(columnItemIds[UNASSIGNED] ?? []).map((rid) => {
+                      const item = itemByReqId.get(rid);
+                      if (!item) return null;
+                      return readOnly ? (
+                        <ReqCard key={rid} item={item} />
+                      ) : (
+                        <SortableReqCard key={rid} item={item} disabled={false} />
+                      );
+                    })}
+                  </SortableContext>
+                ) : (
+                  (filteredItemsByColumn.get(UNASSIGNED) ?? []).map((item) =>
+                    readOnly ? (
+                      <ReqCard key={item.requirement.id} item={item} />
+                    ) : (
+                      <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
+                    )
                   )
                 )}
               </DroppableColumn>
@@ -381,13 +543,34 @@ export function ExecutionBoardPage({ onRefreshBoard, readOnly }: Props) {
                   columnId={col.id}
                   title={col.name}
                   subtitle={`PM ${col.mappedStatus.replaceAll("_", " ")}`}
-                  count={itemsByColumn.get(col.id)?.length ?? 0}
+                  count={
+                    boardDnDEnabled
+                      ? columnItemIds[col.id]?.length ?? 0
+                      : filteredItemsByColumn.get(col.id)?.length ?? 0
+                  }
                 >
-                  {(itemsByColumn.get(col.id) ?? []).map((item) =>
-                    readOnly ? (
-                      <ReqCard key={item.requirement.id} item={item} />
-                    ) : (
-                      <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
+                  {boardDnDEnabled ? (
+                    <SortableContext
+                      items={columnItemIds[col.id] ?? []}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {(columnItemIds[col.id] ?? []).map((rid) => {
+                        const item = itemByReqId.get(rid);
+                        if (!item) return null;
+                        return readOnly ? (
+                          <ReqCard key={rid} item={item} />
+                        ) : (
+                          <SortableReqCard key={rid} item={item} disabled={false} />
+                        );
+                      })}
+                    </SortableContext>
+                  ) : (
+                    (filteredItemsByColumn.get(col.id) ?? []).map((item) =>
+                      readOnly ? (
+                        <ReqCard key={item.requirement.id} item={item} />
+                      ) : (
+                        <DraggableReqCard key={item.requirement.id} item={item} disabled={false} />
+                      )
                     )
                   )}
                 </DroppableColumn>

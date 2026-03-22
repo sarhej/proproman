@@ -86,3 +86,14 @@ export const requirementReorderSchema = z.array(
     sortOrder: z.number().int()
   })
 );
+
+/** Full execution-board layout for one product: every requirement appears exactly once across columns. */
+export const executionBoardLayoutSchema = z.object({
+  productId: z.string().min(1),
+  columns: z.array(
+    z.object({
+      executionColumnId: z.string().min(1).nullable(),
+      requirementIds: z.array(z.string().min(1))
+    })
+  )
+});

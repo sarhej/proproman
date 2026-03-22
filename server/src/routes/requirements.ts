@@ -4,8 +4,12 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
-import { labelsSchema, requirementReorderSchema } from "./schemas.js";
-import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
+import { executionBoardLayoutSchema, labelsSchema, requirementReorderSchema } from "./schemas.js";
+import {
+  applyExecutionColumn,
+  nextExecutionSortOrder,
+  productIdForFeature
+} from "../services/requirementExecutionColumn.js";
 
 const metadataSchema = z.record(z.unknown()).nullable().optional();
 
@@ -74,6 +78,67 @@ requirementsRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   res.json({ ok: true });
 });
 
+requirementsRouter.post("/execution-layout", requireWriteAccess(), async (req, res) => {
+  const parsed = executionBoardLayoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { productId, columns } = parsed.data;
+  const flatIds = columns.flatMap((c) => c.requirementIds);
+  if (new Set(flatIds).size !== flatIds.length) {
+    res.status(400).json({ error: "Duplicate requirement ids in layout" });
+    return;
+  }
+  const boards = await prisma.executionBoard.findMany({
+    where: { productId },
+    select: { columns: { select: { id: true } } }
+  });
+  const validColumnIds = new Set(boards.flatMap((b) => b.columns.map((c) => c.id)));
+  for (const col of columns) {
+    if (col.executionColumnId !== null && !validColumnIds.has(col.executionColumnId)) {
+      res.status(400).json({ error: "Unknown execution column for this product" });
+      return;
+    }
+  }
+  const productReqs = await prisma.requirement.findMany({
+    where: { feature: { initiative: { productId } } },
+    select: { id: true, featureId: true, executionColumnId: true }
+  });
+  const expected = new Set(productReqs.map((r) => r.id));
+  if (flatIds.length !== expected.size || !flatIds.every((id) => expected.has(id))) {
+    res.status(400).json({ error: "Layout must list every requirement for this product exactly once" });
+    return;
+  }
+  const reqById = new Map(productReqs.map((r) => [r.id, r]));
+  await prisma.$transaction(async () => {
+    for (const col of columns) {
+      const targetColId = col.executionColumnId;
+      for (let i = 0; i < col.requirementIds.length; i++) {
+        const reqId = col.requirementIds[i]!;
+        const row = reqById.get(reqId)!;
+        const prevCol = row.executionColumnId;
+        const data: Prisma.RequirementUncheckedUpdateInput = { executionSortOrder: i };
+        if (prevCol !== targetColId) {
+          if (targetColId === null) {
+            data.executionColumnId = null;
+          } else {
+            const applied = await applyExecutionColumn(row.featureId, targetColId);
+            data.executionColumnId = applied.executionColumnId;
+            if (applied.status !== undefined) data.status = applied.status;
+            if (applied.isDone !== undefined) data.isDone = applied.isDone;
+          }
+        }
+        await prisma.requirement.update({
+          where: { id: reqId },
+          data
+        });
+      }
+    }
+  });
+  res.json({ ok: true });
+});
+
 requirementsRouter.get("/", async (req, res) => {
   const featureId = typeof req.query.featureId === "string" ? req.query.featureId : undefined;
   const requirements = await prisma.requirement.findMany({
@@ -120,6 +185,10 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
       throw e;
     }
   }
+  const newColId = columnPatch?.executionColumnId ?? parsed.data.executionColumnId ?? null;
+  const productIdForNew = await productIdForFeature(parsed.data.featureId);
+  const executionSortOrder =
+    productIdForNew !== null ? await nextExecutionSortOrder(productIdForNew, newColId) : 0;
   const requirement = await prisma.requirement.create({
     data: {
       featureId: parsed.data.featureId,
@@ -137,7 +206,8 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
       externalRef: parsed.data.externalRef ?? null,
       metadata: parsed.data.metadata === null ? Prisma.JsonNull : ((parsed.data.metadata ?? undefined) as Prisma.InputJsonValue),
       sortOrder: parsed.data.sortOrder,
-      executionColumnId: columnPatch?.executionColumnId ?? parsed.data.executionColumnId ?? null
+      executionSortOrder,
+      executionColumnId: newColId
     },
     include: { assignee: true, executionColumn: true }
   });
@@ -154,7 +224,7 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   }
   const existing = await prisma.requirement.findUnique({
     where: { id },
-    select: { featureId: true }
+    select: { featureId: true, executionColumnId: true }
   });
   if (!existing) {
     res.status(404).json({ error: "Requirement not found" });
@@ -179,13 +249,16 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata === null ? Prisma.JsonNull : (parsed.data.metadata as Prisma.InputJsonValue);
   if (parsed.data.sortOrder !== undefined) updateData.sortOrder = parsed.data.sortOrder;
 
+  let nextExecCol: string | null | undefined;
   if (parsed.data.executionColumnId !== undefined) {
     if (parsed.data.executionColumnId === null) {
       updateData.executionColumnId = null;
+      nextExecCol = null;
     } else {
       try {
         const applied = await applyExecutionColumn(featureId, parsed.data.executionColumnId);
         updateData.executionColumnId = applied.executionColumnId;
+        nextExecCol = applied.executionColumnId;
         if (applied.status !== undefined) updateData.status = applied.status;
         if (applied.isDone !== undefined) updateData.isDone = applied.isDone;
       } catch (e) {
@@ -200,6 +273,12 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
         }
         throw e;
       }
+    }
+  }
+  if (nextExecCol !== undefined && nextExecCol !== existing.executionColumnId) {
+    const pid = await productIdForFeature(featureId);
+    if (pid) {
+      updateData.executionSortOrder = await nextExecutionSortOrder(pid, nextExecCol);
     }
   }
 

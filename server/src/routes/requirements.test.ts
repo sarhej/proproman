@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Priority, TaskStatus, TaskType } from "@prisma/client";
+import { executionBoardLayoutSchema } from "./schemas.js";
 import { requirementSchema } from "./requirements.js";
 
 describe("requirements API – validation edge cases", () => {
@@ -231,6 +232,27 @@ describe("requirements API – validation edge cases", () => {
 
     it("rejects partial executionColumnId empty string", () => {
       const result = partialSchema.safeParse({ executionColumnId: "" });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("executionBoardLayoutSchema", () => {
+    it("accepts null and column buckets", () => {
+      const result = executionBoardLayoutSchema.safeParse({
+        productId: "p1",
+        columns: [
+          { executionColumnId: null, requirementIds: ["r1", "r2"] },
+          { executionColumnId: "col-a", requirementIds: ["r3"] }
+        ]
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects empty productId", () => {
+      const result = executionBoardLayoutSchema.safeParse({
+        productId: "",
+        columns: [{ executionColumnId: null, requirementIds: ["r1"] }]
+      });
       expect(result.success).toBe(false);
     });
   });

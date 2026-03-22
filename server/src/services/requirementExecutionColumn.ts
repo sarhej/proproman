@@ -1,6 +1,21 @@
 import { prisma } from "../db.js";
 import { TaskStatus } from "@prisma/client";
 
+/** Next board order index within a column (or unassigned) for a product. */
+export async function nextExecutionSortOrder(
+  productId: string,
+  executionColumnId: string | null
+): Promise<number> {
+  const agg = await prisma.requirement.aggregate({
+    where: {
+      feature: { initiative: { productId } },
+      executionColumnId: executionColumnId === null ? { equals: null } : executionColumnId
+    },
+    _max: { executionSortOrder: true }
+  });
+  return (agg._max.executionSortOrder ?? -1) + 1;
+}
+
 export async function productIdForFeature(featureId: string): Promise<string | null> {
   const feature = await prisma.feature.findUnique({
     where: { id: featureId },

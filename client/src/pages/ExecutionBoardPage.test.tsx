@@ -9,7 +9,8 @@ vi.mock("../lib/api", () => ({
   api: {
     getProducts: vi.fn(),
     getExecutionBoards: vi.fn(),
-    updateRequirement: vi.fn()
+    updateRequirement: vi.fn(),
+    saveExecutionBoardLayout: vi.fn()
   }
 }));
 
@@ -17,6 +18,7 @@ const mockApi = api as unknown as {
   getProducts: ReturnType<typeof vi.fn>;
   getExecutionBoards: ReturnType<typeof vi.fn>;
   updateRequirement: ReturnType<typeof vi.fn>;
+  saveExecutionBoardLayout: ReturnType<typeof vi.fn>;
 };
 
 function minimalProduct(overrides?: Partial<ProductWithHierarchy>): ProductWithHierarchy {
@@ -119,6 +121,7 @@ describe("ExecutionBoardPage", () => {
     vi.clearAllMocks();
     mockApi.getProducts.mockResolvedValue({ products: [minimalProduct()] });
     mockApi.getExecutionBoards.mockResolvedValue(defaultBoardPayload);
+    mockApi.saveExecutionBoardLayout.mockResolvedValue({ ok: true });
   });
 
   it("renders heading and requirement in unassigned when no column id", async () => {

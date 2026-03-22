@@ -543,7 +543,8 @@
     "filterInitiative": "Initiative",
     "filterFeature": "Feature",
     "unassigned": "Unassigned",
-    "unassignedHint": "Not on a board column"
+    "unassignedHint": "Not on a board column",
+    "clearFiltersToReorder": "Clear search and filters to drag cards vertically and reorder within columns."
   },
   "boardSettings": {
     "title": "Board settings",

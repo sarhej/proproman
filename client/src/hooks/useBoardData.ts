@@ -52,6 +52,22 @@ export function useBoardData(enabled = true) {
     }
   }, [query, enabled]);
 
+  /** Same data as refresh but never toggles global loading (avoids full-app flash after small mutations). */
+  const refreshSilent = useCallback(async () => {
+    if (!enabled) return;
+    try {
+      const [metaPayload, initiativesPayload] = await Promise.all([
+        api.getMeta(),
+        api.getInitiatives(query)
+      ]);
+      setMeta(metaPayload);
+      setInitiatives(initiativesPayload.initiatives);
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, [query, enabled]);
+
   useEffect(() => {
     if (enabled) refresh();
   }, [refresh, enabled]);
@@ -103,6 +119,7 @@ export function useBoardData(enabled = true) {
     setFilters,
     setInitiatives,
     refresh,
+    refreshSilent,
     loading,
     error
   };

@@ -468,7 +468,10 @@ function App() {
             path="/products/:productId/execution-board"
             element={
               <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <ExecutionBoardPage onRefreshBoard={() => board.refresh()} readOnly={!perms.canEditContent} />
+                <ExecutionBoardPage
+                  onRefreshBoardSilent={() => void board.refreshSilent()}
+                  readOnly={!perms.canEditContent}
+                />
               </ViewRoute>
             }
           />

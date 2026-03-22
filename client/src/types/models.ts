@@ -224,6 +224,8 @@ export type Requirement = {
   externalRef?: string | null;
   metadata?: Record<string, unknown> | null;
   sortOrder: number;
+  /** Order within an execution column (or unassigned bucket) on the board */
+  executionSortOrder?: number;
   executionColumnId?: string | null;
   executionColumn?: ExecutionColumn | null;
   feature?: Feature | null;

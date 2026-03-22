@@ -543,7 +543,8 @@
     "filterInitiative": "Ініціатива",
     "filterFeature": "Функція",
     "unassigned": "Без призначення",
-    "unassignedHint": "Не в колонці дошки"
+    "unassignedHint": "Не в колонці дошки",
+    "clearFiltersToReorder": "Щоб перетягувати картки вгору/вниз і змінювати порядок у колонках, скиньте пошук і фільтри."
   },
   "boardSettings": {
     "title": "Налаштування дошки",

@@ -241,6 +241,14 @@ export const api = {
     request<{ requirement: Requirement }>("/api/requirements", { method: "POST", body: JSON.stringify(body) }),
   updateRequirement: async (id: string, body: unknown) =>
     request<{ requirement: Requirement }>(`/api/requirements/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  saveExecutionBoardLayout: async (body: {
+    productId: string;
+    columns: Array<{ executionColumnId: string | null; requirementIds: string[] }>;
+  }) =>
+    request<{ ok: boolean }>("/api/requirements/execution-layout", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
   reorderRequirements: async (rows: Array<{ id: string; sortOrder: number }>) =>
     request<{ ok: boolean }>("/api/requirements/reorder", {
       method: "POST",

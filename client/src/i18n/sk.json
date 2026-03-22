@@ -543,7 +543,8 @@
     "filterInitiative": "Iniciatíva",
     "filterFeature": "Funkcia",
     "unassigned": "Nepriradené",
-    "unassignedHint": "Nie je v stĺpci nástenky"
+    "unassignedHint": "Nie je v stĺpci nástenky",
+    "clearFiltersToReorder": "Na ťahanie kariet hore/dole a zoradenie v stĺpcoch zrušte vyhľadávanie a filtre."
   },
   "boardSettings": {
     "title": "Nastavenie nástenky",
