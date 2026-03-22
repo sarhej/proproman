@@ -13,7 +13,8 @@
     "pendingMsg": "Your account <1>{{email}}</1> has been registered.",
     "pendingDesc": "An administrator needs to approve your access before you can use the application. You will be able to log in once your role has been updated.",
     "createInitiative": "Create initiative",
-    "close": "Close"
+    "close": "Close",
+    "noNavViewsAvailable": "No navigation views are available for your account. Ask a super admin to enable at least one view in Admin \u2192 Settings \u2192 Navigation views."
   },
   "nav": {
     "views": "Views",
@@ -534,6 +535,12 @@
     "domains": "Pillars",
     "personas": "Personas",
     "revenueStreams": "Revenue Streams",
+    "navViews": {
+      "section": "Navigation views",
+      "desc": "Turn a view off to remove it from the sidebar and block direct URLs for everyone except super admins. At least one view must stay on.",
+      "visible": "Visible for users",
+      "keepOne": "At least one view must remain visible."
+    },
     "loadingDomains": "Loading pillars...",
     "loadingPersonas": "Loading personas...",
     "loadingStreams": "Loading revenue streams...",

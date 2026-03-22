@@ -1,81 +1,11 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Bell, Building2, CalendarClock, Columns3, Filter, Globe, Grid2x2, Home, KanbanSquare, Menu, Megaphone, Network, Plus, Settings, Table, Users2, X } from "lucide-react";
+import { Bell, Globe, Home, Menu, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
+import { navSections } from "../../lib/navSections";
 import type { User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
-
-
-type NavItem = { to: string; labelKey: string; icon: typeof Home; mobileHidden?: boolean; phoneHidden?: boolean };
-
-type NavSection = {
-  labelKey: string;
-  items: NavItem[];
-  adminOnly?: boolean;
-  mobileHidden?: boolean;
-  phoneHidden?: boolean;
-};
-
-const navSections: NavSection[] = [
-  {
-    labelKey: "nav.boards",
-    items: [
-      { to: "/", labelKey: "nav.domainBoard", icon: Columns3 },
-      { to: "/priority", labelKey: "nav.priorityGrid", icon: Grid2x2 },
-      { to: "/raci", labelKey: "nav.raciMatrix", icon: Table },
-      { to: "/status-kanban", labelKey: "nav.statusKanban", icon: KanbanSquare },
-      { to: "/accountability", labelKey: "nav.accountability", icon: KanbanSquare }
-    ]
-  },
-  {
-    labelKey: "nav.insights",
-    phoneHidden: true,
-    items: [
-      { to: "/kpi-dashboard", labelKey: "nav.kpiDashboard", icon: BarChart3 },
-      { to: "/heatmap", labelKey: "nav.heatmap", icon: Users2 },
-      { to: "/buyer-user", labelKey: "nav.buyerUser", icon: BarChart3 },
-      { to: "/gaps", labelKey: "nav.gaps", icon: Filter }
-    ]
-  },
-  {
-    labelKey: "nav.structure",
-    items: [
-      { to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network },
-      { to: "/requirements/kanban", labelKey: "nav.requirementsKanban", icon: KanbanSquare }
-    ]
-  },
-  {
-    labelKey: "nav.commercial",
-    mobileHidden: true,
-    items: [
-      { to: "/accounts", labelKey: "nav.accounts", icon: Building2 },
-      { to: "/demands", labelKey: "nav.demands", icon: Filter },
-      { to: "/partners", labelKey: "nav.partners", icon: Users2 }
-    ]
-  },
-  {
-    labelKey: "nav.marketing",
-    items: [
-      { to: "/campaigns", labelKey: "nav.campaigns", icon: Megaphone }
-    ]
-  },
-  {
-    labelKey: "nav.planning",
-    items: [
-      { to: "/milestones", labelKey: "nav.milestonesTimeline", icon: CalendarClock },
-      { to: "/calendar", labelKey: "nav.calendar", icon: CalendarClock },
-      { to: "/gantt", labelKey: "nav.gantt", icon: CalendarClock, mobileHidden: true }
-    ]
-  },
-  {
-    labelKey: "nav.admin",
-    adminOnly: true,
-    items: [
-      { to: "/admin", labelKey: "nav.usersActivity", icon: Settings }
-    ]
-  }
-];
 
 const LANGS = ["en", "cs", "sk", "uk"] as const;
 
@@ -83,14 +13,26 @@ type Props = {
   user: User;
   children: ReactNode;
   permissions: Permissions;
+  /** Routes hidden for non–super-admins (from /api/ui-settings). */
+  hiddenNavPaths: Set<string>;
   onNewInitiative?: () => void;
   onLogout: () => void;
   onExport: () => void;
   onExportPdf: () => void;
 };
 
-function NavContent({ permissions, onNavigate, mobile, phone, onExport, onExportPdf, onLogout }: {
+function NavContent({
+  permissions,
+  hiddenNavPaths,
+  onNavigate,
+  mobile,
+  phone,
+  onExport,
+  onExportPdf,
+  onLogout
+}: {
   permissions: Permissions;
+  hiddenNavPaths: Set<string>;
   onNavigate?: () => void;
   mobile?: boolean;
   phone?: boolean;
@@ -99,6 +41,7 @@ function NavContent({ permissions, onNavigate, mobile, phone, onExport, onExport
   onLogout?: () => void;
 }) {
   const { t } = useTranslation();
+  const hideShellRoutes = !permissions.isSuperAdmin && hiddenNavPaths.size > 0;
   const sections = navSections
     .filter((s) => !s.adminOnly || permissions.canManageUsers)
     .filter((s) => !mobile || !s.mobileHidden)
@@ -115,6 +58,9 @@ function NavContent({ permissions, onNavigate, mobile, phone, onExport, onExport
         {sections.map((section) => {
           let items = mobile ? section.items.filter((i) => !i.mobileHidden) : section.items;
           if (phone) items = items.filter((i) => !i.phoneHidden);
+          if (hideShellRoutes) {
+            items = items.filter((i) => !hiddenNavPaths.has(i.to));
+          }
           if (items.length === 0) return null;
           return (
             <div key={section.labelKey}>
@@ -251,7 +197,7 @@ function SubscriptionsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function AppShell({ user, children, permissions, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
+export function AppShell({ user, children, permissions, hiddenNavPaths, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -337,7 +283,14 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
                 <X size={18} className="text-slate-500" />
               </button>
             </div>
-            <NavContent permissions={permissions} onNavigate={closeDrawer} mobile phone={phone} onLogout={onLogout} />
+            <NavContent
+              permissions={permissions}
+              hiddenNavPaths={hiddenNavPaths}
+              onNavigate={closeDrawer}
+              mobile
+              phone={phone}
+              onLogout={onLogout}
+            />
             <div className="mt-4 border-t border-slate-200 pt-3 flex items-center gap-1 px-3">
               <Globe size={13} className="text-slate-400" />
               {LANGS.map((lng) => (
@@ -358,8 +311,8 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
 
       <header data-print-hide className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:px-6">
         <div className="flex items-center gap-3 text-sm">
-          <img src="/favicon-192.png" alt="Tymio" className="h-7 w-7 rounded lg:hidden" />
-          <img src="/logo.png" alt="Tymio" className="hidden lg:block h-7" />
+          <img src="/tymio-icon.svg" alt="Tymio" className="h-7 w-7 rounded lg:hidden" />
+          <img src="/logo.svg" alt="Tymio" className="hidden lg:block h-7" />
           <span className="hidden lg:inline font-semibold text-slate-500">{t("app.brand")}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -464,7 +417,13 @@ export function AppShell({ user, children, permissions, onNewInitiative, onLogou
 
       <div data-print-layout className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 p-4 lg:grid-cols-[240px_1fr] lg:p-6">
         <aside data-print-hide className="hidden lg:block rounded-lg border border-slate-200 bg-white p-2">
-          <NavContent permissions={permissions} onExport={onExport} onExportPdf={onExportPdf} onLogout={onLogout} />
+          <NavContent
+            permissions={permissions}
+            hiddenNavPaths={hiddenNavPaths}
+            onExport={onExport}
+            onExportPdf={onExportPdf}
+            onLogout={onLogout}
+          />
         </aside>
         <main data-print-content>{children}</main>
       </div>

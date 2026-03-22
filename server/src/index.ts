@@ -40,6 +40,7 @@ import { messagesRouter } from "./routes/messages.js";
 import { notificationSubscriptionsRouter } from "./routes/notification-subscriptions.js";
 import { meRouter } from "./routes/me.js";
 import { ontologyRouter } from "./routes/ontology.js";
+import { uiSettingsRouter } from "./routes/ui-settings.js";
 import { prisma } from "./db.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
 import { mountMcp } from "./mcp/setup.js";
@@ -141,6 +142,7 @@ app.use("/api/messages", messagesRouter);
 app.use("/api/notification-subscriptions", notificationSubscriptionsRouter);
 app.use("/api/me", meRouter);
 app.use("/api/ontology", ontologyRouter);
+app.use("/api/ui-settings", uiSettingsRouter);
 
 app.get("/api/export/initiatives.csv", async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({

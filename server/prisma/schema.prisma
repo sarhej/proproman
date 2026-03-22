@@ -826,3 +826,10 @@ model CompiledBrief {
 
   @@unique([format, mode])
 }
+
+/// Singleton row: which main nav routes are hidden for non–super-admin users.
+model UiSettings {
+  id               String   @id @default("default")
+  hiddenNavPaths   Json     @default("[]")
+  updatedAt        DateTime @updatedAt
+}

@@ -419,4 +419,7 @@ export const api = {
     if (!response.ok) throw new Error(`Brief failed: ${response.status}`);
     return response.text();
   },
+  getUiSettings: async () => request<{ hiddenNavPaths: string[] }>("/api/ui-settings"),
+  updateUiSettings: async (body: { hiddenNavPaths: string[] }) =>
+    request<{ hiddenNavPaths: string[] }>("/api/ui-settings", { method: "PUT", body: JSON.stringify(body) })
 };

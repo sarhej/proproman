@@ -13,7 +13,8 @@
     "pendingMsg": "Váš účet <1>{{email}}</1> bol zaregistrovaný.",
     "pendingDesc": "Administrátor musí schváliť váš prístup predtým, než budete môcť aplikáciu používať. Budete sa môcť prihlásiť po aktualizácii vašej roly.",
     "createInitiative": "Vytvoriť iniciatívu",
-    "close": "Zavrieť"
+    "close": "Zavrieť",
+    "noNavViewsAvailable": "Pre v\u00e1\u0161 \u00fa\u010det nie s\u00fa k dispoz\u00edcii \u017eiadne poh\u013eady. Po\u017eiadajte super administr\u00e1tora, aby v Admin \u2192 Nastavenia zapol aspo\u0148 jeden poh\u013ead (Navig\u00e1cia)."
   },
   "nav": {
     "views": "Pohľady",
@@ -534,6 +535,12 @@
     "domains": "Piliere",
     "personas": "Persóny",
     "revenueStreams": "Tržné toky",
+    "navViews": {
+      "section": "Pohľady navigácie",
+      "desc": "Vypnutím pohľadu zmizne z bočného panela a priamy odkaz nebude dostupný pre používateľov okrem super administrátorov. Aspoň jeden pohľad musí zostať zapnutý.",
+      "visible": "Viditeľné pre používateľov",
+      "keepOne": "Aspoň jeden pohľad musí zostať viditeľný."
+    },
     "loadingDomains": "Načítanie pilierov...",
     "loadingPersonas": "Načítanie persón...",
     "loadingStreams": "Načítanie tržných tokov...",

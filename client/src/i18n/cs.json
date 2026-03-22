@@ -13,7 +13,8 @@
     "pendingMsg": "Váš účet <1>{{email}}</1> byl zaregistrován.",
     "pendingDesc": "Administrátor musí schválit váš přístup předtím, než budete moci aplikaci používat. Budete se moci přihlásit po aktualizaci vaší role.",
     "createInitiative": "Vytvořit iniciativu",
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "noNavViewsAvailable": "Pro váš účet nejsou k dispozici žádné pohledy. Požádejte super administrátora, aby v Admin \u2192 Nastaven\u00ed zapnul alespo\u0148 jeden pohled (Navigace)."
   },
   "nav": {
     "views": "Pohledy",
@@ -534,6 +535,12 @@
     "domains": "Pilíře",
     "personas": "Persony",
     "revenueStreams": "Tržní toky",
+    "navViews": {
+      "section": "Pohledy navigace",
+      "desc": "Vypnutím pohledu zmizí z postranního panelu a nebude dostupný přímý odkaz pro uživatele kromě super administrátorů. Alespoň jeden pohled musí zůstat zapnutý.",
+      "visible": "Viditelné pro uživatele",
+      "keepOne": "Alespoň jeden pohled musí zůstat viditelný."
+    },
     "loadingDomains": "Načítání pilířů...",
     "loadingPersonas": "Načítání person...",
     "loadingStreams": "Načítání tržních toků...",

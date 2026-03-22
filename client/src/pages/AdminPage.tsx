@@ -2,6 +2,8 @@ import { OntologyTab } from "./admin/OntologyTab";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import { MANAGED_NAV_PATHS } from "../lib/navViewPaths";
+import { navSections } from "../lib/navSections";
 import type {
   AuditAction,
   AuditEntry,
@@ -31,7 +33,7 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
-const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION", "CAPABILITY", "CAPABILITY_BINDING", "COMPILED_BRIEF"] as const;
+const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION", "CAPABILITY", "CAPABILITY_BINDING", "COMPILED_BRIEF", "UI_SETTINGS"] as const;
 const AUDIT_ACTIONS: AuditAction[] = ["CREATED", "UPDATED", "DELETED", "STATUS_CHANGED", "ROLE_CHANGED", "LOGIN"];
 const RECIPIENT_KINDS: NotificationRecipientKind[] = ["OBJECT_OWNER", "OBJECT_ROLE", "GLOBAL_ROLE", "OBJECT_ASSIGNEE"];
 const DELIVERY_CHANNELS: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
@@ -65,7 +67,7 @@ export function AdminPage({ currentUser, quickFilter, onMetaChanged }: { current
         ))}
       </div>
       {tab === "users" && <UsersTab currentUser={currentUser} quickFilter={quickFilter} />}
-      {tab === "settings" && <SettingsTab onMetaChanged={onMetaChanged} />}
+      {tab === "settings" && <SettingsTab currentUser={currentUser} onMetaChanged={onMetaChanged} />}
       {tab === "data" && <DataTab />}
       {tab === "activity" && <ActivityTab quickFilter={quickFilter} />}
       {tab === "notificationRules" && <NotificationRulesTab />}
@@ -902,18 +904,19 @@ const PERSONA_CAT_COLORS: Record<PersonaCategory, string> = {
   NONE: "bg-gray-100 text-gray-600"
 };
 
-function SettingsTab({ onMetaChanged }: { onMetaChanged?: () => void }) {
+function SettingsTab({ currentUser, onMetaChanged }: { currentUser: User; onMetaChanged?: () => void }) {
   const { t } = useTranslation();
-  const [section, setSection] = useState<"domains" | "personas" | "revenue">("domains");
+  const [section, setSection] = useState<"domains" | "personas" | "revenue" | "views">("domains");
   const sections: { key: typeof section; label: string }[] = [
     { key: "domains", label: t("admin.domains") },
     { key: "personas", label: t("admin.personas") },
-    { key: "revenue", label: t("admin.revenueStreams") }
+    { key: "revenue", label: t("admin.revenueStreams") },
+    ...(currentUser.role === "SUPER_ADMIN" ? [{ key: "views" as const, label: t("admin.navViews.section") }] : [])
   ];
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {sections.map((s) => (
           <button
             key={s.key}
@@ -927,6 +930,101 @@ function SettingsTab({ onMetaChanged }: { onMetaChanged?: () => void }) {
       {section === "domains" && <DomainsSection onChanged={onMetaChanged} />}
       {section === "personas" && <PersonasSection onChanged={onMetaChanged} />}
       {section === "revenue" && <RevenueStreamsSection onChanged={onMetaChanged} />}
+      {section === "views" && currentUser.role === "SUPER_ADMIN" && <NavViewsSection onChanged={onMetaChanged} />}
+    </div>
+  );
+}
+
+function NavViewsSection({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useTranslation();
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const { hiddenNavPaths } = await api.getUiSettings();
+      setHidden(new Set(hiddenNavPaths));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const visibleCount = MANAGED_NAV_PATHS.length - hidden.size;
+
+  const setPathVisible = async (path: string, visible: boolean) => {
+    const next = new Set(hidden);
+    if (visible) next.delete(path);
+    else {
+      if (visibleCount <= 1 && !hidden.has(path)) {
+        setErr(t("admin.navViews.keepOne"));
+        return;
+      }
+      next.add(path);
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.updateUiSettings({ hiddenNavPaths: Array.from(next) });
+      setHidden(next);
+      onChanged?.();
+    } catch (e) {
+      setErr((e as Error).message);
+      void load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">{t("common.loading")}</p>;
+
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <p className="text-sm text-gray-600">{t("admin.navViews.desc")}</p>
+      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+      <div className="space-y-4">
+        {navSections
+          .filter((s) => !s.adminOnly)
+          .map((section) => {
+            const rows = section.items.filter((i) => (MANAGED_NAV_PATHS as readonly string[]).includes(i.to));
+            if (rows.length === 0) return null;
+            return (
+              <div key={section.labelKey} className="rounded border border-gray-200 bg-white p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t(section.labelKey)}</h3>
+                <ul className="space-y-2">
+                  {rows.map((item) => {
+                    const visible = !hidden.has(item.to);
+                    const disableOff = visible && visibleCount <= 1;
+                    return (
+                      <li key={item.to} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="font-medium text-gray-800">{t(item.labelKey)}</span>
+                        <label className="flex items-center gap-2 text-xs text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={visible}
+                            disabled={busy || (disableOff && visible)}
+                            onChange={(e) => void setPathVisible(item.to, e.target.checked)}
+                          />
+                          {t("admin.navViews.visible")}
+                        </label>
+                        <code className="text-[10px] text-gray-400">{item.to}</code>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+      </div>
     </div>
   );
 }

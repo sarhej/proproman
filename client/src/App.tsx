@@ -7,9 +7,11 @@ import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetail
 import { InitiativeForm } from "./components/initiatives/InitiativeForm";
 import { Button } from "./components/ui/Button";
 import { Card } from "./components/ui/Card";
+import { ViewRoute } from "./components/ViewRoute";
 import { useAuth } from "./hooks/useAuth";
 import { useBoardData } from "./hooks/useBoardData";
 import { usePermissions } from "./hooks/usePermissions";
+import { useUiSettings } from "./hooks/useUiSettings";
 import { api } from "./lib/api";
 import { DomainBoardPage } from "./pages/DomainBoardPage";
 import { PriorityGridPage } from "./pages/PriorityGridPage";
@@ -42,6 +44,7 @@ function App() {
   const { user, loading: authLoading, error: authError } = useAuth();
   const board = useBoardData(!!user);
   const perms = usePermissions(user);
+  const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [devLoginLoading, setDevLoginLoading] = useState(false);
@@ -86,7 +89,7 @@ function App() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
-            <img src="/logo.png" alt="Tymio" className="h-8" />
+            <img src="/logo.svg" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <p className="mb-4 text-sm text-slate-600">
@@ -142,7 +145,7 @@ function App() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center">
           <div className="mb-4 flex items-center justify-center gap-3">
-            <img src="/logo.png" alt="Tymio" className="h-8" />
+            <img src="/logo.svg" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
           <div className="mb-4 flex justify-center">
@@ -189,6 +192,7 @@ function App() {
     <AppShell
       user={user}
       permissions={perms}
+      hiddenNavPaths={uiSettings.hiddenNavPaths}
       onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
         await api.logout();
@@ -216,152 +220,220 @@ function App() {
         <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">{t("app.loadingInitiatives")}</div>
       ) : (
         <Routes>
-          <Route
+            <Route
             path="/"
             element={
-              <DomainBoardPage
-                domains={board.meta.domains}
-                initiatives={board.initiatives}
-                onOpen={(i) => setSelected(i)}
-                onReorder={async (next) => {
-                  board.setInitiatives(next);
-                  await api.reorderInitiatives(next.map((item) => ({ id: item.id, domainId: item.domainId, sortOrder: item.sortOrder })));
-                  await board.refresh();
-                }}
-              />
+              <ViewRoute user={user} path="/" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <DomainBoardPage
+                  domains={board.meta.domains}
+                  initiatives={board.initiatives}
+                  onOpen={(i) => setSelected(i)}
+                  onReorder={async (next) => {
+                    board.setInitiatives(next);
+                    await api.reorderInitiatives(next.map((item) => ({ id: item.id, domainId: item.domainId, sortOrder: item.sortOrder })));
+                    await board.refresh();
+                  }}
+                />
+              </ViewRoute>
             }
           />
-          <Route path="/priority" element={<PriorityGridPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
+          <Route
+            path="/priority"
+            element={
+              <ViewRoute user={user} path="/priority" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <PriorityGridPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+              </ViewRoute>
+            }
+          />
           <Route
             path="/raci"
             element={
-              <RaciMatrixPage
-                initiatives={board.initiatives}
-                users={board.meta.users}
-                readOnly={!perms.canEditStructure}
-                onOpen={(i) => setSelected(i)}
-                onChanged={() => board.refresh()}
-              />
+              <ViewRoute user={user} path="/raci" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <RaciMatrixPage
+                  initiatives={board.initiatives}
+                  users={board.meta.users}
+                  readOnly={!perms.canEditStructure}
+                  onOpen={(i) => setSelected(i)}
+                  onChanged={() => board.refresh()}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/status-kanban"
             element={
-              <StatusKanbanPage
-                initiatives={board.initiatives}
-                onOpen={(i) => setSelected(i)}
-                onMove={async (initiative, nextStatus) => {
-                  await api.updateInitiative(initiative.id, { status: nextStatus });
-                  await board.refresh();
-                }}
-              />
+              <ViewRoute user={user} path="/status-kanban" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <StatusKanbanPage
+                  initiatives={board.initiatives}
+                  onOpen={(i) => setSelected(i)}
+                  onMove={async (initiative, nextStatus) => {
+                    await api.updateInitiative(initiative.id, { status: nextStatus });
+                    await board.refresh();
+                  }}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/accountability"
             element={
-              <PeopleKanbanPage
-                initiatives={board.initiatives}
-                users={board.meta.users}
-                onOpen={(i) => setSelected(i)}
-                onReassignAccountable={async (initiative, userId) => {
-                  const oldAccountable = initiative.assignments.find((a) => a.role === "ACCOUNTABLE");
-                  if (oldAccountable) {
-                    await api.removeAssignment({
-                      initiativeId: initiative.id,
-                      userId: oldAccountable.userId,
-                      role: "ACCOUNTABLE"
-                    });
-                  }
-                  if (userId) {
-                    await api.addAssignment({
-                      initiativeId: initiative.id,
-                      userId,
-                      role: "ACCOUNTABLE"
-                    });
-                  }
-                  await board.refresh();
-                }}
-              />
+              <ViewRoute user={user} path="/accountability" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <PeopleKanbanPage
+                  initiatives={board.initiatives}
+                  users={board.meta.users}
+                  onOpen={(i) => setSelected(i)}
+                  onReassignAccountable={async (initiative, userId) => {
+                    const oldAccountable = initiative.assignments.find((a) => a.role === "ACCOUNTABLE");
+                    if (oldAccountable) {
+                      await api.removeAssignment({
+                        initiativeId: initiative.id,
+                        userId: oldAccountable.userId,
+                        role: "ACCOUNTABLE"
+                      });
+                    }
+                    if (userId) {
+                      await api.addAssignment({
+                        initiativeId: initiative.id,
+                        userId,
+                        role: "ACCOUNTABLE"
+                      });
+                    }
+                    await board.refresh();
+                  }}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/kpi-dashboard"
             element={
-              <KpiDashboardPage
-                domains={board.meta.domains}
-                users={board.meta.users}
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-              />
+              <ViewRoute user={user} path="/kpi-dashboard" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <KpiDashboardPage
+                  domains={board.meta.domains}
+                  users={board.meta.users}
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                />
+              </ViewRoute>
             }
           />
-          <Route path="/heatmap" element={<HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />} />
-          <Route path="/buyer-user" element={<BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
-          <Route path="/gaps" element={<GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
+          <Route
+            path="/heatmap"
+            element={
+              <ViewRoute user={user} path="/heatmap" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />
+              </ViewRoute>
+            }
+          />
+          <Route
+            path="/buyer-user"
+            element={
+              <ViewRoute user={user} path="/buyer-user" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+              </ViewRoute>
+            }
+          />
+          <Route
+            path="/gaps"
+            element={
+              <ViewRoute user={user} path="/gaps" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+              </ViewRoute>
+            }
+          />
           <Route
             path="/product-explorer"
             element={
-              <ProductExplorerPage
-                isAdmin={perms.canEditStructure}
-                currentUserId={user?.id ?? null}
-                onOpenInitiative={(i) => setSelected(i)}
-                onRefreshBoard={board.refresh}
-                quickFilter={board.filters.quick}
-              />
+              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <ProductExplorerPage
+                  isAdmin={perms.canEditStructure}
+                  currentUserId={user?.id ?? null}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  onRefreshBoard={board.refresh}
+                  quickFilter={board.filters.quick}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/accounts"
-            element={<AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />}
+            element={
+              <ViewRoute user={user} path="/accounts" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />
+              </ViewRoute>
+            }
           />
           <Route
             path="/demands"
             element={
-              <DemandsPage
-                isAdmin={perms.canEditStructure}
-                accounts={board.meta.accounts}
-                partners={board.meta.partners}
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-                quickFilter={board.filters.quick}
-              />
+              <ViewRoute user={user} path="/demands" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <DemandsPage
+                  isAdmin={perms.canEditStructure}
+                  accounts={board.meta.accounts}
+                  partners={board.meta.partners}
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  quickFilter={board.filters.quick}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/partners"
-            element={<PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />}
+            element={
+              <ViewRoute user={user} path="/partners" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />
+              </ViewRoute>
+            }
           />
           <Route
             path="/campaigns"
             element={
-              <CampaignsPage
-                isAdmin={perms.canEditMarketing}
-                users={board.meta.users}
-                accounts={board.meta.accounts}
-                partners={board.meta.partners}
-                personas={board.meta.personas}
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-                quickFilter={board.filters.quick}
-              />
+              <ViewRoute user={user} path="/campaigns" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <CampaignsPage
+                  isAdmin={perms.canEditMarketing}
+                  users={board.meta.users}
+                  accounts={board.meta.accounts}
+                  partners={board.meta.partners}
+                  personas={board.meta.personas}
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  quickFilter={board.filters.quick}
+                />
+              </ViewRoute>
             }
           />
           <Route
             path="/milestones"
             element={
-              <MilestonesTimelinePage
-                domains={board.meta.domains}
-                users={board.meta.users}
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-                onArchiveInitiative={() => board.refresh()}
-                readOnly={!perms.canEditStructure}
-              />
+              <ViewRoute user={user} path="/milestones" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <MilestonesTimelinePage
+                  domains={board.meta.domains}
+                  users={board.meta.users}
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  onArchiveInitiative={() => board.refresh()}
+                  readOnly={!perms.canEditStructure}
+                />
+              </ViewRoute>
             }
           />
-          <Route path="/calendar" element={<CalendarPage quickFilter={board.filters.quick} />} />
-          <Route path="/gantt" element={<GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />} />
+          <Route
+            path="/calendar"
+            element={
+              <ViewRoute user={user} path="/calendar" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <CalendarPage quickFilter={board.filters.quick} />
+              </ViewRoute>
+            }
+          />
+          <Route
+            path="/gantt"
+            element={
+              <ViewRoute user={user} path="/gantt" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+              </ViewRoute>
+            }
+          />
           <Route
             path="/features/:featureId"
             element={
@@ -387,16 +459,18 @@ function App() {
           <Route
             path="/requirements/kanban"
             element={
-              <RequirementsKanbanPage
-                initiatives={board.initiatives}
-                onMoveRequirement={async (id, isDone) => {
-                  await api.updateRequirement(id, {
-                    isDone,
-                    status: isDone ? "DONE" : "NOT_STARTED"
-                  });
-                  await board.refresh();
-                }}
-              />
+              <ViewRoute user={user} path="/requirements/kanban" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <RequirementsKanbanPage
+                  initiatives={board.initiatives}
+                  onMoveRequirement={async (id, isDone) => {
+                    await api.updateRequirement(id, {
+                      isDone,
+                      status: isDone ? "DONE" : "NOT_STARTED"
+                    });
+                    await board.refresh();
+                  }}
+                />
+              </ViewRoute>
             }
           />
           <Route
@@ -411,7 +485,19 @@ function App() {
             }
           />
           {perms.canManageUsers && (
-            <Route path="/admin" element={<AdminPage currentUser={user} quickFilter={board.filters.quick} onMetaChanged={() => board.refresh()} />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminPage
+                  currentUser={user}
+                  quickFilter={board.filters.quick}
+                  onMetaChanged={() => {
+                    void board.refresh();
+                    void uiSettings.refresh();
+                  }}
+                />
+              }
+            />
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
