@@ -12,10 +12,9 @@ type Props = {
   partners: Partner[];
   initiatives: Initiative[];
   onOpenInitiative?: (initiative: Initiative) => void;
-  quickFilter?: string;
 };
 
-export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenInitiative, quickFilter }: Props) {
+export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenInitiative }: Props) {
   const { t } = useTranslation();
   const [demands, setDemands] = useState<Demand[]>([]);
   const [title, setTitle] = useState("");
@@ -31,22 +30,6 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
-
-  const filteredDemands = useMemo(() => {
-    const q = quickFilter?.trim().toLowerCase();
-    if (!q) return demands;
-    return demands.filter((d) => {
-      const hay = [
-        d.title,
-        d.sourceType,
-        d.status,
-        d.account?.name ?? "",
-        d.partner?.name ?? "",
-        ...d.demandLinks.map((l) => l.initiative?.title ?? "")
-      ].join(" ").toLowerCase();
-      return hay.includes(q);
-    });
-  }, [quickFilter, demands]);
 
   const sourceSelector = useMemo(() => {
     if (sourceType === "ACCOUNT") {
@@ -177,7 +160,7 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
             </tr>
           </thead>
           <tbody>
-            {filteredDemands.map((d) => (
+            {demands.map((d) => (
               <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
                 <td className="px-2 py-2 font-medium">{d.title}</td>
                 <td className="px-2 py-2 text-xs text-slate-500">

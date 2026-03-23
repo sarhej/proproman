@@ -35,6 +35,7 @@ import { FeatureDetailPage } from "./pages/FeatureDetailPage";
 import { RequirementDetailPage } from "./pages/RequirementDetailPage";
 import { ExecutionBoardPage } from "./pages/ExecutionBoardPage";
 import { BoardSettingsPage } from "./pages/BoardSettingsPage";
+import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
 import type { Initiative, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
 
@@ -59,7 +60,11 @@ function App() {
     location.pathname.startsWith("/features/") ||
     location.pathname.startsWith("/requirements/") ||
     location.pathname.includes("/execution-board") ||
-    location.pathname.includes("/board-settings");
+    location.pathname.includes("/board-settings") ||
+    location.pathname === "/partners" ||
+    location.pathname === "/buyer-user" ||
+    location.pathname === "/accounts" ||
+    location.pathname === "/demands";
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,
@@ -368,7 +373,7 @@ function App() {
             path="/accounts"
             element={
               <ViewRoute user={user} path="/accounts" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />
+                <AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />
               </ViewRoute>
             }
           />
@@ -382,7 +387,6 @@ function App() {
                   partners={board.meta.partners}
                   initiatives={board.initiatives}
                   onOpenInitiative={(i) => setSelected(i)}
-                  quickFilter={board.filters.quick}
                 />
               </ViewRoute>
             }
@@ -391,7 +395,7 @@ function App() {
             path="/partners"
             element={
               <ViewRoute user={user} path="/partners" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} quickFilter={board.filters.quick} />
+                <PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />
               </ViewRoute>
             }
           />
@@ -465,7 +469,20 @@ function App() {
               />
             }
           />
-          <Route path="/requirements/kanban" element={<Navigate to="/product-explorer" replace />} />
+          <Route
+            path="/requirements/kanban"
+            element={
+              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <RequirementsKanbanPage
+                  initiatives={board.initiatives}
+                  onMoveRequirement={async (id, isDone) => {
+                    await api.updateRequirement(id, { isDone, status: isDone ? "DONE" : "NOT_STARTED" });
+                    await board.refresh();
+                  }}
+                />
+              </ViewRoute>
+            }
+          />
           <Route
             path="/products/:productId/execution-board"
             element={
