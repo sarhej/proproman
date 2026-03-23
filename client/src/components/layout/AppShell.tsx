@@ -88,8 +88,9 @@ function NavContent({
         <Link
           to="/?new=1"
           onClick={onNavigate}
-          className="mt-3 block rounded-md bg-sky-600 px-3 py-2 text-center text-sm text-white hover:bg-sky-700"
+          className="mt-3 flex items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-2 text-center text-sm text-white hover:bg-sky-700"
         >
+          <Plus size={14} />
           {t("nav.newInitiative")}
         </Link>
       )}
