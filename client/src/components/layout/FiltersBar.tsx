@@ -45,9 +45,13 @@ export function FiltersBar({ domains, users, labelSuggestions = [], filters, onC
           />
           {t("filters.searchInAllFields")}
         </label>
-        <div className="mt-3">
-          <Label>{t("filters.labels")}</Label>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {t("filters.labels")}
+          </span>
           <LabelEditor
+            compact
+            className="min-w-0 flex-1"
             labels={filters.labels ?? []}
             suggestions={labelSuggestions}
             placeholder={t("filters.labelsPlaceholder")}
@@ -120,29 +124,35 @@ export function FiltersBar({ domains, users, labelSuggestions = [], filters, onC
                 onChange={(e) => onChange({ quick: e.target.value || undefined })}
               />
             </div>
-            <label className="flex shrink-0 items-center gap-2 pb-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={filters.archived === true}
-                onChange={(e) => onChange({ archived: e.target.checked || undefined })}
-                className="rounded border-slate-300"
-              />
-              {t("filters.showArchived")}
-            </label>
+            <div className="flex shrink-0 flex-col gap-1.5 pb-0.5">
+              <label className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={filters.archived === true}
+                  onChange={(e) => onChange({ archived: e.target.checked || undefined })}
+                  className="rounded border-slate-300"
+                />
+                {t("filters.showArchived")}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={filters.searchInAllFields === true}
+                  onChange={(e) => onChange({ searchInAllFields: e.target.checked ? true : undefined })}
+                  className="rounded border-slate-300"
+                />
+                {t("filters.searchInAllFields")}
+              </label>
+            </div>
           </div>
-          <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={filters.searchInAllFields === true}
-              onChange={(e) => onChange({ searchInAllFields: e.target.checked ? true : undefined })}
-              className="rounded border-slate-300"
-            />
-            {t("filters.searchInAllFields")}
-          </label>
         </div>
-        <div className="col-span-6">
-          <Label>{t("filters.labels")}</Label>
+        <div className="col-span-6 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {t("filters.labels")}
+          </span>
           <LabelEditor
+            compact
+            className="min-w-0 flex-1"
             labels={filters.labels ?? []}
             suggestions={labelSuggestions}
             placeholder={t("filters.labelsPlaceholder")}
