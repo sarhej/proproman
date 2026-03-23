@@ -104,7 +104,7 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
       ) : null}
       {/* Mobile card view */}
       <div className="grid gap-3 lg:hidden">
-        {filteredDemands.map((d) => {
+        {demands.map((d) => {
           const sourceName =
             d.sourceType === "ACCOUNT" && d.account ? d.account.name :
             d.sourceType === "PARTNER" && d.partner ? d.partner.name :
