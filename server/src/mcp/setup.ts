@@ -5,11 +5,48 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import { prisma } from "../db.js";
 import { env } from "../env.js";
+import { runWithTenant, type TenantContext } from "../tenant/tenantContext.js";
 import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
 import { registerTools } from "./tools.js";
 
 const provider = new TymioOAuthProvider();
+
+async function resolveMcpTenantContext(req: Request): Promise<TenantContext | undefined> {
+  const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+  if (!bearer) return undefined;
+
+  const authInfo = await provider.verifyAccessToken(bearer);
+  const userId = authInfo.extra?.userId;
+  if (typeof userId !== "string") return undefined;
+
+  const explicitTenantIdHeader = req.headers["x-tenant-id"];
+  const explicitTenantId = typeof explicitTenantIdHeader === "string" ? explicitTenantIdHeader : undefined;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { activeTenantId: true },
+  });
+  const tenantId = explicitTenantId ?? user?.activeTenantId ?? undefined;
+  if (!tenantId) return undefined;
+
+  const membership = await prisma.tenantMembership.findUnique({
+    where: { tenantId_userId: { tenantId, userId } },
+    include: {
+      tenant: {
+        select: { id: true, slug: true, schemaName: true, status: true },
+      },
+    },
+  });
+  if (!membership || membership.tenant.status !== "ACTIVE") return undefined;
+
+  return {
+    tenantId: membership.tenant.id,
+    tenantSlug: membership.tenant.slug,
+    schemaName: membership.tenant.schemaName,
+    membershipRole: membership.role,
+  };
+}
 
 function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -86,35 +123,46 @@ export function mountMcp(app: express.Express): void {
   // MCP Streamable HTTP endpoint
   app.all("/mcp", bearerAuth, async (req: Request, res: Response) => {
     try {
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+      const handleTransportRequest = async () => {
+        const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-      if (sessionId && transports.has(sessionId)) {
-        const transport = transports.get(sessionId)!;
+        if (sessionId && transports.has(sessionId)) {
+          const transport = transports.get(sessionId)!;
+          await transport.handleRequest(req, res, req.body);
+          return;
+        }
+
+        if (sessionId && !transports.has(sessionId)) {
+          res.status(404).json({ error: "Session not found" });
+          return;
+        }
+
+        // New session: create transport, connect server, then handle the request.
+        // The session ID is generated inside handleRequest, so we store after.
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID()
+        });
+
+        const server = createMcpServer();
+        await server.connect(transport);
         await transport.handleRequest(req, res, req.body);
+
+        if (transport.sessionId) {
+          transports.set(transport.sessionId, transport);
+          transport.onclose = () => {
+            transports.delete(transport.sessionId!);
+          };
+        }
+      };
+
+      const tenantContext = await resolveMcpTenantContext(req);
+      if (tenantContext) {
+        req.tenantContext = tenantContext;
+        await runWithTenant(tenantContext, handleTransportRequest);
         return;
       }
 
-      if (sessionId && !transports.has(sessionId)) {
-        res.status(404).json({ error: "Session not found" });
-        return;
-      }
-
-      // New session: create transport, connect server, then handle the request.
-      // The session ID is generated inside handleRequest, so we store after.
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID()
-      });
-
-      const server = createMcpServer();
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-
-      if (transport.sessionId) {
-        transports.set(transport.sessionId, transport);
-        transport.onclose = () => {
-          transports.delete(transport.sessionId!);
-        };
-      }
+      await handleTransportRequest();
     } catch (err) {
       console.error("MCP request error:", err);
       if (err instanceof Error && err.stack) console.error(err.stack);

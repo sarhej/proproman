@@ -45,12 +45,18 @@ import { uiSettingsRouter } from "./routes/ui-settings.js";
 import { agentGuideRouter } from "./routes/agent-guide.js";
 import { prisma } from "./db.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
+import { requireAuth } from "./middleware/auth.js";
 import { mountMcp } from "./mcp/setup.js";
+import { requireTenant } from "./tenant/requireTenant.js";
+import { tenantResolver } from "./tenant/tenantResolver.js";
+import { tenantsRouter } from "./routes/tenants.js";
+import { tenantRequestsRouter } from "./routes/tenant-requests.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDist = path.resolve(__dirname, "../../../client/dist");
+const adminDist = path.resolve(__dirname, "../../../admin/dist");
 
 const PgStore = connectPgSimple(session);
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -108,47 +114,72 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(apiKeyAuth);
+app.use(tenantResolver);
 
-mountMcp(app);
-
+// Public routes (no auth required) — mounted before MCP OAuth middleware
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
+app.use("/api/tenant-requests", tenantRequestsRouter);
+
+app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug },
+      select: { name: true, slug: true, status: true },
+    });
+    if (!tenant || tenant.status !== "ACTIVE") {
+      res.status(404).json({ error: "Workspace not found." });
+      return;
+    }
+    res.json({ name: tenant.name, slug: tenant.slug });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+mountMcp(app);
+
+function mountTenantScoped(path: string, router: express.Router): void {
+  app.use(path, requireAuth, requireTenant, router);
+}
 
 app.use("/api/auth", authRouter);
-app.use("/api/meta", metaRouter);
-app.use("/api/initiatives", initiativesRouter);
-app.use("/api/features", featuresRouter);
-app.use("/api/decisions", decisionsRouter);
-app.use("/api/risks", risksRouter);
-app.use("/api/dependencies", dependenciesRouter);
-app.use("/api/products", productsRouter);
-app.use("/api", executionBoardsRouter);
-app.use("/api/accounts", accountsRouter);
-app.use("/api/partners", partnersRouter);
-app.use("/api/demands", demandsRouter);
-app.use("/api/requirements", requirementsRouter);
-app.use("/api/assignments", assignmentsRouter);
-app.use("/api/timeline", timelineRouter);
-app.use("/api/campaigns", campaignsRouter);
-app.use("/api/assets", assetsRouter);
-app.use("/api/campaign-links", campaignLinksRouter);
+mountTenantScoped("/api/meta", metaRouter);
+mountTenantScoped("/api/initiatives", initiativesRouter);
+mountTenantScoped("/api/features", featuresRouter);
+mountTenantScoped("/api/decisions", decisionsRouter);
+mountTenantScoped("/api/risks", risksRouter);
+mountTenantScoped("/api/dependencies", dependenciesRouter);
+mountTenantScoped("/api/products", productsRouter);
+mountTenantScoped("/api", executionBoardsRouter);
+mountTenantScoped("/api/accounts", accountsRouter);
+mountTenantScoped("/api/partners", partnersRouter);
+mountTenantScoped("/api/demands", demandsRouter);
+mountTenantScoped("/api/requirements", requirementsRouter);
+mountTenantScoped("/api/assignments", assignmentsRouter);
+mountTenantScoped("/api/timeline", timelineRouter);
+mountTenantScoped("/api/campaigns", campaignsRouter);
+mountTenantScoped("/api/assets", assetsRouter);
+mountTenantScoped("/api/campaign-links", campaignLinksRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/admin", importExportRouter);
-app.use("/api/domains", domainsRouter);
-app.use("/api/personas", personasRouter);
-app.use("/api/revenue-streams", revenueStreamsRouter);
-app.use("/api/milestones", milestonesRouter);
-app.use("/api/kpis", kpisRouter);
-app.use("/api/stakeholders", stakeholdersRouter);
-app.use("/api/messages", messagesRouter);
-app.use("/api/notification-subscriptions", notificationSubscriptionsRouter);
+app.use("/api/tenants", tenantsRouter);
+mountTenantScoped("/api/domains", domainsRouter);
+mountTenantScoped("/api/personas", personasRouter);
+mountTenantScoped("/api/revenue-streams", revenueStreamsRouter);
+mountTenantScoped("/api/milestones", milestonesRouter);
+mountTenantScoped("/api/kpis", kpisRouter);
+mountTenantScoped("/api/stakeholders", stakeholdersRouter);
+mountTenantScoped("/api/messages", messagesRouter);
+mountTenantScoped("/api/notification-subscriptions", notificationSubscriptionsRouter);
 app.use("/api/me", meRouter);
 app.use("/api/ontology", ontologyRouter);
 app.use("/api/ui-settings", uiSettingsRouter);
 app.use("/api/agent", agentGuideRouter);
 
-app.get("/api/export/initiatives.csv", async (_req, res) => {
+app.get("/api/export/initiatives.csv", requireAuth, requireTenant, async (_req, res) => {
   const initiatives = await prisma.initiative.findMany({
     include: {
       domain: true,
@@ -179,6 +210,11 @@ app.get("/api/export/initiatives.csv", async (_req, res) => {
 });
 
 if (env.NODE_ENV === "production") {
+  app.use("/admin", express.static(adminDist));
+  app.get("/admin/*", (_req, res) => {
+    res.sendFile(path.join(adminDist, "index.html"));
+  });
+
   app.use(express.static(clientDist));
   app.get("*", (_req, res) => {
     res.sendFile(path.join(clientDist, "index.html"));

@@ -47,7 +47,44 @@ export type User = {
   isActive?: boolean;
   lastLoginAt?: string | null;
   googleId?: string | null;
+  activeTenantId?: string | null;
   emails?: UserEmail[];
+};
+
+export type TenantStatus = "PROVISIONING" | "ACTIVE" | "SUSPENDED" | "DEPROVISIONING";
+export type MembershipRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+
+export type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+  status: TenantStatus;
+};
+
+export type TenantMembership = {
+  id: string;
+  tenantId: string;
+  userId: string;
+  role: MembershipRole;
+  tenant: Tenant;
+};
+
+export type TenantRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type TenantRequest = {
+  id: string;
+  teamName: string;
+  slug: string;
+  contactEmail: string;
+  contactName: string;
+  message?: string | null;
+  status: TenantRequestStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewNote?: string | null;
+  tenantId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 /** Normalize role to a string code (handles both legacy string role and future { code } shape). */

@@ -7,12 +7,35 @@ import { env } from "../env.js";
 
 export const authRouter = Router();
 
+async function autoSwitchToSlug(userId: string, slug: string, req: import("express").Request): Promise<void> {
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug },
+    select: { id: true, status: true },
+  });
+  if (!tenant || tenant.status !== "ACTIVE") return;
+
+  const membership = await prisma.tenantMembership.findUnique({
+    where: { tenantId_userId: { tenantId: tenant.id, userId } },
+  });
+  if (!membership) return;
+
+  await prisma.user.update({ where: { id: userId }, data: { activeTenantId: tenant.id } });
+  req.session.activeTenantId = tenant.id;
+}
+
 authRouter.get("/google", (req, res, next) => {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_CALLBACK_URL) {
     res.status(503).json({ error: "Google OAuth is not configured." });
     return;
   }
-  // prompt=select_account forces Google to show the account picker every time (e.g. after logout)
+  const tenantSlug = typeof req.query.tenantSlug === "string" ? req.query.tenantSlug : undefined;
+  if (tenantSlug) {
+    req.session.pendingTenantSlug = tenantSlug;
+    req.session.save(() => {
+      passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
+    });
+    return;
+  }
   passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
 });
 
@@ -36,22 +59,50 @@ authRouter.get("/google/callback", (req, res, next) => {
           const base = env.CLIENT_URL.replace(/\/$/, "");
           return res.redirect(`${base}/?error=login_failed`);
         }
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error("[auth] Session persist after login:", saveErr?.message ?? saveErr);
+
+        const pendingSlug = req.session.pendingTenantSlug;
+        delete req.session.pendingTenantSlug;
+
+        const finalize = () => {
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error("[auth] Session persist after login:", saveErr?.message ?? saveErr);
+              const base = env.CLIENT_URL.replace(/\/$/, "");
+              return res.redirect(`${base}/?error=login_failed`);
+            }
             const base = env.CLIENT_URL.replace(/\/$/, "");
-            return res.redirect(`${base}/?error=login_failed`);
-          }
-          console.log("[auth] Login OK redirecting", { userId: user.id, email: user.email, sessionId: req.sessionID?.slice(0, 8) });
-          res.redirect(env.CLIENT_URL);
-        });
+            const redirectPath = pendingSlug ? `/t/${pendingSlug}` : "";
+            console.log("[auth] Login OK redirecting", { userId: user.id, email: user.email, sessionId: req.sessionID?.slice(0, 8), pendingSlug });
+            res.redirect(`${base}${redirectPath}`);
+          });
+        };
+
+        if (pendingSlug) {
+          autoSwitchToSlug(user.id, pendingSlug, req)
+            .then(finalize)
+            .catch(() => finalize());
+        } else {
+          finalize();
+        }
       });
     }
   )(req, res, next);
 });
 
+authRouter.get("/dev-tenants", async (_req, res) => {
+  if (env.NODE_ENV === "production" || !env.ALLOW_DEV_AUTH) {
+    res.status(403).json({ error: "Dev login is disabled." });
+    return;
+  }
+  const tenants = await prisma.tenant.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, name: true, slug: true, status: true },
+    orderBy: { name: "asc" },
+  });
+  res.json({ tenants });
+});
+
 authRouter.post("/dev-login", async (req, res, next) => {
-  // Hard disable in production, regardless of env var
   if (env.NODE_ENV === "production") {
     res.status(403).json({ error: "Dev login is disabled in production." });
     return;
@@ -65,22 +116,46 @@ authRouter.post("/dev-login", async (req, res, next) => {
   try {
     const parsed = z
       .object({
-        role: z.nativeEnum(UserRole).optional()
+        role: z.nativeEnum(UserRole).optional(),
+        tenantId: z.string().min(1).optional(),
+        tenantSlug: z.string().min(1).optional(),
       })
       .safeParse(req.body ?? {});
     const role = parsed.success ? parsed.data.role ?? env.DEV_AUTH_ROLE : env.DEV_AUTH_ROLE;
+
+    let tenantId = parsed.success ? parsed.data.tenantId : undefined;
+    if (!tenantId && parsed.success && parsed.data.tenantSlug) {
+      const bySlug = await prisma.tenant.findUnique({
+        where: { slug: parsed.data.tenantSlug },
+        select: { id: true, status: true },
+      });
+      if (bySlug && bySlug.status === "ACTIVE") tenantId = bySlug.id;
+    }
+
     const user = await prisma.user.upsert({
       where: { email: env.DEV_AUTH_EMAIL },
       create: {
         email: env.DEV_AUTH_EMAIL,
         name: env.DEV_AUTH_NAME,
-        role
+        role,
+        activeTenantId: tenantId ?? null,
       },
       update: {
         name: env.DEV_AUTH_NAME,
-        role
-      }
+        role,
+        ...(tenantId ? { activeTenantId: tenantId } : {}),
+      },
     });
+
+    if (tenantId) {
+      await prisma.tenantMembership.upsert({
+        where: { tenantId_userId: { tenantId, userId: user.id } },
+        create: { tenantId, userId: user.id, role: "ADMIN" },
+        update: {},
+      });
+      req.session.activeTenantId = tenantId;
+    }
+
     req.login(user, (err) => {
       if (err) {
         next(err);
@@ -93,7 +168,7 @@ authRouter.post("/dev-login", async (req, res, next) => {
   }
 });
 
-authRouter.get("/me", (req, res) => {
+authRouter.get("/me", async (req, res) => {
   const hasSession = !!req.sessionID;
   const hasUser = !!req.user;
   if (!hasUser) {
@@ -101,7 +176,15 @@ authRouter.get("/me", (req, res) => {
     res.status(401).json({ user: null });
     return;
   }
-  res.json({ user: req.user });
+  const activeTenantId = req.tenantContext?.tenantId ?? req.user!.activeTenantId ?? null;
+  let activeTenant = null;
+  if (activeTenantId) {
+    activeTenant = await prisma.tenant.findUnique({
+      where: { id: activeTenantId },
+      select: { id: true, name: true, slug: true, status: true },
+    });
+  }
+  res.json({ user: req.user, activeTenant });
 });
 
 authRouter.post("/logout", (req, res, next) => {

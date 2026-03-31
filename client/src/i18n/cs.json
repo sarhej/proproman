@@ -747,5 +747,14 @@
     "product": { "created": "Produkt \"{{title}}\" byl vytvořen", "updated": "Produkt \"{{title}}\" byl upraven", "deleted": "Produkt \"{{title}}\" byl smazán" },
     "domain": { "created": "Pilíř \"{{title}}\" byl vytvořen", "updated": "Pilíř \"{{title}}\" byl upraven", "deleted": "Pilíř \"{{title}}\" byl smazán" },
     "default": "{{type}}: {{title}}"
+  },
+  "tenant": {
+    "loading": "Načítání pracovních prostorů...",
+    "selectWorkspace": "Vyberte pracovní prostor",
+    "selectWorkspaceDesc": "Máte přístup k více pracovním prostorům. Vyberte si jeden pro pokračování.",
+    "noWorkspaces": "Žádné pracovní prostory",
+    "noWorkspacesDesc": "Nejste členem žádného pracovního prostoru. Kontaktujte administrátora pro získání přístupu.",
+    "switching": "Přepínání...",
+    "workspaces": "Pracovní prostory"
   }
 }

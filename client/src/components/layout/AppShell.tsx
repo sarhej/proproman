@@ -4,8 +4,9 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { navSections } from "../../lib/navSections";
-import type { User, UserMessage, UserNotificationSubscription } from "../../types/models";
+import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
+import { TenantSwitcher } from "../tenant/TenantSwitcher";
 
 const LANGS = ["en", "cs", "sk", "uk"] as const;
 
@@ -15,6 +16,8 @@ type Props = {
   permissions: Permissions;
   /** Routes hidden for non–super-admins (from /api/ui-settings). */
   hiddenNavPaths: Set<string>;
+  activeTenant?: Tenant | null;
+  onTenantSwitch?: () => void;
   onNewInitiative?: () => void;
   onLogout: () => void;
   onExport: () => void;
@@ -198,7 +201,7 @@ function SubscriptionsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function AppShell({ user, children, permissions, hiddenNavPaths, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
+export function AppShell({ user, children, permissions, hiddenNavPaths, activeTenant, onTenantSwitch, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -284,6 +287,19 @@ export function AppShell({ user, children, permissions, hiddenNavPaths, onNewIni
                 <X size={18} className="text-slate-500" />
               </button>
             </div>
+            {activeTenant && (
+              <div className="mb-3 border-b border-slate-200 pb-3">
+                <TenantSwitcher
+                  activeTenant={activeTenant}
+                  onSwitch={() => {
+                    closeDrawer();
+                    onTenantSwitch?.();
+                    window.location.reload();
+                  }}
+                  compact
+                />
+              </div>
+            )}
             <NavContent
               permissions={permissions}
               hiddenNavPaths={hiddenNavPaths}
@@ -315,6 +331,17 @@ export function AppShell({ user, children, permissions, hiddenNavPaths, onNewIni
           <img src="/tymio-icon.svg" alt="Tymio" className="h-7 w-7 rounded lg:hidden" />
           <img src="/logo.svg" alt="Tymio" className="hidden lg:block h-7" />
           <span className="hidden lg:inline font-semibold text-slate-500">{t("app.brand")}</span>
+          {activeTenant && (
+            <div className="hidden lg:block">
+              <TenantSwitcher
+                activeTenant={activeTenant}
+                onSwitch={() => {
+                  onTenantSwitch?.();
+                  window.location.reload();
+                }}
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onNewInitiative ? (

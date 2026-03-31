@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY client/package.json client/
+COPY admin/package.json admin/
 COPY server/package.json server/
 COPY mcp/package.json mcp/
 
@@ -39,6 +40,8 @@ COPY --from=builder /app/server/scripts ./server/scripts
 COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/package.json ./client/package.json
+COPY --from=builder /app/admin/dist ./admin/dist
+COPY --from=builder /app/admin/package.json ./admin/package.json
 
 ENV NODE_ENV=production
 

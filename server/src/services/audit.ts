@@ -2,6 +2,7 @@ import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { processNotificationForAuditEntry } from "./notification-delivery.js";
+import { getTenantContext } from "../tenant/tenantContext.js";
 
 export async function logAudit(
   userId: string,
@@ -11,8 +12,10 @@ export async function logAudit(
   details?: object | null
 ): Promise<void> {
   try {
+    const tenantId = getTenantContext()?.tenantId ?? null;
     const entry = await prisma.auditEntry.create({
       data: {
+        tenantId,
         userId,
         action: action as AuditAction,
         entityType,

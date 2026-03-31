@@ -24,6 +24,9 @@ import type {
   RevenueStream,
   Requirement,
   Risk,
+  Tenant,
+  TenantMembership,
+  TenantRequest,
   User,
   UserEmail,
   UserMessage,
@@ -71,9 +74,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getMe: async () => request<{ user: User | null }>("/api/auth/me"),
-  devLogin: async (role?: UserRole) =>
-    request<{ user: User }>("/api/auth/dev-login", { method: "POST", body: JSON.stringify(role ? { role } : {}) }),
+  getMe: async () => request<{ user: User | null; activeTenant: Tenant | null }>("/api/auth/me"),
+  devLogin: async (role?: UserRole, tenantId?: string, tenantSlug?: string) =>
+    request<{ user: User }>("/api/auth/dev-login", {
+      method: "POST",
+      body: JSON.stringify({
+        ...(role ? { role } : {}),
+        ...(tenantId ? { tenantId } : {}),
+        ...(tenantSlug ? { tenantSlug } : {}),
+      }),
+    }),
+  getDevTenants: async () =>
+    request<{ tenants: Tenant[] }>("/api/auth/dev-tenants"),
   logout: async () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   getMeta: async () => request<MetaPayload>("/api/meta"),
   getMessages: async (unreadOnly?: boolean) =>
@@ -472,5 +484,61 @@ export const api = {
   },
   getUiSettings: async () => request<{ hiddenNavPaths: string[] }>("/api/ui-settings"),
   updateUiSettings: async (body: { hiddenNavPaths: string[] }) =>
-    request<{ hiddenNavPaths: string[] }>("/api/ui-settings", { method: "PUT", body: JSON.stringify(body) })
+    request<{ hiddenNavPaths: string[] }>("/api/ui-settings", { method: "PUT", body: JSON.stringify(body) }),
+
+  getMyTenants: async () =>
+    request<{ tenants: TenantMembership[]; activeTenantId: string | null }>("/api/me/tenants"),
+  switchTenant: async (tenantId: string) =>
+    request<{ ok: boolean; activeTenantId: string }>("/api/me/tenants/switch", {
+      method: "POST",
+      body: JSON.stringify({ tenantId }),
+    }),
+
+  // Tenant registration (public)
+  submitTenantRequest: async (body: {
+    teamName: string;
+    slug: string;
+    contactEmail: string;
+    contactName: string;
+    message?: string;
+  }) =>
+    request<TenantRequest>("/api/tenant-requests", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getTenantRequestStatus: async (id: string) =>
+    request<{ id: string; teamName: string; status: string; createdAt: string; reviewNote: string | null }>(
+      `/api/tenant-requests/status/${id}`
+    ),
+
+  // Tenant admin (SUPER_ADMIN)
+  getTenantRequests: async (status?: string) =>
+    request<{ requests: TenantRequest[] }>(
+      `/api/tenant-requests${status ? `?status=${status}` : ""}`
+    ),
+  getTenantRequestDetail: async (id: string) =>
+    request<TenantRequest>(`/api/tenant-requests/${id}`),
+  reviewTenantRequest: async (id: string, body: { action: "approve" | "reject"; reviewNote?: string }) =>
+    request<TenantRequest | { request: TenantRequest; tenant: Tenant }>(
+      `/api/tenant-requests/${id}/review`,
+      { method: "POST", body: JSON.stringify(body) }
+    ),
+
+  // Tenant admin (SUPER_ADMIN) - existing wrappers
+  getAdminTenants: async () =>
+    request<Tenant[]>("/api/tenants"),
+  getAdminTenant: async (id: string) =>
+    request<Tenant & { memberships: Array<{ id: string; userId: string; role: string; user: { id: string; email: string; name: string; avatarUrl?: string | null } }>; domains: unknown[]; migrationState: unknown }>(
+      `/api/tenants/${id}`
+    ),
+  updateAdminTenant: async (id: string, body: { name?: string; status?: string }) =>
+    request<Tenant>(`/api/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  addTenantMember: async (tenantId: string, body: { userId: string; role?: string }) =>
+    request<unknown>(`/api/tenants/${tenantId}/members`, { method: "POST", body: JSON.stringify(body) }),
+  removeTenantMember: async (tenantId: string, userId: string) =>
+    request<{ ok: boolean }>(`/api/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }),
+
+  // Public tenant slug resolution
+  getTenantBySlug: async (slug: string) =>
+    request<{ name: string; slug: string }>(`/api/tenants/by-slug/${encodeURIComponent(slug)}/public`),
 };

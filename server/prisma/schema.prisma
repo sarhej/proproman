@@ -244,6 +244,109 @@ enum StakeholderType {
   EXTERNAL
 }
 
+// ---------------------------------------------------------------------------
+// Multitenancy – control-plane models
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  DEPROVISIONING
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Tenant {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  schemaName    String         @unique
+  status        TenantStatus   @default(PROVISIONING)
+  settings      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  memberships   TenantMembership[]
+  domains       TenantDomain[]
+  migrationState TenantMigrationState?
+
+  @@index([slug])
+}
+
+model TenantDomain {
+  id        String   @id @default(cuid())
+  tenantId  String
+  domain    String   @unique
+  isPrimary Boolean  @default(false)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([domain])
+}
+
+model TenantMembership {
+  id        String         @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      MembershipRole @default(MEMBER)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+enum TenantRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TenantRequest {
+  id             String              @id @default(cuid())
+  teamName       String
+  slug           String              @unique
+  contactEmail   String
+  contactName    String
+  message        String?
+  status         TenantRequestStatus @default(PENDING)
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  tenantId       String?             @unique
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([status])
+  @@index([contactEmail])
+}
+
+model TenantMigrationState {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  schemaVersion   Int      @default(0)
+  lastMigratedAt  DateTime?
+  status          String   @default("pending")
+  errorLog        String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Global identity (control plane)
+// ---------------------------------------------------------------------------
+
 model User {
   id               String       @id @default(cuid())
   email            String       @unique
@@ -253,7 +356,9 @@ model User {
   isActive         Boolean      @default(true)
   lastLoginAt      DateTime?
   googleId         String?      @unique
+  activeTenantId   String?
   emails           UserEmail[]
+  memberships      TenantMembership[]
   initiatives      Initiative[] @relation("InitiativeOwner")
   features         Feature[]    @relation("FeatureOwner")
   risks            Risk[]       @relation("RiskOwner")
@@ -276,6 +381,7 @@ model User {
 
 model UserMessage {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String?
@@ -315,7 +421,8 @@ model UserEmail {
 
 model Product {
   id          String            @id @default(cuid())
-  name        String            @unique
+  tenantId    String?
+  name        String
   description String?
   sortOrder   Int               @default(0)
   itemType    TopLevelItemType  @default(PRODUCT)
@@ -323,10 +430,14 @@ model Product {
   executionBoards ExecutionBoard[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model ExecutionBoard {
   id           String          @id @default(cuid())
+  tenantId     String?
   productId    String
   name         String
   provider     BoardProvider   @default(INTERNAL)
@@ -339,11 +450,13 @@ model ExecutionBoard {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  @@index([tenantId])
   @@index([productId])
 }
 
 model ExecutionColumn {
   id            String        @id @default(cuid())
+  tenantId      String?
   boardId       String
   name          String
   sortOrder     Int           @default(0)
@@ -355,15 +468,20 @@ model ExecutionColumn {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  @@index([tenantId])
   @@index([boardId])
 }
 
 model Domain {
   id          String       @id @default(cuid())
-  name        String       @unique
+  tenantId    String?
+  name        String
   color       String
   sortOrder   Int
   initiatives Initiative[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 enum PersonaCategory {
@@ -374,22 +492,31 @@ enum PersonaCategory {
 
 model Persona {
   id       String                    @id @default(cuid())
-  name     String                    @unique
+  tenantId String?
+  name     String
   icon     String?
   category PersonaCategory           @default(NONE)
   impacts  InitiativePersonaImpact[]
   assets   Asset[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model RevenueStream {
-  id      String                    @id @default(cuid())
-  name    String                    @unique
-  color   String
-  weights InitiativeRevenueStream[]
+  id       String                    @id @default(cuid())
+  tenantId String?
+  name     String
+  color    String
+  weights  InitiativeRevenueStream[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model Initiative {
   id             String                    @id @default(cuid())
+  tenantId       String?
   productId      String?
   title          String
   description    String?
@@ -433,10 +560,13 @@ model Initiative {
   successCriteriaItems SuccessCriterion[]
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+
+  @@index([tenantId])
 }
 
 model SuccessCriterion {
   id           String     @id @default(cuid())
+  tenantId     String?
   initiativeId String
   title        String
   sortOrder    Int        @default(0)
@@ -444,17 +574,22 @@ model SuccessCriterion {
   initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([tenantId])
   @@index([initiativeId])
 }
 
 model InitiativeComment {
   id           String     @id @default(cuid())
+  tenantId     String?
   initiativeId String
   userId       String
   text         String
   createdAt    DateTime   @default(now())
   initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([initiativeId])
   @@index([userId])
 }
@@ -481,6 +616,7 @@ model InitiativeRevenueStream {
 
 model Feature {
   id                 String         @id @default(cuid())
+  tenantId           String?
   title              String
   description        String?
   acceptanceCriteria String?
@@ -502,10 +638,13 @@ model Feature {
   campaignLinks      CampaignLink[]
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
+
+  @@index([tenantId])
 }
 
 model Requirement {
   id                 String            @id @default(cuid())
+  tenantId           String?
   featureId          String
   title              String
   description        String?
@@ -529,6 +668,7 @@ model Requirement {
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
+  @@index([tenantId])
   @@index([assigneeId])
   @@index([executionColumnId])
   @@index([executionColumnId, executionSortOrder])
@@ -536,6 +676,7 @@ model Requirement {
 
 model Decision {
   id           String     @id @default(cuid())
+  tenantId     String?
   title        String
   rationale    String?
   impactedTeams String?
@@ -543,10 +684,13 @@ model Decision {
   decidedAt    DateTime?
   initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@index([tenantId])
 }
 
 model Risk {
   id           String     @id @default(cuid())
+  tenantId     String?
   title        String
   probability  RiskLevel
   impact       RiskLevel
@@ -556,6 +700,8 @@ model Risk {
   owner        User?      @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@index([tenantId])
 }
 
 model Dependency {
@@ -570,6 +716,7 @@ model Dependency {
 
 model Account {
   id            String        @id @default(cuid())
+  tenantId      String?
   name          String
   type          AccountType
   segment       String?
@@ -583,10 +730,13 @@ model Account {
   campaignLinks CampaignLink[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([tenantId])
 }
 
 model Partner {
   id            String   @id @default(cuid())
+  tenantId      String?
   name          String
   kind          String
   ownerId       String?
@@ -595,10 +745,13 @@ model Partner {
   campaignLinks CampaignLink[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model Demand {
   id            String           @id @default(cuid())
+  tenantId      String?
   title         String
   description   String?
   sourceType    DemandSourceType
@@ -613,22 +766,27 @@ model Demand {
   demandLinks   DemandLink[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+
+  @@index([tenantId])
 }
 
 model DemandLink {
   id            String     @id @default(cuid())
+  tenantId      String?
   demandId      String
   initiativeId  String?
   featureId     String?
   demand        Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
   initiative    Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   feature       Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@index([tenantId])
   @@index([demandId])
   @@index([initiativeId])
   @@index([featureId])
 }
 
 model InitiativeAssignment {
+  tenantId     String?
   initiativeId String
   userId       String
   role         AssignmentRole
@@ -637,10 +795,12 @@ model InitiativeAssignment {
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([initiativeId, userId, role])
+  @@index([tenantId])
 }
 
 model Campaign {
   id          String         @id @default(cuid())
+  tenantId    String?
   name        String
   description String?
   type        CampaignType
@@ -654,10 +814,13 @@ model Campaign {
   links       CampaignLink[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  @@index([tenantId])
 }
 
 model Asset {
   id          String      @id @default(cuid())
+  tenantId    String?
   campaignId  String
   name        String
   description String?
@@ -671,11 +834,14 @@ model Asset {
   persona     Persona?    @relation(fields: [personaId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([tenantId])
   @@index([campaignId])
 }
 
 model CampaignLink {
   id           String      @id @default(cuid())
+  tenantId     String?
   campaignId   String
   initiativeId String?
   featureId    String?
@@ -686,6 +852,7 @@ model CampaignLink {
   feature      Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
   account      Account?    @relation(fields: [accountId], references: [id], onDelete: Cascade)
   partner      Partner?    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  @@index([tenantId])
   @@index([campaignId])
   @@index([initiativeId])
   @@index([accountId])
@@ -694,6 +861,7 @@ model CampaignLink {
 
 model InitiativeMilestone {
   id           String          @id @default(cuid())
+  tenantId     String?
   initiativeId String
   title        String
   description  String?
@@ -706,11 +874,13 @@ model InitiativeMilestone {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  @@index([tenantId])
   @@index([initiativeId])
 }
 
 model InitiativeKPI {
   id           String     @id @default(cuid())
+  tenantId     String?
   initiativeId String
   title        String
   targetValue  String?
@@ -721,11 +891,13 @@ model InitiativeKPI {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  @@index([tenantId])
   @@index([initiativeId])
 }
 
 model Stakeholder {
   id           String          @id @default(cuid())
+  tenantId     String?
   initiativeId String
   name         String
   role         StakeholderRole
@@ -734,11 +906,13 @@ model Stakeholder {
   initiative   Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   createdAt    DateTime        @default(now())
 
+  @@index([tenantId])
   @@index([initiativeId])
 }
 
 model AuditEntry {
   id         String      @id @default(cuid())
+  tenantId   String?
   userId     String
   action     AuditAction
   entityType String
@@ -746,6 +920,7 @@ model AuditEntry {
   details    Json?
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime    @default(now())
+  @@index([tenantId])
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
@@ -753,6 +928,7 @@ model AuditEntry {
 
 model NotificationRule {
   id               String                   @id @default(cuid())
+  tenantId         String?
   action           AuditAction
   entityType       String
   eventKind        String?
@@ -763,11 +939,13 @@ model NotificationRule {
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 
+  @@index([tenantId])
   @@index([action, entityType, enabled])
 }
 
 model UserNotificationSubscription {
   id               String            @id @default(cuid())
+  tenantId         String?
   userId           String
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   action           AuditAction
@@ -783,6 +961,7 @@ model UserNotificationSubscription {
 
 model UserNotificationPreference {
   id                 String         @id @default(cuid())
+  tenantId           String?
   userId             String
   user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   channel            DeliveryChannel
@@ -797,6 +976,7 @@ model UserNotificationPreference {
 
 model NotificationDelivery {
   id             String                     @id @default(cuid())
+  tenantId       String?
   userMessageId  String?
   userMessage    UserMessage?               @relation(fields: [userMessageId], references: [id], onDelete: Cascade)
   userId         String

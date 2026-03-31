@@ -79,6 +79,8 @@ export const navSections: NavSection[] = [
   {
     labelKey: "nav.admin",
     adminOnly: true,
-    items: [{ to: "/admin", labelKey: "nav.usersActivity", icon: Settings }]
+    items: [
+      { to: "/admin", labelKey: "nav.usersActivity", icon: Settings }
+    ]
   }
 ];

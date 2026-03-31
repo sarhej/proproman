@@ -6,6 +6,7 @@
     "watchPatterns": [
       "/server/**",
       "/client/**",
+      "/admin/**",
       "/mcp/**",
       "/docs/**",
       "/Dockerfile",

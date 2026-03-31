@@ -26,8 +26,11 @@ import {
   StrategicTier,
   UserRole
 } from "@prisma/client";
+import { createTenantExtension } from "../src/tenant/tenantPrisma.js";
+import { runWithTenant, TenantContext } from "../src/tenant/tenantContext.js";
 
-const prisma = new PrismaClient();
+const basePrisma = new PrismaClient();
+const prisma = createTenantExtension(basePrisma);
 
 async function main() {
   // ─── Truncate (dependency order) ────────────────────────────────
@@ -56,7 +59,35 @@ async function main() {
   await prisma.persona.deleteMany();
   await prisma.revenueStream.deleteMany();
   await prisma.userEmail.deleteMany();
+  await prisma.tenantMembership.deleteMany();
+  await prisma.tenantMigrationState.deleteMany();
+  await prisma.tenantDomain.deleteMany();
+  await prisma.tenant.deleteMany();
   await prisma.user.deleteMany();
+
+  // ─── Default tenant ──────────────────────────────────────────────
+  const defaultTenant = await prisma.tenant.create({
+    data: {
+      name: "Demo Workspace",
+      slug: "demo",
+      schemaName: "tenant_demo",
+      status: "ACTIVE",
+      migrationState: { create: { schemaVersion: 1, status: "current", lastMigratedAt: new Date() } },
+    },
+  });
+  const TENANT_ID = defaultTenant.id;
+  const tenantCtx: TenantContext = {
+    tenantId: TENANT_ID,
+    tenantSlug: "demo",
+    schemaName: "tenant_demo",
+    membershipRole: "OWNER",
+  };
+
+  // Run all seed operations within the tenant context so tenantId is auto-injected
+  await runWithTenant(tenantCtx, () => seedTenantData(TENANT_ID));
+}
+
+async function seedTenantData(TENANT_ID: string) {
 
   // ─── Uživatelé ─────────────────────────────────────────────────
   const teamDefs: { name: string; email: string; aliases?: string[]; role: UserRole }[] = [
@@ -94,6 +125,11 @@ async function main() {
     for (const alias of def.aliases ?? []) {
       await prisma.userEmail.create({ data: { email: alias, userId: user.id, isPrimary: false } });
     }
+    const memberRole = def.role === UserRole.SUPER_ADMIN ? "OWNER" : def.role === UserRole.ADMIN ? "ADMIN" : "MEMBER";
+    await prisma.tenantMembership.create({
+      data: { tenantId: TENANT_ID, userId: user.id, role: memberRole },
+    });
+    await prisma.user.update({ where: { id: user.id }, data: { activeTenantId: TENANT_ID } });
   }
 
   const byName = Object.fromEntries(users.map((x) => [x.name, x]));
@@ -1055,10 +1091,10 @@ async function main() {
 
 main()
   .then(async () => {
-    await prisma.$disconnect();
+    await basePrisma.$disconnect();
   })
   .catch(async (error) => {
     console.error(error);
-    await prisma.$disconnect();
+    await basePrisma.$disconnect();
     process.exit(1);
   });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
@@ -13,6 +13,7 @@ import { useBoardData } from "./hooks/useBoardData";
 import { usePermissions } from "./hooks/usePermissions";
 import { useUiSettings } from "./hooks/useUiSettings";
 import { api } from "./lib/api";
+import { TenantPicker } from "./components/tenant/TenantPicker";
 import { DomainBoardPage } from "./pages/DomainBoardPage";
 import { PriorityGridPage } from "./pages/PriorityGridPage";
 import { RaciMatrixPage } from "./pages/RaciMatrixPage";
@@ -36,22 +37,41 @@ import { RequirementDetailPage } from "./pages/RequirementDetailPage";
 import { ExecutionBoardPage } from "./pages/ExecutionBoardPage";
 import { BoardSettingsPage } from "./pages/BoardSettingsPage";
 import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
-import type { Initiative, UserRole } from "./types/models";
+import { LandingPage } from "./pages/LandingPage";
+import { RegisterTeamPage } from "./pages/RegisterTeamPage";
+import { TenantSlugLoginPage } from "./pages/TenantSlugLoginPage";
+import type { Initiative, Tenant, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
 function App() {
   const { t } = useTranslation();
-  const { user, loading: authLoading, error: authError } = useAuth();
-  const board = useBoardData(!!user);
+  const { user, activeTenant, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
+  const [needsTenantPick, setNeedsTenantPick] = useState(false);
+  const board = useBoardData(!!user && !needsTenantPick);
   const perms = usePermissions(user);
   const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [landingView, setLandingView] = useState<"landing" | "signin" | "register">("landing");
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
+  const [devRole, setDevRole] = useState<UserRole>("SUPER_ADMIN");
+  const [devTenants, setDevTenants] = useState<Tenant[]>([]);
+  const [devTenantId, setDevTenantId] = useState<string>("");
   const showDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
+
+  const loadDevTenants = useCallback(async () => {
+    if (!showDevLogin) return;
+    try {
+      const { tenants } = await api.getDevTenants();
+      setDevTenants(tenants);
+      if (tenants.length > 0 && !devTenantId) setDevTenantId(tenants[0].id);
+    } catch { /* ignore */ }
+  }, [showDevLogin, devTenantId]);
+
+  useEffect(() => { void loadDevTenants(); }, [loadDevTenants]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -91,15 +111,73 @@ function App() {
     }
   }, [searchParams, setSearchParams]);
 
+  const slugMatch = location.pathname.match(/^\/t\/([^/]+)/);
+  const tenantSlug = slugMatch ? slugMatch[1] : null;
+
+  // Authenticated user landed on /t/:slug — auto-switch and redirect
+  useEffect(() => {
+    if (!tenantSlug || !user || authLoading) return;
+    let cancelled = false;
+    async function switchToSlug() {
+      try {
+        const myTenants = await api.getMyTenants();
+        const match = myTenants.tenants.find((m) => m.tenant.slug === tenantSlug);
+        if (match) {
+          await api.switchTenant(match.tenant.id);
+          if (!cancelled) {
+            await refreshAuth();
+            window.history.replaceState(null, "", "/");
+          }
+        } else if (!cancelled) {
+          window.history.replaceState(null, "", "/");
+        }
+      } catch {
+        if (!cancelled) window.history.replaceState(null, "", "/");
+      }
+    }
+    switchToSlug();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantSlug, user?.id]);
+
   if (authLoading) {
     return <div className="p-8">{t("app.loadingAuth")}</div>;
   }
 
   if (!user) {
+    if (tenantSlug) {
+      return (
+        <TenantSlugLoginPage
+          onAuthenticated={() => window.location.reload()}
+        />
+      );
+    }
+
+    if (landingView === "register") {
+      return <RegisterTeamPage onBack={() => setLandingView("landing")} />;
+    }
+
+    if (landingView === "landing" && !searchParams.get("error") && !authError) {
+      return (
+        <LandingPage
+          onSignIn={() => setLandingView("signin")}
+          onRegister={() => setLandingView("register")}
+        />
+      );
+    }
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
+            <button
+              onClick={() => setLandingView("landing")}
+              className="mr-1 inline-flex items-center text-slate-400 hover:text-slate-600"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
             <img src="/logo.svg" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
@@ -120,17 +198,44 @@ function App() {
               {t("app.continueGoogle")}
             </Button>
             {showDevLogin ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {DEV_ROLES.map((role) => (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Developer Login</p>
+                <div className="grid gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="grid gap-1">
+                      <span className="text-xs text-slate-500">Role</span>
+                      <select
+                        value={devRole}
+                        onChange={(e) => setDevRole(e.target.value as UserRole)}
+                        className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+                      >
+                        {DEV_ROLES.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs text-slate-500">Workspace</span>
+                      <select
+                        value={devTenantId}
+                        onChange={(e) => setDevTenantId(e.target.value)}
+                        className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+                      >
+                        {devTenants.length === 0 && <option value="">Loading...</option>}
+                        {devTenants.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   <Button
-                    key={role}
                     variant="secondary"
-                    disabled={devLoginLoading}
+                    disabled={devLoginLoading || !devTenantId}
                     onClick={async () => {
                       try {
                         setDevLoginLoading(true);
                         setDevLoginError(null);
-                        await api.devLogin(role);
+                        await api.devLogin(devRole, devTenantId || undefined);
                         window.location.reload();
                       } catch (error) {
                         setDevLoginError((error as Error).message);
@@ -139,12 +244,12 @@ function App() {
                       }
                     }}
                   >
-                    {devLoginLoading ? "..." : `Dev ${role}`}
+                    {devLoginLoading ? "Signing in..." : `Dev Login as ${devRole}`}
                   </Button>
-                ))}
+                </div>
+                {devLoginError ? <p className="mt-1 text-xs text-red-600">{devLoginError}</p> : null}
               </div>
             ) : null}
-            {devLoginError ? <p className="text-xs text-red-600">{devLoginError}</p> : null}
           </div>
         </Card>
       </div>
@@ -191,6 +296,18 @@ function App() {
     );
   }
 
+  if (needsTenantPick || (!activeTenant && !authLoading && user)) {
+    return (
+      <TenantPicker
+        onSelected={async () => {
+          setNeedsTenantPick(false);
+          await refreshAuth();
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   if (!board.meta) {
     return <div className="p-8">{t("app.loadingData")}</div>;
   }
@@ -204,6 +321,8 @@ function App() {
       user={user}
       permissions={perms}
       hiddenNavPaths={uiSettings.hiddenNavPaths}
+      activeTenant={activeTenant}
+      onTenantSwitch={() => setNeedsTenantPick(true)}
       onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
         await api.logout();
