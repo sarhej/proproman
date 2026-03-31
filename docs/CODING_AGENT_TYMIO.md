@@ -29,6 +29,7 @@
 - **Initiative:** roadmap item (often an **epic**); has priority, horizon, status, domain, owner, assignments, **features**, links to accounts/partners/demands/campaigns.
 - **Feature:** deliverable under an initiative; holds **requirements** (delivery granularity).
 - **Requirement:** checkable work item under a feature (kanban, detail pages).
+- **Tenant (workspace):** customer organization. Data isolation is **`tenantId` on rows** + **`tenantResolver` / Prisma extension** for browser and API-key traffic when an active workspace is set. **Product** is still not a tenant — see **[HUB.md §1.2](./HUB.md#12-multi-tenancy-as-implemented)** for resolution order, memberships, and the **remote MCP tenant gap**.
 
 **Typical flow:** *Demand or idea → Initiative → Features → Requirements → status / Gantt / milestones.*
 

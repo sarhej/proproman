@@ -19,19 +19,25 @@ Sample data and labels in the codebase may still reflect a particular industry; 
 
 **Design references (Figma, etc.):** Where to put links in the backlog, and when to add optional ontology binding types **`FIGMA_NODE`** / **`DESIGN_REF`** on a capability, is documented in [DESIGN_REFERENCES.md](./DESIGN_REFERENCES.md) (tenant checklist + key formats).
 
-### 1.2 Multi-tenancy — target vs today
+### 1.2 Multi-tenancy (as implemented)
 
-| Aspect | Target (Tymio) | Today (this codebase) |
-|--------|----------------|------------------------|
-| Data isolation | Each **tenant** has a dedicated slice of data; APIs and UI enforce boundaries. | One **logical dataset** per deployment; no `organizationId` on rows. |
-| Users | Same person may belong to multiple tenants with per-tenant roles. | Global `User` and global `role`. |
-| Branding | Tymio shell; tenant-specific naming where product requires it. | Single-app branding; demo copy may reference legacy names. |
+Tymio is a **multi-workspace** app: each **tenant** is a customer organization. Business data is stored in the **shared PostgreSQL schema** with a nullable **`tenantId`** on tenant-scoped models (see `server/prisma/schema.prisma`). **Per-tenant Postgres schemas** exist on the `Tenant` model (`schemaName`) for provisioning/migration plumbing; routine API access uses **row-level** `tenantId`, not separate DB schemas per request.
 
-**Implication:** For true multi-tenant SaaS, the stack needs an organization model, tenant-scoped queries, and MCP tokens scoped to a tenant. Until then, you can still run **one deployment per customer** as a practical isolation pattern.
+| Aspect | Behavior in this codebase |
+|--------|---------------------------|
+| **Data isolation** | When a request has **active tenant context**, Prisma queries on listed models are **automatically filtered** (and creates get `tenantId` injected) via a **client extension** in `server/src/tenant/tenantPrisma.ts` (`TENANT_SCOPED_MODELS`). **User** is global (no `tenantId`); `User.findMany` in meta and similar are not auto-scoped. |
+| **When context applies** | `tenantResolver` (`server/src/tenant/tenantResolver.ts`) runs after auth. It resolves tenant from, in order: **`X-Tenant-Id` header**, **`session.activeTenantId`**, **`user.activeTenantId`**, validates **membership** and **ACTIVE** status, then runs the rest of the request inside **`runWithTenant`** (AsyncLocalStorage). If resolution fails, the request continues **without** tenant context → extension does **not** inject `tenantId` (legacy / migration / misconfiguration: queries may see **all rows**). |
+| **Users & roles** | **`User.role`** is a **platform** role (`SUPER_ADMIN`, `ADMIN`, …). **`TenantMembership`** gives **per-tenant** roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`). **`user.activeTenantId`** is the default workspace; **`POST /api/me/tenants/switch`** updates DB + session. |
+| **Provisioning** | **`GET/POST /api/tenants`** (and related) are **`SUPER_ADMIN`** only (`server/src/routes/tenants.ts`). **`POST /api/tenant-requests`** is the public/self-serve request flow (`server/src/routes/tenant-requests.ts`). |
+| **Client** | **`TenantSwitcher` / `TenantPicker`** (`client/src/components/tenant/`). Slug login: **`/t/:slug`**, Google OAuth with **`?tenantSlug=`**, public **`GET /api/tenants/by-slug/:slug/public`**. |
+| **MCP** | **`/mcp`** uses **Bearer OAuth JWT** on the route; it does **not** go through the same path as session cookie auth for **`req.user`**. **`tenantResolver` therefore usually does not set tenant context for remote MCP**, and MCP tool handlers use **`prisma` without** that AsyncLocalStorage context today → **tenant filtering is not enforced for remote MCP** until explicitly wired (e.g. resolve user from JWT, then `runWithTenant`). **API key** sessions that set **`req.user`** *do* pass through **`tenantResolver`** and get scoping if **`activeTenantId`** is set. |
+| **Optional middleware** | **`requireTenant`** (`server/src/tenant/requireTenant.ts`) returns **400** if `req.tenantContext` is missing; use on routes that must not run without a workspace. Most REST routers rely on the extension + resolver instead of calling **`requireTenant`** globally. |
+
+**Migrating an existing single-tenant database:** idempotent script **`server/scripts/migrate-to-multitenancy.ts`** (run with `npx tsx`, see file header): creates/finds a tenant, memberships, backfills **`tenantId`**, sets **`activeTenantId`**.
 
 **Technical source of truth for entities:** `server/prisma/schema.prisma`.
 
-**Terminology:** In the database, the `Product` model means a **product line / pillar** used to group initiatives — not a SaaS tenant. The word **tenant** means the **customer organization** using Tymio.
+**Terminology:** The **`Product`** model is a **product line / pillar** (grouping initiatives) — not a SaaS tenant. **Tenant** = the **customer organization** (workspace).
 
 ---
 
@@ -52,10 +58,12 @@ Sample data and labels in the codebase may still reflect a particular industry; 
 
 ## 3. Authentication and roles
 
-- **Production:** Google OAuth; callback path `/api/auth/google/callback` (full URL in `GOOGLE_CALLBACK_URL`).
-- **Roles:** `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `MARKETING`, `VIEWER`, `PENDING` — see server middleware and `usePermissions` on the client.
-- **Development:** Optional dev login when `ALLOW_DEV_AUTH=true` (blocked in production); client shows dev buttons when `VITE_ENABLE_DEV_LOGIN=true`.
-- **Automation:** Optional `API_KEY` on the server; `Authorization: Bearer <API_KEY>` impersonates a configured user (used by the stdio MCP package and scripts).
+- **Production:** Google OAuth; callback path `/api/auth/google/callback` (full URL in `GOOGLE_CALLBACK_URL`). Optional **`tenantSlug`** on **`/api/auth/google`** is stored in session and, after login, switches the user into that tenant if they are a member, then redirects to **`/t/<slug>`** (see `server/src/routes/auth.ts`).
+- **Platform roles:** `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `MARKETING`, `VIEWER`, `PENDING` on **`User`** — see server middleware and `usePermissions` on the client.
+- **Workspace roles:** `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` on **`TenantMembership`** — used for tenant-scoped admin operations where enforced.
+- **Active workspace:** `GET /api/auth/me` returns **`activeTenant`** from **`user.activeTenantId`** (and resolver may override with header/session). **`GET /api/me/tenants`** lists memberships; **`POST /api/me/tenants/switch`** sets **`activeTenantId`** and **`session.activeTenantId`**.
+- **Development:** Optional dev login when `ALLOW_DEV_AUTH=true` (blocked in production); client can pass **`tenantId`** / **`tenantSlug`** in the dev-login body; list tenants via **`GET /api/auth/dev-tenants`**.
+- **Automation:** Optional `API_KEY` on the server; `Authorization: Bearer <API_KEY>` impersonates a configured user (used by the stdio MCP package and scripts). With **`tenantResolver`**, that user’s **`activeTenantId`** scopes Prisma when set.
 
 Environment template: `server/.env.example`.
 
@@ -90,7 +98,11 @@ Client dev server proxies `/api` to the backend when `VITE_API_BASE_URL` is empt
 4. Run migrations (e.g. Railway `preDeployCommand` / `prisma migrate deploy`).
 5. **Do not** run full `db:seed` in production (it replaces data).
 
-### 5.1 Notifications (optional)
+### 5.1 Existing DB without tenants
+
+If you upgraded from an older deployment and need workspaces + **`tenantId`** backfill, run the idempotent script documented in **`server/scripts/migrate-to-multitenancy.ts`** (typically `npx tsx server/scripts/migrate-to-multitenancy.ts` with optional `--slug` / `--name`). Then ensure users have **`activeTenantId`** and **`TenantMembership`** so **`tenantResolver`** scopes API traffic.
+
+### 5.2 Notifications (optional)
 
 After notification-related migrations exist, you may run once:
 
@@ -128,6 +140,8 @@ Two connection modes:
 
 Tool names currently use the historical prefix `drd_` (e.g. `drd_list_initiatives`); renaming is a backward-compatibility decision for clients.
 
+**Tenant note:** Remote MCP (**OAuth Bearer** on `/mcp`) does not currently establish **`runWithTenant`**; treat tool data as **not tenant-scoped** until the server attaches tenant context from the authenticated MCP user. Prefer **API key + `activeTenantId`** for scripted access when isolation matters.
+
 **Implementation:** `server/src/mcp/setup.ts`, `oauth-provider.ts`, `tools.ts`; local package: `mcp/README.md`.
 
 ### 6.1 Capability ontology and agent brief
@@ -159,9 +173,12 @@ Run `npm audit` and your SAST pipeline regularly.
 | Goal | Location |
 |------|----------|
 | Schema / entities | `server/prisma/schema.prisma` |
+| Tenant resolution & Prisma scoping | `server/src/tenant/tenantResolver.ts`, `server/src/tenant/tenantContext.ts`, `server/src/tenant/tenantPrisma.ts`, `server/src/tenant/requireTenant.ts` |
+| Tenant admin & provisioning | `server/src/routes/tenants.ts`, `server/src/routes/tenant-requests.ts`, `server/src/tenant/tenantProvisioning.ts` |
 | OAuth / session | `server/src/auth/passport.ts`, `server/src/routes/auth.ts` |
 | REST API | `server/src/routes/` |
 | MCP tools | `server/src/mcp/tools.ts` |
+| Workspace UI (switcher) | `client/src/components/tenant/` |
 | Ontology / brief compiler | `server/src/routes/ontology.ts`, `server/src/services/ontologyBrief.ts`, `server/src/services/ontologyRefresh.ts` |
 | Permissions (client) | `client/src/hooks/usePermissions.ts` |
 | i18n | `client/src/i18n/` |
