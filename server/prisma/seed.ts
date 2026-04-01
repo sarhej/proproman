@@ -164,18 +164,21 @@ async function seedTenantData(TENANT_ID: string, tymioTenantId: string) {
     [
       {
         name: "Tymio app",
+        slug: "tymio-app",
         description: "Mobilní a webová aplikace pro pacienty a lékaře",
         sortOrder: 1,
         itemType: TopLevelItemType.PRODUCT
       },
       {
         name: "B2B Platforma",
+        slug: "b2b-platforma",
         description: "Portál pro zaměstnavatele, pojišťovny a orgány státní správy",
         sortOrder: 2,
         itemType: TopLevelItemType.PRODUCT
       },
       {
         name: "Integrační platforma",
+        slug: "integracni-platforma",
         description: "Partnerské API, eGov a integrace pojišťoven",
         sortOrder: 3,
         itemType: TopLevelItemType.SYSTEM

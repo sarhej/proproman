@@ -62,7 +62,12 @@ async function main() {
   });
   if (!product) {
     product = await prisma.product.create({
-      data: { name: PRODUCT_NAME, description: "Dr.D Hub updates: naming, bugs, features/UX, clarifications.", sortOrder: 50 }
+      data: {
+        name: PRODUCT_NAME,
+        slug: "tymio-demo-hub",
+        description: "Dr.D Hub updates: naming, bugs, features/UX, clarifications.",
+        sortOrder: 50
+      }
     });
     console.log("Created product:", product.name, product.id);
   } else {

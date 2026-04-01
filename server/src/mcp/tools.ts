@@ -28,6 +28,7 @@ import {
   workspaceMembershipCanWriteContent
 } from "../lib/workspaceRbac.js";
 import { getTenantContext } from "../tenant/tenantContext.js";
+import { allocateUniqueProductSlug } from "../lib/productSlug.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
 const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
@@ -394,9 +395,16 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     "drd_create_product",
     {
       title: "Create product",
-      description: "Create a new product (asset). Requires admin or super_admin role.",
+      description:
+        "Create a new product (asset). Optional slug (lowercase, hyphens); default derived from name. Requires structure write in the workspace.",
       inputSchema: z.object({
         name: z.string().min(1),
+        slug: z
+          .string()
+          .min(1)
+          .max(80)
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+          .optional(),
         description: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
         itemType: z.enum(["PRODUCT", "SYSTEM"]).optional()
@@ -404,11 +412,17 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async (body, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      const { membershipRole } = getTenantContext()!;
+      const { membershipRole, tenantId } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const slug = await allocateUniqueProductSlug(prisma, {
+        tenantId,
+        fromName: body.name,
+        explicitSlug: body.slug ?? null
+      });
       const product = await prisma.product.create({
         data: {
           name: body.name,
+          slug,
           description: body.description ?? null,
           sortOrder: body.sortOrder ?? 0,
           itemType: (body.itemType as TopLevelItemType) ?? TopLevelItemType.PRODUCT
@@ -426,6 +440,12 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       inputSchema: z.object({
         id: z.string(),
         name: z.string().min(1).optional(),
+        slug: z
+          .string()
+          .min(1)
+          .max(80)
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+          .optional(),
         description: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
         itemType: z.enum(["PRODUCT", "SYSTEM"]).optional()
@@ -433,10 +453,13 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async ({ id, ...body }, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      const { membershipRole } = getTenantContext()!;
+      const { membershipRole, tenantId } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const existing = await prisma.product.findUnique({ where: { id } });
+      if (!existing) throw new Error("Product not found");
       const data: {
         name?: string;
+        slug?: string;
         description?: string | null;
         sortOrder?: number;
         itemType?: TopLevelItemType;
@@ -445,6 +468,13 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       if (body.description !== undefined) data.description = body.description;
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
       if (body.itemType !== undefined) data.itemType = body.itemType as TopLevelItemType;
+      if (body.slug !== undefined && body.slug !== existing.slug) {
+        const taken = await prisma.product.findFirst({
+          where: { tenantId, slug: body.slug, NOT: { id } }
+        });
+        if (taken) throw new Error("Product slug already in use in this workspace");
+        data.slug = body.slug;
+      }
       const product = await prisma.product.update({ where: { id }, data });
       return textContent(JSON.stringify(product, null, 2));
     }

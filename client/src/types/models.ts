@@ -195,6 +195,8 @@ export type ExecutionBoard = {
 export type Product = {
   id: string;
   name: string;
+  /** Per-workspace stable segment; pair with tenant slug as `workspaceSlug/productSlug` in docs. */
+  slug: string;
   description?: string | null;
   sortOrder: number;
   itemType?: TopLevelItemType;

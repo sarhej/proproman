@@ -52,6 +52,7 @@ import { tenantResolver } from "./tenant/tenantResolver.js";
 import { tenantsRouter } from "./routes/tenants.js";
 import { tenantRequestsRouter } from "./routes/tenant-requests.js";
 import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
+import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 
 const app = express();
@@ -144,8 +145,7 @@ app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {
 /** Public: instructions for coding agents (stdio MCP clients fetch this to append to tool output). */
 app.get("/api/mcp/agent-context", async (_req, res) => {
   try {
-    const feedbackReporting = await refreshMcpFeedbackNoticeCache();
-    res.json({ feedbackReporting });
+    res.json(await buildMcpAgentContextJson());
   } catch {
     res.status(500).json({ error: "Failed to load agent context" });
   }

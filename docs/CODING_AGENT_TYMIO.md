@@ -20,12 +20,28 @@
 
 **Recommendation:** Treat **this file + `AGENT_BRIEF.md` + MCP** as the trio: *playbook*, *semantic map*, *live data*. For a single paste into a chat, prefer **sections 5–7 below** plus a pointer to `AGENT_BRIEF.md`.
 
+### 1.1 Keep Tymio facts in the documentation repository (do not rely on chat memory)
+
+**For agents working inside a customer or product codebase:** maintain a **durable doc in that repo** (e.g. `docs/tymio.md`, `docs/integrations/TYMIO.md`, or `TYMIO.md` at the root) and **update it when integration details change**.
+
+Record at least:
+
+- **Environments:** production and staging **base URLs** for the Tymio web app and API.
+- **Workspace:** **slug** (and tenant id if you use `X-Tenant-Id` for MCP/API automation).
+- **Product line (optional label):** each Product has a **`slug`** unique within the workspace. In docs and prompts use **`workspace-slug/product-slug`** (e.g. `demo/tymio-app`) so scope is obvious. This is **identification only**: initiatives may have **no** product; agents can still create work across products in the same workspace.
+- **MCP:** remote URL (`https://<host>/mcp`), auth method (OAuth vs API key / stdio), and any required headers.
+- **REST:** prefixes you use (`/api/initiatives`, `/api/ontology`, etc.) and how you authenticate (session, Bearer).
+- **Ontology / guides:** paths such as `/api/ontology`, `/api/agent/coding-guide`, MCP tools `tymio_get_agent_brief`, and where **`context/AGENT_BRIEF.md`** lives if checked in.
+- **Product requirements in Tymio:** pointers to the right **initiatives**, **features**, or **requirements** (titles, ids, or stable links) so future sessions know *where the org’s ask is modeled*.
+
+Treat that file as the **source of truth** for “how this repo talks to Tymio.” Chat threads and IDE sessions are ephemeral.
+
 ---
 
 ## 2. Mental model (minimum vocabulary)
 
 - **Domain** (“pillar” in UI): strategic grouping for initiatives on boards.
-- **Product** (in DB): **product line / asset**, not a SaaS tenant. Groups initiatives in Product Explorer. There is **no separate “Application” entity** — multiple customer-facing or internal **apps/surfaces** are usually modeled as **multiple products** unless the org agrees otherwise.
+- **Product** (in DB): **product line / asset**, not a SaaS tenant. Each row has **`name`** and a stable **`slug`** (per workspace). Groups initiatives in Product Explorer. There is **no separate “Application” entity** — multiple customer-facing or internal **apps/surfaces** are usually modeled as **multiple products** unless the org agrees otherwise.
 - **Initiative:** roadmap item (often an **epic**); has priority, horizon, status, domain, owner, assignments, **features**, links to accounts/partners/demands/campaigns.
 - **Feature:** deliverable under an initiative; holds **requirements** (delivery granularity).
 - **Requirement:** checkable work item under a feature (kanban, detail pages).
@@ -164,6 +180,7 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 
 | Topic | Location |
 |-------|----------|
+| Workspace + product scope label | `workspace-slug/product-slug` (documentation; from Tenant.slug + Product.slug). See `GET /api/mcp/agent-context` field `scopeReference`. |
 | Product & MCP overview | [docs/HUB.md](./HUB.md) |
 | Ontology REST & MCP §6.1 | [docs/HUB.md](./HUB.md) |
 | MCP stdio package | [mcp/README.md](../mcp/README.md) |

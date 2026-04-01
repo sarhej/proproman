@@ -54,7 +54,7 @@
         <h3>Documentation discipline (for coding agents)</h3>
         <p>
           <strong>Document Tymio integration in this project&rsquo;s documentation repository</strong> (e.g. <code>docs/</code>, a root <code>TYMIO.md</code>, or your team&rsquo;s handbook) and keep it current.
-          Include: production/staging <strong>base URL</strong>, <strong>workspace slug</strong> or tenant id, <strong>MCP</strong> URL and auth method, important <strong>REST</strong> paths, <strong>ontology</strong> / <strong>coding-agent guide</strong> endpoints, and where <strong>product requirements</strong> live in Tymio (initiatives, links, or search terms).
+          Include: production/staging <strong>base URL</strong>, <strong>workspace slug</strong> or tenant id, optional <strong>product slug</strong> for a clear <code>workspace-slug/product-slug</code> label in docs, <strong>MCP</strong> URL and auth method, important <strong>REST</strong> paths, <strong>ontology</strong> / <strong>coding-agent guide</strong> endpoints, and where <strong>product requirements</strong> live in Tymio (initiatives, links, or search terms).
           Future sessions should not rely on chat memory alone &mdash; the repo docs are the source of truth for how this codebase ties to Tymio.
         </p>
         <h3>Humans</h3>
@@ -83,7 +83,7 @@ Use a browser with JavaScript. Workspace sign-in typically uses paths like /t/&l
 - Ontology + coding-agent guide (auth): /api/ontology, /api/agent/coding-guide (Markdown) — after login/token per deployment.
 
 ## Documentation discipline
-Maintain a doc in THIS codebase/repo (e.g. docs/tymio.md or TYMIO.md): base URLs, workspace slug/tenant id, MCP config, key API paths, ontology/guide endpoints, and pointers to product requirements inside Tymio (initiative titles, IDs, or links). Update when integration changes. Do not rely only on chat context — the documentation repository is the durable record.
+Maintain a doc in THIS codebase/repo (e.g. docs/tymio.md or TYMIO.md): base URLs, workspace slug/tenant id, optional workspace/product label as workspace-slug/product-slug (Product.slug is per workspace; initiatives may omit a product), MCP config, key API paths, ontology/guide endpoints, and pointers to product requirements inside Tymio (initiative titles, IDs, or links). GET /api/mcp/agent-context includes scopeReference. Update when integration changes. Do not rely only on chat context — the documentation repository is the durable record.
 
 ## Slovak (krátke)
 Stránka je SPA; bez JavaScriptu sa plné rozhranie nezobrazí. Pre dáta použite API alebo MCP podľa nasadenia.

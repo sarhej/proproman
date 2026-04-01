@@ -11,6 +11,7 @@ import {
   UserRole
 } from "@prisma/client";
 import { prisma } from "../db.js";
+import { slugify } from "../lib/productSlug.js";
 
 /**
  * Opt-in HTTP + Postgres tests. Requires valid `.env` (DATABASE_URL, SESSION_SECRET, …) and a DB
@@ -87,7 +88,7 @@ describe.skipIf(!enabled)("execution-boards + columns + requirement column (HTTP
     domainId = domain.id;
 
     const product = await prisma.product.create({
-      data: { name: `IT-Product-${suffix}`, sortOrder: 0 }
+      data: { name: `IT-Product-${suffix}`, slug: slugify(`it-product-${suffix}`), sortOrder: 0 }
     });
     productId = product.id;
 
@@ -292,7 +293,7 @@ describe.skipIf(!enabled)("execution-boards + columns + requirement column (HTTP
 
   it("PUT requirement rejects column from another product", async () => {
     const otherProduct = await prisma.product.create({
-      data: { name: `IT-Other-${suffix}`, sortOrder: 0 }
+      data: { name: `IT-Other-${suffix}`, slug: slugify(`it-other-${suffix}`), sortOrder: 0 }
     });
     const otherBoard = await prisma.executionBoard.create({
       data: {

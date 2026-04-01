@@ -425,6 +425,8 @@ model Product {
   id          String            @id @default(cuid())
   tenantId    String?
   name        String
+  /** Stable per-workspace segment for docs and agent references: `<workspace-slug>/<slug>`. */
+  slug        String
   description String?
   sortOrder   Int               @default(0)
   itemType    TopLevelItemType  @default(PRODUCT)
@@ -434,6 +436,7 @@ model Product {
   updatedAt   DateTime          @updatedAt
 
   @@unique([tenantId, name])
+  @@unique([tenantId, slug])
   @@index([tenantId])
 }
 

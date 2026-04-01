@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
+import { allocateUniqueProductSlug, tryParseProductSlug } from "../lib/productSlug.js";
 import { requireRole } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
 
@@ -265,9 +266,16 @@ async function replaceImport(data: any) {
 
     if (has("products")) {
       for (const p of data.products) {
+        const tenantId = typeof p.tenantId === "string" ? p.tenantId : null;
+        const slug = await allocateUniqueProductSlug(tx, {
+          tenantId,
+          fromName: p.name,
+          explicitSlug: typeof p.slug === "string" ? p.slug : null
+        });
         const created = await tx.product.create({
           data: {
             name: p.name,
+            slug,
             description: p.description ?? null,
             sortOrder: p.sortOrder ?? 0,
             itemType: p.itemType ?? "PRODUCT"
@@ -511,10 +519,24 @@ async function mergeImport(data: any) {
     if (Array.isArray(data.products)) {
       for (const p of data.products) {
         const match = existingProducts.find((ep) => ep.name === p.name);
+        const tenantId = match?.tenantId ?? (typeof p.tenantId === "string" ? p.tenantId : null);
         if (match) {
+          const normalized = tryParseProductSlug(typeof p.slug === "string" ? p.slug : null);
+          let nextSlug = match.slug;
+          if (normalized && normalized !== match.slug) {
+            const taken = await tx.product.findFirst({
+              where: {
+                tenantId: tenantId === null ? { equals: null } : tenantId,
+                slug: normalized,
+                NOT: { id: match.id }
+              }
+            });
+            if (!taken) nextSlug = normalized;
+          }
           await tx.product.update({
             where: { id: match.id },
             data: {
+              slug: nextSlug,
               description: p.description ?? null,
               sortOrder: p.sortOrder ?? 0,
               itemType: p.itemType ?? "PRODUCT"
@@ -522,9 +544,15 @@ async function mergeImport(data: any) {
           });
           idMap.set(p.id, match.id);
         } else {
+          const slug = await allocateUniqueProductSlug(tx, {
+            tenantId,
+            fromName: p.name,
+            explicitSlug: typeof p.slug === "string" ? p.slug : null
+          });
           const created = await tx.product.create({
             data: {
               name: p.name,
+              slug,
               description: p.description ?? null,
               sortOrder: p.sortOrder ?? 0,
               itemType: p.itemType ?? "PRODUCT"

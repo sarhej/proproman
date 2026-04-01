@@ -5,9 +5,18 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 import { TaskStatus, TopLevelItemType } from "@prisma/client";
+import { getTenantContext } from "../tenant/tenantContext.js";
+import { allocateUniqueProductSlug } from "../lib/productSlug.js";
 
-const productSchema = z.object({
+export const productSlugField = z
+  .string()
+  .min(1)
+  .max(80)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug: lowercase letters, numbers, single hyphens only");
+
+export const productSchema = z.object({
   name: z.string().min(1),
+  slug: productSlugField.optional(),
   description: z.string().nullable().optional(),
   sortOrder: z.number().int().default(0),
   itemType: z.nativeEnum(TopLevelItemType).optional()
@@ -88,15 +97,22 @@ productsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+  const tenantId = getTenantContext()?.tenantId ?? null;
+  const slug = await allocateUniqueProductSlug(prisma, {
+    tenantId,
+    fromName: parsed.data.name,
+    explicitSlug: parsed.data.slug ?? null
+  });
   const product = await prisma.product.create({
     data: {
       name: parsed.data.name,
+      slug,
       description: parsed.data.description ?? null,
       sortOrder: parsed.data.sortOrder,
       itemType: parsed.data.itemType ?? TopLevelItemType.PRODUCT
     }
   });
-  await logAudit(req.user!.id, "CREATED", "PRODUCT", product.id, { name: product.name });
+  await logAudit(req.user!.id, "CREATED", "PRODUCT", product.id, { name: product.name, slug: product.slug });
   res.status(201).json({ product });
 });
 
@@ -108,21 +124,57 @@ productsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) =>
     return;
   }
   const existing = await prisma.product.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  const tenantId = getTenantContext()?.tenantId ?? null;
+  let nextSlug = existing.slug;
+  if (parsed.data.slug !== undefined) {
+    if (parsed.data.slug !== existing.slug) {
+      const taken = await prisma.product.findFirst({
+        where: {
+          tenantId: tenantId === null ? { equals: null } : tenantId,
+          slug: parsed.data.slug,
+          NOT: { id }
+        }
+      });
+      if (taken) {
+        res.status(409).json({ error: "Product slug already in use in this workspace." });
+        return;
+      }
+      nextSlug = parsed.data.slug;
+    }
+  }
   const product = await prisma.product.update({
     where: { id },
     data: {
       name: parsed.data.name,
+      slug: nextSlug,
       description: parsed.data.description ?? undefined,
       sortOrder: parsed.data.sortOrder,
       itemType: parsed.data.itemType
     }
   });
   const changes =
-    existing && (parsed.data.name !== undefined || parsed.data.description !== undefined || parsed.data.sortOrder !== undefined)
+    existing &&
+    (parsed.data.name !== undefined ||
+      parsed.data.slug !== undefined ||
+      parsed.data.description !== undefined ||
+      parsed.data.sortOrder !== undefined)
       ? [
-          ...(parsed.data.name !== undefined && existing.name !== parsed.data.name ? [{ field: "name", old: existing.name, new: parsed.data.name }] : []),
-          ...(parsed.data.description !== undefined && existing.description !== parsed.data.description ? [{ field: "description", old: existing.description, new: parsed.data.description }] : []),
-          ...(parsed.data.sortOrder !== undefined && existing.sortOrder !== parsed.data.sortOrder ? [{ field: "sortOrder", old: existing.sortOrder, new: parsed.data.sortOrder }] : [])
+          ...(parsed.data.name !== undefined && existing.name !== parsed.data.name
+            ? [{ field: "name", old: existing.name, new: parsed.data.name }]
+            : []),
+          ...(parsed.data.slug !== undefined && existing.slug !== parsed.data.slug
+            ? [{ field: "slug", old: existing.slug, new: parsed.data.slug }]
+            : []),
+          ...(parsed.data.description !== undefined && existing.description !== parsed.data.description
+            ? [{ field: "description", old: existing.description, new: parsed.data.description }]
+            : []),
+          ...(parsed.data.sortOrder !== undefined && existing.sortOrder !== parsed.data.sortOrder
+            ? [{ field: "sortOrder", old: existing.sortOrder, new: parsed.data.sortOrder }]
+            : [])
         ]
       : [];
   await logAudit(req.user!.id, "UPDATED", "PRODUCT", id, changes.length ? { changes } : { name: product.name });
