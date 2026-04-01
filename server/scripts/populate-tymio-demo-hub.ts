@@ -85,7 +85,8 @@ async function main() {
           horizon: Horizon.NOW,
           status: InitiativeStatus.IDEA,
           commercialType: CommercialType.CARE_QUALITY,
-          isGap: false
+          isGap: false,
+          isEpic: true
         }
       });
       initiatives = [...initiatives, created];

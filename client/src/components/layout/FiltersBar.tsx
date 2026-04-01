@@ -14,6 +14,7 @@ type Props = {
     priority?: string;
     horizon?: string;
     labels?: string[];
+    epicsOnly?: boolean;
     isGap?: boolean;
     archived?: boolean;
     quick?: string;
@@ -44,6 +45,15 @@ export function FiltersBar({ domains, users, labelSuggestions = [], filters, onC
             className="rounded border-slate-300"
           />
           {t("filters.searchInAllFields")}
+        </label>
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={filters.epicsOnly === true}
+            onChange={(e) => onChange({ epicsOnly: e.target.checked ? true : undefined })}
+            className="rounded border-slate-300"
+          />
+          {t("filters.epicsOnly")}
         </label>
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -142,6 +152,15 @@ export function FiltersBar({ domains, users, labelSuggestions = [], filters, onC
                   className="rounded border-slate-300"
                 />
                 {t("filters.searchInAllFields")}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={filters.epicsOnly === true}
+                  onChange={(e) => onChange({ epicsOnly: e.target.checked ? true : undefined })}
+                  className="rounded border-slate-300"
+                />
+                {t("filters.epicsOnly")}
               </label>
             </div>
           </div>

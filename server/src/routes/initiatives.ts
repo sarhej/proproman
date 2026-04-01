@@ -24,7 +24,7 @@ async function canUserEditInitiative(userId: string, userRole: UserRole, initiat
 }
 
 initiativesRouter.get("/", async (req, res) => {
-  const { domainId, ownerId, horizon, priority, isGap, archived, labels } = req.query;
+  const { domainId, ownerId, horizon, priority, isGap, archived, labels, isEpic } = req.query;
   const where: Prisma.InitiativeWhereInput = {};
   const selectedLabels = (Array.isArray(labels) ? labels : [labels])
     .flatMap((value) => (typeof value === "string" ? value.split(",") : []))
@@ -40,6 +40,7 @@ initiativesRouter.get("/", async (req, res) => {
     where.priority = priority as Priority;
   }
   if (typeof isGap === "string") where.isGap = isGap === "true";
+  if (isEpic === "true") where.isEpic = true;
   if (archived === "true") {
     where.archivedAt = { not: null };
   } else {
@@ -230,6 +231,7 @@ initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, Us
       status: payload.status,
       commercialType: payload.commercialType,
       isGap: payload.isGap,
+      isEpic: payload.isEpic,
       startDate: payload.startDate ? new Date(payload.startDate) : null,
       targetDate: payload.targetDate ? new Date(payload.targetDate) : null,
       milestoneDate: payload.milestoneDate ? new Date(payload.milestoneDate) : null,
@@ -308,6 +310,7 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     delete payload.horizon;
     delete payload.commercialType;
     delete payload.dealStage;
+    delete payload.isEpic;
   }
 
   await prisma.$transaction(async (tx) => {
@@ -370,6 +373,7 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
         status: payload.status,
         commercialType: payload.commercialType,
         isGap: payload.isGap,
+        ...(typeof payload.isEpic === "boolean" ? { isEpic: payload.isEpic } : {}),
         startDate: payload.startDate ? new Date(payload.startDate) : payload.startDate,
         targetDate: payload.targetDate ? new Date(payload.targetDate) : payload.targetDate,
         milestoneDate: payload.milestoneDate ? new Date(payload.milestoneDate) : payload.milestoneDate,

@@ -397,6 +397,8 @@ export type Initiative = {
   status: InitiativeStatus;
   commercialType: CommercialType;
   isGap: boolean;
+  /** Product Explorer epic vs board-first initiative */
+  isEpic: boolean;
   startDate?: string | null;
   targetDate?: string | null;
   milestoneDate?: string | null;

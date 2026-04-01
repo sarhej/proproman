@@ -60,6 +60,7 @@
     "labelsPlaceholder": "Pridať alebo vybrať štítky...",
     "quickFilter": "Rýchly filter",
     "showArchived": "Zobraziť archivované",
+    "epicsOnly": "Len epiky (Prieskumník produktov)",
     "searchInAllFields": "Hľadať vo všetkých poliach",
     "all": "Všetko",
     "searchPlaceholder": "Hľadať názov, poznámky, vlastníka, pilier..."
@@ -252,6 +253,7 @@
     "dealStage": "Fáza obchodu",
     "strategicTier": "Strategická úroveň",
     "noProduct": "Bez produktu / assetu",
+    "markAsEpic": "Epik z prieskumníka produktov (filter „Len epiky“)",
     "markGap": "Označiť ako medzeru",
     "personaImpact": "Dopad na persóny (1-5)",
     "revenueAttribution": "Priradenie tržieb (%)",

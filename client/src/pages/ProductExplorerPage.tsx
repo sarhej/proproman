@@ -136,6 +136,7 @@ export function ProductExplorerPage({
     return products.map((product) => {
       let initiatives = product.initiatives.filter((initiative) => {
         if (!initiativeMatchesBoardFilters(initiative, boardFilters)) return false;
+        if (boardFilters?.epicsOnly === true && !initiative.isEpic) return false;
         if (statusFilter && initiative.status !== statusFilter) return false;
         if (impactFilter === "with") {
           const hasPersona = (initiative.personaImpacts?.length ?? 0) > 0;

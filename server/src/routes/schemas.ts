@@ -18,6 +18,8 @@ export const initiativeInputSchema = z.object({
   status: z.nativeEnum(InitiativeStatus),
   commercialType: z.nativeEnum(CommercialType),
   isGap: z.boolean().default(false),
+  /** True when created from Product Explorer; board/API creates omit or set false. */
+  isEpic: z.boolean().optional().default(false),
   startDate: z.string().datetime().nullable().optional(),
   targetDate: z.string().datetime().nullable().optional(),
   milestoneDate: z.string().datetime().nullable().optional(),

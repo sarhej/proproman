@@ -162,7 +162,8 @@ export function registerTools(server: McpServer) {
           horizon: (body.horizon as Horizon) ?? "NOW",
           status: (body.status as Prisma.EnumInitiativeStatusFieldUpdateOperationsInput["set"]) ?? "IDEA",
           commercialType: (body.commercialType as unknown as Prisma.EnumCommercialTypeFieldUpdateOperationsInput["set"]) ?? "CARE_QUALITY",
-          isGap: body.isGap ?? false
+          isGap: body.isGap ?? false,
+          isEpic: Boolean(body.productId)
         },
         include: initiativeInclude
       });

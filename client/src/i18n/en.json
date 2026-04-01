@@ -61,6 +61,7 @@
     "labelsPlaceholder": "Add or select labels...",
     "quickFilter": "Quick filter",
     "showArchived": "Show archived",
+    "epicsOnly": "Epics only (Product Explorer)",
     "searchInAllFields": "Search in all fields",
     "all": "All",
     "searchPlaceholder": "Search title, notes, owner, pillar..."
@@ -253,6 +254,7 @@
     "dealStage": "Deal Stage",
     "strategicTier": "Strategic Tier",
     "noProduct": "No product / asset",
+    "markAsEpic": "Product Explorer epic (use “Epics only” filter)",
     "markGap": "Mark as gap item",
     "personaImpact": "Persona impact (1-5)",
     "revenueAttribution": "Revenue attribution (%)",

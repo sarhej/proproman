@@ -32,6 +32,7 @@ type FormValue = {
   status: InitiativeStatus;
   commercialType: CommercialType;
   isGap: boolean;
+  isEpic: boolean;
   startDate: string;
   targetDate: string;
   milestoneDate: string;
@@ -100,6 +101,7 @@ function toInitial(
     status: initiative?.status ?? "IDEA",
     commercialType: initiative?.commercialType ?? "CARE_QUALITY",
     isGap: initiative?.isGap ?? false,
+    isEpic: initiative?.isEpic ?? false,
     startDate: initiative?.startDate ? initiative.startDate.slice(0, 10) : "",
     targetDate: initiative?.targetDate ? initiative.targetDate.slice(0, 10) : "",
     milestoneDate: initiative?.milestoneDate ? initiative.milestoneDate.slice(0, 10) : "",
@@ -139,7 +141,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
     const next = toInitial(initiative, products, domains, personas, revenueStreams);
     setForm(next);
     initialRef.current = JSON.stringify(next);
-  }, [initiative?.id, initiative?.notes, initiative?.title]);
+  }, [initiative?.id, initiative?.notes, initiative?.title, initiative?.isEpic, initiative?.productId]);
 
   const canSubmit = useMemo(() => form.title.trim().length > 0 && form.domainId, [form.domainId, form.title]);
 
@@ -164,6 +166,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
         status: form.status,
         commercialType: form.commercialType,
         isGap: form.isGap,
+        ...(adminOnlyFields ? { isEpic: form.isEpic } : {}),
         startDate: form.startDate ? `${form.startDate}T00:00:00.000Z` : null,
         targetDate: form.targetDate ? `${form.targetDate}T00:00:00.000Z` : null,
         milestoneDate: form.milestoneDate ? `${form.milestoneDate}T00:00:00.000Z` : null,
@@ -236,6 +239,20 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
             ))}
           </Select>
         </div>
+        {adminOnlyFields ? (
+          <div className="flex items-center gap-2 md:col-span-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isEpic}
+                onChange={(e) => setForm((prev) => ({ ...prev, isEpic: e.target.checked }))}
+                disabled={readOnly}
+                className="rounded border-slate-300"
+              />
+              {t("initiative.markAsEpic")}
+            </label>
+          </div>
+        ) : null}
         <div>
           <Label>{t("initiative.domain")}</Label>
           <div className="relative">

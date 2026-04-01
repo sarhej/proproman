@@ -801,6 +801,7 @@ function InlineAddInitiative({
       horizon: "NEXT",
       status: "IDEA",
       commercialType: "CONTRACT_ENABLER",
+      isEpic: true,
     });
     setTitle("");
     setAdding(false);

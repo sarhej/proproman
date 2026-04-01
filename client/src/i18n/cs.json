@@ -60,6 +60,7 @@
     "labelsPlaceholder": "Přidat nebo vybrat štítky...",
     "quickFilter": "Rychlý filtr",
     "showArchived": "Zobrazit archivované",
+    "epicsOnly": "Jen epiky (Prohlížeč produktů)",
     "searchInAllFields": "Hledat ve všech polích",
     "all": "Vše",
     "searchPlaceholder": "Hledat název, poznámky, vlastníka, pilíř..."
@@ -252,6 +253,7 @@
     "dealStage": "Fáze obchodu",
     "strategicTier": "Strategická úroveň",
     "noProduct": "Bez produktu / assetu",
+    "markAsEpic": "Epik z prohlížeče produktů (filtr „Jen epiky“)",
     "markGap": "Označit jako mezeru",
     "personaImpact": "Dopad na persony (1-5)",
     "revenueAttribution": "Přiřazení tržeb (%)",

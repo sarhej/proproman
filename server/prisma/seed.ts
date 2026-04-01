@@ -844,6 +844,7 @@ async function seedTenantData(TENANT_ID: string) {
         status: def.status,
         commercialType: def.commercialType,
         isGap: def.isGap ?? false,
+        isEpic: true,
         startDate: new Date(def.startDate),
         targetDate: new Date(def.targetDate),
         milestoneDate: new Date(def.milestoneDate),

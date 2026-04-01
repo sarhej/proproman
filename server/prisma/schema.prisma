@@ -518,6 +518,8 @@ model Initiative {
   id             String                    @id @default(cuid())
   tenantId       String?
   productId      String?
+  /** Product Explorer epics vs board-first initiatives; set true when created from explorer. */
+  isEpic         Boolean                   @default(false)
   title          String
   description    String?
   domainId       String
