@@ -11,14 +11,18 @@ function headers(): HeadersInit {
   return h;
 }
 
-export async function drdFetch<T>(
-  path: string,
-  init?: RequestInit & { body?: string | object } | undefined
-): Promise<T> {
+/** JSON-friendly body; plain objects are stringified. */
+export type DrdFetchInit = Omit<RequestInit, "body"> & {
+  body?: string | Record<string, unknown>;
+};
+
+export async function drdFetch<T>(path: string, init?: DrdFetchInit): Promise<T> {
   const { body, ...rest } = init ?? {};
+  const bodyInit: BodyInit | undefined =
+    body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body);
   const res = await fetch(`${baseUrl}${path}`, {
     ...rest,
-    body: typeof body === "object" && body !== null ? JSON.stringify(body) : body,
+    body: bodyInit,
     headers: { ...headers(), ...(rest.headers ?? ({} as HeadersInit)) }
   });
   if (!res.ok) {

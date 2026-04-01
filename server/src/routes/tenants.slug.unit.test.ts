@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugToSchemaName } from "./tenants.js";
+import { slugToSchemaName } from "../tenant/tenantSlug.js";
 
 describe("slugToSchemaName", () => {
   it("prefixes tenant_ and maps hyphens to underscores", () => {

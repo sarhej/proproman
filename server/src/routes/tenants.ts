@@ -5,15 +5,13 @@ import { requireRole } from "../middleware/auth.js";
 import { UserRole } from "@prisma/client";
 import { provisionTenant, backfillTenantId } from "../tenant/tenantProvisioning.js";
 import { createTenantSchema, schemaExists, listTenantSchemas } from "../tenant/tenantSchemaManager.js";
+import { slugToSchemaName } from "../tenant/tenantSlug.js";
 
 export const tenantsRouter = Router();
 
 tenantsRouter.use(requireRole(UserRole.SUPER_ADMIN));
 
-/** Matches DB `schemaName` derivation from slug (see POST create tenant). */
-export function slugToSchemaName(slug: string): string {
-  return `tenant_${slug.replace(/-/g, "_")}`;
-}
+export { slugToSchemaName };
 
 const createTenantInput = z.object({
   name: z.string().min(1).max(100),
@@ -104,11 +102,20 @@ tenantsRouter.patch("/:id", async (req, res, next) => {
       return;
     }
 
+    if (existing.isSystem && body.status === "SUSPENDED") {
+      res.status(400).json({ error: "The Tymio system workspace cannot be suspended." });
+      return;
+    }
+
     const data: { name?: string; status?: "ACTIVE" | "SUSPENDED"; slug?: string; schemaName?: string } = {};
     if (body.name !== undefined) data.name = body.name;
     if (body.status !== undefined) data.status = body.status;
 
     if (body.slug !== undefined && body.slug !== existing.slug) {
+      if (existing.isSystem) {
+        res.status(400).json({ error: "The system workspace slug cannot be changed." });
+        return;
+      }
       const schemaName = slugToSchemaName(body.slug);
       const taken = await prisma.tenant.findFirst({
         where: {
@@ -220,6 +227,25 @@ tenantsRouter.get("/schemas/list", async (_req, res, next) => {
   try {
     const schemas = await listTenantSchemas();
     res.json({ schemas });
+  } catch (err) {
+    next(err);
+  }
+});
+
+tenantsRouter.delete("/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const existing = await prisma.tenant.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+    if (existing.isSystem) {
+      res.status(400).json({ error: "The Tymio system workspace cannot be deleted." });
+      return;
+    }
+    await prisma.tenant.delete({ where: { id } });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

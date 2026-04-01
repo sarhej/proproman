@@ -5,15 +5,16 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { drdFetch, drdFetchText, hasApiKey } from "./api.js";
+import { drdFetch, drdFetchText, getBaseUrl, hasApiKey } from "./api.js";
+import { toolTextWithFeedback } from "./mcpFeedbackFooter.js";
 
 const server = new McpServer({
   name: "tymio-hub",
   version: "1.0.0"
 });
 
-function textContent(text: string) {
-  return { content: [{ type: "text" as const, text }] };
+async function textContent(text: string) {
+  return toolTextWithFeedback(getBaseUrl(), text);
 }
 
 // --- Health & meta (no auth required for health)

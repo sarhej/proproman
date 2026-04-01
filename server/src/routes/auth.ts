@@ -96,7 +96,7 @@ authRouter.get("/dev-tenants", async (_req, res) => {
   }
   const tenants = await prisma.tenant.findMany({
     where: { status: "ACTIVE" },
-    select: { id: true, name: true, slug: true, status: true },
+    select: { id: true, name: true, slug: true, status: true, isSystem: true },
     orderBy: { name: "asc" },
   });
   res.json({ tenants });
@@ -181,7 +181,7 @@ authRouter.get("/me", async (req, res) => {
   if (activeTenantId) {
     activeTenant = await prisma.tenant.findUnique({
       where: { id: activeTenantId },
-      select: { id: true, name: true, slug: true, status: true },
+      select: { id: true, name: true, slug: true, status: true, isSystem: true },
     });
   }
   res.json({ user: req.user, activeTenant });

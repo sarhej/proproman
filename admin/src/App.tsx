@@ -29,6 +29,14 @@ function CopySignInLinkButton({ slug }: { slug: string }) {
   );
 }
 
+function SystemHubBadge() {
+  return (
+    <span className="inline-block rounded bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">
+      Tymio hub
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     PENDING: "bg-amber-100 text-amber-800",
@@ -36,6 +44,7 @@ function StatusBadge({ status }: { status: string }) {
     REJECTED: "bg-red-100 text-red-800",
     ACTIVE: "bg-emerald-100 text-emerald-800",
     PROVISIONING: "bg-blue-100 text-blue-800",
+    DEPROVISIONING: "bg-amber-100 text-amber-900",
     SUSPENDED: "bg-red-100 text-red-800",
     OWNER: "bg-violet-100 text-violet-800",
     ADMIN: "bg-sky-100 text-sky-800",
@@ -160,6 +169,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
   const [tenantDetail, setTenantDetail] = useState<TenantDetail | null>(null);
   const [slugDraft, setSlugDraft] = useState("");
   const [slugSaving, setSlugSaving] = useState(false);
+  const [tenantDeleteBusy, setTenantDeleteBusy] = useState(false);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -176,7 +186,10 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
     setLoading(true);
     try {
       const data = await api.getAdminTenants();
-      setTenants(data as typeof tenants);
+      const sorted = [...data].sort((a, b) =>
+        a.isSystem === b.isSystem ? 0 : a.isSystem ? -1 : 1
+      );
+      setTenants(sorted as typeof tenants);
     } catch { /* ignore */ }
     setLoading(false);
   }, []);
@@ -219,6 +232,10 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
   }
 
   async function handleTenantStatusToggle(tenant: Tenant) {
+    if (tenant.isSystem) {
+      setActionError("The Tymio system workspace cannot be suspended.");
+      return;
+    }
     const next = tenant.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
     if (next === "SUSPENDED" && !confirm("Are you sure you want to suspend this workspace?")) return;
     setActionError(null);
@@ -242,8 +259,34 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
     }
   }
 
+  async function handleDeleteTenant(tenant: Tenant) {
+    if (tenant.isSystem) return;
+    if (
+      !confirm(
+        `Permanently delete workspace "${tenant.name}"? This removes the platform record; data in the tenant schema may need manual cleanup.`
+      )
+    ) {
+      return;
+    }
+    setActionError(null);
+    setTenantDeleteBusy(true);
+    try {
+      await api.deleteAdminTenant(tenant.id);
+      if (selectedTenantId === tenant.id) setSelectedTenantId(null);
+      await loadTenants();
+    } catch (err) {
+      setActionError((err as Error).message);
+    } finally {
+      setTenantDeleteBusy(false);
+    }
+  }
+
   async function handleSaveSlug() {
     if (!tenantDetail || !selectedTenantId || !SLUG_PATTERN.test(slugDraft)) return;
+    if (tenantDetail.isSystem) {
+      setActionError("The Tymio system workspace slug cannot be changed.");
+      return;
+    }
     if (slugDraft === tenantDetail.slug) return;
     setActionError(null);
     setSlugSaving(true);
@@ -395,7 +438,12 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                   <tbody>
                     {tenants.map((tenant) => (
                       <tr key={tenant.id} className="border-b last:border-0 hover:bg-slate-50">
-                        <td className="px-4 py-2.5 font-medium text-slate-800">{tenant.name}</td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex flex-wrap items-center gap-2 font-medium text-slate-800">
+                            <span>{tenant.name}</span>
+                            {tenant.isSystem ? <SystemHubBadge /> : null}
+                          </div>
+                        </td>
                         <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{tenant.slug}</td>
                         <td className="px-4 py-2.5"><StatusBadge status={tenant.status} /></td>
                         <td className="px-4 py-2.5 text-slate-600">{tenant._count?.memberships ?? "—"}</td>
@@ -407,13 +455,24 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                             <Button size="sm" variant="secondary" onClick={() => setSelectedTenantId(tenant.id)}>
                               Details
                             </Button>
-                            {(tenant.status === "ACTIVE" || tenant.status === "SUSPENDED") && (
+                            {!tenant.isSystem &&
+                              (tenant.status === "ACTIVE" || tenant.status === "SUSPENDED") && (
+                                <Button
+                                  size="sm"
+                                  variant={tenant.status === "ACTIVE" ? "danger" : "secondary"}
+                                  onClick={() => handleTenantStatusToggle(tenant)}
+                                >
+                                  {tenant.status === "ACTIVE" ? "Suspend" : "Activate"}
+                                </Button>
+                              )}
+                            {!tenant.isSystem && (
                               <Button
                                 size="sm"
-                                variant={tenant.status === "ACTIVE" ? "danger" : "secondary"}
-                                onClick={() => handleTenantStatusToggle(tenant)}
+                                variant="danger"
+                                disabled={tenantDeleteBusy}
+                                onClick={() => void handleDeleteTenant(tenant)}
                               >
-                                {tenant.status === "ACTIVE" ? "Suspend" : "Activate"}
+                                Delete
                               </Button>
                             )}
                           </div>
@@ -443,6 +502,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
             <Card className="p-5">
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <h2 className="text-lg font-semibold text-slate-800">{tenantDetail.name}</h2>
+                {tenantDetail.isSystem ? <SystemHubBadge /> : null}
                 <StatusBadge status={tenantDetail.status} />
               </div>
 
@@ -463,29 +523,35 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                 </div>
                 <div>
                   <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">URL slug</h3>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <label className="grid gap-1">
-                      <span className="text-xs text-slate-500">Slug (lowercase letters, numbers, hyphens)</span>
-                      <input
-                        className="w-56 rounded border border-slate-200 bg-white px-2 py-1.5 font-mono text-sm"
-                        value={slugDraft}
-                        onChange={(e) =>
-                          setSlugDraft(
-                            e.target.value
-                              .toLowerCase()
-                              .replace(/[^a-z0-9-]/g, "")
-                          )
-                        }
-                      />
-                    </label>
-                    <Button
-                      size="sm"
-                      onClick={() => void handleSaveSlug()}
-                      disabled={slugSaving || slugDraft === tenantDetail.slug || !SLUG_PATTERN.test(slugDraft)}
-                    >
-                      {slugSaving ? "Saving…" : "Save slug"}
-                    </Button>
-                  </div>
+                  {tenantDetail.isSystem ? (
+                    <p className="text-sm text-slate-600">
+                      This is the reserved Tymio product workspace; the slug is fixed and cannot be changed.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="grid gap-1">
+                        <span className="text-xs text-slate-500">Slug (lowercase letters, numbers, hyphens)</span>
+                        <input
+                          className="w-56 rounded border border-slate-200 bg-white px-2 py-1.5 font-mono text-sm"
+                          value={slugDraft}
+                          onChange={(e) =>
+                            setSlugDraft(
+                              e.target.value
+                                .toLowerCase()
+                                .replace(/[^a-z0-9-]/g, "")
+                            )
+                          }
+                        />
+                      </label>
+                      <Button
+                        size="sm"
+                        onClick={() => void handleSaveSlug()}
+                        disabled={slugSaving || slugDraft === tenantDetail.slug || !SLUG_PATTERN.test(slugDraft)}
+                      >
+                        {slugSaving ? "Saving…" : "Save slug"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -522,6 +588,23 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {!tenantDetail.isSystem && (
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <h3 className="mb-2 text-sm font-semibold text-red-800">Danger zone</h3>
+                  <p className="mb-3 text-sm text-slate-600">
+                    Delete this workspace from the platform. This does not automatically drop the tenant database
+                    schema.
+                  </p>
+                  <Button
+                    variant="danger"
+                    disabled={tenantDeleteBusy}
+                    onClick={() => void handleDeleteTenant(tenantDetail)}
+                  >
+                    {tenantDeleteBusy ? "Deleting…" : "Delete workspace"}
+                  </Button>
                 </div>
               )}
             </Card>

@@ -51,6 +51,8 @@ import { requireTenant } from "./tenant/requireTenant.js";
 import { tenantResolver } from "./tenant/tenantResolver.js";
 import { tenantsRouter } from "./routes/tenants.js";
 import { tenantRequestsRouter } from "./routes/tenant-requests.js";
+import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
+import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -136,6 +138,16 @@ app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {
     res.json({ name: tenant.name, slug: tenant.slug });
   } catch {
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/** Public: instructions for coding agents (stdio MCP clients fetch this to append to tool output). */
+app.get("/api/mcp/agent-context", async (_req, res) => {
+  try {
+    const feedbackReporting = await refreshMcpFeedbackNoticeCache();
+    res.json({ feedbackReporting });
+  } catch {
+    res.status(500).json({ error: "Failed to load agent context" });
   }
 });
 
@@ -238,6 +250,17 @@ app.use((err: Error, _req: express.Request, res: express.Response, next: express
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(Number(env.PORT), () => {
-  console.log(`Server running on port ${env.PORT}`);
+async function bootstrap(): Promise<void> {
+  try {
+    await ensureSystemTenant();
+    await refreshMcpFeedbackNoticeCache();
+  } catch (err) {
+    console.error("[startup] ensureSystemTenant / MCP feedback cache failed:", err);
+  }
+}
+
+void bootstrap().then(() => {
+  app.listen(Number(env.PORT), () => {
+    console.log(`Server running on port ${env.PORT}`);
+  });
 });

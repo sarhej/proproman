@@ -21,12 +21,13 @@ import {
   type BriefMode
 } from "../services/ontologyBrief.js";
 import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
+import { appendMcpFeedbackToToolResult } from "../lib/mcpFeedbackNotice.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
 const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
 
 function textContent(text: string) {
-  return { content: [{ type: "text" as const, text }] };
+  return { content: [{ type: "text" as const, text: appendMcpFeedbackToToolResult(text) }] };
 }
 
 function getUserFromCtx(ctx: unknown): { userId: string; role: string } {

@@ -36,7 +36,11 @@ const envSchema = z.object({
   /** Notification delivery: when "true", attempt to send via Slack (placeholder; no integration yet). */
   NOTIFICATION_SLACK_ENABLED: z.string().optional().transform((v) => v === "true"),
   /** Notification delivery: when "true", attempt to send via WhatsApp (placeholder; no integration yet). */
-  NOTIFICATION_WHATSAPP_ENABLED: z.string().optional().transform((v) => v === "true")
+  NOTIFICATION_WHATSAPP_ENABLED: z.string().optional().transform((v) => v === "true"),
+  /** Slug for the reserved Tymio product workspace (feedback hub). Default: tymio */
+  TYMI_SYSTEM_TENANT_SLUG: z.string().min(2).max(50).default("tymio"),
+  /** Optional: override MCP footer text for “how to report feedback” (otherwise built from CLIENT_URL + system workspace slug). */
+  MCP_FEEDBACK_INSTRUCTIONS: optionalString,
 });
 
 export const env = envSchema

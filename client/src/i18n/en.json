@@ -764,7 +764,8 @@
     "workspaces": "Workspaces",
     "copyEntryLink": "Copy workspace sign-in link",
     "entryLinkCopied": "Copied",
-    "entryLinkHelp": "Link icon: copy the URL for that workspace’s /t/… sign-in page."
+    "entryLinkHelp": "Link icon: copy the URL for that workspace’s /t/… sign-in page.",
+    "systemHubBadge": "Tymio hub"
   },
   "landing": {
     "title": "Welcome to Tymio",

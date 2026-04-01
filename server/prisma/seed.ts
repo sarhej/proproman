@@ -28,6 +28,7 @@ import {
 } from "@prisma/client";
 import { createTenantExtension } from "../src/tenant/tenantPrisma.js";
 import { runWithTenant, TenantContext } from "../src/tenant/tenantContext.js";
+import { provisionTenant } from "../src/tenant/tenantProvisioning.js";
 
 const basePrisma = new PrismaClient();
 const prisma = createTenantExtension(basePrisma);
@@ -65,7 +66,20 @@ async function main() {
   await prisma.tenant.deleteMany();
   await prisma.user.deleteMany();
 
-  // ─── Default tenant ──────────────────────────────────────────────
+  // ─── Tymio product hub (system workspace — feedback MCP, non-deletable) ──
+  const tymioTenant = await prisma.tenant.create({
+    data: {
+      name: "Tymio",
+      slug: "tymio",
+      schemaName: "tenant_tymio",
+      isSystem: true,
+      status: "PROVISIONING",
+      migrationState: { create: { schemaVersion: 0, status: "pending" } },
+    },
+  });
+  await provisionTenant(tymioTenant.id);
+
+  // ─── Default demo tenant ─────────────────────────────────────────
   const defaultTenant = await prisma.tenant.create({
     data: {
       name: "Demo Workspace",
@@ -84,28 +98,19 @@ async function main() {
   };
 
   // Run all seed operations within the tenant context so tenantId is auto-injected
-  await runWithTenant(tenantCtx, () => seedTenantData(TENANT_ID));
+  await runWithTenant(tenantCtx, () => seedTenantData(TENANT_ID, tymioTenant.id));
 }
 
-async function seedTenantData(TENANT_ID: string) {
-
-  // ─── Uživatelé ─────────────────────────────────────────────────
+async function seedTenantData(TENANT_ID: string, tymioTenantId: string) {
+  // ─── Sole operator (Google sign-in: s@strt.vc) ─────────────────
+  // Demo content below still names historical RACI/owners; all rows point at this user.
   const teamDefs: { name: string; email: string; aliases?: string[]; role: UserRole }[] = [
-    { name: "Ondrej Svoboda", email: "ondrej.svoboda@demo.tymio.app", aliases: ["svoboda@ehtmedic.cz"], role: UserRole.SUPER_ADMIN },
-    { name: "Sergej Fedorovic", email: "s@strt.vc", aliases: ["sarhej@gmail.com"], role: UserRole.SUPER_ADMIN },
-    { name: "Nela Mataseje", email: "nela.mataseje@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Vaclav Cerny", email: "vaclav.cerny@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Michael Mladek", email: "michael.mladek@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Jakub Justra", email: "jakub.justra@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Adela Hlouskova", email: "adela.hlouskova@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Zdenek Trtil", email: "zdenek.trtil@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Ales Zarsky", email: "ales.zarsky@gmail.com", role: UserRole.VIEWER },
-    { name: "Jitka Pekarkova", email: "jitka.projektak@gmail.com", role: UserRole.SUPER_ADMIN },
-    { name: "David", email: "david@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Martina Dvorakova", email: "dvorakova@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Pavel Lukes", email: "pavel@lukes.pro", role: UserRole.EDITOR },
-    { name: "Marek Dvorak", email: "marek.dvorak@demo.tymio.app", role: UserRole.EDITOR },
-    { name: "Filip Zavadil", email: "filip.zavadil@demo.tymio.app", role: UserRole.EDITOR },
+    {
+      name: "Sergej Fedorovic",
+      email: "s@strt.vc",
+      aliases: ["sarhej@gmail.com"],
+      role: UserRole.SUPER_ADMIN,
+    },
   ];
 
   const users = await Promise.all(
@@ -129,26 +134,29 @@ async function seedTenantData(TENANT_ID: string) {
     await prisma.tenantMembership.create({
       data: { tenantId: TENANT_ID, userId: user.id, role: memberRole },
     });
+    await prisma.tenantMembership.create({
+      data: { tenantId: tymioTenantId, userId: user.id, role: "OWNER" },
+    });
     await prisma.user.update({ where: { id: user.id }, data: { activeTenantId: TENANT_ID } });
   }
 
-  const byName = Object.fromEntries(users.map((x) => [x.name, x]));
-  const u: Record<string, typeof users[0]> = {
-    Ondra: byName["Ondrej Svoboda"],
-    Sergei: byName["Sergej Fedorovic"],
-    Nelca: byName["Nela Mataseje"],
-    Vasek: byName["Vaclav Cerny"],
-    Michael: byName["Michael Mladek"],
-    Kuba: byName["Jakub Justra"],
-    Adela: byName["Adela Hlouskova"],
-    Zdenek: byName["Zdenek Trtil"],
-    Ales: byName["Ales Zarsky"],
-    Jitka: byName["Jitka Pekarkova"],
-    David: byName["David"],
-    Martina: byName["Martina Dvorakova"],
-    Pavel: byName["Pavel Lukes"],
-    Marek: byName["Marek Dvorak"],
-    Filip: byName["Filip Zavadil"],
+  const sole = users[0];
+  const u: Record<string, typeof sole> = {
+    Ondra: sole,
+    Sergei: sole,
+    Nelca: sole,
+    Vasek: sole,
+    Michael: sole,
+    Kuba: sole,
+    Adela: sole,
+    Zdenek: sole,
+    Ales: sole,
+    Jitka: sole,
+    David: sole,
+    Martina: sole,
+    Pavel: sole,
+    Marek: sole,
+    Filip: sole,
   };
 
   // ─── Produkty ──────────────────────────────────────────────────

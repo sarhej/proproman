@@ -267,6 +267,8 @@ model Tenant {
   name          String
   slug          String         @unique
   schemaName    String         @unique
+  /** Reserved Tymio product workspace (feedback MCP, non-deletable). At most one true per DB. */
+  isSystem      Boolean        @default(false)
   status        TenantStatus   @default(PROVISIONING)
   settings      Json?
   createdAt     DateTime       @default(now())

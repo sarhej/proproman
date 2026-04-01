@@ -97,8 +97,15 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
         className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
       >
         <Building2 size={14} className="text-slate-400" />
-        <span className={compact ? "max-w-[100px] truncate" : "max-w-[160px] truncate"}>
-          {activeTenant.name}
+        <span
+          className={`flex min-w-0 items-center gap-1.5 ${compact ? "max-w-[100px]" : "max-w-[160px]"}`}
+        >
+          <span className="truncate">{activeTenant.name}</span>
+          {activeTenant.isSystem ? (
+            <span className="shrink-0 rounded bg-violet-100 px-1 py-0.5 text-[8px] font-semibold uppercase text-violet-700">
+              {t("tenant.systemHubBadge")}
+            </span>
+          ) : null}
         </span>
         <ChevronDown size={14} className="text-slate-400" />
       </button>
@@ -121,7 +128,14 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
                   m.tenant.id === activeTenant.id ? "text-sky-800" : "text-slate-700"
                 }`}
               >
-                <span className="truncate font-medium">{m.tenant.name}</span>
+                <span className="flex min-w-0 items-center gap-1.5 truncate font-medium">
+                  <span className="truncate">{m.tenant.name}</span>
+                  {m.tenant.isSystem ? (
+                    <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-700">
+                      {t("tenant.systemHubBadge")}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="ml-2 shrink-0 text-[10px] text-slate-400">{m.role}</span>
               </button>
               <button

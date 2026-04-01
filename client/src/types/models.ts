@@ -59,6 +59,8 @@ export type Tenant = {
   name: string;
   slug: string;
   status: TenantStatus;
+  /** Tymio product hub workspace */
+  isSystem?: boolean;
 };
 
 export type TenantMembership = {

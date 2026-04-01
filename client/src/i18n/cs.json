@@ -763,6 +763,7 @@
     "workspaces": "Pracovní prostory",
     "copyEntryLink": "Zkopírovat odkaz pro přihlášení do prostoru",
     "entryLinkCopied": "Zkopírováno",
-    "entryLinkHelp": "Ikona odkazu: zkopíruje URL přihlašovací stránky /t/… pro daný prostor."
+    "entryLinkHelp": "Ikona odkazu: zkopíruje URL přihlašovací stránky /t/… pro daný prostor.",
+    "systemHubBadge": "Tymio hub"
   }
 }

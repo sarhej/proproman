@@ -24,7 +24,7 @@ meRouter.get("/tenants", async (req, res) => {
   const memberships = await prisma.tenantMembership.findMany({
     where: { userId },
     include: {
-      tenant: { select: { id: true, name: true, slug: true, status: true } },
+      tenant: { select: { id: true, name: true, slug: true, status: true, isSystem: true } },
     },
     orderBy: { tenant: { name: "asc" } },
   });

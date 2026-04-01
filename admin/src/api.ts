@@ -43,6 +43,8 @@ export type Tenant = {
   name: string;
   slug: string;
   status: TenantStatus;
+  /** Reserved Tymio product workspace — cannot delete or change slug / suspend */
+  isSystem?: boolean;
 };
 
 export type TenantDetail = Tenant & {
@@ -108,4 +110,7 @@ export const api = {
 
   removeTenantMember: (tenantId: string, userId: string) =>
     request<{ ok: boolean }>(`/api/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }),
+
+  deleteAdminTenant: (id: string) =>
+    request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
 };
