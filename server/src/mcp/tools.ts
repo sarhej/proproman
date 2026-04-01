@@ -22,6 +22,7 @@ import {
 } from "../services/ontologyBrief.js";
 import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
 import { appendMcpFeedbackToToolResult } from "../lib/mcpFeedbackNotice.js";
+import { getTenantContext } from "../tenant/tenantContext.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
 const userPublicSelect = { id: true, name: true, email: true, role: true } as const;
@@ -30,7 +31,13 @@ function textContent(text: string) {
   return { content: [{ type: "text" as const, text: appendMcpFeedbackToToolResult(text) }] };
 }
 
+function requireTenantContext(): void {
+  const tenantContext = getTenantContext();
+  if (!tenantContext) throw new Error("No tenant context — connect to a workspace first.");
+}
+
 function getUserFromCtx(ctx: unknown): { userId: string; role: string } {
+  requireTenantContext();
   const extra = (ctx as { authInfo?: { extra?: Record<string, unknown> } })?.authInfo?.extra;
   if (!extra?.userId) throw new Error("Not authenticated");
   return { userId: extra.userId as string, role: extra.role as string };
@@ -39,6 +46,27 @@ function getUserFromCtx(ctx: unknown): { userId: string; role: string } {
 function requireRole(role: string, ...allowed: string[]) {
   if (role === UserRole.SUPER_ADMIN) return;
   if (!allowed.includes(role)) throw new Error(`Forbidden: requires ${allowed.join(" or ")}`);
+}
+
+function resolveOwnerIdForCaller(
+  requestedOwnerId: string | null | undefined,
+  userId: string,
+  role: string
+): string {
+  if (requestedOwnerId && requestedOwnerId !== userId && role !== UserRole.SUPER_ADMIN) {
+    throw new Error("Forbidden: ownerId must match the authenticated user.");
+  }
+  return requestedOwnerId ?? userId;
+}
+
+function assertOwnerIdEditableByCaller(
+  requestedOwnerId: string | null | undefined,
+  userId: string,
+  role: string
+): void {
+  if (requestedOwnerId && requestedOwnerId !== userId && role !== UserRole.SUPER_ADMIN) {
+    throw new Error("Forbidden: ownerId must match the authenticated user.");
+  }
 }
 
 /** Recursively replace any user-like object (has email + name) with only id, name, email, role. */
@@ -150,7 +178,7 @@ export function registerTools(server: McpServer) {
       })
     },
     async (body, ctx) => {
-      const { role } = getUserFromCtx(ctx);
+      const { userId, role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
       const initiative = await prisma.initiative.create({
         data: {
@@ -158,7 +186,7 @@ export function registerTools(server: McpServer) {
           domainId: body.domainId,
           productId: body.productId ?? null,
           description: body.description ?? null,
-          ownerId: body.ownerId ?? null,
+          ownerId: resolveOwnerIdForCaller(body.ownerId, userId, role),
           priority: (body.priority as Priority) ?? "P2",
           horizon: (body.horizon as Horizon) ?? "NOW",
           status: (body.status as Prisma.EnumInitiativeStatusFieldUpdateOperationsInput["set"]) ?? "IDEA",
@@ -193,7 +221,7 @@ export function registerTools(server: McpServer) {
       })
     },
     async ({ id, ...body }, ctx) => {
-      const { role } = getUserFromCtx(ctx);
+      const { userId, role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
       const data: Record<string, unknown> = {};
       if (body.title !== undefined) data.title = body.title;
@@ -201,7 +229,10 @@ export function registerTools(server: McpServer) {
       if (body.productId !== undefined) data.productId = body.productId;
       if (body.description !== undefined) data.description = body.description;
       if (body.notes !== undefined) data.notes = body.notes;
-      if (body.ownerId !== undefined) data.ownerId = body.ownerId;
+      if (body.ownerId !== undefined) {
+        assertOwnerIdEditableByCaller(body.ownerId, userId, role);
+        data.ownerId = body.ownerId;
+      }
       if (body.priority !== undefined) data.priority = body.priority;
       if (body.horizon !== undefined) data.horizon = body.horizon;
       if (body.status !== undefined) data.status = body.status;
@@ -550,7 +581,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       })
     },
     async (body, ctx) => {
-      const { role } = getUserFromCtx(ctx);
+      const { userId, role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
       const feature = await prisma.feature.create({
         data: {
@@ -560,7 +591,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
           acceptanceCriteria: body.acceptanceCriteria ?? null,
           storyPoints: body.storyPoints ?? null,
           storyType: body.storyType ? (body.storyType as StoryType) : null,
-          ownerId: body.ownerId ?? null,
+          ownerId: resolveOwnerIdForCaller(body.ownerId, userId, role),
           status: (body.status as FeatureStatus) ?? FeatureStatus.IDEA,
           sortOrder: body.sortOrder ?? 0
         },
@@ -588,7 +619,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       })
     },
     async ({ id, ...body }, ctx) => {
-      const { role } = getUserFromCtx(ctx);
+      const { userId, role } = getUserFromCtx(ctx);
       requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
       const data: Record<string, unknown> = {};
       if (body.title !== undefined) data.title = body.title;
@@ -596,7 +627,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       if (body.acceptanceCriteria !== undefined) data.acceptanceCriteria = body.acceptanceCriteria;
       if (body.storyPoints !== undefined) data.storyPoints = body.storyPoints;
       if (body.storyType !== undefined) data.storyType = body.storyType;
-      if (body.ownerId !== undefined) data.ownerId = body.ownerId;
+      if (body.ownerId !== undefined) {
+        assertOwnerIdEditableByCaller(body.ownerId, userId, role);
+        data.ownerId = body.ownerId;
+      }
       if (body.status !== undefined) data.status = body.status;
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
       const feature = await prisma.feature.update({

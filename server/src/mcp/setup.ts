@@ -122,13 +122,15 @@ export function mountMcp(app: express.Express): void {
       };
 
       const tenantContext = await resolveMcpTenantContext(req, (t) => provider.verifyAccessToken(t), prisma);
-      if (tenantContext) {
-        req.tenantContext = tenantContext;
-        await runWithTenant(tenantContext, handleTransportRequest);
+      if (!tenantContext) {
+        res.status(403).json({
+          error: "No active workspace membership. Connect to a workspace before using MCP tools."
+        });
         return;
       }
 
-      await handleTransportRequest();
+      req.tenantContext = tenantContext;
+      await runWithTenant(tenantContext, handleTransportRequest);
     } catch (err) {
       console.error("MCP request error:", err);
       if (err instanceof Error && err.stack) console.error(err.stack);
