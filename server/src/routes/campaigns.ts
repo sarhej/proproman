@@ -2,7 +2,10 @@ import { CampaignStatus, CampaignType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { getTenantId } from "../tenant/requireTenant.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireTenantCampaignWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const campaignSchema = z.object({
@@ -56,10 +59,15 @@ campaignsRouter.get("/:id", async (req, res) => {
   res.json({ campaign });
 });
 
-campaignsRouter.post("/", requireMarketingAccess(), async (req, res) => {
+campaignsRouter.post("/", requireTenantCampaignWrite(), async (req, res) => {
   const parsed = campaignSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+  if (bad) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
     return;
   }
   const { startDate, endDate, ...rest } = parsed.data;
@@ -78,12 +86,19 @@ campaignsRouter.post("/", requireMarketingAccess(), async (req, res) => {
   res.status(201).json({ campaign });
 });
 
-campaignsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
+campaignsRouter.put("/:id", requireTenantCampaignWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = campaignSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
+  }
+  if (parsed.data.ownerId !== undefined) {
+    const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+    if (bad) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
+      return;
+    }
   }
   const { startDate, endDate, ...rest } = parsed.data;
   const campaign = await prisma.campaign.update({
@@ -102,7 +117,7 @@ campaignsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
   res.json({ campaign });
 });
 
-campaignsRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
+campaignsRouter.delete("/:id", requireTenantCampaignWrite(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.campaign.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "CAMPAIGN", id);

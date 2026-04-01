@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { UserRole } from "@prisma/client";
 
-function checkAuth(req: Request, res: Response): boolean {
+export function checkAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Unauthorized" });
     return false;

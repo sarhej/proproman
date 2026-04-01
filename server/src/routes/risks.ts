@@ -2,7 +2,8 @@ import { RiskLevel } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const riskSchema = z.object({
@@ -16,7 +17,7 @@ const riskSchema = z.object({
 export const risksRouter = Router();
 risksRouter.use(requireAuth);
 
-risksRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+risksRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = riskSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -38,7 +39,7 @@ risksRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   res.status(201).json({ risk });
 });
 
-risksRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+risksRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.risk.findUnique({ where: { id } });
   await prisma.risk.delete({ where: { id } });

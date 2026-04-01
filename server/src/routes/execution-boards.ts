@@ -1,14 +1,9 @@
-import {
-  BoardProvider,
-  BoardSyncState,
-  Prisma,
-  TaskStatus,
-  UserRole
-} from "@prisma/client";
+import { BoardProvider, BoardSyncState, Prisma, TaskStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 export const columnInputSchema = z.object({
@@ -75,7 +70,7 @@ executionBoardsRouter.get("/products/:productId/execution-boards", async (req, r
 /** POST /api/products/:productId/execution-boards */
 executionBoardsRouter.post(
   "/products/:productId/execution-boards",
-  requireWriteAccess(),
+  requireWorkspaceStructureWrite(),
   async (req, res) => {
     const productId = String(req.params.productId);
     const parsed = createBoardSchema.safeParse(req.body);
@@ -146,7 +141,7 @@ executionBoardsRouter.post(
 );
 
 /** PUT /api/execution-boards/:boardId */
-executionBoardsRouter.put("/execution-boards/:boardId", requireWriteAccess(), async (req, res) => {
+executionBoardsRouter.put("/execution-boards/:boardId", requireWorkspaceStructureWrite(), async (req, res) => {
   const boardId = String(req.params.boardId);
   const parsed = updateBoardSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -188,7 +183,7 @@ executionBoardsRouter.put("/execution-boards/:boardId", requireWriteAccess(), as
 /** DELETE /api/execution-boards/:boardId */
 executionBoardsRouter.delete(
   "/execution-boards/:boardId",
-  requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  requireWorkspaceStructureWrite(),
   async (req, res) => {
     const boardId = String(req.params.boardId);
     const existing = await prisma.executionBoard.findUnique({ where: { id: boardId } });
@@ -205,7 +200,7 @@ executionBoardsRouter.delete(
 /** POST /api/execution-boards/:boardId/columns */
 executionBoardsRouter.post(
   "/execution-boards/:boardId/columns",
-  requireWriteAccess(),
+  requireWorkspaceStructureWrite(),
   async (req, res) => {
     const boardId = String(req.params.boardId);
     const parsed = columnInputSchema.safeParse(req.body);
@@ -240,7 +235,7 @@ executionBoardsRouter.post(
 );
 
 /** PUT /api/execution-columns/:columnId */
-executionBoardsRouter.put("/execution-columns/:columnId", requireWriteAccess(), async (req, res) => {
+executionBoardsRouter.put("/execution-columns/:columnId", requireWorkspaceStructureWrite(), async (req, res) => {
   const columnId = String(req.params.columnId);
   const parsed = updateColumnSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -275,7 +270,7 @@ executionBoardsRouter.put("/execution-columns/:columnId", requireWriteAccess(), 
 /** DELETE /api/execution-columns/:columnId */
 executionBoardsRouter.delete(
   "/execution-columns/:columnId",
-  requireWriteAccess(),
+  requireWorkspaceStructureWrite(),
   async (req, res) => {
     const columnId = String(req.params.columnId);
     const existing = await prisma.executionColumn.findUnique({ where: { id: columnId } });
@@ -292,7 +287,7 @@ executionBoardsRouter.delete(
 /** POST /api/execution-boards/:boardId/columns/reorder */
 executionBoardsRouter.post(
   "/execution-boards/:boardId/columns/reorder",
-  requireWriteAccess(),
+  requireWorkspaceStructureWrite(),
   async (req, res) => {
     const boardId = String(req.params.boardId);
     const parsed = columnReorderSchema.safeParse(req.body);

@@ -7,8 +7,7 @@ import {
   StoryType,
   TaskStatus,
   TaskType,
-  TopLevelItemType,
-  UserRole
+  TopLevelItemType
 } from "@prisma/client";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
@@ -22,6 +21,12 @@ import {
 } from "../services/ontologyBrief.js";
 import { applyExecutionColumn } from "../services/requirementExecutionColumn.js";
 import { appendMcpFeedbackToToolResult } from "../lib/mcpFeedbackNotice.js";
+import { findFirstUserIdNotInTenant, listTenantMemberUsersPublic } from "../lib/tenantUserRefs.js";
+import {
+  isPlatformSuperAdmin,
+  workspaceMembershipCanManageStructure,
+  workspaceMembershipCanWriteContent
+} from "../lib/workspaceRbac.js";
 import { getTenantContext } from "../tenant/tenantContext.js";
 
 /** Only these user fields are exposed to MCP (so the AI can match user id). */
@@ -43,29 +48,58 @@ function getUserFromCtx(ctx: unknown): { userId: string; role: string } {
   return { userId: extra.userId as string, role: extra.role as string };
 }
 
-function requireRole(role: string, ...allowed: string[]) {
-  if (role === UserRole.SUPER_ADMIN) return;
-  if (!allowed.includes(role)) throw new Error(`Forbidden: requires ${allowed.join(" or ")}`);
-}
-
-function resolveOwnerIdForCaller(
-  requestedOwnerId: string | null | undefined,
-  userId: string,
-  role: string
-): string {
-  if (requestedOwnerId && requestedOwnerId !== userId && role !== UserRole.SUPER_ADMIN) {
-    throw new Error("Forbidden: ownerId must match the authenticated user.");
+function requireMcpWorkspaceContentWrite(membershipRole: string, globalRole: string): void {
+  if (isPlatformSuperAdmin(globalRole)) return;
+  if (!workspaceMembershipCanWriteContent(membershipRole)) {
+    throw new Error("Forbidden: workspace VIEWER cannot modify data.");
   }
-  return requestedOwnerId ?? userId;
 }
 
-function assertOwnerIdEditableByCaller(
+function requireMcpWorkspaceStructureWrite(membershipRole: string, globalRole: string): void {
+  if (isPlatformSuperAdmin(globalRole)) return;
+  if (!workspaceMembershipCanManageStructure(membershipRole)) {
+    throw new Error("Forbidden: requires workspace OWNER or ADMIN.");
+  }
+}
+
+async function resolveOwnerIdForWorkspace(
   requestedOwnerId: string | null | undefined,
-  userId: string,
-  role: string
-): void {
-  if (requestedOwnerId && requestedOwnerId !== userId && role !== UserRole.SUPER_ADMIN) {
-    throw new Error("Forbidden: ownerId must match the authenticated user.");
+  callerUserId: string,
+  globalRole: string,
+  membershipRole: string,
+  tenantId: string
+): Promise<string> {
+  const effective = requestedOwnerId ?? callerUserId;
+  const outsider = await findFirstUserIdNotInTenant(tenantId, [effective]);
+  if (outsider) {
+    throw new Error(`Forbidden: user ${outsider} is not a member of this workspace.`);
+  }
+  if (effective !== callerUserId) {
+    if (!isPlatformSuperAdmin(globalRole) && !workspaceMembershipCanManageStructure(membershipRole)) {
+      throw new Error(
+        "Forbidden: ownerId must match the authenticated user unless you are workspace OWNER or ADMIN."
+      );
+    }
+  }
+  return effective;
+}
+
+async function assertOwnerIdEditableForWorkspace(
+  requestedOwnerId: string | null | undefined,
+  callerUserId: string,
+  globalRole: string,
+  membershipRole: string,
+  tenantId: string
+): Promise<void> {
+  if (requestedOwnerId === undefined) return;
+  await resolveOwnerIdForWorkspace(requestedOwnerId, callerUserId, globalRole, membershipRole, tenantId);
+}
+
+async function assertAssigneeInTenant(tenantId: string, assigneeId: string | null | undefined): Promise<void> {
+  if (assigneeId === undefined || assigneeId === null) return;
+  const outsider = await findFirstUserIdNotInTenant(tenantId, [assigneeId]);
+  if (outsider) {
+    throw new Error(`Forbidden: assignee ${outsider} is not a member of this workspace.`);
   }
 }
 
@@ -104,11 +138,12 @@ export function registerTools(server: McpServer) {
     { title: "Get Tymio meta", description: "Get meta data: domains, products, accounts, partners, personas, revenue streams, users.", inputSchema: z.object({}) },
     async (_args, ctx) => {
       getUserFromCtx(ctx);
+      const tenantId = getTenantContext()!.tenantId;
       const [domains, personas, revenueStreams, users, products, accounts, partners] = await Promise.all([
         prisma.domain.findMany({ orderBy: { sortOrder: "asc" } }),
         prisma.persona.findMany({ orderBy: { name: "asc" } }),
         prisma.revenueStream.findMany({ orderBy: { name: "asc" } }),
-        prisma.user.findMany({ select: userPublicSelect, orderBy: { name: "asc" } }),
+        listTenantMemberUsersPublic(tenantId),
         prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
         prisma.account.findMany({ orderBy: { name: "asc" } }),
         prisma.partner.findMany({ orderBy: { name: "asc" } })
@@ -179,14 +214,16 @@ export function registerTools(server: McpServer) {
     },
     async (body, ctx) => {
       const { userId, role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      const ownerId = await resolveOwnerIdForWorkspace(body.ownerId, userId, role, membershipRole, tenantId);
       const initiative = await prisma.initiative.create({
         data: {
           title: body.title,
           domainId: body.domainId,
           productId: body.productId ?? null,
           description: body.description ?? null,
-          ownerId: resolveOwnerIdForCaller(body.ownerId, userId, role),
+          ownerId,
           priority: (body.priority as Priority) ?? "P2",
           horizon: (body.horizon as Horizon) ?? "NOW",
           status: (body.status as Prisma.EnumInitiativeStatusFieldUpdateOperationsInput["set"]) ?? "IDEA",
@@ -222,7 +259,8 @@ export function registerTools(server: McpServer) {
     },
     async ({ id, ...body }, ctx) => {
       const { userId, role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
       const data: Record<string, unknown> = {};
       if (body.title !== undefined) data.title = body.title;
       if (body.domainId !== undefined) data.domainId = body.domainId;
@@ -230,7 +268,7 @@ export function registerTools(server: McpServer) {
       if (body.description !== undefined) data.description = body.description;
       if (body.notes !== undefined) data.notes = body.notes;
       if (body.ownerId !== undefined) {
-        assertOwnerIdEditableByCaller(body.ownerId, userId, role);
+        await assertOwnerIdEditableForWorkspace(body.ownerId, userId, role, membershipRole, tenantId);
         data.ownerId = body.ownerId;
       }
       if (body.priority !== undefined) data.priority = body.priority;
@@ -302,7 +340,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async (_args, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
       const product = await prisma.product.findFirst({ where: { name: "Tymio demo hub" } });
       if (!product) throw new Error("Product 'Tymio demo hub' not found. Run db:populate-tymio-demo --workspace server first.");
       const initiatives = await prisma.initiative.findMany({ where: { productId: product.id } });
@@ -322,7 +361,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     { title: "Delete initiative", description: "Delete an initiative by ID.", inputSchema: z.object({ id: z.string() }) },
     async ({ id }, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
       await prisma.initiative.delete({ where: { id } });
       return textContent(JSON.stringify({ ok: true }));
     }
@@ -364,7 +404,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async (body, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
       const product = await prisma.product.create({
         data: {
           name: body.name,
@@ -392,7 +433,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async ({ id, ...body }, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
       const data: {
         name?: string;
         description?: string | null;
@@ -582,7 +624,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async (body, ctx) => {
       const { userId, role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      const ownerId = await resolveOwnerIdForWorkspace(body.ownerId, userId, role, membershipRole, tenantId);
       const feature = await prisma.feature.create({
         data: {
           initiativeId: body.initiativeId,
@@ -591,7 +635,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
           acceptanceCriteria: body.acceptanceCriteria ?? null,
           storyPoints: body.storyPoints ?? null,
           storyType: body.storyType ? (body.storyType as StoryType) : null,
-          ownerId: resolveOwnerIdForCaller(body.ownerId, userId, role),
+          ownerId,
           status: (body.status as FeatureStatus) ?? FeatureStatus.IDEA,
           sortOrder: body.sortOrder ?? 0
         },
@@ -620,7 +664,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async ({ id, ...body }, ctx) => {
       const { userId, role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
       const data: Record<string, unknown> = {};
       if (body.title !== undefined) data.title = body.title;
       if (body.description !== undefined) data.description = body.description;
@@ -628,7 +673,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       if (body.storyPoints !== undefined) data.storyPoints = body.storyPoints;
       if (body.storyType !== undefined) data.storyType = body.storyType;
       if (body.ownerId !== undefined) {
-        assertOwnerIdEditableByCaller(body.ownerId, userId, role);
+        await assertOwnerIdEditableForWorkspace(body.ownerId, userId, role, membershipRole, tenantId);
         data.ownerId = body.ownerId;
       }
       if (body.status !== undefined) data.status = body.status;
@@ -751,7 +796,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     },
     async (body, ctx) => {
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      await assertAssigneeInTenant(tenantId, body.assigneeId);
       let status = body.status ? (body.status as TaskStatus) : TaskStatus.NOT_STARTED;
       let isDone = body.isDone ?? false;
       let executionColumnId: string | null | undefined = undefined;
@@ -824,13 +871,17 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     async (args, ctx) => {
       const { id, ...body } = updateRequirementSchema.parse(args);
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
       const existing = await prisma.requirement.findUnique({
         where: { id },
         select: { featureId: true }
       });
       if (!existing) throw new Error("Requirement not found");
       const featureId = body.featureId ?? existing.featureId;
+      if (body.assigneeId !== undefined) {
+        await assertAssigneeInTenant(tenantId, body.assigneeId);
+      }
       const data: Prisma.RequirementUncheckedUpdateInput = {};
       if (body.featureId !== undefined) data.featureId = body.featureId;
       if (body.title !== undefined) data.title = body.title;
@@ -898,7 +949,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     async (args, ctx) => {
       const body = upsertRequirementSchema.parse(args);
       const { role } = getUserFromCtx(ctx);
-      requireRole(role, UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPER_ADMIN);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      await assertAssigneeInTenant(tenantId, body.assigneeId);
       const where = body.externalRef
         ? { featureId: body.featureId, externalRef: body.externalRef }
         : { featureId: body.featureId, title: body.title.trim() };

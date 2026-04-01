@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const kpiSchema = z.object({
@@ -27,7 +28,7 @@ kpisRouter.get("/", async (_req, res) => {
   res.json({ kpis });
 });
 
-kpisRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+kpisRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = kpiSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -48,7 +49,7 @@ kpisRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
   res.status(201).json({ kpi });
 });
 
-kpisRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+kpisRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = kpiSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -69,7 +70,7 @@ kpisRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ kpi });
 });
 
-kpisRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+kpisRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.initiativeKPI.findUnique({ where: { id } });
   await prisma.initiativeKPI.delete({ where: { id } });

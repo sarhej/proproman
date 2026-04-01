@@ -1,8 +1,11 @@
-import { AccountType, DealStage, StrategicTier, UserRole } from "@prisma/client";
+import { AccountType, DealStage, StrategicTier } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 
 const accountSchema = z.object({
@@ -36,10 +39,15 @@ accountsRouter.get("/", async (_req, res) => {
   res.json({ accounts });
 });
 
-accountsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+accountsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = accountSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+  if (bad) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
     return;
   }
   const account = await prisma.account.create({
@@ -57,12 +65,19 @@ accountsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
   res.status(201).json({ account });
 });
 
-accountsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+accountsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = accountSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
+  }
+  if (parsed.data.ownerId !== undefined) {
+    const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+    if (bad) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
+      return;
+    }
   }
   const existing = await prisma.account.findUnique({ where: { id } });
   const account = await prisma.account.update({
@@ -82,7 +97,7 @@ accountsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
   res.json({ account });
 });
 
-accountsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+accountsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.account.findUnique({ where: { id } });
   await prisma.account.delete({ where: { id } });

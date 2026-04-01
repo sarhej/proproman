@@ -3,6 +3,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import request from "supertest";
 import { UserRole, Priority, Horizon, InitiativeStatus, CommercialType } from "@prisma/client";
 import { initiativesRouter } from "./initiatives.js";
+import type { TenantContext } from "../tenant/tenantContext.js";
 
 vi.mock("../db.js", () => ({
   prisma: {
@@ -17,6 +18,7 @@ vi.mock("../db.js", () => ({
     initiativeRevenueStream: { deleteMany: vi.fn(), createMany: vi.fn() },
     demandLink: { deleteMany: vi.fn(), createMany: vi.fn() },
     initiativeAssignment: { deleteMany: vi.fn(), createMany: vi.fn() },
+    tenantMembership: { findMany: vi.fn() },
     $transaction: vi.fn((fn: (tx: unknown) => Promise<unknown>) => fn({})),
   },
 }));
@@ -26,6 +28,20 @@ vi.mock("../services/audit.js", () => ({
 }));
 
 import { prisma } from "../db.js";
+
+function stubTenant(membershipRole: TenantContext["membershipRole"]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    (req as unknown as { tenantContext: TenantContext }).tenantContext = {
+      tenantId: "t-test",
+      tenantSlug: "test",
+      schemaName: "tenant_test",
+      membershipRole,
+    };
+    next();
+  };
+}
+
+const mockTenantMembership = prisma.tenantMembership as unknown as { findMany: ReturnType<typeof vi.fn> };
 
 const mockInitiative = prisma.initiative as unknown as {
   findMany: ReturnType<typeof vi.fn>;
@@ -85,12 +101,16 @@ const minimalIncludePayload = {
 describe("initiatives isEpic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTenantMembership.findMany.mockImplementation(async (args: { where: { userId: { in: string[] } } }) =>
+      args.where.userId.in.map((userId: string) => ({ userId }))
+    );
   });
 
   it("GET passes isEpic: true into findMany when query isEpic=true", async () => {
     const app = express();
     app.use(express.json());
     app.use(authEditor());
+    app.use(stubTenant("MEMBER"));
     app.use("/api/initiatives", initiativesRouter);
     mockInitiative.findMany.mockResolvedValue([]);
 
@@ -107,6 +127,7 @@ describe("initiatives isEpic", () => {
     const app = express();
     app.use(express.json());
     app.use(authEditor());
+    app.use(stubTenant("MEMBER"));
     app.use("/api/initiatives", initiativesRouter);
 
     mockInitiative.create.mockResolvedValue({
@@ -144,6 +165,7 @@ describe("initiatives isEpic", () => {
     const app = express();
     app.use(express.json());
     app.use(authEditor());
+    app.use(stubTenant("MEMBER"));
     app.use("/api/initiatives", initiativesRouter);
 
     mockInitiative.create.mockResolvedValue({
@@ -194,6 +216,7 @@ describe("PUT isEpic admin-only", () => {
     const app = express();
     app.use(express.json());
     app.use(authEditor());
+    app.use(stubTenant("MEMBER"));
     app.use("/api/initiatives", initiativesRouter);
 
     const txInitiative = mockTx();
@@ -226,6 +249,7 @@ describe("PUT isEpic admin-only", () => {
     const app = express();
     app.use(express.json());
     app.use(authAdmin());
+    app.use(stubTenant("ADMIN"));
     app.use("/api/initiatives", initiativesRouter);
 
     const txInitiative = mockTx();

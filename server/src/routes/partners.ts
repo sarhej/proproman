@@ -1,8 +1,10 @@
-import { UserRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 
 const partnerSchema = z.object({
@@ -31,10 +33,15 @@ partnersRouter.get("/", async (_req, res) => {
   res.json({ partners });
 });
 
-partnersRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+partnersRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = partnerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+  if (bad) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
     return;
   }
   const partner = await prisma.partner.create({
@@ -47,12 +54,19 @@ partnersRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asyn
   res.status(201).json({ partner });
 });
 
-partnersRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+partnersRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = partnerSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
+  }
+  if (parsed.data.ownerId !== undefined) {
+    const bad = await findFirstUserIdNotInTenant(getTenantId(req), [parsed.data.ownerId]);
+    if (bad) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
+      return;
+    }
   }
   const partner = await prisma.partner.update({
     where: { id },
@@ -66,7 +80,7 @@ partnersRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), as
   res.json({ partner });
 });
 
-partnersRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+partnersRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.partner.findUnique({ where: { id } });
   await prisma.partner.delete({ where: { id } });

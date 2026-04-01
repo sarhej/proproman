@@ -200,6 +200,40 @@ describe("resolveMcpTenantContext", () => {
     expect(result?.tenantId).toBe("t-from-user");
   });
 
+  it("returns undefined when X-Tenant-Id has no membership even if activeTenantId would resolve", async () => {
+    verifyAccessToken.mockResolvedValue(authInfo({ userId: "u1" }));
+    userFindUnique.mockResolvedValue({ activeTenantId: "t-good" });
+    tenantMembershipFindUnique.mockImplementation(
+      async (args: { where: { tenantId_userId: { tenantId: string } } }) => {
+        const tid = args.where.tenantId_userId.tenantId;
+        if (tid === "t-no-access") return null;
+        if (tid === "t-good") {
+          return {
+            role: "MEMBER",
+            tenant: { id: "t-good", slug: "g", schemaName: "tenant_g", status: "ACTIVE" },
+          };
+        }
+        return null;
+      }
+    );
+
+    const result = await resolveMcpTenantContext(
+      createReq({
+        authorization: "Bearer tok",
+        "x-tenant-id": "t-no-access",
+      }),
+      verifyAccessToken,
+      prisma as never
+    );
+
+    expect(result).toBeUndefined();
+    expect(tenantMembershipFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenantId_userId: { tenantId: "t-no-access", userId: "u1" } },
+      })
+    );
+  });
+
   it("returns undefined when membership missing", async () => {
     verifyAccessToken.mockResolvedValue(authInfo({ userId: "u1" }));
     userFindUnique.mockResolvedValue({ activeTenantId: "t-orphan" });

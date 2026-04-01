@@ -2,7 +2,8 @@ import { StakeholderRole, StakeholderType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const stakeholderSchema = z.object({
@@ -15,7 +16,7 @@ const stakeholderSchema = z.object({
 export const stakeholdersRouter = Router();
 stakeholdersRouter.use(requireAuth);
 
-stakeholdersRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+stakeholdersRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = stakeholderSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -35,7 +36,7 @@ stakeholdersRouter.post("/:initiativeId", requireWriteAccess(), async (req, res)
   res.status(201).json({ stakeholder });
 });
 
-stakeholdersRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+stakeholdersRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = stakeholderSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -55,7 +56,7 @@ stakeholdersRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ stakeholder });
 });
 
-stakeholdersRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+stakeholdersRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.stakeholder.findUnique({ where: { id } });
   await prisma.stakeholder.delete({ where: { id } });

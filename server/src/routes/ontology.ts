@@ -54,6 +54,7 @@ function paramId(value: string | string[] | undefined): string | undefined {
   return undefined;
 }
 
+/** Capability model is global in this API: reads for any authenticated user; writes for platform ADMIN/SUPER_ADMIN. */
 export const ontologyRouter = Router();
 ontologyRouter.use(requireAuth);
 

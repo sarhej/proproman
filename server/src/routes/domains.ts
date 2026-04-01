@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
-import { UserRole } from "@prisma/client";
 
 const domainSchema = z.object({
   name: z.string().min(1),
@@ -19,7 +19,7 @@ domainsRouter.get("/", async (_req, res) => {
   res.json({ domains });
 });
 
-domainsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+domainsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = domainSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -30,7 +30,7 @@ domainsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async
   res.status(201).json({ domain });
 });
 
-domainsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+domainsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = domainSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -51,7 +51,7 @@ domainsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asy
   res.json({ domain });
 });
 
-domainsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+domainsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.domain.findUnique({ where: { id } });
   await prisma.domain.delete({ where: { id } });

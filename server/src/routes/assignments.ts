@@ -1,8 +1,11 @@
-import { AssignmentRole, UserRole } from "@prisma/client";
+import { AssignmentRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite, requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 
 const assignmentSchema = z.object({
@@ -28,10 +31,17 @@ assignmentsRouter.get("/", async (req, res) => {
   res.json({ assignments });
 });
 
-assignmentsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
+assignmentsRouter.post("/", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = assignmentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const tenantId = getTenantId(req);
+  const outsider = await findFirstUserIdNotInTenant(tenantId, [parsed.data.userId]);
+  if (outsider) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${outsider}` });
     return;
   }
 
@@ -84,13 +94,20 @@ const assignmentUpdateSchema = z.object({
   allocation: z.number().int().min(0).max(100).nullable().optional()
 });
 
-assignmentsRouter.put("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
+assignmentsRouter.put("/", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = assignmentUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
   const { initiativeId, userId, role, newRole, allocation } = parsed.data;
+
+  const tenantId = getTenantId(req);
+  const outsiderPut = await findFirstUserIdNotInTenant(tenantId, [userId]);
+  if (outsiderPut) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${outsiderPut}` });
+    return;
+  }
 
   const existing = await prisma.initiativeAssignment.findUnique({
     where: {
@@ -167,7 +184,7 @@ assignmentsRouter.put("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, Use
   res.status(400).json({ error: "Provide newRole and/or allocation to update" });
 });
 
-assignmentsRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+assignmentsRouter.delete("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = z
     .object({
       initiativeId: z.string(),

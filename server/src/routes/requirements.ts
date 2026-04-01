@@ -2,7 +2,10 @@ import { Prisma, Priority, TaskStatus, TaskType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { getTenantId } from "../tenant/requireTenant.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 import { executionBoardLayoutSchema, labelsSchema, requirementReorderSchema } from "./schemas.js";
 import {
@@ -35,7 +38,7 @@ export const requirementSchema = z.object({
 export const requirementsRouter = Router();
 requirementsRouter.use(requireAuth);
 
-requirementsRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
+requirementsRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = requirementReorderSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -78,7 +81,7 @@ requirementsRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   res.json({ ok: true });
 });
 
-requirementsRouter.post("/execution-layout", requireWriteAccess(), async (req, res) => {
+requirementsRouter.post("/execution-layout", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = executionBoardLayoutSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -157,10 +160,16 @@ requirementsRouter.get("/", async (req, res) => {
   res.json({ requirements });
 });
 
-requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
+requirementsRouter.post("/", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = requirementSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const assigneeCheck = await findFirstUserIdNotInTenant(tenantId, [parsed.data.assigneeId]);
+  if (assigneeCheck) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${assigneeCheck}` });
     return;
   }
   let columnPatch: { executionColumnId: string | null; status: TaskStatus; isDone: boolean } | null = null;
@@ -215,7 +224,7 @@ requirementsRouter.post("/", requireWriteAccess(), async (req, res) => {
   res.status(201).json({ requirement });
 });
 
-requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+requirementsRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = requirementSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -231,6 +240,15 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     return;
   }
   const featureId = parsed.data.featureId ?? existing.featureId;
+
+  if (parsed.data.assigneeId !== undefined) {
+    const tenantId = getTenantId(req);
+    const assigneeCheck = await findFirstUserIdNotInTenant(tenantId, [parsed.data.assigneeId]);
+    if (assigneeCheck) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${assigneeCheck}` });
+      return;
+    }
+  }
 
   const updateData: Prisma.RequirementUncheckedUpdateInput = {};
   if (parsed.data.featureId !== undefined) updateData.featureId = parsed.data.featureId;
@@ -291,7 +309,7 @@ requirementsRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ requirement });
 });
 
-requirementsRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+requirementsRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.requirement.findUnique({ where: { id } });
   await prisma.requirement.delete({ where: { id } });

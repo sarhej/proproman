@@ -5,7 +5,8 @@ import { requireRole } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
 
 export const importExportRouter = Router();
-importExportRouter.use(requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN));
+/** Full DB export includes global `User` rows — platform super-admin only (not workspace ADMIN). */
+importExportRouter.use(requireRole(UserRole.SUPER_ADMIN));
 
 const EXPORT_VERSION = 1;
 

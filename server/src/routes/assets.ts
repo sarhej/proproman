@@ -2,7 +2,8 @@ import { AssetStatus, AssetType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireTenantCampaignWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const assetSchema = z.object({
@@ -30,7 +31,7 @@ assetsRouter.get("/", async (req, res) => {
   res.json({ assets });
 });
 
-assetsRouter.post("/", requireMarketingAccess(), async (req, res) => {
+assetsRouter.post("/", requireTenantCampaignWrite(), async (req, res) => {
   const parsed = assetSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -51,7 +52,7 @@ assetsRouter.post("/", requireMarketingAccess(), async (req, res) => {
   res.status(201).json({ asset });
 });
 
-assetsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
+assetsRouter.put("/:id", requireTenantCampaignWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = assetSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -76,7 +77,7 @@ assetsRouter.put("/:id", requireMarketingAccess(), async (req, res) => {
   res.json({ asset });
 });
 
-assetsRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
+assetsRouter.delete("/:id", requireTenantCampaignWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.asset.findUnique({ where: { id } });
   await prisma.asset.delete({ where: { id } });

@@ -1,8 +1,11 @@
-import { DemandSourceType, DemandStatus, UserRole } from "@prisma/client";
+import { DemandSourceType, DemandStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 
 const demandSchema = z.object({
@@ -42,13 +45,18 @@ demandsRouter.get("/", async (_req, res) => {
   res.json({ demands });
 });
 
-demandsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+demandsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = demandSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
   const payload = parsed.data;
+  const bad = await findFirstUserIdNotInTenant(getTenantId(req), [payload.ownerId]);
+  if (bad) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
+    return;
+  }
   const demand = await prisma.demand.create({
     data: {
       title: payload.title,
@@ -81,7 +89,7 @@ demandsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async
   res.status(201).json({ demand });
 });
 
-demandsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+demandsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = demandSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -89,6 +97,13 @@ demandsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asy
     return;
   }
   const payload = parsed.data;
+  if (payload.ownerId !== undefined) {
+    const bad = await findFirstUserIdNotInTenant(getTenantId(req), [payload.ownerId]);
+    if (bad) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${bad}` });
+      return;
+    }
+  }
   await prisma.$transaction(async (tx) => {
     if (payload.links) {
       await tx.demandLink.deleteMany({ where: { demandId: id } });
@@ -127,7 +142,7 @@ demandsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), asy
   res.json({ demand });
 });
 
-demandsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+demandsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.demand.findUnique({ where: { id } });
   await prisma.demand.delete({ where: { id } });

@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const decisionSchema = z.object({
@@ -14,7 +15,7 @@ const decisionSchema = z.object({
 export const decisionsRouter = Router();
 decisionsRouter.use(requireAuth);
 
-decisionsRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+decisionsRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = decisionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -34,7 +35,7 @@ decisionsRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) =>
   res.status(201).json({ decision });
 });
 
-decisionsRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+decisionsRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.decision.findUnique({ where: { id } });
   await prisma.decision.delete({ where: { id } });

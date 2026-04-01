@@ -2,7 +2,10 @@ import { FeatureStatus, Prisma, StoryType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 import { featureReorderSchema, labelsSchema } from "./schemas.js";
 
@@ -24,7 +27,7 @@ export const featureSchema = z.object({
 export const featuresRouter = Router();
 featuresRouter.use(requireAuth);
 
-featuresRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
+featuresRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = featureReorderSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -67,11 +70,17 @@ featuresRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   res.json({ ok: true });
 });
 
-featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+featuresRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = featureSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const badOwner = await findFirstUserIdNotInTenant(tenantId, [parsed.data.ownerId]);
+  if (badOwner) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${badOwner}` });
     return;
   }
   const feature = await prisma.feature.create({
@@ -91,12 +100,20 @@ featuresRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => 
   res.status(201).json({ feature });
 });
 
-featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+featuresRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = featureSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
+  }
+  if (parsed.data.ownerId !== undefined) {
+    const tenantId = getTenantId(req);
+    const badOwner = await findFirstUserIdNotInTenant(tenantId, [parsed.data.ownerId]);
+    if (badOwner) {
+      res.status(400).json({ error: `User is not a member of this workspace: ${badOwner}` });
+      return;
+    }
   }
   const data: Parameters<typeof prisma.feature.update>[0]["data"] = {};
   if (parsed.data.title !== undefined) data.title = parsed.data.title;
@@ -117,7 +134,7 @@ featuresRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ feature });
 });
 
-featuresRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+featuresRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   await prisma.feature.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "FEATURE", id);

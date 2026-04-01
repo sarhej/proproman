@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
-import { UserRole } from "@prisma/client";
 
 const revenueStreamSchema = z.object({
   name: z.string().min(1),
@@ -18,7 +18,7 @@ revenueStreamsRouter.get("/", async (_req, res) => {
   res.json({ revenueStreams });
 });
 
-revenueStreamsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+revenueStreamsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = revenueStreamSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -29,7 +29,7 @@ revenueStreamsRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   res.status(201).json({ revenueStream });
 });
 
-revenueStreamsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+revenueStreamsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = revenueStreamSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -49,7 +49,7 @@ revenueStreamsRouter.put("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMI
   res.json({ revenueStream });
 });
 
-revenueStreamsRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+revenueStreamsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.revenueStream.findUnique({ where: { id } });
   await prisma.revenueStream.delete({ where: { id } });

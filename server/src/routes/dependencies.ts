@@ -1,8 +1,8 @@
-import { UserRole } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const dependencySchema = z.object({
@@ -14,7 +14,7 @@ const dependencySchema = z.object({
 export const dependenciesRouter = Router();
 dependenciesRouter.use(requireAuth);
 
-dependenciesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+dependenciesRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = dependencySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -35,7 +35,7 @@ dependenciesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), 
   res.status(201).json({ dependency: dep });
 });
 
-dependenciesRouter.delete("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+dependenciesRouter.delete("/", requireWorkspaceStructureWrite(), async (req, res) => {
   const parsed = dependencySchema.pick({ fromInitiativeId: true, toInitiativeId: true }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });

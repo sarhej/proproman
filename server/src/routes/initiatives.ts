@@ -1,8 +1,17 @@
-import { Horizon, Prisma, Priority, UserRole } from "@prisma/client";
+import { Horizon, Prisma, Priority } from "@prisma/client";
 import { Router } from "express";
+import type { Request } from "express";
 import { prisma } from "../db.js";
-import { requireAuth, requireRole, requireWriteAccess } from "../middleware/auth.js";
+import { findFirstUserIdNotInTenant } from "../lib/tenantUserRefs.js";
+import {
+  isPlatformSuperAdmin,
+  workspaceMembershipCanManageStructure,
+  workspaceMembershipCanWriteContent,
+} from "../lib/workspaceRbac.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite, requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { initiativeInclude } from "./serializers.js";
 import { initiativeInputSchema, updatePositionsSchema } from "./schemas.js";
 
@@ -10,12 +19,17 @@ export const initiativesRouter = Router();
 
 initiativesRouter.use(requireAuth);
 
-/** EDITOR can only edit initiatives they own or are assigned to (any RACI role). */
-async function canUserEditInitiative(userId: string, userRole: UserRole, initiativeId: string): Promise<boolean> {
-  if (userRole === UserRole.SUPER_ADMIN || userRole === UserRole.ADMIN) return true;
+/** Workspace OWNER/ADMIN edit any initiative; MEMBER only if owner or RACI assignment; VIEWER never. */
+async function canUserEditInitiative(req: Request, userId: string, initiativeId: string): Promise<boolean> {
+  const globalRole = req.user!.role;
+  if (isPlatformSuperAdmin(globalRole)) return true;
+  const mr = req.tenantContext?.membershipRole;
+  if (!mr) return false;
+  if (workspaceMembershipCanManageStructure(mr)) return true;
+  if (!workspaceMembershipCanWriteContent(mr)) return false;
   const initiative = await prisma.initiative.findUnique({
     where: { id: initiativeId },
-    select: { ownerId: true, assignments: { select: { userId: true } } }
+    select: { ownerId: true, assignments: { select: { userId: true } } },
   });
   if (!initiative) return false;
   if (initiative.ownerId === userId) return true;
@@ -82,7 +96,7 @@ initiativesRouter.get("/:id/comments", async (req, res) => {
   res.json({ comments });
 });
 
-initiativesRouter.post("/:id/comments", requireWriteAccess(), async (req, res) => {
+initiativesRouter.post("/:id/comments", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.id);
   const userId = req.user!.id;
   const body = req.body as { text?: string };
@@ -96,7 +110,7 @@ initiativesRouter.post("/:id/comments", requireWriteAccess(), async (req, res) =
     res.status(404).json({ error: "Initiative not found" });
     return;
   }
-  if (!(await canUserEditInitiative(userId, req.user!.role, initiativeId))) {
+  if (!(await canUserEditInitiative(req, userId, initiativeId))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -122,7 +136,7 @@ initiativesRouter.get("/:id/success-criteria", async (req, res) => {
   res.json({ successCriteria: items });
 });
 
-initiativesRouter.post("/:id/success-criteria", requireWriteAccess(), async (req, res) => {
+initiativesRouter.post("/:id/success-criteria", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.id);
   const body = req.body as { title?: string; sortOrder?: number };
   const title = typeof body?.title === "string" ? body.title.trim() : "";
@@ -135,7 +149,7 @@ initiativesRouter.post("/:id/success-criteria", requireWriteAccess(), async (req
     res.status(404).json({ error: "Initiative not found" });
     return;
   }
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, initiativeId))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -147,7 +161,7 @@ initiativesRouter.post("/:id/success-criteria", requireWriteAccess(), async (req
   res.status(201).json({ successCriterion: item });
 });
 
-initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess(), async (req, res) => {
+initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.id);
   const criterionId = String(req.params.criterionId);
   const body = req.body as { title?: string; isDone?: boolean; sortOrder?: number };
@@ -158,7 +172,7 @@ initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess
     res.status(404).json({ error: "Success criterion not found" });
     return;
   }
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, initiativeId))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -174,7 +188,7 @@ initiativesRouter.patch("/:id/success-criteria/:criterionId", requireWriteAccess
   res.json({ successCriterion: item });
 });
 
-initiativesRouter.delete("/:id/success-criteria/:criterionId", requireWriteAccess(), async (req, res) => {
+initiativesRouter.delete("/:id/success-criteria/:criterionId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.id);
   const criterionId = String(req.params.criterionId);
   const existing = await prisma.successCriterion.findFirst({
@@ -184,7 +198,7 @@ initiativesRouter.delete("/:id/success-criteria/:criterionId", requireWriteAcces
     res.status(404).json({ error: "Success criterion not found" });
     return;
   }
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, initiativeId))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, initiativeId))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -208,7 +222,7 @@ initiativesRouter.get("/:id", async (req, res) => {
   res.json({ initiative });
 });
 
-initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR), async (req, res) => {
+initiativesRouter.post("/", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = initiativeInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -216,8 +230,18 @@ initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, Us
   }
   const payload = parsed.data;
 
+  const tenantId = getTenantId(req);
   const accountableUser = payload.assignments?.find((a) => a.role === "ACCOUNTABLE");
   const effectiveOwnerId = accountableUser ? accountableUser.userId : (payload.ownerId ?? null);
+  const userIdsForTenant = [
+    effectiveOwnerId,
+    ...(payload.assignments?.map((a) => a.userId) ?? []),
+  ];
+  const outsider = await findFirstUserIdNotInTenant(tenantId, userIdsForTenant);
+  if (outsider) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${outsider}` });
+    return;
+  }
 
   const initiative = await prisma.initiative.create({
     data: {
@@ -285,7 +309,7 @@ initiativesRouter.post("/", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN, Us
   res.status(201).json({ initiative });
 });
 
-initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+initiativesRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = initiativeInputSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -300,12 +324,30 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
     res.status(404).json({ error: "Initiative not found" });
     return;
   }
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
 
-  if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.ADMIN) {
+  const tenantId = getTenantId(req);
+  const assignUserIds = payload.assignments?.map((a) => a.userId) ?? [];
+  const ownerCandidates = [
+    ...assignUserIds,
+    payload.ownerId,
+    payload.assignments !== undefined
+      ? payload.assignments.find((a) => a.role === "ACCOUNTABLE")?.userId
+      : undefined,
+  ];
+  const outsiderPut = await findFirstUserIdNotInTenant(tenantId, ownerCandidates);
+  if (outsiderPut) {
+    res.status(400).json({ error: `User is not a member of this workspace: ${outsiderPut}` });
+    return;
+  }
+
+  const canStructure =
+    isPlatformSuperAdmin(req.user!.role) ||
+    (!!req.tenantContext && workspaceMembershipCanManageStructure(req.tenantContext.membershipRole));
+  if (!canStructure) {
     delete payload.productId;
     delete payload.horizon;
     delete payload.commercialType;
@@ -400,7 +442,7 @@ initiativesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ initiative });
 });
 
-initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
+initiativesRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, res) => {
   const parsed = updatePositionsSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -408,7 +450,7 @@ initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   }
   const updates = parsed.data;
   for (const u of updates) {
-    if (!(await canUserEditInitiative(req.user!.id, req.user!.role, u.id))) {
+    if (!(await canUserEditInitiative(req, req.user!.id, u.id))) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
@@ -427,9 +469,9 @@ initiativesRouter.post("/reorder", requireWriteAccess(), async (req, res) => {
   res.json({ ok: true });
 });
 
-initiativesRouter.patch("/:id/archive", requireWriteAccess(), async (req, res) => {
+initiativesRouter.patch("/:id/archive", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -442,9 +484,9 @@ initiativesRouter.patch("/:id/archive", requireWriteAccess(), async (req, res) =
   res.json({ initiative });
 });
 
-initiativesRouter.patch("/:id/unarchive", requireWriteAccess(), async (req, res) => {
+initiativesRouter.patch("/:id/unarchive", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
-  if (!(await canUserEditInitiative(req.user!.id, req.user!.role, id))) {
+  if (!(await canUserEditInitiative(req, req.user!.id, id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -457,7 +499,7 @@ initiativesRouter.patch("/:id/unarchive", requireWriteAccess(), async (req, res)
   res.json({ initiative });
 });
 
-initiativesRouter.delete("/:id", requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), async (req, res) => {
+initiativesRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.initiative.findUnique({ where: { id } });
   await prisma.initiative.delete({ where: { id } });

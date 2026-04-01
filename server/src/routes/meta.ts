@@ -1,17 +1,20 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { listTenantMemberUsersPublic } from "../lib/tenantUserRefs.js";
 import { requireAuth } from "../middleware/auth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 
 export const metaRouter = Router();
 
 metaRouter.use(requireAuth);
 
-metaRouter.get("/", async (_req, res) => {
+metaRouter.get("/", async (req, res) => {
+  const tenantId = getTenantId(req);
   const [domains, personas, revenueStreams, users] = await Promise.all([
     prisma.domain.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.persona.findMany({ orderBy: { name: "asc" } }),
     prisma.revenueStream.findMany({ orderBy: { name: "asc" } }),
-    prisma.user.findMany({ orderBy: { name: "asc" } })
+    listTenantMemberUsersPublic(tenantId),
   ]);
   const [products, accounts, partners] = await Promise.all([
     prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),

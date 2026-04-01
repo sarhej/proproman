@@ -4,6 +4,7 @@ import passport from "passport";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
+import { resolveActiveTenantForAuthenticatedUser } from "../lib/resolveActiveTenantForUser.js";
 
 export const authRouter = Router();
 
@@ -176,14 +177,8 @@ authRouter.get("/me", async (req, res) => {
     res.status(401).json({ user: null });
     return;
   }
-  const activeTenantId = req.tenantContext?.tenantId ?? req.user!.activeTenantId ?? null;
-  let activeTenant = null;
-  if (activeTenantId) {
-    activeTenant = await prisma.tenant.findUnique({
-      where: { id: activeTenantId },
-      select: { id: true, name: true, slug: true, status: true, isSystem: true },
-    });
-  }
+  const candidateTenantId = req.tenantContext?.tenantId ?? req.user!.activeTenantId ?? null;
+  const activeTenant = await resolveActiveTenantForAuthenticatedUser(req.user!.id, candidateTenantId);
   res.json({ user: req.user, activeTenant });
 });
 

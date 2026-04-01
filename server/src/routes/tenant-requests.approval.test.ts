@@ -67,6 +67,21 @@ function authSuperAdmin() {
   };
 }
 
+function authGlobalAdmin() {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    (req as unknown as { isAuthenticated: () => boolean }).isAuthenticated = () => true;
+    (req as unknown as { user: Express.User }).user = {
+      id: "ga1",
+      email: "ga@test.local",
+      name: "GA",
+      role: UserRole.ADMIN,
+      isActive: true,
+      activeTenantId: null,
+    } as Express.User;
+    next();
+  };
+}
+
 describe("tenant request approval", () => {
   const app = express();
   app.use(express.json());
@@ -142,5 +157,38 @@ describe("tenant request approval", () => {
       create: { tenantId: "tenant1", userId: "user1", role: "OWNER" },
       update: { role: "OWNER" },
     });
+  });
+
+  it("returns 400 when approving a request that is already APPROVED", async () => {
+    mockTenantRequest.findUnique.mockResolvedValueOnce({
+      id: "tr-done",
+      status: "APPROVED",
+      teamName: "Old",
+      slug: "old",
+      contactEmail: "old@test.local",
+      contactName: "Old",
+    });
+
+    const res = await request(app)
+      .post("/api/tenant-requests/tr-done/review")
+      .send({ action: "approve" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("already approved");
+    expect(mockTenant.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when global ADMIN (non-SUPER_ADMIN) tries to review", async () => {
+    const adminApp = express();
+    adminApp.use(express.json());
+    adminApp.use(authGlobalAdmin());
+    adminApp.use("/api/tenant-requests", tenantRequestsRouter);
+
+    const res = await request(adminApp)
+      .post("/api/tenant-requests/tr1/review")
+      .send({ action: "approve" });
+
+    expect(res.status).toBe(403);
+    expect(mockTenantRequest.findUnique).not.toHaveBeenCalled();
   });
 });

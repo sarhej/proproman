@@ -2,7 +2,8 @@ import { MilestoneStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireWriteAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const milestoneSchema = z.object({
@@ -31,7 +32,7 @@ milestonesRouter.get("/", async (_req, res) => {
   res.json({ milestones });
 });
 
-milestonesRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) => {
+milestonesRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req, res) => {
   const initiativeId = String(req.params.initiativeId);
   const parsed = milestoneSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -54,7 +55,7 @@ milestonesRouter.post("/:initiativeId", requireWriteAccess(), async (req, res) =
   res.status(201).json({ milestone });
 });
 
-milestonesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
+milestonesRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const parsed = milestoneSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -79,7 +80,7 @@ milestonesRouter.put("/:id", requireWriteAccess(), async (req, res) => {
   res.json({ milestone });
 });
 
-milestonesRouter.delete("/:id", requireWriteAccess(), async (req, res) => {
+milestonesRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.initiativeMilestone.findUnique({ where: { id } });
   await prisma.initiativeMilestone.delete({ where: { id } });

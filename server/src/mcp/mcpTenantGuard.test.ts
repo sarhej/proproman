@@ -10,12 +10,14 @@ const {
   mockFeatureCreate,
   mockLoadMcpOAuthClients,
   mockHandleGoogleCallback,
+  mockTenantMembershipFindMany,
 } = vi.hoisted(() => ({
   mockResolveMcpTenantContext: vi.fn(),
   mockInitiativeCreate: vi.fn(),
   mockFeatureCreate: vi.fn(),
   mockLoadMcpOAuthClients: vi.fn().mockResolvedValue(undefined),
   mockHandleGoogleCallback: vi.fn(),
+  mockTenantMembershipFindMany: vi.fn(),
 }));
 
 vi.mock("@modelcontextprotocol/sdk/server/auth/router.js", () => ({
@@ -48,6 +50,9 @@ vi.mock("./resolveMcpTenantContext.js", () => ({
 
 vi.mock("../db.js", () => ({
   prisma: {
+    tenantMembership: {
+      findMany: mockTenantMembershipFindMany,
+    },
     initiative: {
       create: mockInitiativeCreate,
       update: vi.fn(),
@@ -73,16 +78,21 @@ function createToolRegistry() {
   return tools;
 }
 
+/** MEMBER cannot assign initiative/feature owner to another user without matching caller. */
 const tenantContext: TenantContext = {
   tenantId: "t1",
   tenantSlug: "demo",
   schemaName: "tenant_demo",
-  membershipRole: "ADMIN",
+  membershipRole: "MEMBER",
 };
 
 describe("MCP tenant guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTenantMembershipFindMany.mockImplementation(
+      async (args: { where: { userId: { in: string[] } } }) =>
+        args.where.userId.in.map((userId: string) => ({ userId }))
+    );
   });
 
   it("returns 403 from /mcp when authenticated user has no active workspace membership", async () => {
@@ -113,7 +123,7 @@ describe("MCP tenant guards", () => {
           { authInfo: { extra: { userId: "caller", role: "ADMIN" } } }
         )
       )
-    ).rejects.toThrow("ownerId must match the authenticated user");
+    ).rejects.toThrow("ownerId must match the authenticated user unless you are workspace OWNER or ADMIN");
 
     expect(mockInitiativeCreate).not.toHaveBeenCalled();
   });
@@ -131,8 +141,26 @@ describe("MCP tenant guards", () => {
           { authInfo: { extra: { userId: "caller", role: "ADMIN" } } }
         )
       )
-    ).rejects.toThrow("ownerId must match the authenticated user");
+    ).rejects.toThrow("ownerId must match the authenticated user unless you are workspace OWNER or ADMIN");
 
     expect(mockFeatureCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects assignee outside workspace on requirement create", async () => {
+    mockTenantMembershipFindMany.mockResolvedValueOnce([{ userId: "caller" }]);
+    const tools = createToolRegistry();
+    const createReq = tools.get("drd_create_requirement");
+    await expect(
+      runWithTenant(tenantContext, () =>
+        createReq!(
+          {
+            featureId: "f1",
+            title: "Task",
+            assigneeId: "stranger",
+          },
+          { authInfo: { extra: { userId: "caller", role: "EDITOR" } } }
+        )
+      )
+    ).rejects.toThrow("not a member of this workspace");
   });
 });

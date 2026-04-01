@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { requireAuth, requireMarketingAccess } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireTenantCampaignWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 
 const linkSchema = z.object({
@@ -31,7 +32,7 @@ campaignLinksRouter.get("/", async (req, res) => {
   res.json({ links });
 });
 
-campaignLinksRouter.post("/", requireMarketingAccess(), async (req, res) => {
+campaignLinksRouter.post("/", requireTenantCampaignWrite(), async (req, res) => {
   const parsed = linkSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -60,7 +61,7 @@ campaignLinksRouter.post("/", requireMarketingAccess(), async (req, res) => {
   res.status(201).json({ link });
 });
 
-campaignLinksRouter.delete("/:id", requireMarketingAccess(), async (req, res) => {
+campaignLinksRouter.delete("/:id", requireTenantCampaignWrite(), async (req, res) => {
   const id = String(req.params.id);
   const existing = await prisma.campaignLink.findUnique({ where: { id } });
   await prisma.campaignLink.delete({ where: { id } });
