@@ -7,9 +7,87 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Tymio — workspace-based product management (initiatives, roadmaps, delivery). This site is a JavaScript SPA; use a browser with JS or integrate via API/MCP."
+    />
     <title>Tymio</title>
   </head>
   <body>
+    <!--
+      Static brief for automated fetchers, coding agents, and no-JS clients.
+      The visible app mounts into #root after the bundled script runs.
+    -->
+    <noscript>
+      <main style="max-width: 42rem; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, sans-serif; line-height: 1.5; color: #0f172a">
+        <h1>Tymio</h1>
+        <p>
+          Táto stránka vyžaduje JavaScript. Zapnite ho v prehliadači alebo použite API / MCP (nižšie anglické inštrukcie pre nástroje a asistentov).
+        </p>
+        <p><strong>This page requires JavaScript</strong> to show the full application. You are seeing this message because scripts are disabled.</p>
+        <h2>For coding agents and headless HTTP clients</h2>
+        <p>
+          The HTML you fetched is only the shell. The interactive UI is a React SPA loaded from <code>/src/main.tsx</code> (dev) or hashed bundles in production.
+          <strong>Seeing almost no content besides the title is expected</strong> if JavaScript is not executed.
+        </p>
+        <h3>What Tymio is</h3>
+        <p>
+          Tymio is a multi-tenant product management hub: workspaces (teams), initiatives, features, requirements, accounts, campaigns, and related data.
+          Humans sign in per workspace (e.g. workspace entry URLs under <code>/t/&lt;workspace-slug&gt;</code> on this host).
+        </p>
+        <h3>How to access data as an agent</h3>
+        <ul>
+          <li>
+            <strong>MCP (recommended for IDE agents):</strong> Streamable HTTP endpoint at <code>/mcp</code> on this origin. Authenticate with the deployment&rsquo;s OAuth/Bearer flow.
+            Workspace scope is usually the signed-in user&rsquo;s active workspace or an explicit <code>X-Tenant-Id</code> header when the server supports it.
+          </li>
+          <li>
+            <strong>Agent-oriented JSON:</strong> <code>GET /api/mcp/agent-context</code> (public) returns short guidance such as how users can report feedback upstream.
+          </li>
+          <li>
+            <strong>REST API:</strong> Authenticated JSON under <code>/api/…</code> (session cookie after browser login, or Bearer tokens as configured by the operator). Not a public anonymous API.
+          </li>
+          <li>
+            <strong>Ontology &amp; agent guide (authenticated):</strong> e.g. <code>/api/ontology</code> and <code>/api/agent/coding-guide</code> (Markdown) on this origin &mdash; use after sign-in / token as your deployment requires.
+          </li>
+        </ul>
+        <h3>Documentation discipline (for coding agents)</h3>
+        <p>
+          <strong>Document Tymio integration in this project&rsquo;s documentation repository</strong> (e.g. <code>docs/</code>, a root <code>TYMIO.md</code>, or your team&rsquo;s handbook) and keep it current.
+          Include: production/staging <strong>base URL</strong>, <strong>workspace slug</strong> or tenant id, <strong>MCP</strong> URL and auth method, important <strong>REST</strong> paths, <strong>ontology</strong> / <strong>coding-agent guide</strong> endpoints, and where <strong>product requirements</strong> live in Tymio (initiatives, links, or search terms).
+          Future sessions should not rely on chat memory alone &mdash; the repo docs are the source of truth for how this codebase ties to Tymio.
+        </p>
+        <h3>Humans</h3>
+        <p>Open this site in a modern browser with JavaScript enabled and sign in to your workspace.</p>
+      </main>
+    </noscript>
+    <pre
+      id="tymio-agent-static-brief"
+      aria-hidden="true"
+      style="position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden"
+    >
+# Tymio — note for automated fetchers (SPA shell)
+
+This response is a JavaScript single-page app. Without executing the bundled script, you will only see an empty #root and the document title. That is normal.
+
+## Product
+Multi-tenant product management: workspaces, initiatives, features, requirements, delivery boards, accounts, partners, demands, campaigns.
+
+## Humans
+Use a browser with JavaScript. Workspace sign-in typically uses paths like /t/&lt;workspace-slug&gt; on this host.
+
+## Agents / integrations
+- MCP (Streamable HTTP): POST/GET /mcp on this origin; OAuth or Bearer per deployment; workspace via session or X-Tenant-Id when supported.
+- GET /api/mcp/agent-context — public JSON with short agent guidance (e.g. feedback reporting).
+- REST: /api/* — requires authentication (not a public scrape API).
+- Ontology + coding-agent guide (auth): /api/ontology, /api/agent/coding-guide (Markdown) — after login/token per deployment.
+
+## Documentation discipline
+Maintain a doc in THIS codebase/repo (e.g. docs/tymio.md or TYMIO.md): base URLs, workspace slug/tenant id, MCP config, key API paths, ontology/guide endpoints, and pointers to product requirements inside Tymio (initiative titles, IDs, or links). Update when integration changes. Do not rely only on chat context — the documentation repository is the durable record.
+
+## Slovak (krátke)
+Stránka je SPA; bez JavaScriptu sa plné rozhranie nezobrazí. Pre dáta použite API alebo MCP podľa nasadenia.
+</pre>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
