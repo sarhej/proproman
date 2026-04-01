@@ -221,6 +221,12 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
 
   const availableRoles = currentUser.role === "SUPER_ADMIN" ? ROLES : ROLES.filter((r) => r !== "SUPER_ADMIN");
 
+  const roleSelectTitle = (u: User) => {
+    if (u.id === currentUser.id) return t("admin.roleLockedSelf");
+    if (currentUser.role !== "SUPER_ADMIN" && u.role === "SUPER_ADMIN") return t("admin.roleLockedSuperAdmin");
+    return undefined;
+  };
+
   const filteredUsers = useMemo(() => {
     let list = users;
     const q = quickFilter?.trim().toLowerCase();
@@ -296,6 +302,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                   value={u.role}
                   onChange={(e) => updateField(u.id, { role: e.target.value as UserRole })}
                   disabled={u.id === currentUser.id || (!["SUPER_ADMIN"].includes(currentUser.role) && u.role === "SUPER_ADMIN")}
+                  title={roleSelectTitle(u)}
                 >
                   {availableRoles.map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -418,6 +425,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                           value={u.role}
                           onChange={(e) => updateField(u.id, { role: e.target.value as UserRole })}
                           disabled={u.id === currentUser.id || (!["SUPER_ADMIN"].includes(currentUser.role) && u.role === "SUPER_ADMIN")}
+                          title={roleSelectTitle(u)}
                         >
                           {availableRoles.map((r) => (
                             <option key={r} value={r}>{r}</option>

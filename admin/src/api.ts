@@ -100,7 +100,7 @@ export const api = {
   getAdminTenant: (id: string) =>
     request<TenantDetail>(`/api/tenants/${id}`),
 
-  updateAdminTenant: (id: string, body: { name?: string; status?: string }) =>
+  updateAdminTenant: (id: string, body: { name?: string; status?: string; slug?: string }) =>
     request<Tenant>(`/api/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   addTenantMember: (tenantId: string, body: { userId: string; role?: string }) =>

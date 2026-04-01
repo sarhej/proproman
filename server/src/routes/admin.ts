@@ -35,8 +35,9 @@ adminRouter.put("/users/:id", async (req, res) => {
   }
   const data = parsed.data;
 
+  const actorRole = req.user!.role;
+
   if (data.role) {
-    const actorRole = req.user!.role;
     if (actorRole !== UserRole.SUPER_ADMIN && data.role === UserRole.SUPER_ADMIN) {
       res.status(403).json({ error: "Only SUPER_ADMIN can promote to SUPER_ADMIN" });
       return;
@@ -46,6 +47,16 @@ adminRouter.put("/users/:id", async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) {
     res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (
+    data.role !== undefined &&
+    data.role !== existing.role &&
+    existing.role === UserRole.SUPER_ADMIN &&
+    actorRole !== UserRole.SUPER_ADMIN
+  ) {
+    res.status(403).json({ error: "Only SUPER_ADMIN can change roles for super administrator accounts" });
     return;
   }
 

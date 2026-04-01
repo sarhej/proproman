@@ -43,6 +43,7 @@
     "milestonesTimeline": "Milestones",
     "gantt": "Gantt",
     "usersActivity": "Users & Activity",
+    "platformConsole": "Platform console (workspaces)",
     "tenantManagement": "Tenant Management",
     "newInitiative": "New initiative",
     "messages": "Messages",
@@ -580,6 +581,8 @@
     "aliasPlaceholder": "Add alias email...",
     "deleteUser": "Delete user",
     "deleteUserConfirm": "Delete user \"{{name}}\"? Their email(s) will be freed and can be added to another account (merge).",
+    "roleLockedSelf": "You cannot change your own role here.",
+    "roleLockedSuperAdmin": "Only a super administrator (SUPER_ADMIN) can change roles for other super administrators. Sign in with a SUPER_ADMIN account or ask one to make the change.",
     "emailUsedByOther": "This email is already used by \"{{name}}\". Delete that user above, then add this email here as an alias (merge).",
     "allActions": "All actions",
     "allEntities": "All entities",
@@ -756,7 +759,10 @@
     "noWorkspaces": "No workspaces available",
     "noWorkspacesDesc": "You are not a member of any workspace yet. Contact an administrator to get access.",
     "switching": "Switching...",
-    "workspaces": "Workspaces"
+    "workspaces": "Workspaces",
+    "copyEntryLink": "Copy workspace sign-in link",
+    "entryLinkCopied": "Copied",
+    "entryLinkHelp": "Link icon: copy the URL for that workspace’s /t/… sign-in page."
   },
   "landing": {
     "title": "Welcome to Tymio",

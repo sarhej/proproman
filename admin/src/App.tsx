@@ -3,8 +3,31 @@ import { api } from "./api";
 import type { User, Tenant, TenantRequest, TenantRequestStatus, TenantDetail } from "./api";
 import { Button } from "./Button";
 import { Card } from "./Card";
+import { copyText, workspaceSignInUrl } from "./workspaceUrl";
 
 const DEV_ROLES = ["SUPER_ADMIN"] as const;
+
+const SLUG_PATTERN = /^[a-z0-9-]{2,50}$/;
+
+function CopySignInLinkButton({ slug }: { slug: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() => {
+        void copyText(workspaceSignInUrl(slug)).then((ok) => {
+          if (ok) {
+            setDone(true);
+            window.setTimeout(() => setDone(false), 2000);
+          }
+        });
+      }}
+    >
+      {done ? "Copied!" : "Copy sign-in link"}
+    </Button>
+  );
+}
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -53,8 +76,8 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">Tymio Admin</h1>
-            <p className="text-xs text-slate-500">Tenant Management Console</p>
+            <h1 className="text-lg font-bold text-slate-800">Platform console</h1>
+            <p className="text-xs text-slate-500">Workspaces, registration requests (SUPER_ADMIN)</p>
           </div>
         </div>
 
@@ -135,6 +158,8 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
 
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [tenantDetail, setTenantDetail] = useState<TenantDetail | null>(null);
+  const [slugDraft, setSlugDraft] = useState("");
+  const [slugSaving, setSlugSaving] = useState(false);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -172,6 +197,10 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
     if (selectedTenantId) void loadTenantDetail(selectedTenantId);
     else setTenantDetail(null);
   }, [selectedTenantId, loadTenantDetail]);
+
+  useEffect(() => {
+    if (tenantDetail) setSlugDraft(tenantDetail.slug);
+  }, [tenantDetail?.id, tenantDetail?.slug]);
 
   async function handleReview(id: string, action: "approve" | "reject") {
     const msg = action === "approve"
@@ -213,6 +242,22 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
     }
   }
 
+  async function handleSaveSlug() {
+    if (!tenantDetail || !selectedTenantId || !SLUG_PATTERN.test(slugDraft)) return;
+    if (slugDraft === tenantDetail.slug) return;
+    setActionError(null);
+    setSlugSaving(true);
+    try {
+      await api.updateAdminTenant(selectedTenantId, { slug: slugDraft });
+      await loadTenants();
+      await loadTenantDetail(selectedTenantId);
+    } catch (err) {
+      setActionError((err as Error).message);
+    } finally {
+      setSlugSaving(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
@@ -223,7 +268,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
             </svg>
           </div>
-          <h1 className="text-base font-bold text-slate-800">Tymio Admin</h1>
+          <h1 className="text-base font-bold text-slate-800">Platform console</h1>
           <span className="ml-auto flex items-center gap-3 text-sm text-slate-500">
             {user.email}
             <Button size="sm" variant="ghost" onClick={onLogout}>Sign out</Button>
@@ -285,6 +330,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                       <th className="px-4 py-2">Contact</th>
                       <th className="px-4 py-2">Status</th>
                       <th className="px-4 py-2">Created</th>
+                      <th className="px-4 py-2">Sign-in link</th>
                       <th className="px-4 py-2">Actions</th>
                     </tr>
                   </thead>
@@ -303,6 +349,9 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                         <td className="px-4 py-2.5"><StatusBadge status={r.status} /></td>
                         <td className="px-4 py-2.5 text-xs text-slate-500">
                           {new Date(r.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <CopySignInLinkButton slug={r.slug} />
                         </td>
                         <td className="px-4 py-2.5">
                           {r.status === "PENDING" ? (
@@ -339,6 +388,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                       <th className="px-4 py-2">Slug</th>
                       <th className="px-4 py-2">Status</th>
                       <th className="px-4 py-2">Members</th>
+                      <th className="px-4 py-2">Sign-in link</th>
                       <th className="px-4 py-2">Actions</th>
                     </tr>
                   </thead>
@@ -350,7 +400,10 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                         <td className="px-4 py-2.5"><StatusBadge status={tenant.status} /></td>
                         <td className="px-4 py-2.5 text-slate-600">{tenant._count?.memberships ?? "—"}</td>
                         <td className="px-4 py-2.5">
-                          <div className="flex gap-1">
+                          <CopySignInLinkButton slug={tenant.slug} />
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex flex-wrap gap-1">
                             <Button size="sm" variant="secondary" onClick={() => setSelectedTenantId(tenant.id)}>
                               Details
                             </Button>
@@ -388,10 +441,52 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
             </button>
 
             <Card className="p-5">
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
                 <h2 className="text-lg font-semibold text-slate-800">{tenantDetail.name}</h2>
                 <StatusBadge status={tenantDetail.status} />
-                <span className="font-mono text-sm text-slate-400">{tenantDetail.slug}</span>
+              </div>
+
+              <div className="mb-6 space-y-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
+                <div>
+                  <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Workspace sign-in URL</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      readOnly
+                      className="min-w-[200px] flex-1 rounded border border-slate-200 bg-white px-2 py-1.5 font-mono text-xs text-slate-700"
+                      value={workspaceSignInUrl(tenantDetail.slug)}
+                    />
+                    <CopySignInLinkButton slug={tenantDetail.slug} />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Share this link so people land on the correct workspace sign-in page.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">URL slug</h3>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="grid gap-1">
+                      <span className="text-xs text-slate-500">Slug (lowercase letters, numbers, hyphens)</span>
+                      <input
+                        className="w-56 rounded border border-slate-200 bg-white px-2 py-1.5 font-mono text-sm"
+                        value={slugDraft}
+                        onChange={(e) =>
+                          setSlugDraft(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, "")
+                          )
+                        }
+                      />
+                    </label>
+                    <Button
+                      size="sm"
+                      onClick={() => void handleSaveSlug()}
+                      disabled={slugSaving || slugDraft === tenantDetail.slug || !SLUG_PATTERN.test(slugDraft)}
+                    >
+                      {slugSaving ? "Saving…" : "Save slug"}
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <h3 className="mb-2 text-sm font-semibold text-slate-700">Members</h3>

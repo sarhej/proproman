@@ -43,6 +43,7 @@
     "milestonesTimeline": "Míľniky",
     "gantt": "Gantt",
     "usersActivity": "Používatelia & Aktivita",
+    "platformConsole": "Platforma (workspaces)",
     "newInitiative": "Nová iniciatíva",
     "messages": "Správy",
     "messagesEmpty": "Žiadne správy",
@@ -579,6 +580,8 @@
     "aliasPlaceholder": "Pridať alias e-mailu...",
     "deleteUser": "Zmazať používateľa",
     "deleteUserConfirm": "Zmazať používateľa \"{{name}}\"? Ich e-mail(y) sa uvoľnia a pôjdu pridať inému účtu (zlúčenie).",
+    "roleLockedSelf": "Vlastnú rolu tu nemôžete zmeniť.",
+    "roleLockedSuperAdmin": "Roly iných super administrátorov (SUPER_ADMIN) môže meniť len super administrátor. Prihláste sa účtom SUPER_ADMIN alebo požiadajte niekoho s touto rolou.",
     "emailUsedByOther": "Tento e-mail už má používateľ \"{{name}}\". Zmažte toho používateľa vyššie, potom sem pridajte e-mail ako alias (zlúčenie).",
     "allActions": "Všetky akcie",
     "allEntities": "Všetky entity",
@@ -755,6 +758,9 @@
     "noWorkspaces": "Žiadne pracovné priestory",
     "noWorkspacesDesc": "Nie ste členom žiadneho pracovného priestoru. Kontaktujte administrátora pre získanie prístupu.",
     "switching": "Prepínanie...",
-    "workspaces": "Pracovné priestory"
+    "workspaces": "Pracovné priestory",
+    "copyEntryLink": "Kopírovať odkaz na prihlásenie do priestoru",
+    "entryLinkCopied": "Skopírované",
+    "entryLinkHelp": "Ikona odkazu: skopíruje URL prihlasovacej stránky /t/… pre daný priestor."
   }
 }

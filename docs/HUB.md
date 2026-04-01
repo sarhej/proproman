@@ -50,7 +50,18 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 | Auth | Google OAuth (Passport), cookie sessions (PostgreSQL session store) |
 | Agents | MCP Streamable HTTP on the same Express app (`/mcp`) + optional stdio server in `mcp/` |
 
-**Layout:** Workspace packages — `client/` (SPA), `server/` (API + static `client/dist` in production), `mcp/` (local MCP over REST + API key).
+**Layout:** Workspace packages — `client/` (SPA), `server/` (API + static `client/dist` in production), `mcp/` (local MCP over API key).
+
+**Two browser URLs (do not confuse):**
+
+| URL | App | Who |
+|-----|-----|-----|
+| **`/admin`** | Main `client/` SPA — Users & Activity, settings, import/export, ontology, etc. | Platform **`ADMIN`** or **`SUPER_ADMIN`** (see `usePermissions`) |
+| **`/platform/`** | Separate `admin/` SPA — registration requests, tenant provisioning, memberships | **`SUPER_ADMIN`** only |
+
+Workspace **sign-in links** for sharing use **`{origin}/t/{tenantSlug}`** (see main app tenant switcher copy control and platform console).
+
+The REST prefix **`/api/admin`** is the JSON API for workspace admin features; it is not a page route.
 
 **Deploy:** Typical setup is a **single Node service** (e.g. Railway) with attached PostgreSQL; Docker and `docker-compose` are supported for local DB.
 

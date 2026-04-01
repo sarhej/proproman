@@ -9,6 +9,7 @@ import {
   Megaphone,
   Network,
   Settings,
+  Shield,
   Table,
   Users2
 } from "lucide-react";
@@ -20,6 +21,10 @@ export type NavItem = {
   icon: LucideIcon;
   mobileHidden?: boolean;
   phoneHidden?: boolean;
+  /** Full page load (separate SPA), e.g. /platform/ tenant console */
+  fullPage?: boolean;
+  /** Only show for SUPER_ADMIN */
+  superAdminOnly?: boolean;
 };
 
 export type NavSection = {
@@ -80,7 +85,14 @@ export const navSections: NavSection[] = [
     labelKey: "nav.admin",
     adminOnly: true,
     items: [
-      { to: "/admin", labelKey: "nav.usersActivity", icon: Settings }
+      { to: "/admin", labelKey: "nav.usersActivity", icon: Settings },
+      {
+        to: "/platform/",
+        labelKey: "nav.platformConsole",
+        icon: Shield,
+        fullPage: true,
+        superAdminOnly: true
+      }
     ]
   }
 ];

@@ -10,6 +10,11 @@ export const tenantsRouter = Router();
 
 tenantsRouter.use(requireRole(UserRole.SUPER_ADMIN));
 
+/** Matches DB `schemaName` derivation from slug (see POST create tenant). */
+export function slugToSchemaName(slug: string): string {
+  return `tenant_${slug.replace(/-/g, "_")}`;
+}
+
 const createTenantInput = z.object({
   name: z.string().min(1).max(100),
   slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
@@ -33,7 +38,7 @@ tenantsRouter.get("/", async (_req, res, next) => {
 tenantsRouter.post("/", async (req, res, next) => {
   try {
     const data = createTenantInput.parse(req.body);
-    const schemaName = `tenant_${data.slug.replace(/-/g, "_")}`;
+    const schemaName = slugToSchemaName(data.slug);
 
     const tenant = await prisma.tenant.create({
       data: {
@@ -76,16 +81,57 @@ tenantsRouter.get("/:id", async (req, res, next) => {
   }
 });
 
+const tenantSlugField = z
+  .string()
+  .min(2)
+  .max(50)
+  .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens");
+
 const updateTenantInput = z.object({
   name: z.string().min(1).max(100).optional(),
   status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
+  slug: tenantSlugField.optional(),
 });
 
 tenantsRouter.patch("/:id", async (req, res, next) => {
   try {
-    const data = updateTenantInput.parse(req.body);
+    const body = updateTenantInput.parse(req.body);
+    const id = req.params.id;
+
+    const existing = await prisma.tenant.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+
+    const data: { name?: string; status?: "ACTIVE" | "SUSPENDED"; slug?: string; schemaName?: string } = {};
+    if (body.name !== undefined) data.name = body.name;
+    if (body.status !== undefined) data.status = body.status;
+
+    if (body.slug !== undefined && body.slug !== existing.slug) {
+      const schemaName = slugToSchemaName(body.slug);
+      const taken = await prisma.tenant.findFirst({
+        where: {
+          id: { not: id },
+          OR: [{ slug: body.slug }, { schemaName }],
+        },
+        select: { id: true },
+      });
+      if (taken) {
+        res.status(409).json({ error: "That slug is already used by another workspace." });
+        return;
+      }
+      data.slug = body.slug;
+      data.schemaName = schemaName;
+    }
+
+    if (Object.keys(data).length === 0) {
+      res.json(existing);
+      return;
+    }
+
     const tenant = await prisma.tenant.update({
-      where: { id: req.params.id },
+      where: { id },
       data,
     });
     res.json(tenant);

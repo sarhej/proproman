@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Building2, ChevronDown } from "lucide-react";
+import { Building2, ChevronDown, Link2 } from "lucide-react";
 import { api } from "../../lib/api";
+import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 import type { Tenant, TenantMembership } from "../../types/models";
 
 type Props = {
@@ -15,7 +16,21 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
   const [open, setOpen] = useState(false);
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [copyOk, setCopyOk] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const flashCopy = useCallback(() => {
+    setCopyOk(true);
+    window.setTimeout(() => setCopyOk(false), 2000);
+  }, []);
+
+  const copyLink = useCallback(
+    async (slug: string) => {
+      const ok = await copyWorkspaceEntryLink(slug);
+      if (ok) flashCopy();
+    },
+    [flashCopy]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +75,16 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
       <div className="flex items-center gap-1.5 text-sm text-slate-500">
         <Building2 size={14} className="text-slate-400" />
         <span className={compact ? "max-w-[100px] truncate" : ""}>{activeTenant.name}</span>
+        <button
+          type="button"
+          title={t("tenant.copyEntryLink")}
+          aria-label={t("tenant.copyEntryLink")}
+          onClick={() => void copyLink(activeTenant.slug)}
+          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        >
+          <Link2 size={14} />
+        </button>
+        {copyOk ? <span className="text-xs text-emerald-600">{t("tenant.entryLinkCopied")}</span> : null}
       </div>
     );
   }
@@ -78,23 +103,39 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
         <ChevronDown size={14} className="text-slate-400" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 w-64 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute left-0 top-full z-30 mt-1 w-72 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
           <div className="px-3 py-2 text-xs font-semibold uppercase text-slate-400">
             {t("tenant.workspaces")}
           </div>
           {memberships.map((m) => (
-            <button
+            <div
               key={m.tenant.id}
-              type="button"
-              onClick={() => handleSelect(m.tenant)}
-              className={`flex w-full items-center justify-between px-3 py-2 text-sm text-left hover:bg-slate-50 ${
-                m.tenant.id === activeTenant.id ? "bg-sky-50 text-sky-800" : "text-slate-700"
+              className={`flex items-center gap-0.5 px-1 py-0.5 ${
+                m.tenant.id === activeTenant.id ? "bg-sky-50" : "hover:bg-slate-50"
               }`}
             >
-              <span className="truncate font-medium">{m.tenant.name}</span>
-              <span className="ml-2 shrink-0 text-[10px] text-slate-400">{m.role}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => handleSelect(m.tenant)}
+                className={`flex min-w-0 flex-1 items-center justify-between rounded px-2 py-2 text-left text-sm ${
+                  m.tenant.id === activeTenant.id ? "text-sky-800" : "text-slate-700"
+                }`}
+              >
+                <span className="truncate font-medium">{m.tenant.name}</span>
+                <span className="ml-2 shrink-0 text-[10px] text-slate-400">{m.role}</span>
+              </button>
+              <button
+                type="button"
+                title={t("tenant.copyEntryLink")}
+                aria-label={t("tenant.copyEntryLink")}
+                onClick={() => void copyLink(m.tenant.slug)}
+                className="shrink-0 rounded p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <Link2 size={14} />
+              </button>
+            </div>
           ))}
+          <p className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400">{t("tenant.entryLinkHelp")}</p>
         </div>
       )}
     </div>

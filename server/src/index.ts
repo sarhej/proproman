@@ -210,8 +210,9 @@ app.get("/api/export/initiatives.csv", requireAuth, requireTenant, async (_req, 
 });
 
 if (env.NODE_ENV === "production") {
-  app.use("/admin", express.static(adminDist));
-  app.get("/admin/*", (_req, res) => {
+  // Separate SPA: SUPER_ADMIN tenant & registration console (not workspace /admin in main client).
+  app.use("/platform", express.static(adminDist));
+  app.get("/platform/*", (_req, res) => {
     res.sendFile(path.join(adminDist, "index.html"));
   });
 

@@ -531,7 +531,7 @@ export const api = {
     request<Tenant & { memberships: Array<{ id: string; userId: string; role: string; user: { id: string; email: string; name: string; avatarUrl?: string | null } }>; domains: unknown[]; migrationState: unknown }>(
       `/api/tenants/${id}`
     ),
-  updateAdminTenant: async (id: string, body: { name?: string; status?: string }) =>
+  updateAdminTenant: async (id: string, body: { name?: string; status?: string; slug?: string }) =>
     request<Tenant>(`/api/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   addTenantMember: async (tenantId: string, body: { userId: string; role?: string }) =>
     request<unknown>(`/api/tenants/${tenantId}/members`, { method: "POST", body: JSON.stringify(body) }),

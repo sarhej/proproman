@@ -61,6 +61,7 @@ function NavContent({
         {sections.map((section) => {
           let items = mobile ? section.items.filter((i) => !i.mobileHidden) : section.items;
           if (phone) items = items.filter((i) => !i.phoneHidden);
+          items = items.filter((i) => !i.superAdminOnly || permissions.isSuperAdmin);
           if (hideShellRoutes) {
             items = items.filter((i) => !hiddenNavPaths.has(i.to));
           }
@@ -70,19 +71,31 @@ function NavContent({
               <div className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 {t(section.labelKey)}
               </div>
-              {items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm ${isActive ? "bg-sky-100 text-sky-900" : "text-slate-700 hover:bg-slate-100"}`
-                  }
-                >
-                  <item.icon size={14} />
-                  {t(item.labelKey)}
-                </NavLink>
-              ))}
+              {items.map((item) =>
+                item.fullPage ? (
+                  <a
+                    key={`${item.labelKey}-${item.to}`}
+                    href={item.to}
+                    onClick={onNavigate}
+                    className="flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                  >
+                    <item.icon size={14} />
+                    {t(item.labelKey)}
+                  </a>
+                ) : (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm ${isActive ? "bg-sky-100 text-sky-900" : "text-slate-700 hover:bg-slate-100"}`
+                    }
+                  >
+                    <item.icon size={14} />
+                    {t(item.labelKey)}
+                  </NavLink>
+                )
+              )}
             </div>
           );
         })}
