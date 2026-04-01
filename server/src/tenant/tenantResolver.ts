@@ -21,11 +21,11 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
     return;
   }
 
+  const rawHeader = req.headers["x-tenant-id"];
+  const fromHeader =
+    typeof rawHeader === "string" && rawHeader.trim() !== "" ? rawHeader.trim() : undefined;
   const tenantId =
-    (req.headers["x-tenant-id"] as string | undefined) ??
-    req.session?.activeTenantId ??
-    user.activeTenantId ??
-    undefined;
+    fromHeader ?? req.session?.activeTenantId ?? user.activeTenantId ?? undefined;
 
   if (!tenantId) {
     next();

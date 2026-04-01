@@ -55,6 +55,17 @@ describe("requireTenant middleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(400);
   });
+
+  it("returns 400 when tenantContext is null", () => {
+    const req = { tenantContext: null } as unknown as Request;
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireTenant(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
 });
 
 describe("getTenantId", () => {

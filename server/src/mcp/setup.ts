@@ -7,46 +7,12 @@ import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middlew
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
-import { runWithTenant, type TenantContext } from "../tenant/tenantContext.js";
+import { runWithTenant } from "../tenant/tenantContext.js";
 import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
+import { resolveMcpTenantContext } from "./resolveMcpTenantContext.js";
 import { registerTools } from "./tools.js";
 
 const provider = new TymioOAuthProvider();
-
-async function resolveMcpTenantContext(req: Request): Promise<TenantContext | undefined> {
-  const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
-  if (!bearer) return undefined;
-
-  const authInfo = await provider.verifyAccessToken(bearer);
-  const userId = authInfo.extra?.userId;
-  if (typeof userId !== "string") return undefined;
-
-  const explicitTenantIdHeader = req.headers["x-tenant-id"];
-  const explicitTenantId = typeof explicitTenantIdHeader === "string" ? explicitTenantIdHeader : undefined;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { activeTenantId: true },
-  });
-  const tenantId = explicitTenantId ?? user?.activeTenantId ?? undefined;
-  if (!tenantId) return undefined;
-
-  const membership = await prisma.tenantMembership.findUnique({
-    where: { tenantId_userId: { tenantId, userId } },
-    include: {
-      tenant: {
-        select: { id: true, slug: true, schemaName: true, status: true },
-      },
-    },
-  });
-  if (!membership || membership.tenant.status !== "ACTIVE") return undefined;
-
-  return {
-    tenantId: membership.tenant.id,
-    tenantSlug: membership.tenant.slug,
-    schemaName: membership.tenant.schemaName,
-    membershipRole: membership.role,
-  };
-}
 
 function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -155,7 +121,7 @@ export function mountMcp(app: express.Express): void {
         }
       };
 
-      const tenantContext = await resolveMcpTenantContext(req);
+      const tenantContext = await resolveMcpTenantContext(req, (t) => provider.verifyAccessToken(t), prisma);
       if (tenantContext) {
         req.tenantContext = tenantContext;
         await runWithTenant(tenantContext, handleTransportRequest);

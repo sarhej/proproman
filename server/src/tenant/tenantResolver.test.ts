@@ -105,6 +105,48 @@ describe("tenantResolver middleware", () => {
     expect(req.tenantContext!.membershipRole).toBe("OWNER");
   });
 
+  it("ignores whitespace-only X-Tenant-Id and uses session", async () => {
+    const req = createReq({
+      user: { id: "u1", activeTenantId: null } as Express.User,
+      headers: { "x-tenant-id": "   " },
+      session: { activeTenantId: "t-session" } as Request["session"],
+    });
+    const res = createRes();
+    const next = vi.fn();
+
+    mockPrisma.tenantMembership.findUnique.mockResolvedValue({
+      role: "MEMBER",
+      tenant: { id: "t-session", slug: "sess", schemaName: "tenant_sess", status: "ACTIVE" },
+    });
+
+    await tenantResolver(req, res, next);
+
+    expect(req.tenantContext!.tenantId).toBe("t-session");
+    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenantId_userId: { tenantId: "t-session", userId: "u1" } },
+      })
+    );
+  });
+
+  it("ignores array X-Tenant-Id and uses user.activeTenantId", async () => {
+    const req = createReq({
+      user: { id: "u1", activeTenantId: "t-user" } as Express.User,
+      headers: { "x-tenant-id": ["a", "b"] },
+    });
+    const res = createRes();
+    const next = vi.fn();
+
+    mockPrisma.tenantMembership.findUnique.mockResolvedValue({
+      role: "MEMBER",
+      tenant: { id: "t-user", slug: "u", schemaName: "tenant_u", status: "ACTIVE" },
+    });
+
+    await tenantResolver(req, res, next);
+
+    expect(req.tenantContext!.tenantId).toBe("t-user");
+  });
+
   it("header takes priority over session and user", async () => {
     const req = createReq({
       user: { id: "u1", activeTenantId: "t-user" } as Express.User,
