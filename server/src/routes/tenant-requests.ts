@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
+import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { requireRole } from "../middleware/auth.js";
-import { UserRole } from "@prisma/client";
 import { provisionTenant } from "../tenant/tenantProvisioning.js";
 
 export const tenantRequestsRouter = Router();
@@ -179,7 +179,9 @@ tenantRequestsRouter.post(
 
       const provisionedTenant = await prisma.tenant.findUnique({ where: { id: tenant.id } });
 
-      // Create or find the contact user and make them OWNER
+      // Create or find the contact user and make them OWNER.
+      // If they already signed in earlier and were auto-created as PENDING,
+      // approval must also activate their global role so they can enter the app.
       let contactUser = await prisma.user.findUnique({
         where: { email: tenantRequest.contactEmail },
       });
@@ -189,6 +191,17 @@ tenantRequestsRouter.post(
             email: tenantRequest.contactEmail,
             name: tenantRequest.contactName,
             role: UserRole.ADMIN,
+            activeTenantId: tenant.id,
+          },
+        });
+      } else {
+        const nextRole =
+          contactUser.role === UserRole.SUPER_ADMIN ? UserRole.SUPER_ADMIN : UserRole.ADMIN;
+        contactUser = await prisma.user.update({
+          where: { id: contactUser.id },
+          data: {
+            name: contactUser.name || tenantRequest.contactName,
+            role: nextRole,
             activeTenantId: tenant.id,
           },
         });
