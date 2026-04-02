@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import type { ExtendedPrismaClient } from "../db.js";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -25,14 +26,13 @@ export function tryParseProductSlug(input: string | null | undefined): string | 
   return isValidProductSlug(t) ? t : null;
 }
 
-type ProductDelegate = PrismaClient["product"];
-
 /**
  * Resolves a unique `slug` per tenant for Product rows.
  * When `explicitSlug` is set, it is validated and used as the base (with numeric suffixes if needed).
+ * Typed for the tenant-extended Prisma client (same as `prisma` from `../db.js`).
  */
 export async function allocateUniqueProductSlug(
-  prisma: { product: ProductDelegate },
+  prisma: { product: ExtendedPrismaClient["product"] },
   args: {
     tenantId: string | null;
     fromName: string;
