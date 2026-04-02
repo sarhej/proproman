@@ -788,6 +788,16 @@
     "switcherOpenWorkspacePage": "Otvoriť stránku priestoru {{name}}",
     "switcherApplicationsHelp": "Priestory, o ktoré ste požiadali; otvorte položku pre stav alebo skopírujte odkaz /t/…"
   },
+  "landing": {
+    "title": "Vitajte v Tymio",
+    "subtitle": "Riadenie produktu a iniciatív pre tímy",
+    "language": "Jazyk",
+    "languageSubtitle": "Rozhranie",
+    "signIn": "Prihláste sa do svojho pracovného priestoru",
+    "signInDesc": "Už máte účet? Prihláste sa a pokračujte.",
+    "registerTeam": "Zaregistrujte nový tím",
+    "registerDesc": "Nastavte nový pracovný priestor pre svoju organizáciu."
+  },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",
     "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru.",

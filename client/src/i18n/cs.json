@@ -800,6 +800,16 @@
     "switcherOpenWorkspacePage": "Otevřít stránku prostoru {{name}}",
     "switcherApplicationsHelp": "Prostory, o které jste požádali; otevřete položku pro stav nebo zkopírujte odkaz /t/…"
   },
+  "landing": {
+    "title": "Vítejte v Tymio",
+    "subtitle": "Řízení produktu a iniciativ pro týmy",
+    "language": "Jazyk",
+    "languageSubtitle": "Rozhraní",
+    "signIn": "Přihlaste se ke svému pracovnímu prostoru",
+    "signInDesc": "Už máte účet? Přihlaste se a pokračujte.",
+    "registerTeam": "Zaregistrujte nový tým",
+    "registerDesc": "Založte nový pracovní prostor pro svou organizaci."
+  },
   "workspaceSettings": {
     "title": "Nastavení pracovního prostoru",
     "intro": "Tato nastavení platí pro všechny členy tohoto prostoru.",
