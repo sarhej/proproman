@@ -4,6 +4,34 @@ import { MembershipRole } from "@prisma/client";
 export const APP_LOCALE_CODES = ["en", "cs", "sk", "uk", "pl"] as const;
 export type AppLocaleCode = (typeof APP_LOCALE_CODES)[number];
 
+const LOCALE_DISPLAY_EN: Record<AppLocaleCode, string> = {
+  en: "English",
+  cs: "Czech",
+  sk: "Slovak",
+  uk: "Ukrainian",
+  pl: "Polish",
+};
+
+/** Open Graph-style locale tags (primary + alternates) for SEO; keep in sync with client `index.html`. */
+const LOCALE_OG: Record<AppLocaleCode, string> = {
+  en: "en_US",
+  cs: "cs_CZ",
+  sk: "sk_SK",
+  uk: "uk_UA",
+  pl: "pl_PL",
+};
+
+export type AppUiLocalePublicRow = { code: AppLocaleCode; name: string; ogLocale: string };
+
+/** Public metadata for SEO, `GET /api/mcp/agent-context`, and crawler-oriented docs. */
+export function getAppUiLocalesForPublicMeta(): readonly AppUiLocalePublicRow[] {
+  return APP_LOCALE_CODES.map((code) => ({
+    code,
+    name: LOCALE_DISPLAY_EN[code],
+    ogLocale: LOCALE_OG[code],
+  }));
+}
+
 const SET = new Set<string>(APP_LOCALE_CODES);
 
 function isAppLocale(code: string): code is AppLocaleCode {

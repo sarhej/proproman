@@ -9,8 +9,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Tymio — workspace-based product management (initiatives, roadmaps, delivery). This site is a JavaScript SPA; use a browser with JS or integrate via API/MCP."
+      content="Tymio — workspace-based product management (initiatives, roadmaps, delivery). Supported UI languages: English, Czech, Slovak, Ukrainian, Polish (codes: en, cs, sk, uk, pl). SPA: use JavaScript or API/MCP."
     />
+    <meta
+      name="supported-languages"
+      content="en, cs, sk, uk, pl"
+    />
+    <meta property="og:title" content="Tymio" />
+    <meta
+      property="og:description"
+      content="Product management hub for teams. Interface languages: English, Czech, Slovak, Ukrainian, Polish. JavaScript SPA with MCP and REST APIs."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="cs_CZ" />
+    <meta property="og:locale:alternate" content="sk_SK" />
+    <meta property="og:locale:alternate" content="uk_UA" />
+    <meta property="og:locale:alternate" content="pl_PL" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Tymio" />
+    <meta
+      name="twitter:description"
+      content="Workspace-based product management. UI: en, cs, sk, uk, pl. SPA + API/MCP."
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Tymio",
+        "url": "https://tymio.app",
+        "description": "Multi-tenant product and initiative management; workspaces, roadmaps, delivery boards, MCP for agents.",
+        "inLanguage": ["en", "cs", "sk", "uk", "pl"],
+        "availableLanguage": [
+          { "@type": "Language", "name": "English", "alternateName": "en" },
+          { "@type": "Language", "name": "Czech", "alternateName": "cs" },
+          { "@type": "Language", "name": "Slovak", "alternateName": "sk" },
+          { "@type": "Language", "name": "Ukrainian", "alternateName": "uk" },
+          { "@type": "Language", "name": "Polish", "alternateName": "pl" }
+        ]
+      }
+    </script>
     <title>Tymio</title>
   </head>
   <body>
@@ -34,6 +72,12 @@
         <p>
           Tymio is a multi-tenant product management hub: workspaces (teams), initiatives, features, requirements, accounts, campaigns, and related data.
           Humans sign in per workspace (e.g. workspace entry URLs under <code>/t/&lt;workspace-slug&gt;</code> on this host).
+        </p>
+        <h3>Supported interface languages</h3>
+        <p>
+          The web UI is available in <strong>English (en)</strong>, <strong>Czech (cs)</strong>, <strong>Slovak (sk)</strong>, <strong>Ukrainian (uk)</strong>, and <strong>Polish (pl)</strong>.
+          Guests choose a language on public pages; signed-in users see a subset if the workspace admin restricts languages in workspace settings.
+          Machine-readable list: <code>GET /api/mcp/agent-context</code> field <code>supportedUiLocales</code>, or <code>/llms.txt</code> on this host.
         </p>
         <h3>How to access data as an agent</h3>
         <ul>
@@ -72,6 +116,9 @@ This response is a JavaScript single-page app. Without executing the bundled scr
 
 ## Product
 Multi-tenant product management: workspaces, initiatives, features, requirements, delivery boards, accounts, partners, demands, campaigns.
+
+## Supported UI languages
+Shipped interface locales (BCP 47&ndash;style codes): en (English), cs (Czech), sk (Slovak), uk (Ukrainian), pl (Polish). Workspace admins may limit the picker via Tenant.settings.enabledLocales. Public JSON: GET /api/mcp/agent-context &rarr; supportedUiLocales. Human summary: /llms.txt
 
 ## Humans
 Use a browser with JavaScript. Workspace sign-in typically uses paths like /t/&lt;workspace-slug&gt; on this host.

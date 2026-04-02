@@ -1,4 +1,8 @@
-/** Must match server `APP_LOCALE_CODES` in server/src/lib/appLocales.ts */
+/**
+ * Must match server `APP_LOCALE_CODES` in server/src/lib/appLocales.ts.
+ * Also keep in sync with SEO/agent copy: `client/index.html`, `client/public/llms.txt`,
+ * and `GET /api/mcp/agent-context` → `supportedUiLocales` (server builds from the same list).
+ */
 export const APP_LOCALE_CODES = ["en", "cs", "sk", "uk", "pl"] as const;
 export type AppLocaleCode = (typeof APP_LOCALE_CODES)[number];
 

@@ -25,6 +25,10 @@ describe("buildMcpAgentContextJson", () => {
     expect(body.scopeReference.purpose).toContain("Not an access-control boundary");
     expect(body.scopeReference.workspaceUrls).toContain("/t/");
     expect(body.scopeReference.dataSources).toContain("drd_list_products");
+    expect(body.supportedUiLocales.codes).toEqual(["en", "cs", "sk", "uk", "pl"]);
+    expect(body.supportedUiLocales.locales.map((l) => l.code).join(",")).toBe("en,cs,sk,uk,pl");
+    expect(body.supportedUiLocales.locales.find((l) => l.code === "pl")?.name).toBe("Polish");
+    expect(body.supportedUiLocales.workspaceNote).toContain("enabledLocales");
     expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 

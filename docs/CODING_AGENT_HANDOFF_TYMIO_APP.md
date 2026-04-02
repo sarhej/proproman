@@ -18,6 +18,9 @@
 | Google OAuth — **browser sign-in** callback | `https://tymio.app/api/auth/google/callback` |
 | Google OAuth — **remote MCP** callback | `https://tymio.app/mcp-oauth/google/callback` |
 | Coding-agent playbook (Markdown, **authenticated**) | `GET https://tymio.app/api/agent/coding-guide` — session cookie or `Authorization: Bearer <API_KEY>` (same rules as API) |
+| **Public agent + SEO context (JSON)** | `GET https://tymio.app/api/mcp/agent-context` — includes **`supportedUiLocales`** (en, cs, sk, uk, pl; names + workspace restriction note), **`scopeReference`**, **`feedbackReporting`** |
+| **LLM / crawler site summary (Markdown)** | `https://tymio.app/llms.txt` — product overview, supported UI languages, MCP/API pointers |
+| Crawl policy | `https://tymio.app/robots.txt` |
 
 If you are pointed at a **staging or custom host**, replace `https://tymio.app` with that origin everywhere; paths stay the same.
 

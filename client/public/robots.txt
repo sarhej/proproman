@@ -1,0 +1,7 @@
+# Tymio — default crawl policy for the main web app (static file served from site root).
+# Adjust per deployment if you run on a private host.
+
+User-agent: *
+Allow: /
+
+# Machine-readable site summary (UI languages, MCP, APIs): /llms.txt (see https://llmstxt.org/)

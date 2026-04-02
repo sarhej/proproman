@@ -45,7 +45,7 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React, Vite, TypeScript, Tailwind, React Router, i18next |
+| Frontend | React, Vite, TypeScript, Tailwind, React Router, i18next — **UI locales:** `en`, `cs`, `sk`, `uk`, `pl` (workspace admins may restrict the in-app picker via `Tenant.settings.enabledLocales`; guests choose language on public pages). SEO/agent metadata: `client/index.html` (meta, Open Graph, JSON-LD), `client/public/llms.txt`, `GET /api/mcp/agent-context` → `supportedUiLocales`. |
 | Backend | Express, TypeScript, Prisma, PostgreSQL |
 | Auth | Google OAuth (Passport), cookie sessions (PostgreSQL session store) |
 | Agents | MCP Streamable HTTP on the same Express app (`/mcp`) + optional stdio server in `mcp/` |

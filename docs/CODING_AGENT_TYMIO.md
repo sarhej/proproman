@@ -33,6 +33,7 @@ Record at least:
 - **REST:** prefixes you use (`/api/initiatives`, `/api/ontology`, etc.) and how you authenticate (session, Bearer).
 - **Ontology / guides:** paths such as `/api/ontology`, `/api/agent/coding-guide`, MCP tools `tymio_get_agent_brief`, and where **`context/AGENT_BRIEF.md`** lives if checked in.
 - **Product requirements in Tymio:** pointers to the right **initiatives**, **features**, or **requirements** (titles, ids, or stable links) so future sessions know *where the org’s ask is modeled*.
+- **UI languages:** the web app ships **en, cs, sk, uk, pl** (see `GET /api/mcp/agent-context` → `supportedUiLocales`, and `https://tymio.app/llms.txt` on production). Workspaces may restrict the in-app picker via **`Tenant.settings.enabledLocales`**.
 
 Treat that file as the **source of truth** for “how this repo talks to Tymio.” Chat threads and IDE sessions are ephemeral.
 
@@ -180,6 +181,7 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 
 | Topic | Location |
 |-------|----------|
+| Supported UI locales (SEO, crawlers, agents) | Codes **en, cs, sk, uk, pl** — `GET /api/mcp/agent-context` → `supportedUiLocales`; static summary **`/llms.txt`**; HTML meta + JSON-LD in `client/index.html`. Server: `server/src/lib/appLocales.ts` (`getAppUiLocalesForPublicMeta`). |
 | Workspace + product scope label | `workspace-slug/product-slug` (documentation; from Tenant.slug + Product.slug). See `GET /api/mcp/agent-context` field `scopeReference`. |
 | Product & MCP overview | [docs/HUB.md](./HUB.md) |
 | Ontology REST & MCP §6.1 | [docs/HUB.md](./HUB.md) |

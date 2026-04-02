@@ -1,8 +1,14 @@
 import { refreshMcpFeedbackNoticeCache } from "./mcpFeedbackNotice.js";
+import { APP_LOCALE_CODES, getAppUiLocalesForPublicMeta } from "./appLocales.js";
 
 /** JSON body for `GET /api/mcp/agent-context` (public). */
 export async function buildMcpAgentContextJson(): Promise<{
   feedbackReporting: string;
+  supportedUiLocales: {
+    codes: readonly string[];
+    locales: readonly { code: string; name: string; ogLocale: string }[];
+    workspaceNote: string;
+  };
   scopeReference: {
     pattern: string;
     purpose: string;
@@ -13,6 +19,14 @@ export async function buildMcpAgentContextJson(): Promise<{
   const feedbackReporting = await refreshMcpFeedbackNoticeCache();
   return {
     feedbackReporting,
+    supportedUiLocales: {
+      codes: APP_LOCALE_CODES,
+      locales: getAppUiLocalesForPublicMeta(),
+      workspaceNote:
+        "The SPA ships these interface languages (ISO 639-1 style codes: en, cs, sk, uk, pl). " +
+        "Workspace owners or admins may restrict the in-app language picker via Tenant.settings.enabledLocales; " +
+        "guests pick a language on public pages (stored in localStorage).",
+    },
     scopeReference: {
       pattern: "<workspace-slug>/<product-slug>",
       purpose:

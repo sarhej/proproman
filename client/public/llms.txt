@@ -1,0 +1,41 @@
+# Tymio — site summary for LLMs, agents, and crawlers
+
+> Canonical product: https://tymio.app (replace with your deployment origin if self-hosted).
+
+## What this is
+
+Tymio is a **multi-tenant product management** web application (React SPA): workspaces (organizations), initiatives, features, requirements, execution boards, planning, and optional B2B/marketing modules. The HTML shell loads a JavaScript bundle; **most content requires JS** in a browser.
+
+## Supported interface languages (UI i18n)
+
+The SPA ships **five** interface languages (ISO 639-1 codes):
+
+| Code | Language   |
+|------|------------|
+| en   | English    |
+| cs   | Czech      |
+| sk   | Slovak     |
+| uk   | Ukrainian  |
+| pl   | Polish     |
+
+- **Guests** can pick a language on public pages before sign-in (preference is stored in browser `localStorage`).
+- **Workspace owners/admins** may restrict which of these appear in the signed-in app via `Tenant.settings.enabledLocales` (workspace settings in the UI).
+
+**Machine-readable (JSON, no auth):** `GET /api/mcp/agent-context` — field `supportedUiLocales` lists `codes`, `locales` (code + English name + Open Graph locale tag), and a short `workspaceNote`.
+
+**SEO:** The main `index.html` includes `meta name="supported-languages"`, Open Graph `og:locale` / `og:locale:alternate`, and JSON-LD `WebSite` with `inLanguage` and `availableLanguage` for the same set.
+
+## Integrations (agents)
+
+- **MCP (Streamable HTTP):** `/mcp` on this origin — OAuth or Bearer per deployment.
+- **Public agent hints:** `GET /api/mcp/agent-context` — feedback reporting text, scope labeling (`workspace-slug/product-slug`), and **supportedUiLocales** as above.
+- **REST:** `/api/*` — authenticated (session or API key); not a public scrape API.
+- **Ontology / guides (auth):** e.g. `/api/ontology`, `/api/agent/coding-guide`.
+
+## Repository documentation (for humans maintaining integrations)
+
+If you have the monorepo: `docs/HUB.md`, `docs/CODING_AGENT_TYMIO.md`, and `docs/CODING_AGENT_HANDOFF_TYMIO_APP.md` describe architecture, MCP, and agent workflows (including UI language behavior).
+
+## robots
+
+See `/robots.txt` on this host for crawl policy.
