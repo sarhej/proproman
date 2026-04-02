@@ -43,7 +43,8 @@ import { meRouter } from "./routes/me.js";
 import { ontologyRouter } from "./routes/ontology.js";
 import { uiSettingsRouter } from "./routes/ui-settings.js";
 import { agentGuideRouter } from "./routes/agent-guide.js";
-import { prisma } from "./db.js";
+import { prisma, prismaUnscoped } from "./db.js";
+import { normalizePublicTenantSlug } from "./lib/publicTenantSlug.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
 import { requireAuth } from "./middleware/auth.js";
 import { mountMcp } from "./mcp/setup.js";
@@ -127,12 +128,21 @@ app.use("/api/tenant-requests", tenantRequestsRouter);
 
 app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {
   try {
-    const slug = String(req.params.slug).toLowerCase();
-    const tenant = await prisma.tenant.findUnique({
-      where: { slug },
+    const slug = normalizePublicTenantSlug(req.params.slug);
+    if (!slug) {
+      res.status(404).json({ error: "Workspace not found." });
+      return;
+    }
+    // Unscoped client: never use extended `prisma` here (tenant ALS / row scoping must not affect control-plane Tenant).
+    const tenant = await prismaUnscoped.tenant.findFirst({
+      where: {
+        slug: { equals: slug, mode: "insensitive" },
+        status: "ACTIVE",
+      },
       select: { name: true, slug: true, status: true },
     });
-    if (!tenant || tenant.status !== "ACTIVE") {
+    if (!tenant) {
+      console.warn("[tenants/by-slug/public] no active tenant", { slug });
       res.status(404).json({ error: "Workspace not found." });
       return;
     }

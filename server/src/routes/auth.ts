@@ -2,18 +2,21 @@ import { Router } from "express";
 import { UserRole } from "@prisma/client";
 import passport from "passport";
 import { z } from "zod";
-import { prisma } from "../db.js";
+import { prisma, prismaUnscoped } from "../db.js";
 import { env } from "../env.js";
+import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
 import { resolveActiveTenantForAuthenticatedUser } from "../lib/resolveActiveTenantForUser.js";
 
 export const authRouter = Router();
 
 async function autoSwitchToSlug(userId: string, slug: string, req: import("express").Request): Promise<void> {
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug },
+  const normalized = normalizePublicTenantSlug(slug);
+  if (!normalized) return;
+  const tenant = await prismaUnscoped.tenant.findFirst({
+    where: { slug: { equals: normalized, mode: "insensitive" }, status: "ACTIVE" },
     select: { id: true, status: true },
   });
-  if (!tenant || tenant.status !== "ACTIVE") return;
+  if (!tenant) return;
 
   const membership = await prisma.tenantMembership.findUnique({
     where: { tenantId_userId: { tenantId: tenant.id, userId } },
@@ -126,11 +129,14 @@ authRouter.post("/dev-login", async (req, res, next) => {
 
     let tenantId = parsed.success ? parsed.data.tenantId : undefined;
     if (!tenantId && parsed.success && parsed.data.tenantSlug) {
-      const bySlug = await prisma.tenant.findUnique({
-        where: { slug: parsed.data.tenantSlug },
-        select: { id: true, status: true },
-      });
-      if (bySlug && bySlug.status === "ACTIVE") tenantId = bySlug.id;
+      const s = normalizePublicTenantSlug(parsed.data.tenantSlug);
+      if (s) {
+        const bySlug = await prismaUnscoped.tenant.findFirst({
+          where: { slug: { equals: s, mode: "insensitive" }, status: "ACTIVE" },
+          select: { id: true, status: true },
+        });
+        if (bySlug) tenantId = bySlug.id;
+      }
     }
 
     const user = await prisma.user.upsert({
