@@ -172,9 +172,11 @@ function App() {
     if (workspaceSlugGate.state !== "checking" || !tenantSlug || !user || authLoading) return;
     let cancelled = false;
     const slugNorm = tenantSlug.trim().toLowerCase();
+    const slugForApi = tenantSlug.trim();
+    const authenticatedUser = user;
 
     async function run() {
-      if (user.role !== "PENDING") {
+      if (authenticatedUser.role !== "PENDING") {
         try {
           const myTenants = await api.getMyTenants();
           if (cancelled) return;
@@ -198,7 +200,7 @@ function App() {
       }
 
       try {
-        const info = await api.getTenantBySlug(tenantSlug.trim());
+        const info = await api.getTenantBySlug(slugForApi);
         if (!cancelled) {
           setWorkspaceSlugGate({
             state: "no_membership",
@@ -218,7 +220,7 @@ function App() {
         const pending = forSlug.find((r) => r.status === "PENDING");
         if (pending) {
           setSlugRegistrationHint({ kind: "PENDING", slug: pending.slug, teamName: pending.teamName });
-        } else if (user.role !== "PENDING") {
+        } else if (authenticatedUser.role !== "PENDING") {
           const appr = forSlug.find((r) => r.status === "APPROVED");
           if (appr) {
             setSlugRegistrationHint({
@@ -496,7 +498,7 @@ function App() {
         window.print();
       }}
     >
-      {slugRegistrationHint && user.role !== "PENDING" ? (
+      {slugRegistrationHint ? (
         <div
           className="mb-3 flex items-start justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
           data-print-hide
