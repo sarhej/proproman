@@ -263,21 +263,25 @@ enum MembershipRole {
 }
 
 model Tenant {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  schemaName    String         @unique
-  /** Reserved Tymio product workspace (feedback MCP, non-deletable). At most one true per DB. */
-  isSystem      Boolean        @default(false)
-  status        TenantStatus   @default(PROVISIONING)
-  settings      Json?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id         String       @id @default(cuid())
+  name       String
+  slug       String       @unique
+  schemaName String       @unique
+  /**
+   * Reserved Tymio product workspace (feedback MCP, non-deletable). At most one true per DB.
+   */
+  isSystem   Boolean      @default(false)
+  status     TenantStatus @default(PROVISIONING)
+  settings   Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  memberships   TenantMembership[]
-  domains       TenantDomain[]
-  migrationState TenantMigrationState?
-  /** Set when this tenant was created from an approved registration request (1:1 via TenantRequest.tenantId). */
+  memberships         TenantMembership[]
+  domains             TenantDomain[]
+  migrationState      TenantMigrationState?
+  /**
+   * Set when this tenant was created from an approved registration request (1:1 via TenantRequest.tenantId).
+   */
   registrationRequest TenantRequest?
 
   @@index([slug])
@@ -317,35 +321,35 @@ enum TenantRequestStatus {
 }
 
 model TenantRequest {
-  id             String              @id @default(cuid())
-  teamName       String
-  slug           String              @unique
-  contactEmail   String
-  contactName    String
-  message        String?
-  status         TenantRequestStatus @default(PENDING)
-  reviewedBy     String?
-  reviewedAt     DateTime?
-  reviewNote     String?
-  tenantId       String?             @unique
-  tenant         Tenant?             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id           String              @id @default(cuid())
+  teamName     String
+  slug         String              @unique
+  contactEmail String
+  contactName  String
+  message      String?
+  status       TenantRequestStatus @default(PENDING)
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  tenantId     String?             @unique
+  tenant       Tenant?             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([status])
   @@index([contactEmail])
 }
 
 model TenantMigrationState {
-  id              String   @id @default(cuid())
-  tenantId        String   @unique
-  schemaVersion   Int      @default(0)
-  lastMigratedAt  DateTime?
-  status          String   @default("pending")
-  errorLog        String?
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(cuid())
+  tenantId       String    @unique
+  schemaVersion  Int       @default(0)
+  lastMigratedAt DateTime?
+  status         String    @default("pending")
+  errorLog       String?
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -353,64 +357,65 @@ model TenantMigrationState {
 // ---------------------------------------------------------------------------
 
 model User {
-  id               String       @id @default(cuid())
-  email            String       @unique
-  name             String
-  avatarUrl        String?
-  role             UserRole     @default(VIEWER)
-  isActive         Boolean      @default(true)
-  lastLoginAt      DateTime?
-  googleId         String?      @unique
-  activeTenantId   String?
-  emails           UserEmail[]
-  memberships      TenantMembership[]
-  initiatives      Initiative[] @relation("InitiativeOwner")
-  features         Feature[]    @relation("FeatureOwner")
-  risks            Risk[]       @relation("RiskOwner")
-  assignments      InitiativeAssignment[]
-  accountsOwned    Account[]    @relation("AccountOwner")
-  partnersOwned    Partner[]    @relation("PartnerOwner")
-  demandsOwned     Demand[]     @relation("DemandOwner")
-  campaignsOwned   Campaign[]   @relation("CampaignOwner")
-  milestonesOwned  InitiativeMilestone[] @relation("MilestoneOwner")
-  initiativeComments InitiativeComment[]
-  userMessages     UserMessage[]
-  auditEntries     AuditEntry[]
+  id                        String                         @id @default(cuid())
+  email                     String                         @unique
+  name                      String
+  avatarUrl                 String?
+  role                      UserRole                       @default(VIEWER)
+  isActive                  Boolean                        @default(true)
+  lastLoginAt               DateTime?
+  googleId                  String?                        @unique
+  activeTenantId            String?
+  emails                    UserEmail[]
+  memberships               TenantMembership[]
+  initiatives               Initiative[]                   @relation("InitiativeOwner")
+  features                  Feature[]                      @relation("FeatureOwner")
+  risks                     Risk[]                         @relation("RiskOwner")
+  assignments               InitiativeAssignment[]
+  accountsOwned             Account[]                      @relation("AccountOwner")
+  partnersOwned             Partner[]                      @relation("PartnerOwner")
+  demandsOwned              Demand[]                       @relation("DemandOwner")
+  campaignsOwned            Campaign[]                     @relation("CampaignOwner")
+  milestonesOwned           InitiativeMilestone[]          @relation("MilestoneOwner")
+  initiativeComments        InitiativeComment[]
+  userMessages              UserMessage[]
+  auditEntries              AuditEntry[]
   notificationSubscriptions UserNotificationSubscription[]
+  mcpRefreshTokens          McpRefreshToken[]
   notificationPreferences   UserNotificationPreference[]
-  requirementsAssigned Requirement[] @relation("RequirementAssignee")
-  preferredLocale  String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  requirementsAssigned      Requirement[]                  @relation("RequirementAssignee")
+  preferredLocale           String?
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
 }
 
 model UserMessage {
-  id             String    @id @default(cuid())
-  tenantId       String?
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title          String?
-  body           String?
-  linkUrl        String?
-  linkLabel      String?
-  titleKey       String?
-  titleParams    Json?
-  bodyKey        String?
-  bodyParams     Json?
-  linkLabelKey   String?
+  id              String                 @id @default(cuid())
+  tenantId        String?
+  userId          String
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String?
+  body            String?
+  linkUrl         String?
+  linkLabel       String?
+  titleKey        String?
+  titleParams     Json?
+  bodyKey         String?
+  bodyParams      Json?
+  linkLabelKey    String?
   linkLabelParams Json?
-  entityType     String?
-  entityId       String?
-  auditEntryId   String?
-  readAt         DateTime?
-  source         String?
-  type           String?
-  createdAt      DateTime  @default(now())
-  deliveries     NotificationDelivery[]
+  entityType      String?
+  entityId        String?
+  auditEntryId    String?
+  readAt          DateTime?
+  source          String?
+  type            String?
+  createdAt       DateTime               @default(now())
+  deliveries      NotificationDelivery[]
 
+  @@unique([userId, auditEntryId])
   @@index([userId])
   @@index([userId, readAt])
-  @@unique([userId, auditEntryId])
 }
 
 model UserEmail {
@@ -425,18 +430,20 @@ model UserEmail {
 }
 
 model Product {
-  id          String            @id @default(cuid())
-  tenantId    String?
-  name        String
-  /** Stable per-workspace segment for docs and agent references: `<workspace-slug>/<slug>`. */
-  slug        String
-  description String?
-  sortOrder   Int               @default(0)
-  itemType    TopLevelItemType  @default(PRODUCT)
-  initiatives Initiative[]
+  id              String           @id @default(cuid())
+  tenantId        String?
+  name            String
+  /**
+   * Stable per-workspace segment for docs and agent references: `<workspace-slug>/<slug>`.
+   */
+  slug            String
+  description     String?
+  sortOrder       Int              @default(0)
+  itemType        TopLevelItemType @default(PRODUCT)
+  initiatives     Initiative[]
   executionBoards ExecutionBoard[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@unique([tenantId, name])
   @@unique([tenantId, slug])
@@ -444,37 +451,37 @@ model Product {
 }
 
 model ExecutionBoard {
-  id           String          @id @default(cuid())
-  tenantId     String?
-  productId    String
-  name         String
-  provider     BoardProvider   @default(INTERNAL)
-  isDefault    Boolean         @default(false)
-  syncState    BoardSyncState  @default(HEALTHY)
-  externalRef  String?
-  config       Json?
-  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  columns      ExecutionColumn[]
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id          String            @id @default(cuid())
+  tenantId    String?
+  productId   String
+  name        String
+  provider    BoardProvider     @default(INTERNAL)
+  isDefault   Boolean           @default(false)
+  syncState   BoardSyncState    @default(HEALTHY)
+  externalRef String?
+  config      Json?
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  columns     ExecutionColumn[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([tenantId])
   @@index([productId])
 }
 
 model ExecutionColumn {
-  id            String        @id @default(cuid())
-  tenantId      String?
-  boardId       String
-  name          String
-  sortOrder     Int           @default(0)
-  mappedStatus  TaskStatus
-  isDefault     Boolean       @default(false)
-  externalRef   String?
-  board         ExecutionBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  requirements  Requirement[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id           String         @id @default(cuid())
+  tenantId     String?
+  boardId      String
+  name         String
+  sortOrder    Int            @default(0)
+  mappedStatus TaskStatus
+  isDefault    Boolean        @default(false)
+  externalRef  String?
+  board        ExecutionBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([tenantId])
   @@index([boardId])
@@ -523,53 +530,55 @@ model RevenueStream {
 }
 
 model Initiative {
-  id             String                    @id @default(cuid())
-  tenantId       String?
-  productId      String?
-  /** Product Explorer epics vs board-first initiatives; set true when created from explorer. */
-  isEpic         Boolean                   @default(false)
-  title          String
-  description    String?
-  domainId       String
-  ownerId        String?
-  priority       Priority
-  horizon        Horizon
-  status         InitiativeStatus
-  commercialType CommercialType
-  isGap          Boolean                   @default(false)
-  targetDate     DateTime?
-  startDate      DateTime?
-  milestoneDate  DateTime?
-  dateConfidence DateConfidence?
-  arrImpact      Float?
-  renewalDate    DateTime?
-  dealStage      DealStage?
-  strategicTier  StrategicTier?
-  problemStatement String?
-  successCriteria  String?
-  notes            String?
-  sortOrder        Int                       @default(0)
-  archivedAt       DateTime?
-  product          Product?                  @relation(fields: [productId], references: [id], onDelete: SetNull)
-  domain           Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  owner            User?                     @relation("InitiativeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  personaImpacts   InitiativePersonaImpact[]
-  revenueWeights   InitiativeRevenueStream[]
-  features         Feature[]
-  decisions        Decision[]
-  risks            Risk[]
-  demandLinks      DemandLink[]
-  campaignLinks    CampaignLink[]
-  assignments      InitiativeAssignment[]
-  milestones       InitiativeMilestone[]
-  kpis             InitiativeKPI[]
-  stakeholders     Stakeholder[]
-  outgoingDeps     Dependency[]              @relation("FromInitiative")
-  incomingDeps     Dependency[]              @relation("ToInitiative")
-  comments         InitiativeComment[]
+  id                   String                    @id @default(cuid())
+  tenantId             String?
+  productId            String?
+  /**
+   * Product Explorer epics vs board-first initiatives; set true when created from explorer.
+   */
+  isEpic               Boolean                   @default(false)
+  title                String
+  description          String?
+  domainId             String
+  ownerId              String?
+  priority             Priority
+  horizon              Horizon
+  status               InitiativeStatus
+  commercialType       CommercialType
+  isGap                Boolean                   @default(false)
+  targetDate           DateTime?
+  startDate            DateTime?
+  milestoneDate        DateTime?
+  dateConfidence       DateConfidence?
+  arrImpact            Float?
+  renewalDate          DateTime?
+  dealStage            DealStage?
+  strategicTier        StrategicTier?
+  problemStatement     String?
+  successCriteria      String?
+  notes                String?
+  sortOrder            Int                       @default(0)
+  archivedAt           DateTime?
+  product              Product?                  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  domain               Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  owner                User?                     @relation("InitiativeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  personaImpacts       InitiativePersonaImpact[]
+  revenueWeights       InitiativeRevenueStream[]
+  features             Feature[]
+  decisions            Decision[]
+  risks                Risk[]
+  demandLinks          DemandLink[]
+  campaignLinks        CampaignLink[]
+  assignments          InitiativeAssignment[]
+  milestones           InitiativeMilestone[]
+  kpis                 InitiativeKPI[]
+  stakeholders         Stakeholder[]
+  outgoingDeps         Dependency[]              @relation("FromInitiative")
+  incomingDeps         Dependency[]              @relation("ToInitiative")
+  comments             InitiativeComment[]
   successCriteriaItems SuccessCriterion[]
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
 
   @@index([tenantId])
 }
@@ -615,17 +624,17 @@ model InitiativePersonaImpact {
 }
 
 model InitiativeRevenueStream {
-  initiativeId   String
+  initiativeId    String
   revenueStreamId String
-  weight         Int
-  initiative     Initiative    @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  revenueStream  RevenueStream @relation(fields: [revenueStreamId], references: [id], onDelete: Cascade)
+  weight          Int
+  initiative      Initiative    @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  revenueStream   RevenueStream @relation(fields: [revenueStreamId], references: [id], onDelete: Cascade)
 
   @@id([initiativeId, revenueStreamId])
 }
 
 model Feature {
-  id                 String         @id @default(cuid())
+  id                 String          @id @default(cuid())
   tenantId           String?
   title              String
   description        String?
@@ -635,32 +644,32 @@ model Feature {
   storyType          StoryType?
   initiativeId       String
   ownerId            String?
-  status             FeatureStatus  @default(IDEA)
+  status             FeatureStatus   @default(IDEA)
   startDate          DateTime?
   targetDate         DateTime?
   milestoneDate      DateTime?
   dateConfidence     DateConfidence?
-  sortOrder          Int            @default(0)
-  initiative         Initiative     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  owner              User?          @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  sortOrder          Int             @default(0)
+  initiative         Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  owner              User?           @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   requirements       Requirement[]
   demandLinks        DemandLink[]
   campaignLinks      CampaignLink[]
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   @@index([tenantId])
 }
 
 model Requirement {
-  id                 String            @id @default(cuid())
+  id                 String           @id @default(cuid())
   tenantId           String?
   featureId          String
   title              String
   description        String?
-  status             TaskStatus        @default(NOT_STARTED)
-  isDone             Boolean           @default(false)
-  priority           Priority          @default(P2)
+  status             TaskStatus       @default(NOT_STARTED)
+  isDone             Boolean          @default(false)
+  priority           Priority         @default(P2)
   assigneeId         String?
   dueDate            DateTime?
   estimate           String?
@@ -669,14 +678,14 @@ model Requirement {
   blockedReason      String?
   externalRef        String?
   metadata           Json?
-  sortOrder            Int               @default(0)
-  executionSortOrder   Int               @default(0)
-  executionColumnId    String?
-  feature              Feature           @relation(fields: [featureId], references: [id], onDelete: Cascade)
-  assignee             User?             @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  executionColumn      ExecutionColumn?  @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  sortOrder          Int              @default(0)
+  executionSortOrder Int              @default(0)
+  executionColumnId  String?
+  feature            Feature          @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  assignee           User?            @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  executionColumn    ExecutionColumn? @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@index([tenantId])
   @@index([assigneeId])
@@ -685,15 +694,15 @@ model Requirement {
 }
 
 model Decision {
-  id           String     @id @default(cuid())
-  tenantId     String?
-  title        String
-  rationale    String?
+  id            String     @id @default(cuid())
+  tenantId      String?
+  title         String
+  rationale     String?
   impactedTeams String?
-  initiativeId String
-  decidedAt    DateTime?
-  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
+  initiativeId  String
+  decidedAt     DateTime?
+  initiative    Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
 
   @@index([tenantId])
 }
@@ -725,7 +734,7 @@ model Dependency {
 }
 
 model Account {
-  id            String        @id @default(cuid())
+  id            String         @id @default(cuid())
   tenantId      String?
   name          String
   type          AccountType
@@ -735,60 +744,61 @@ model Account {
   renewalDate   DateTime?
   dealStage     DealStage?
   strategicTier StrategicTier?
-  owner         User?         @relation("AccountOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  owner         User?          @relation("AccountOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   demands       Demand[]
   campaignLinks CampaignLink[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([tenantId])
 }
 
 model Partner {
-  id            String   @id @default(cuid())
+  id            String         @id @default(cuid())
   tenantId      String?
   name          String
   kind          String
   ownerId       String?
-  owner         User?    @relation("PartnerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  owner         User?          @relation("PartnerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   demands       Demand[]
   campaignLinks CampaignLink[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([tenantId])
 }
 
 model Demand {
-  id            String           @id @default(cuid())
-  tenantId      String?
-  title         String
-  description   String?
-  sourceType    DemandSourceType
-  status        DemandStatus     @default(NEW)
-  urgency       Int              @default(3)
-  accountId     String?
-  partnerId     String?
-  ownerId       String?
-  account       Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  partner       Partner?         @relation(fields: [partnerId], references: [id], onDelete: SetNull)
-  owner         User?            @relation("DemandOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  demandLinks   DemandLink[]
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id          String           @id @default(cuid())
+  tenantId    String?
+  title       String
+  description String?
+  sourceType  DemandSourceType
+  status      DemandStatus     @default(NEW)
+  urgency     Int              @default(3)
+  accountId   String?
+  partnerId   String?
+  ownerId     String?
+  account     Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  partner     Partner?         @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  owner       User?            @relation("DemandOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  demandLinks DemandLink[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([tenantId])
 }
 
 model DemandLink {
-  id            String     @id @default(cuid())
-  tenantId      String?
-  demandId      String
-  initiativeId  String?
-  featureId     String?
-  demand        Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
-  initiative    Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  feature       Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  tenantId     String?
+  demandId     String
+  initiativeId String?
+  featureId    String?
+  demand       Demand      @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  initiative   Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  feature      Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
   @@index([demandId])
   @@index([initiativeId])
@@ -801,8 +811,8 @@ model InitiativeAssignment {
   userId       String
   role         AssignmentRole
   allocation   Int?
-  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  initiative   Initiative     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([initiativeId, userId, role])
   @@index([tenantId])
@@ -862,6 +872,7 @@ model CampaignLink {
   feature      Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
   account      Account?    @relation(fields: [accountId], references: [id], onDelete: Cascade)
   partner      Partner?    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
   @@index([campaignId])
   @@index([initiativeId])
@@ -930,6 +941,7 @@ model AuditEntry {
   details    Json?
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime    @default(now())
+
   @@index([tenantId])
   @@index([userId])
   @@index([entityType, entityId])
@@ -937,17 +949,17 @@ model AuditEntry {
 }
 
 model NotificationRule {
-  id               String                   @id @default(cuid())
+  id               String                    @id @default(cuid())
   tenantId         String?
   action           AuditAction
   entityType       String
   eventKind        String?
-  recipientKind   NotificationRecipientKind
-  recipientRole   String?
-  deliveryChannels Json                     // array of DeliveryChannel names, default ["IN_APP"]
-  enabled          Boolean                  @default(true)
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
+  recipientKind    NotificationRecipientKind
+  recipientRole    String?
+  deliveryChannels Json // array of DeliveryChannel names, default ["IN_APP"]
+  enabled          Boolean                   @default(true)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
 
   @@index([tenantId])
   @@index([action, entityType, enabled])
@@ -962,39 +974,39 @@ model UserNotificationSubscription {
   entityType       String
   scopeType        NotificationScope
   scopeId          String?
-  deliveryChannels Json              // array of DeliveryChannel names, default ["IN_APP"]
-  createdAt        DateTime         @default(now())
+  deliveryChannels Json // array of DeliveryChannel names, default ["IN_APP"]
+  createdAt        DateTime          @default(now())
 
   @@unique([userId, action, entityType, scopeType, scopeId])
   @@index([userId])
 }
 
 model UserNotificationPreference {
-  id                 String         @id @default(cuid())
-  tenantId           String?
-  userId             String
-  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel            DeliveryChannel
-  enabled            Boolean        @default(true)
-  channelIdentifier  String?        // email, Slack user id, phone - no validation yet
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  id                String          @id @default(cuid())
+  tenantId          String?
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel           DeliveryChannel
+  enabled           Boolean         @default(true)
+  channelIdentifier String? // email, Slack user id, phone - no validation yet
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@unique([userId, channel])
   @@index([userId])
 }
 
 model NotificationDelivery {
-  id             String                     @id @default(cuid())
-  tenantId       String?
-  userMessageId  String?
-  userMessage    UserMessage?               @relation(fields: [userMessageId], references: [id], onDelete: Cascade)
-  userId         String
-  channel        DeliveryChannel
-  status         NotificationDeliveryStatus
-  sentAt         DateTime?
-  externalId     String?
-  createdAt      DateTime                   @default(now())
+  id            String                     @id @default(cuid())
+  tenantId      String?
+  userMessageId String?
+  userMessage   UserMessage?               @relation(fields: [userMessageId], references: [id], onDelete: Cascade)
+  userId        String
+  channel       DeliveryChannel
+  status        NotificationDeliveryStatus
+  sentAt        DateTime?
+  externalId    String?
+  createdAt     DateTime                   @default(now())
 
   @@index([userMessageId])
   @@index([userId])
@@ -1003,7 +1015,7 @@ model NotificationDelivery {
 model McpOAuthClient {
   id        String   @id @default(cuid())
   clientId  String   @unique
-  payload   Json     // OAuthClientInformationFull (client_id, redirect_uris, client_name, etc.)
+  payload   Json // OAuthClientInformationFull (client_id, redirect_uris, client_name, etc.)
   createdAt DateTime @default(now())
 
   @@index([clientId])
@@ -1031,21 +1043,21 @@ enum BindingType {
 
 /// Product capability in user language; binds to routes, MCP tools, models, etc.
 model Capability {
-  id               String            @id @default(cuid())
-  slug             String            @unique
+  id               String              @id @default(cuid())
+  slug             String              @unique
   title            String
   description      String?
   userJob          String?
   synonyms         Json?
   doNotConfuseWith String?
-  status           CapabilityStatus  @default(DRAFT)
+  status           CapabilityStatus    @default(DRAFT)
   parentId         String?
-  parent           Capability?       @relation("CapabilityHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children         Capability[]      @relation("CapabilityHierarchy")
+  parent           Capability?         @relation("CapabilityHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children         Capability[]        @relation("CapabilityHierarchy")
   bindings         CapabilityBinding[]
-  sortOrder        Int               @default(0)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  sortOrder        Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@index([parentId])
   @@index([status])
@@ -1082,7 +1094,25 @@ model CompiledBrief {
 
 /// Singleton row: which main nav routes are hidden for non–super-admin users.
 model UiSettings {
-  id               String   @id @default("default")
-  hiddenNavPaths   Json     @default("[]")
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default("default")
+  hiddenNavPaths Json     @default("[]")
+  updatedAt      DateTime @updatedAt
+}
+
+model McpRefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  clientId  String
+  scopes    String[]
+  expiresAt DateTime
+  usedAt    DateTime? // For reuse detection (Zero-Trust)
+  familyId  String // Groups rotated tokens together
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([familyId])
+  @@index([userId, clientId])
 }

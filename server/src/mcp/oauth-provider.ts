@@ -67,8 +67,6 @@ interface AuthCodeEntry {
 
 const authCodes = new Map<string, AuthCodeEntry>();
 
-const refreshTokens = new Map<string, { userId: string; clientId: string; scopes: string[] }>();
-
 // --- Client store ---
 
 const clientsStore: OAuthRegisteredClientsStore = {
@@ -141,7 +139,19 @@ async function mintAccessToken(userId: string, role: string, clientId: string, s
 
 async function mintRefreshToken(userId: string, clientId: string, scopes: string[]): Promise<string> {
   const token = crypto.randomUUID();
-  refreshTokens.set(token, { userId, clientId, scopes });
+  const familyId = crypto.randomUUID();
+  
+  await prisma.mcpRefreshToken.create({
+    data: {
+      token,
+      userId,
+      clientId,
+      scopes,
+      familyId,
+      expiresAt: new Date(Date.now() + REFRESH_TTL * 1000)
+    }
+  });
+  
   return token;
 }
 
@@ -232,23 +242,60 @@ export class TymioOAuthProvider implements OAuthServerProvider {
     scopes?: string[],
     _resource?: URL
   ): Promise<OAuthTokens> {
-    const entry = refreshTokens.get(refreshToken);
-    if (!entry || entry.clientId !== client.client_id) throw new Error("Invalid refresh token");
+    const entry = await prisma.mcpRefreshToken.findUnique({ where: { token: refreshToken } });
+    
+    if (!entry) {
+      throw new Error("Invalid refresh token");
+    }
+    
+    if (entry.clientId !== client.client_id) {
+      throw new Error("Client mismatch");
+    }
+
+    if (entry.expiresAt < new Date()) {
+      await prisma.mcpRefreshToken.delete({ where: { id: entry.id } });
+      throw new Error("Refresh token expired");
+    }
+
+    // Zero-Trust: Refresh Token Rotation Reuse Detection
+    if (entry.usedAt) {
+      // Token was already used! This means it was stolen or replayed.
+      // Revoke the entire token family to protect the user.
+      console.warn(`[MCP OAuth] Refresh token reuse detected for family ${entry.familyId}. Revoking all tokens.`);
+      await prisma.mcpRefreshToken.deleteMany({ where: { familyId: entry.familyId } });
+      throw new Error("Invalid refresh token (reuse detected)");
+    }
+
+    // Mark the current token as used
+    await prisma.mcpRefreshToken.update({
+      where: { id: entry.id },
+      data: { usedAt: new Date() }
+    });
 
     const user = await prisma.user.findUnique({ where: { id: entry.userId } });
     if (!user || !user.isActive) throw new Error("User not found or inactive");
 
     const effectiveScopes = scopes ?? entry.scopes;
     const accessToken = await mintAccessToken(user.id, user.role, client.client_id, effectiveScopes);
-    const newRefreshToken = await mintRefreshToken(user.id, client.client_id, effectiveScopes);
-
-    refreshTokens.delete(refreshToken);
+    
+    // Issue a new refresh token in the same family
+    const newToken = crypto.randomUUID();
+    await prisma.mcpRefreshToken.create({
+      data: {
+        token: newToken,
+        userId: user.id,
+        clientId: client.client_id,
+        scopes: effectiveScopes,
+        familyId: entry.familyId,
+        expiresAt: new Date(Date.now() + REFRESH_TTL * 1000)
+      }
+    });
 
     return {
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: TOKEN_TTL,
-      refresh_token: newRefreshToken
+      refresh_token: newToken
     };
   }
 
@@ -264,7 +311,10 @@ export class TymioOAuthProvider implements OAuthServerProvider {
   }
 
   async revokeToken(_client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void> {
-    refreshTokens.delete(request.token);
+    const entry = await prisma.mcpRefreshToken.findUnique({ where: { token: request.token } });
+    if (entry) {
+      await prisma.mcpRefreshToken.deleteMany({ where: { familyId: entry.familyId } });
+    }
   }
 }
 
