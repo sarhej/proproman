@@ -2,7 +2,13 @@ import { describe, it, expect, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import { UserRole } from "@prisma/client";
-import { requireAuth, requireRole, requireWriteAccess, requireMarketingAccess } from "./auth.js";
+import {
+  requireAuth,
+  requireRole,
+  requireSession,
+  requireWriteAccess,
+  requireMarketingAccess,
+} from "./auth.js";
 
 function makeApp(middleware: express.RequestHandler, userOverrides?: Partial<Express.User> | null) {
   const app = express();
@@ -51,6 +57,24 @@ describe("requireAuth", () => {
     const res = await request(makeApp(requireAuth, { role: UserRole.PENDING })).get("/test");
     expect(res.status).toBe(403);
     expect(res.body.error).toBe("PENDING_APPROVAL");
+  });
+});
+
+describe("requireSession", () => {
+  it("allows PENDING user", async () => {
+    const res = await request(makeApp(requireSession, { role: UserRole.PENDING })).get("/test");
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects unauthenticated request with 401", async () => {
+    const res = await request(makeApp(requireSession, null)).get("/test");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects deactivated user with 403", async () => {
+    const res = await request(makeApp(requireSession, { isActive: false })).get("/test");
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Account deactivated");
   });
 });
 

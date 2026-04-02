@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireRole } from "../middleware/auth.js";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { provisionTenant, backfillTenantId } from "../tenant/tenantProvisioning.js";
 import { createTenantSchema, schemaExists, listTenantSchemas } from "../tenant/tenantSchemaManager.js";
 import { slugToSchemaName } from "../tenant/tenantSlug.js";
@@ -244,7 +244,30 @@ tenantsRouter.delete("/:id", async (req, res, next) => {
       res.status(400).json({ error: "The Tymio system workspace cannot be deleted." });
       return;
     }
-    await prisma.tenant.delete({ where: { id } });
+
+    const linkedRequest = await prisma.tenantRequest.findFirst({
+      where: { tenantId: id },
+      select: { id: true, slug: true },
+    });
+    if (linkedRequest) {
+      res.status(400).json({
+        error:
+          "Cannot delete this workspace: a registration request is still linked to it (approved team). Unlink or fix the request before deleting.",
+      });
+      return;
+    }
+
+    try {
+      await prisma.tenant.delete({ where: { id } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        res.status(400).json({
+          error: "Cannot delete this workspace: it is still referenced by other records.",
+        });
+        return;
+      }
+      throw err;
+    }
     res.status(204).send();
   } catch (err) {
     next(err);

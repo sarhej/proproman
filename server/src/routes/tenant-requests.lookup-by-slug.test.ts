@@ -33,11 +33,14 @@ describe("GET /api/tenant-requests/lookup-by-slug/:slug", () => {
       status: "APPROVED",
       slug: "nakamapi",
       tenantId: "t1",
+      teamName: "Nakam API",
+      reviewNote: null,
     });
     mockTenant.findUnique.mockResolvedValue({
       id: "t1",
       slug: "nakamapi",
       status: "PROVISIONING",
+      name: "Nakam API",
     });
     mockTenant.findFirst.mockResolvedValue(null);
 
@@ -46,8 +49,15 @@ describe("GET /api/tenant-requests/lookup-by-slug/:slug", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       normalizedSlug: "nakamapi",
-      registrationRequest: { id: "req1", status: "APPROVED", slug: "nakamapi", tenantId: "t1" },
-      linkedTenant: { id: "t1", slug: "nakamapi", status: "PROVISIONING" },
+      registrationRequest: {
+        id: "req1",
+        status: "APPROVED",
+        slug: "nakamapi",
+        tenantId: "t1",
+        teamName: "Nakam API",
+        reviewNote: null,
+      },
+      linkedTenant: { id: "t1", slug: "nakamapi", status: "PROVISIONING", name: "Nakam API" },
       activeTenantBySlug: null,
     });
   });

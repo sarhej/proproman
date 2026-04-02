@@ -159,6 +159,31 @@ describe("tenant request approval", () => {
     });
   });
 
+  it("does not mark APPROVED or set tenantId when provisionTenant fails after tenant create", async () => {
+    mockTenantRequest.findUnique.mockResolvedValueOnce({
+      id: "tr1",
+      status: "PENDING",
+      teamName: "Fail Co",
+      slug: "fail-co",
+      contactEmail: "fail@example.com",
+      contactName: "Fail",
+    });
+    mockTenant.create.mockResolvedValue({
+      id: "tenant-fail",
+      name: "Fail Co",
+      slug: "fail-co",
+      status: "PROVISIONING",
+    });
+    mockProvisionTenant.mockRejectedValueOnce(new Error("provision failed"));
+
+    const res = await request(app)
+      .post("/api/tenant-requests/tr1/review")
+      .send({ action: "approve" });
+
+    expect(res.status).toBe(500);
+    expect(mockTenantRequest.update).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when approving a request that is already APPROVED", async () => {
     mockTenantRequest.findUnique.mockResolvedValueOnce({
       id: "tr-done",

@@ -2,6 +2,7 @@
   "app": {
     "brand": "Tymio",
     "loadingAuth": "Loading authentication...",
+    "resolvingWorkspaceLink": "Checking workspace access…",
     "loadingWorkspace": "Loading workspace…",
     "loadingData": "Loading data...",
     "loadingInitiatives": "Loading initiatives...",
@@ -13,6 +14,9 @@
     "pendingTitle": "Registration request sent",
     "pendingMsg": "Your account <1>{{email}}</1> has been registered.",
     "pendingDesc": "An administrator needs to approve your access before you can use the application. You will be able to log in once your role has been updated.",
+    "pendingWorkspaceRegTitle": "Your workspace request",
+    "pendingWorkspaceRegLine": "{{team}} (/t/{{slug}}) — waiting for Tymio to approve the new workspace.",
+    "pendingWorkspaceRegFootnote": "This is separate from your account status above: new teams are reviewed by Tymio, not by that workspace.",
     "createInitiative": "Create initiative",
     "close": "Close",
     "noNavViewsAvailable": "No navigation views are available for your account. Ask a super admin to enable at least one view in Admin \u2192 Settings \u2192 Navigation views."
@@ -761,6 +765,13 @@
     "selectWorkspaceDesc": "You have access to multiple workspaces. Choose one to continue.",
     "noWorkspaces": "No workspaces available",
     "noWorkspacesDesc": "You are not a member of any workspace yet. Contact an administrator to get access.",
+    "pendingRegsHeading": "Workspace registrations on your email",
+    "pendingRegsPending": "{{team}} (/t/{{slug}}) — waiting for approval from Tymio.",
+    "pendingRegsApprovedNoTenant": "{{team}} (/t/{{slug}}) — approved; if you still cannot access it, contact support.",
+    "pendingRegsRejected": "{{team}} (/t/{{slug}}) — request was not approved.",
+    "slugRegBannerPending": "You opened /t/{{slug}} ({{team}}). That workspace is not available yet — your registration is still waiting for approval from Tymio.",
+    "slugRegBannerApprovedNoAccess": "You opened /t/{{slug}} ({{team}}). The workspace was approved but your account is not a member yet. Try again after refreshing, or contact support if this continues.",
+    "dismiss": "Dismiss",
     "switching": "Switching...",
     "workspaces": "Workspaces",
     "copyEntryLink": "Copy workspace sign-in link",
@@ -835,6 +846,20 @@
     "notFound": "Workspace not found",
     "notFoundDesc": "The workspace you're looking for doesn't exist or is no longer available.",
     "goHome": "Go to home page",
-    "differentWorkspace": "Sign in to a different workspace"
+    "differentWorkspace": "Sign in to a different workspace",
+    "registrationPendingTitle": "Workspace not live yet",
+    "registrationPendingBody": "A registration request for {{team}} (/t/{{slug}}) has been sent. It is waiting for approval from Tymio before this URL will work.",
+    "registrationPendingFootnote": "After you sign in, we will remind you here until the workspace is approved.",
+    "registrationRejectedTitle": "Registration not approved",
+    "registrationRejectedBody": "The request to create {{team}} at /t/{{slug}} was not approved.",
+    "registrationRejectedNoNote": "No additional note was provided.",
+    "provisioningTitle": "Workspace is almost ready",
+    "provisioningBody": "{{team}} (/t/{{slug}}) is still being provisioned. This page will work once the workspace is active.",
+    "provisioningRetry": "Refresh",
+    "membershipPendingTitle": "You are not in this workspace yet",
+    "membershipPendingLead": "You are signed in as <1>{{email}}</1>. That is not the same as being a member of the workspace below.",
+    "membershipPendingBody": "This workspace is active, but your account has not been added to it. Ask a workspace admin (or owner) to invite you or add you as a member. Until then you will stay in whatever workspace you already use (for example Tymio hub).",
+    "membershipPendingAlsoPlatform": "Your platform account is also waiting for approval. Even after an admin adds you to this workspace, you may need Tymio to activate your role before the app opens fully.",
+    "membershipPendingContinue": "Continue to the app"
   }
 }

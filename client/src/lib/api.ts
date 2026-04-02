@@ -541,4 +541,33 @@ export const api = {
   // Public tenant slug resolution
   getTenantBySlug: async (slug: string) =>
     request<{ name: string; slug: string }>(`/api/tenants/by-slug/${encodeURIComponent(slug)}/public`),
+
+  /** Public: correlates slug with registration row and tenant (for /t/:slug UX when workspace is not ACTIVE yet). */
+  lookupTenantSlugContext: async (slug: string) =>
+    request<{
+      normalizedSlug: string;
+      registrationRequest: {
+        id: string;
+        status: string;
+        slug: string;
+        tenantId: string | null;
+        teamName: string;
+        reviewNote: string | null;
+      } | null;
+      linkedTenant: { id: string; slug: string; status: string; name: string } | null;
+      activeTenantBySlug: { id: string; slug: string; status: string; name: string } | null;
+    }>(`/api/tenant-requests/lookup-by-slug/${encodeURIComponent(slug)}`),
+
+  /** Logged-in (including platform PENDING): workspace registration rows where contact email matches the user. */
+  getMyWorkspaceRegistrationRequests: async () =>
+    request<{
+      requests: Array<{
+        id: string;
+        teamName: string;
+        slug: string;
+        status: string;
+        createdAt: string;
+        reviewNote: string | null;
+      }>;
+    }>("/api/me/workspace-registration-requests"),
 };

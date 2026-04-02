@@ -21,6 +21,19 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   if (checkAuth(req, res)) next();
 }
 
+/** Logged-in + active account only (allows `UserRole.PENDING`). For endpoints that must work before platform role promotion. */
+export function requireSession(req: Request, res: Response, next: NextFunction): void {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!req.user.isActive) {
+    res.status(403).json({ error: "Account deactivated" });
+    return;
+  }
+  next();
+}
+
 export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!checkAuth(req, res)) return;

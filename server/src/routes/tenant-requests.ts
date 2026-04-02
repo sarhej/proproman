@@ -102,20 +102,20 @@ export async function tenantRequestLookupBySlugHandler(
     const registrationRequest = await prismaUnscoped.tenantRequest.findFirst({
       where: { slug: { equals: slug, mode: "insensitive" } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, status: true, slug: true, tenantId: true },
+      select: { id: true, status: true, slug: true, tenantId: true, teamName: true, reviewNote: true },
     });
 
-    let linkedTenant: { id: string; slug: string; status: string } | null = null;
+    let linkedTenant: { id: string; slug: string; status: string; name: string } | null = null;
     if (registrationRequest?.tenantId) {
       linkedTenant = await prismaUnscoped.tenant.findUnique({
         where: { id: registrationRequest.tenantId },
-        select: { id: true, slug: true, status: true },
+        select: { id: true, slug: true, status: true, name: true },
       });
     }
 
     const activeTenantBySlug = await prismaUnscoped.tenant.findFirst({
       where: { slug: { equals: slug, mode: "insensitive" }, status: "ACTIVE" },
-      select: { id: true, slug: true, status: true },
+      select: { id: true, slug: true, status: true, name: true },
     });
 
     res.json({

@@ -12,6 +12,9 @@ vi.mock("../db.js", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    tenantRequest: {
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -22,6 +25,9 @@ const mockTenant = prisma.tenant as unknown as {
   findFirst: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
+};
+const mockTenantRequest = prisma.tenantRequest as unknown as {
+  findFirst: ReturnType<typeof vi.fn>;
 };
 
 function authSuperAdmin() {
@@ -103,11 +109,31 @@ describe("system tenant (Tymio hub) guards", () => {
       slug: "acme",
       isSystem: false,
     });
+    mockTenantRequest.findFirst.mockResolvedValue(null);
     mockTenant.delete.mockResolvedValue({});
 
     const res = await request(app).delete("/api/tenants/t1");
 
     expect(res.status).toBe(204);
+    expect(mockTenantRequest.findFirst).toHaveBeenCalledWith({
+      where: { tenantId: "t1" },
+      select: { id: true, slug: true },
+    });
     expect(mockTenant.delete).toHaveBeenCalledWith({ where: { id: "t1" } });
+  });
+
+  it("DELETE returns 400 when a registration request is still linked to the tenant", async () => {
+    mockTenant.findUnique.mockResolvedValue({
+      id: "t1",
+      slug: "acme",
+      isSystem: false,
+    });
+    mockTenantRequest.findFirst.mockResolvedValue({ id: "tr1", slug: "acme" });
+
+    const res = await request(app).delete("/api/tenants/t1");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("registration request");
+    expect(mockTenant.delete).not.toHaveBeenCalled();
   });
 });

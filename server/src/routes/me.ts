@@ -1,8 +1,8 @@
 import { DeliveryChannel } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { prisma, prismaUnscoped } from "../db.js";
+import { requireAuth, requireSession } from "../middleware/auth.js";
 
 const channels: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
 
@@ -14,6 +14,31 @@ const patchSchema = z.object({
       channelIdentifier: z.string().optional().nullable()
     })
   )
+});
+
+/** Routes that allow `PENDING` users (mounted before `meRouter` in `index.ts`). */
+export const meSessionRouter = Router();
+meSessionRouter.use(requireSession);
+
+meSessionRouter.get("/workspace-registration-requests", async (req, res, next) => {
+  try {
+    const email = req.user!.email;
+    const requests = await prismaUnscoped.tenantRequest.findMany({
+      where: { contactEmail: { equals: email, mode: "insensitive" } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        teamName: true,
+        slug: true,
+        status: true,
+        createdAt: true,
+        reviewNote: true,
+      },
+    });
+    res.json({ requests });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export const meRouter = Router();

@@ -11,6 +11,9 @@ type Props = {
 export function TenantPicker({ onSelected }: Props) {
   const { t } = useTranslation();
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
+  const [regRequests, setRegRequests] = useState<
+    Array<{ id: string; teamName: string; slug: string; status: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +23,15 @@ export function TenantPicker({ onSelected }: Props) {
     async function load() {
       try {
         const res = await api.getMyTenants();
+        let regs: Array<{ id: string; teamName: string; slug: string; status: string }> = [];
+        try {
+          regs = (await api.getMyWorkspaceRegistrationRequests()).requests;
+        } catch {
+          /* optional: user may lack session in edge cases */
+        }
         if (!cancelled) {
           setMemberships(res.tenants);
+          setRegRequests(regs);
           if (res.tenants.length === 1) {
             await handleSelect(res.tenants[0].tenant);
             return;
@@ -69,6 +79,26 @@ export function TenantPicker({ onSelected }: Props) {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenant.noWorkspaces")}</h2>
           <p className="text-sm text-slate-500">{t("tenant.noWorkspacesDesc")}</p>
+          {regRequests.length > 0 ? (
+            <div className="mt-6 border-t border-slate-200 pt-4 text-left">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t("tenant.pendingRegsHeading")}
+              </p>
+              <ul className="space-y-2">
+                {regRequests.map((r) => (
+                  <li key={r.id} className="text-sm text-slate-600">
+                    {r.status === "PENDING"
+                      ? t("tenant.pendingRegsPending", { team: r.teamName, slug: r.slug })
+                      : r.status === "APPROVED"
+                        ? t("tenant.pendingRegsApprovedNoTenant", { team: r.teamName, slug: r.slug })
+                        : r.status === "REJECTED"
+                          ? t("tenant.pendingRegsRejected", { team: r.teamName, slug: r.slug })
+                          : `${r.teamName} (/t/${r.slug}) — ${r.status}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </Card>
       </div>
     );

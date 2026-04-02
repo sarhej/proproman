@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
@@ -40,6 +40,7 @@ import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
 import { LandingPage } from "./pages/LandingPage";
 import { RegisterTeamPage } from "./pages/RegisterTeamPage";
 import { TenantSlugLoginPage } from "./pages/TenantSlugLoginPage";
+import { TenantWorkspaceNoAccessPage } from "./pages/TenantWorkspaceNoAccessPage";
 import type { Initiative, Tenant, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
 
@@ -49,7 +50,34 @@ function App() {
   const { t } = useTranslation();
   const { user, activeTenant, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const [needsTenantPick, setNeedsTenantPick] = useState(false);
-  const board = useBoardData(!!user && !needsTenantPick);
+  const [slugRegistrationHint, setSlugRegistrationHint] = useState<{
+    kind: "PENDING" | "APPROVED_NO_ACCESS";
+    slug: string;
+    teamName: string;
+  } | null>(null);
+  const [pendingUserWorkspaceRegs, setPendingUserWorkspaceRegs] = useState<
+    Array<{ id: string; teamName: string; slug: string; status: string }>
+  >([]);
+  const [workspaceSlugGate, setWorkspaceSlugGate] = useState<
+    | { state: "idle" }
+    | { state: "checking" }
+    | { state: "no_membership"; name: string; slug: string }
+  >({ state: "idle" });
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tenantSlug = useMemo(() => {
+    const m = location.pathname.match(/^\/t\/([^/]+)/);
+    return m ? m[1] : null;
+  }, [location.pathname]);
+
+  const blockWorkspaceSlugGate =
+    Boolean(tenantSlug) &&
+    Boolean(user) &&
+    !authLoading &&
+    (workspaceSlugGate.state === "checking" || workspaceSlugGate.state === "no_membership");
+
+  const board = useBoardData(!!user && !needsTenantPick && !blockWorkspaceSlugGate);
   const perms = usePermissions(user);
   const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
   const [selected, setSelected] = useState<Initiative | null>(null);
@@ -74,7 +102,6 @@ function App() {
   useEffect(() => { void loadDevTenants(); }, [loadDevTenants]);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
   const hideFilters =
     location.pathname === "/gantt" ||
     location.pathname.startsWith("/features/") ||
@@ -111,34 +138,109 @@ function App() {
     }
   }, [searchParams, setSearchParams]);
 
-  const slugMatch = location.pathname.match(/^\/t\/([^/]+)/);
-  const tenantSlug = slugMatch ? slugMatch[1] : null;
-
-  // Authenticated user landed on /t/:slug — auto-switch and redirect
   useEffect(() => {
-    if (!tenantSlug || !user || authLoading) return;
+    if (user?.role !== "PENDING") return;
     let cancelled = false;
-    async function switchToSlug() {
-      try {
-        const myTenants = await api.getMyTenants();
-        const match = myTenants.tenants.find((m) => m.tenant.slug === tenantSlug);
-        if (match) {
-          await api.switchTenant(match.tenant.id);
-          if (!cancelled) {
-            await refreshAuth();
-            window.history.replaceState(null, "", "/");
+    void api
+      .getMyWorkspaceRegistrationRequests()
+      .then((r) => {
+        if (!cancelled) setPendingUserWorkspaceRegs(r.requests);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingUserWorkspaceRegs([]);
+      });
+    return () => { cancelled = true; };
+  }, [user?.role, user?.id]);
+
+  useLayoutEffect(() => {
+    if (!tenantSlug || !user || authLoading) {
+      setWorkspaceSlugGate({ state: "idle" });
+      return;
+    }
+    setWorkspaceSlugGate((prev) => {
+      if (
+        prev.state === "no_membership" &&
+        prev.slug.toLowerCase() === tenantSlug.trim().toLowerCase()
+      ) {
+        return prev;
+      }
+      return { state: "checking" };
+    });
+  }, [tenantSlug, user?.id, authLoading]);
+
+  useEffect(() => {
+    if (workspaceSlugGate.state !== "checking" || !tenantSlug || !user || authLoading) return;
+    let cancelled = false;
+    const slugNorm = tenantSlug.trim().toLowerCase();
+
+    async function run() {
+      if (user.role !== "PENDING") {
+        try {
+          const myTenants = await api.getMyTenants();
+          if (cancelled) return;
+          const match = myTenants.tenants.find((m) => m.tenant.slug.toLowerCase() === slugNorm);
+          if (match) {
+            await api.switchTenant(match.tenant.id);
+            if (!cancelled) {
+              await refreshAuth();
+              setWorkspaceSlugGate({ state: "idle" });
+              navigate("/", { replace: true });
+            }
+            return;
           }
-        } else if (!cancelled) {
-          window.history.replaceState(null, "", "/");
+        } catch {
+          if (!cancelled) {
+            setWorkspaceSlugGate({ state: "idle" });
+            navigate("/", { replace: true });
+          }
+          return;
+        }
+      }
+
+      try {
+        const info = await api.getTenantBySlug(tenantSlug.trim());
+        if (!cancelled) {
+          setWorkspaceSlugGate({
+            state: "no_membership",
+            name: info.name,
+            slug: info.slug,
+          });
+        }
+        return;
+      } catch {
+        /* workspace not ACTIVE / not found — fall through */
+      }
+
+      try {
+        const regs = await api.getMyWorkspaceRegistrationRequests();
+        if (cancelled) return;
+        const forSlug = regs.requests.filter((r) => r.slug.toLowerCase() === slugNorm);
+        const pending = forSlug.find((r) => r.status === "PENDING");
+        if (pending) {
+          setSlugRegistrationHint({ kind: "PENDING", slug: pending.slug, teamName: pending.teamName });
+        } else if (user.role !== "PENDING") {
+          const appr = forSlug.find((r) => r.status === "APPROVED");
+          if (appr) {
+            setSlugRegistrationHint({
+              kind: "APPROVED_NO_ACCESS",
+              slug: appr.slug,
+              teamName: appr.teamName,
+            });
+          }
         }
       } catch {
-        if (!cancelled) window.history.replaceState(null, "", "/");
+        /* ignore */
+      }
+
+      if (!cancelled) {
+        setWorkspaceSlugGate({ state: "idle" });
+        navigate("/", { replace: true });
       }
     }
-    switchToSlug();
+
+    void run();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantSlug, user?.id]);
+  }, [workspaceSlugGate.state, tenantSlug, user?.id, user?.role, authLoading, navigate, refreshAuth]);
 
   if (authLoading) {
     return <div className="p-8">{t("app.loadingAuth")}</div>;
@@ -257,6 +359,28 @@ function App() {
     );
   }
 
+  if (tenantSlug && workspaceSlugGate.state === "checking") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <p className="text-sm text-slate-500">{t("app.resolvingWorkspaceLink")}</p>
+      </div>
+    );
+  }
+
+  if (tenantSlug && workspaceSlugGate.state === "no_membership") {
+    return (
+      <TenantWorkspaceNoAccessPage
+        workspaceName={workspaceSlugGate.name}
+        workspaceSlug={workspaceSlugGate.slug}
+        userEmail={user.email}
+        isPlatformPending={user.role === "PENDING"}
+        onContinue={() => {
+          navigate("/", { replace: true });
+        }}
+      />
+    );
+  }
+
   if (user.role === "PENDING") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
@@ -283,6 +407,42 @@ function App() {
           <p className="mb-6 text-sm text-slate-500">
             {t("app.pendingDesc")}
           </p>
+          {(slugRegistrationHint || pendingUserWorkspaceRegs.some((r) => r.status === "PENDING")) && (
+            <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-left">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                {t("app.pendingWorkspaceRegTitle")}
+              </p>
+              {slugRegistrationHint?.kind === "PENDING" ? (
+                <p className="text-sm text-slate-700">
+                  {t("app.pendingWorkspaceRegLine", {
+                    team: slugRegistrationHint.teamName,
+                    slug: slugRegistrationHint.slug,
+                  })}
+                </p>
+              ) : null}
+              {slugRegistrationHint?.kind === "APPROVED_NO_ACCESS" ? (
+                <p className="text-sm text-slate-700">
+                  {t("tenant.pendingRegsApprovedNoTenant", {
+                    team: slugRegistrationHint.teamName,
+                    slug: slugRegistrationHint.slug,
+                  })}
+                </p>
+              ) : null}
+              {pendingUserWorkspaceRegs
+                .filter((r) => r.status === "PENDING")
+                .filter(
+                  (r) =>
+                    !slugRegistrationHint ||
+                    r.slug.toLowerCase() !== slugRegistrationHint.slug.toLowerCase()
+                )
+                .map((r) => (
+                  <p key={r.id} className="text-sm text-slate-700">
+                    {t("app.pendingWorkspaceRegLine", { team: r.teamName, slug: r.slug })}
+                  </p>
+                ))}
+              <p className="mt-2 text-xs text-slate-500">{t("app.pendingWorkspaceRegFootnote")}</p>
+            </div>
+          )}
           <Button
             variant="secondary"
             onClick={async () => {
@@ -336,6 +496,31 @@ function App() {
         window.print();
       }}
     >
+      {slugRegistrationHint && user.role !== "PENDING" ? (
+        <div
+          className="mb-3 flex items-start justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          data-print-hide
+        >
+          <p>
+            {slugRegistrationHint.kind === "PENDING"
+              ? t("tenant.slugRegBannerPending", {
+                  slug: slugRegistrationHint.slug,
+                  team: slugRegistrationHint.teamName,
+                })
+              : t("tenant.slugRegBannerApprovedNoAccess", {
+                  slug: slugRegistrationHint.slug,
+                  team: slugRegistrationHint.teamName,
+                })}
+          </p>
+          <button
+            type="button"
+            className="shrink-0 text-xs font-medium text-amber-800 underline"
+            onClick={() => setSlugRegistrationHint(null)}
+          >
+            {t("tenant.dismiss")}
+          </button>
+        </div>
+      ) : null}
       {!hideFilters && (
         <div data-print-hide>
           <FiltersBar
@@ -646,7 +831,18 @@ function App() {
               }
             />
           )}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="*"
+            element={
+              location.pathname.startsWith("/t/") ? (
+                <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+                  <p className="text-sm text-slate-500">{t("app.resolvingWorkspaceLink")}</p>
+                </div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
       )}
 
