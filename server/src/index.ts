@@ -51,7 +51,10 @@ import { mountMcp } from "./mcp/setup.js";
 import { requireTenant } from "./tenant/requireTenant.js";
 import { tenantResolver } from "./tenant/tenantResolver.js";
 import { tenantsRouter } from "./routes/tenants.js";
-import { tenantRequestsRouter } from "./routes/tenant-requests.js";
+import {
+  tenantRequestsRouter,
+  tenantRequestLookupBySlugHandler,
+} from "./routes/tenant-requests.js";
 import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
 import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
@@ -124,6 +127,8 @@ app.use(tenantResolver);
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
+/** Public diagnostic; registered before `app.use("/api/tenant-requests")` and before `mountTenantScoped("/api", …)` so it never hits unauthenticated `requireAuth`. */
+app.get("/api/tenant-requests/lookup-by-slug/:slug", tenantRequestLookupBySlugHandler);
 app.use("/api/tenant-requests", tenantRequestsRouter);
 
 app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {

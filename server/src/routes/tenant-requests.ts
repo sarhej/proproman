@@ -1,7 +1,8 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { z } from "zod";
 import { UserRole } from "@prisma/client";
-import { prisma } from "../db.js";
+import { prisma, prismaUnscoped } from "../db.js";
+import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
 import { requireRole } from "../middleware/auth.js";
 import { provisionTenant } from "../tenant/tenantProvisioning.js";
 
@@ -80,6 +81,53 @@ tenantRequestsRouter.get("/status/:id", async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * Public diagnostic — correlates TenantRequest vs Tenant for a slug.
+ * Mounted in `index.ts` **before** `app.use("/api/tenant-requests", router)` so requests do not
+ * fall through to `mountTenantScoped("/api", …)` (which would apply `requireAuth` and return 401).
+ */
+export async function tenantRequestLookupBySlugHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const slug = normalizePublicTenantSlug(req.params.slug);
+    if (!slug) {
+      res.status(400).json({ error: "Invalid slug." });
+      return;
+    }
+
+    const registrationRequest = await prismaUnscoped.tenantRequest.findFirst({
+      where: { slug: { equals: slug, mode: "insensitive" } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, status: true, slug: true, tenantId: true },
+    });
+
+    let linkedTenant: { id: string; slug: string; status: string } | null = null;
+    if (registrationRequest?.tenantId) {
+      linkedTenant = await prismaUnscoped.tenant.findUnique({
+        where: { id: registrationRequest.tenantId },
+        select: { id: true, slug: true, status: true },
+      });
+    }
+
+    const activeTenantBySlug = await prismaUnscoped.tenant.findFirst({
+      where: { slug: { equals: slug, mode: "insensitive" }, status: "ACTIVE" },
+      select: { id: true, slug: true, status: true },
+    });
+
+    res.json({
+      normalizedSlug: slug,
+      registrationRequest,
+      linkedTenant,
+      activeTenantBySlug,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // ─── SUPER_ADMIN-only management ──────────────────────────────────
 
