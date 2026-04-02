@@ -67,8 +67,8 @@ Agents usually **do not** drive the UI; they use API/MCP. UI is the source of tr
 
 ### 3.2 MCP (recommended for agents)
 
-- **Remote:** `POST https://<host>/mcp` with OAuth (Google). Cursor config example: [HUB.md §6](./HUB.md), project `.cursor/mcp.json`.
-- **Local stdio:** `mcp/` package + `API_KEY` / `DRD_API_KEY`; see [mcp/README.md](../mcp/README.md).
+- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Cursor config: Add new MCP server, type `remote` (or SSE), URL `https://<host>/mcp`. Click Connect, log in via browser, and the agent automatically receives a stable, secure connection. No API keys to copy.
+- **Local stdio:** `mcp/` package + `API_KEY` / `DRD_API_KEY`; see [mcp/README.md](../mcp/README.md). (Legacy/scripting approach).
 
 **First call for a new session:** `tymio_get_coding_agent_guide` (no arguments) returns this document as Markdown from the server so the agent does not rely on a local repo checkout.
 

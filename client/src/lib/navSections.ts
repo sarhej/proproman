@@ -11,7 +11,8 @@ import {
   Settings,
   Shield,
   Table,
-  Users2
+  Users2,
+  Bot
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -86,6 +87,7 @@ export const navSections: NavSection[] = [
     adminOnly: true,
     items: [
       { to: "/admin", labelKey: "nav.usersActivity", icon: Settings },
+      { to: "/agent-setup", labelKey: "nav.agentSetup", icon: Bot },
       {
         to: "/platform/",
         labelKey: "nav.platformConsole",

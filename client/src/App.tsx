@@ -30,6 +30,7 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
 import { AdminPage } from "./pages/AdminPage";
+import { AgentSetupPage } from "./pages/AgentSetupPage";
 import { KpiDashboardPage } from "./pages/KpiDashboardPage";
 import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
 import { FeatureDetailPage } from "./pages/FeatureDetailPage";
@@ -852,17 +853,27 @@ function App() {
             }
           />
           {perms.canManageUsers && (
-            <Route
-              path="/admin"
-              element={
-                <AdminPage
-                  currentUser={user}
-                  quickFilter={board.filters.quick}
-                  onMetaChanged={() => void board.refresh()}
-                  onUiSettingsChanged={() => void uiSettings.refresh()}
-                />
-              }
-            />
+            <>
+              <Route
+                path="/admin"
+                element={
+                  <AdminPage
+                    currentUser={user}
+                    quickFilter={board.filters.quick}
+                    onMetaChanged={() => void board.refresh()}
+                    onUiSettingsChanged={() => void uiSettings.refresh()}
+                  />
+                }
+              />
+              <Route
+                path="/agent-setup"
+                element={
+                  <ViewRoute user={user} path="/agent-setup" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                    <AgentSetupPage />
+                  </ViewRoute>
+                }
+              />
+            </>
           )}
           <Route
             path="*"

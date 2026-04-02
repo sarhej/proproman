@@ -47,7 +47,7 @@ Give the user **actionable** options:
 
 1. **UI:** As **Admin / Super admin** (or **Editor** where allowed), create products and initiatives in **Product Explorer** (or equivalent admin surfaces).
 2. **REST:** User exports **`API_KEY`** from deployment secrets and runs scripts with **`Authorization: Bearer …`** to `https://tymio.app/api/...`.
-3. **MCP:** User configures Cursor (or another client) with **remote** `https://tymio.app/mcp` and completes OAuth, or runs the **stdio** MCP with **`DRD_API_BASE_URL`** + **`DRD_API_KEY`**.
+3. **MCP:** User configures Cursor (or another client) with **remote** `https://tymio.app/mcp` and clicks Connect to complete the Zero-Trust OAuth flow in the browser (no API keys to copy), or runs the **stdio** MCP with **`DRD_API_BASE_URL`** + **`DRD_API_KEY`**.
 
 Do **not** add repository-only helper scripts unless the user’s repo and workflow expect them; this handoff does not assume a checkout. Prefer documenting the **API/MCP/UI** paths above.
 
@@ -55,10 +55,11 @@ Do **not** add repository-only helper scripts unless the user’s repo and workf
 
 ## 3. How to connect an agent
 
-### 3.1 Remote MCP (recommended when the client supports HTTP MCP + OAuth)
+### 3.1 Remote MCP (recommended for Cursor and modern MCP clients)
 
 - **Endpoint:** `POST https://tymio.app/mcp`
-- **Auth:** OAuth 2.1 with Google, scoped for MCP (`mcp:tools`). Unauthenticated calls receive **401** with pointers to the metadata URL above; follow the client’s MCP OAuth flow (e.g. Cursor “URL” server config).
+- **Auth:** Zero-Trust OAuth 2.1 with PKCE and Refresh Token Rotation.
+- **Setup:** In Cursor, add a new MCP server of type `remote` (or SSE) with the URL `https://tymio.app/mcp`. Click "Connect". Cursor will open a browser window. Log in to Tymio, and the browser will automatically redirect back to Cursor to establish a stable, secure connection. **No API keys to copy or paste.**
 - **Identity:** Requests run as the **signed-in Google user**, with the same role and permissions as in the browser.
 
 **Cursor-style config example (remote):**

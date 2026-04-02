@@ -21,6 +21,19 @@
     "close": "Zavřít",
     "noNavViewsAvailable": "Pro váš účet nejsou k dispozici žádné pohledy. Požádejte super administrátora, aby v Admin \u2192 Nastaven\u00ed zapnul alespo\u0148 jeden pohled (Navigace)."
   },
+  "agentSetup": {
+    "title": "Připojení kódovacího agenta",
+    "subtitle": "Poskytněte svému AI agentovi bezpečný přístup do vašeho pracovního prostoru Tymio.",
+    "howToConnect": "Jak připojit Cursor (nebo jiné MCP klienty)",
+    "intro": "Tymio používá Model Context Protocol (MCP), který umožňuje vašemu AI agentovi bezpečně číst a zapisovat data ve vašem pracovním prostoru. Používáme Zero-Trust OAuth flow, což znamená, že nikdy nemusíte kopírovat ani vkládat žádné API klíče.",
+    "step1": "Otevřete nastavení Cursoru",
+    "step2": "Přidejte nový MCP server",
+    "step3": "Nakonfigurujte připojení",
+    "step4": "Klikněte na Connect",
+    "step4Desc": "Cursor otevře okno prohlížeče. Přihlaste se do Tymio a autorizujte připojení. Prohlížeč vás automaticky přesměruje zpět do Cursoru a vytvoří bezpečné a stabilní připojení.",
+    "securityTitle": "Zabezpečení & Zero-Trust",
+    "securityDesc": "Váš agent používá rotaci obnovovacích tokenů (RTR) a PKCE. Pokaždé, když se agent znovu připojí, jeho token se obmění. Pokud je token někdy zachycen a znovu použit, celé připojení je okamžitě zrušeno, aby byl váš pracovní prostor chráněn."
+  },
   "nav": {
     "views": "Pohledy",
     "boards": "Nástěnky",
@@ -48,6 +61,7 @@
     "milestonesTimeline": "Milníky",
     "gantt": "Gantt",
     "usersActivity": "Uživatelé & Aktivita",
+    "agentSetup": "Připojení kódovacího agenta",
     "platformConsole": "Platforma (workspaces)",
     "newInitiative": "Nová iniciativa",
     "messages": "Zprávy",
