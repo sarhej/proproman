@@ -91,6 +91,7 @@ vi.mock("./hooks/useUiSettings", () => ({
 
 describe("App /t/:slug gate (active workspace, no membership)", () => {
   beforeEach(() => {
+    sessionStorage.clear();
     vi.clearAllMocks();
     mockRefreshAuth.mockResolvedValue(undefined);
     mockSwitchTenant.mockResolvedValue({ ok: true, activeTenantId: "t-naka" });
@@ -127,6 +128,37 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
     expect(screen.getByText("Nakam API")).toBeInTheDocument();
     expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
     expect(mockSwitchTenant).not.toHaveBeenCalled();
+  });
+
+  it("clears post-auth session slug on /t/:slug and runs membership gate (OAuth return path)", async () => {
+    sessionStorage.setItem("tymio.postAuthWorkspaceSlug", "nakamapi");
+    render(
+      <MemoryRouter initialEntries={["/t/nakamapi"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem("tymio.postAuthWorkspaceSlug")).toBeNull();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("tenant-workspace-no-access")).toBeInTheDocument();
+    });
+    expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
+  });
+
+  it("shows no-access when getMyTenants fails instead of navigating away", async () => {
+    mockGetMyTenants.mockRejectedValue(new Error("network"));
+    render(
+      <MemoryRouter initialEntries={["/t/nakamapi"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tenant-workspace-no-access")).toBeInTheDocument();
+    });
+    expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
   });
 
   it("switches tenant and leaves /t when user is already a member of that slug", async () => {

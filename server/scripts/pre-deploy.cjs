@@ -27,6 +27,13 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
+run("null-orphan-tenant-request-tenantids", () => {
+  execSync("node server/scripts/null-orphan-tenant-request-tenantids.cjs", {
+    stdio: "inherit",
+    cwd: path.join(__dirname, "../.."),
+  });
+});
+
 run("prisma migrate deploy", () => {
   execSync(`npx prisma migrate deploy --schema=${schemaPath}`, {
     stdio: "inherit",

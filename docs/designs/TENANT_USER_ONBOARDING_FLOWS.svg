@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="1280" viewBox="0 0 1040 1280">
+  <title>Tenant and user onboarding flows (Tymio)</title>
+  <desc>State combinations for workspace slug entry, registration requests, tenant lifecycle, and membership. Includes UX outcomes, security notes, and pointers to automated test files. For humans and coding agents.</desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 10; }
+      .hdr { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .sub { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 12px; font-weight: 600; fill: #334155; }
+      .txt { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 11px; fill: #475569; }
+      .mono { font-family: ui-monospace, monospace; font-size: 10px; fill: #64748b; }
+      .ok { fill: #ecfdf5; stroke: #059669; stroke-width: 1.2; rx: 6; }
+      .warn { fill: #fffbeb; stroke: #d97706; stroke-width: 1.2; rx: 6; }
+      .blk { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.2; rx: 6; }
+      .arrow { stroke: #94a3b8; stroke-width: 1.2; fill: none; marker-end: url(#arr); }
+      .lab { font-family: system-ui, sans-serif; font-size: 9px; fill: #64748b; }
+    ]]></style>
+    <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <polygon points="0 0, 7 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <text x="520" y="28" text-anchor="middle" class="hdr" font-size="17">Tenant &#215; user onboarding (workspace slug, registration, membership)</text>
+  <text x="520" y="48" text-anchor="middle" class="txt">Dimensions: Tenant status, TenantRequest status, platform User.role, TenantMembership, entry URL (/t/slug, register, invite).</text>
+
+  <!-- Dimensions -->
+  <rect class="frame" x="24" y="64" width="992" height="118"/>
+  <text x="40" y="88" class="sub">1. State dimensions (combine these)</text>
+  <text x="40" y="108" class="txt">Tenant: missing &#183; PROVISIONING &#183; ACTIVE &#183; SUSPENDED</text>
+  <text x="40" y="124" class="txt">TenantRequest (slug): none &#183; PENDING &#183; APPROVED &#183; REJECTED (tenantId must reference Tenant when set; FK RESTRICT on delete)</text>
+  <text x="40" y="140" class="txt">User: anonymous &#183; signed-in role PENDING &#183; signed-in active role (VIEWER&#8230;SUPER_ADMIN)</text>
+  <text x="40" y="156" class="txt">Membership: none &#183; has TenantMembership for target workspace</text>
+  <text x="40" y="172" class="mono">Security baseline: tenant-scoped APIs require membership + resolved active tenant; public slug endpoints are intentionally limited (no id leak).</text>
+
+  <!-- Anonymous /t/slug -->
+  <rect class="frame" x="24" y="198" width="480" height="320"/>
+  <text x="40" y="222" class="sub">2. Anonymous visitor: /t/:slug (public)</text>
+  <rect class="ok" x="40" y="236" width="200" height="52"/>
+  <text x="140" y="258" text-anchor="middle" class="txt">ACTIVE tenant</text>
+  <text x="140" y="272" text-anchor="middle" class="mono">getTenantBySlug 200</text>
+  <text x="40" y="302" class="txt">UX: Sign-in card for that workspace name.</text>
+  <text x="40" y="318" class="mono">Tests: TenantSlugLoginPage.test.tsx</text>
+
+  <rect class="warn" x="40" y="328" width="200" height="52"/>
+  <text x="140" y="350" text-anchor="middle" class="txt">No ACTIVE tenant</text>
+  <text x="140" y="364" text-anchor="middle" class="mono">lookup + context</text>
+  <text x="40" y="394" class="txt">Subcases: PENDING request &#8594; waiting screen; REJECTED &#8594; rejected; APPROVED+PROVISIONING &#8594; provisioning;</text>
+  <text x="40" y="410" class="txt">else &#8594; not found.</text>
+  <text x="40" y="426" class="mono">Tests: TenantSlugLoginPage.test.tsx (pending, rejected, provisioning); tenant-requests.lookup-by-slug.test.ts</text>
+
+  <rect class="blk" x="260" y="236" width="220" height="100"/>
+  <text x="370" y="258" text-anchor="middle" class="txt">SUSPENDED / PROVISIONING</text>
+  <text x="370" y="276" text-anchor="middle" class="txt">Public by-slug: 404 same message</text>
+  <text x="370" y="294" text-anchor="middle" class="mono">tenant-slug.test.ts (mock app)</text>
+  <text x="370" y="312" text-anchor="middle" class="txt">Lookup can still expose correlation;</text>
+  <text x="370" y="328" text-anchor="middle" class="txt">policy: intentional for support UX.</text>
+
+  <path class="arrow" d="M 140 288 L 140 326"/>
+  <path class="arrow" d="M 240 262 L 258 262"/>
+
+  <!-- Signed-in /t/slug -->
+  <rect class="frame" x="520" y="198" width="496" height="320"/>
+  <text x="536" y="222" class="sub">3. Signed-in user: /t/:slug (gate in App)</text>
+  <rect class="ok" x="536" y="236" width="220" height="56"/>
+  <text x="646" y="258" text-anchor="middle" class="txt">Member of slug</text>
+  <text x="646" y="274" text-anchor="middle" class="mono">switchTenant &#8594; /</text>
+  <text x="536" y="302" class="mono">Tests: App.workspaceSlugGate.test.tsx (member path)</text>
+
+  <rect class="warn" x="536" y="308" width="220" height="72"/>
+  <text x="646" y="330" text-anchor="middle" class="txt">Not member, ACTIVE public slug</text>
+  <text x="646" y="346" text-anchor="middle" class="txt">Full screen: not in workspace</text>
+  <text x="646" y="362" text-anchor="middle" class="mono">TenantWorkspaceNoAccessPage</text>
+  <text x="536" y="392" class="mono">Tests: App.workspaceSlugGate.test.tsx; TenantWorkspaceNoAccessPage.test.tsx;</text>
+  <text x="536" y="406" class="mono">e2e/workspace-signed-in-no-member.spec.ts</text>
+
+  <rect class="blk" x="772" y="236" width="220" height="144"/>
+  <text x="882" y="258" text-anchor="middle" class="txt">Not member, no ACTIVE</text>
+  <text x="882" y="276" text-anchor="middle" class="txt">Registration hints + navigate /</text>
+  <text x="882" y="292" text-anchor="middle" class="txt">Banner on hub if applicable</text>
+  <text x="882" y="308" text-anchor="middle" class="mono">PENDING user: same API</text>
+  <text x="882" y="324" text-anchor="middle" class="mono">workspace-registration-requests</text>
+  <text x="772" y="352" class="mono">Tests: me.workspace-registration-requests.test.ts;</text>
+  <text x="772" y="366" class="mono">TenantPicker.test.tsx; auth requireSession; me.test PENDING</text>
+
+  <path class="arrow" d="M 646 292 L 646 306"/>
+
+  <!-- Registration lifecycle -->
+  <rect class="frame" x="24" y="534" width="992" height="200"/>
+  <text x="40" y="558" class="sub">4. New team registration (TenantRequest, not join-existing)</text>
+  <text x="40" y="578" class="txt">POST public creates PENDING &#8594; super-admin approves &#8594; Tenant create + provision + link request + OWNER membership + contact user promotion.</text>
+  <text x="40" y="596" class="txt">Reject path: REJECTED; provision failure: request stays PENDING (no tenantId).</text>
+  <text x="40" y="614" class="mono">Tests: tenant-requests.approval.test.ts; tenant-requests.test.ts (router);</text>
+  <text x="40" y="630" class="mono">tenants.system-guard.test.ts DELETE + linked request;</text>
+  <text x="40" y="646" class="mono">Prisma migration FK: TenantRequest_tenantId_fkey (deploy tests: migrate on clean DB).</text>
+  <text x="40" y="668" class="txt">UX: RegisterTeamPage success; TenantPicker empty lists regs; PENDING platform screen shows workspace-reg lines.</text>
+
+  <!-- Security cross-check -->
+  <rect class="frame" x="24" y="748" width="992" height="132"/>
+  <text x="40" y="772" class="sub">5. Security cross-check (automated elsewhere)</text>
+  <text x="40" y="792" class="txt">tenantResolver / requireTenant: tenantIsolation.test.ts, tenantResolver.test.ts, requireTenant.test.ts</text>
+  <text x="40" y="808" class="txt">MCP + workspace RBAC: mcpTenantGuard.test.ts, resolveMcpTenantContext.test.ts, mcpWorkspaceRbac.test.ts, workspaceAuth.test.ts</text>
+  <text x="40" y="824" class="txt">Switch tenant validation: me-tenants.test.ts (zod); multitenancy.integration.test.ts; auth-me.active-tenant.test.ts</text>
+  <text x="40" y="840" class="txt">Admin users scoped by membership: admin.users-tenant.test.ts</text>
+  <text x="40" y="856" class="txt">Slug normalization: publicTenantSlug.test.ts</text>
+
+  <!-- Gaps -->
+  <rect class="frame" x="24" y="894" width="992" height="200"/>
+  <text x="40" y="918" class="sub">6. Gaps to consider (manual or future tests)</text>
+  <text x="40" y="936" class="txt">Covered since wireframe v2: TenantPicker.test.tsx; TenantSlugLoginPage REJECTED+PROVISIONING;</text>
+  <text x="40" y="952" class="txt">E2E workspace-signed-in-no-member.spec.ts (mocked /api, ACTIVE slug, no membership).</text>
+  <text x="40" y="968" class="txt">&#8212; E2E with real OAuth return on /t/slug (member vs non-member vs pending registration).</text>
+  <text x="40" y="984" class="txt">&#8212; Route catch-all /t/* vs Navigate: optional dedicated unit test.</text>
+  <text x="40" y="1000" class="txt">&#8212; After invite: user refreshes /t/slug not asserted.</text>
+  <text x="40" y="1016" class="txt">&#8212; SUPER_ADMIN without membership; lookup vs public slug disclosure policy.</text>
+
+  <!-- Footer -->
+  <text x="520" y="1128" text-anchor="middle" class="mono">docs/designs/TENANT_USER_ONBOARDING_FLOWS.svg &#8212; align implementation with wireframe; update test list when suites change.</text>
+  <text x="520" y="1148" text-anchor="middle" class="txt">Run: xmllint --noout this file after edits.</text>
+</svg>

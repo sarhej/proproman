@@ -777,7 +777,13 @@
     "copyEntryLink": "Copy workspace sign-in link",
     "entryLinkCopied": "Copied",
     "entryLinkHelp": "Link icon: copy the URL for that workspace’s /t/… sign-in page.",
-    "systemHubBadge": "Tymio hub"
+    "systemHubBadge": "Tymio hub",
+    "switcherApplications": "Applications",
+    "switcherStatusPending": "Pending approval",
+    "switcherStatusApproved": "Approved — access pending",
+    "switcherStatusRejected": "Rejected",
+    "switcherOpenWorkspacePage": "Open workspace page for {{name}}",
+    "switcherApplicationsHelp": "Workspaces you applied for; open one to see status or use the link icon to copy its /t/… sign-in URL."
   },
   "landing": {
     "title": "Welcome to Tymio",

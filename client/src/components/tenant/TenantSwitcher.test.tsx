@@ -1,6 +1,8 @@
+import type { ReactElement } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { TenantSwitcher } from "./TenantSwitcher";
 import type { Tenant, TenantMembership } from "../../types/models";
 import { api } from "../../lib/api";
@@ -9,6 +11,7 @@ import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 vi.mock("../../lib/api", () => ({
   api: {
     getMyTenants: vi.fn(),
+    getMyWorkspaceRegistrationRequests: vi.fn(),
     switchTenant: vi.fn(),
   },
 }));
@@ -18,8 +21,13 @@ vi.mock("../../lib/workspaceUrl", () => ({
 }));
 
 const mockGetMyTenants = vi.mocked(api.getMyTenants);
+const mockGetRegs = vi.mocked(api.getMyWorkspaceRegistrationRequests);
 const mockSwitchTenant = vi.mocked(api.switchTenant);
 const mockCopyWorkspaceEntryLink = vi.mocked(copyWorkspaceEntryLink);
+
+function renderWithRouter(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe("TenantSwitcher", () => {
   const tenant: Tenant = { id: "t1", name: "Acme Corp", slug: "acme", status: "ACTIVE" };
@@ -27,6 +35,7 @@ describe("TenantSwitcher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCopyWorkspaceEntryLink.mockResolvedValue(true);
+    mockGetRegs.mockResolvedValue({ requests: [] });
   });
 
   it("loads memberships and shows copy sign-in link for single workspace", async () => {
@@ -40,7 +49,7 @@ describe("TenantSwitcher", () => {
     mockGetMyTenants.mockResolvedValue({ tenants: [membership], activeTenantId: "t1" });
 
     const user = userEvent.setup();
-    render(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
+    renderWithRouter(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
 
@@ -69,7 +78,7 @@ describe("TenantSwitcher", () => {
     });
 
     const user = userEvent.setup();
-    render(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
+    renderWithRouter(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
 
@@ -99,7 +108,7 @@ describe("TenantSwitcher", () => {
     const onSwitch = vi.fn();
 
     const user = userEvent.setup();
-    render(<TenantSwitcher activeTenant={tenant} onSwitch={onSwitch} />);
+    renderWithRouter(<TenantSwitcher activeTenant={tenant} onSwitch={onSwitch} />);
 
     await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
     await screen.findByText("Beta");
@@ -109,5 +118,66 @@ describe("TenantSwitcher", () => {
       expect(mockSwitchTenant).toHaveBeenCalledWith("t2");
       expect(onSwitch).toHaveBeenCalledWith(t2);
     });
+  });
+
+  it("lists workspace applications under a separate heading", async () => {
+    mockGetMyTenants.mockResolvedValue({
+      tenants: [{ id: "m1", tenantId: "t1", userId: "u1", role: "OWNER", tenant }],
+      activeTenantId: "t1",
+    });
+    mockGetRegs.mockResolvedValue({
+      requests: [
+        {
+          id: "r1",
+          teamName: "Gamma Team",
+          slug: "gamma",
+          status: "PENDING",
+          createdAt: "",
+          reviewNote: null,
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    renderWithRouter(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Applications")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Gamma Team")).toBeInTheDocument();
+    expect(screen.getByText("Pending approval")).toBeInTheDocument();
+    expect(mockGetRegs).toHaveBeenCalled();
+  });
+
+  it("hides applications section when registration slug matches an existing membership", async () => {
+    mockGetMyTenants.mockResolvedValue({
+      tenants: [{ id: "m1", tenantId: "t1", userId: "u1", role: "OWNER", tenant }],
+      activeTenantId: "t1",
+    });
+    mockGetRegs.mockResolvedValue({
+      requests: [
+        {
+          id: "r1",
+          teamName: "Acme Corp",
+          slug: "acme",
+          status: "PENDING",
+          createdAt: "",
+          reviewNote: null,
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    renderWithRouter(<TenantSwitcher activeTenant={tenant} onSwitch={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+
+    await waitFor(() => {
+      expect(mockGetRegs).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText("Applications")).not.toBeInTheDocument();
   });
 });

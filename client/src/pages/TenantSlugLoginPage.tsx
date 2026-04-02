@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import { clearPostAuthWorkspaceSlug, rememberPostAuthWorkspaceSlug } from "../lib/postAuthWorkspaceSlug";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import type { UserRole } from "../types/models";
@@ -100,6 +101,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
   }, [slugTrim]);
 
   const handleGoogleLogin = useCallback(() => {
+    rememberPostAuthWorkspaceSlug(slugTrim);
     const base = import.meta.env.VITE_API_BASE_URL ?? "";
     window.location.href = `${base}/api/auth/google?tenantSlug=${encodeURIComponent(slugTrim)}`;
   }, [slugTrim]);
@@ -143,7 +145,13 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenantSlug.notFound")}</h2>
           <p className="mb-4 text-sm text-slate-500">{t("tenantSlug.notFoundDesc")}</p>
-          <Button variant="secondary" onClick={() => (window.location.href = "/")}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              clearPostAuthWorkspaceSlug();
+              window.location.href = "/";
+            }}
+          >
             {t("tenantSlug.goHome")}
           </Button>
         </Card>
@@ -175,7 +183,13 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             <Button onClick={handleGoogleLogin}>{t("app.continueGoogle")}</Button>
           </div>
           <div className="mt-4 text-center">
-            <a href="/" className="text-xs text-slate-400 hover:text-slate-600">{t("tenantSlug.differentWorkspace")}</a>
+            <a
+              href="/"
+              className="text-xs text-slate-400 hover:text-slate-600"
+              onClick={() => clearPostAuthWorkspaceSlug()}
+            >
+              {t("tenantSlug.differentWorkspace")}
+            </a>
           </div>
         </Card>
       </div>
@@ -201,7 +215,13 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           ) : (
             <p className="mb-4 text-sm text-slate-500">{t("tenantSlug.registrationRejectedNoNote")}</p>
           )}
-          <Button variant="secondary" onClick={() => (window.location.href = "/")}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              clearPostAuthWorkspaceSlug();
+              window.location.href = "/";
+            }}
+          >
             {t("tenantSlug.goHome")}
           </Button>
         </Card>
@@ -225,7 +245,13 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             {t("tenantSlug.provisioningRetry")}
           </Button>
           <div className="mt-4 text-center">
-            <a href="/" className="text-xs text-slate-400 hover:text-slate-600">{t("tenantSlug.goHome")}</a>
+            <a
+              href="/"
+              className="text-xs text-slate-400 hover:text-slate-600"
+              onClick={() => clearPostAuthWorkspaceSlug()}
+            >
+              {t("tenantSlug.goHome")}
+            </a>
           </div>
         </Card>
       </div>
@@ -288,7 +314,13 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </div>
 
         <div className="mt-4 text-center">
-          <a href="/" className="text-xs text-slate-400 hover:text-slate-600">{t("tenantSlug.differentWorkspace")}</a>
+          <a
+            href="/"
+            className="text-xs text-slate-400 hover:text-slate-600"
+            onClick={() => clearPostAuthWorkspaceSlug()}
+          >
+            {t("tenantSlug.differentWorkspace")}
+          </a>
         </div>
       </Card>
     </div>

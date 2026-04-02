@@ -80,7 +80,10 @@ export function TenantPicker({ onSelected }: Props) {
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenant.noWorkspaces")}</h2>
           <p className="text-sm text-slate-500">{t("tenant.noWorkspacesDesc")}</p>
           {regRequests.length > 0 ? (
-            <div className="mt-6 border-t border-slate-200 pt-4 text-left">
+            <div
+              className="mt-6 border-t border-slate-200 pt-4 text-left"
+              data-testid="tenant-picker-registration-section"
+            >
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {t("tenant.pendingRegsHeading")}
               </p>

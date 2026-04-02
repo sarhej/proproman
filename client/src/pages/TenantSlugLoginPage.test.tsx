@@ -60,6 +60,59 @@ describe("TenantSlugLoginPage", () => {
     expect(mockLookupTenantSlugContext).toHaveBeenCalledWith("does-not-exist");
   });
 
+  it("shows rejected registration when TenantRequest is REJECTED", async () => {
+    mockGetTenantBySlug.mockRejectedValue(new Error("not found"));
+    mockLookupTenantSlugContext.mockResolvedValue({
+      normalizedSlug: "old-co",
+      registrationRequest: {
+        id: "tr2",
+        status: "REJECTED",
+        slug: "old-co",
+        tenantId: null,
+        teamName: "Old Co",
+        reviewNote: "Duplicate request.",
+      },
+      linkedTenant: null,
+      activeTenantBySlug: null,
+    });
+    renderPage("old-co");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tenant-slug-rejected")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Old Co/i)).toBeInTheDocument();
+    expect(screen.getByText(/Duplicate request/i)).toBeInTheDocument();
+  });
+
+  it("shows provisioning when request is APPROVED but linked tenant is not ACTIVE", async () => {
+    mockGetTenantBySlug.mockRejectedValue(new Error("not found"));
+    mockLookupTenantSlugContext.mockResolvedValue({
+      normalizedSlug: "new-co",
+      registrationRequest: {
+        id: "tr3",
+        status: "APPROVED",
+        slug: "new-co",
+        tenantId: "t-prov",
+        teamName: "New Co",
+        reviewNote: null,
+      },
+      linkedTenant: {
+        id: "t-prov",
+        slug: "new-co",
+        status: "PROVISIONING",
+        name: "New Co",
+      },
+      activeTenantBySlug: null,
+    });
+    renderPage("new-co");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tenant-slug-provisioning")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/New Co/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Refresh/i })).toBeInTheDocument();
+  });
+
   it("shows pending registration when slug has no active tenant but a PENDING TenantRequest", async () => {
     mockGetTenantBySlug.mockRejectedValue(new Error("not found"));
     mockLookupTenantSlugContext.mockResolvedValue({

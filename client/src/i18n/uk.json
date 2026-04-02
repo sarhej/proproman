@@ -764,6 +764,12 @@
     "workspaces": "Робочі простори",
     "copyEntryLink": "Копіювати посилання для входу в простір",
     "entryLinkCopied": "Скопійовано",
-    "entryLinkHelp": "Піктограма посилання копіює URL сторінки входу /t/… для цього простору."
+    "entryLinkHelp": "Піктограма посилання копіює URL сторінки входу /t/… для цього простору.",
+    "switcherApplications": "Заявки",
+    "switcherStatusPending": "Очікує схвалення",
+    "switcherStatusApproved": "Схвалено — доступ очікується",
+    "switcherStatusRejected": "Відхилено",
+    "switcherOpenWorkspacePage": "Відкрити сторінку простору {{name}}",
+    "switcherApplicationsHelp": "Простори, на які ви подали заявку; відкрийте для статусу або скопіюйте посилання /t/…"
   }
 }

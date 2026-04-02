@@ -764,6 +764,12 @@
     "workspaces": "Pracovné priestory",
     "copyEntryLink": "Kopírovať odkaz na prihlásenie do priestoru",
     "entryLinkCopied": "Skopírované",
-    "entryLinkHelp": "Ikona odkazu: skopíruje URL prihlasovacej stránky /t/… pre daný priestor."
+    "entryLinkHelp": "Ikona odkazu: skopíruje URL prihlasovacej stránky /t/… pre daný priestor.",
+    "switcherApplications": "Žiadosti",
+    "switcherStatusPending": "Čaká na schválenie",
+    "switcherStatusApproved": "Schválené — prístup čaká",
+    "switcherStatusRejected": "Zamietnuté",
+    "switcherOpenWorkspacePage": "Otvoriť stránku priestoru {{name}}",
+    "switcherApplicationsHelp": "Priestory, o ktoré ste požiadali; otvorte položku pre stav alebo skopírujte odkaz /t/…"
   }
 }

@@ -776,7 +776,13 @@
     "copyEntryLink": "Zkopírovat odkaz pro přihlášení do prostoru",
     "entryLinkCopied": "Zkopírováno",
     "entryLinkHelp": "Ikona odkazu: zkopíruje URL přihlašovací stránky /t/… pro daný prostor.",
-    "systemHubBadge": "Tymio hub"
+    "systemHubBadge": "Tymio hub",
+    "switcherApplications": "Žádosti",
+    "switcherStatusPending": "Čeká na schválení",
+    "switcherStatusApproved": "Schváleno — přístup čeká",
+    "switcherStatusRejected": "Zamítnuto",
+    "switcherOpenWorkspacePage": "Otevřít stránku prostoru {{name}}",
+    "switcherApplicationsHelp": "Prostory, o které jste požádali; otevřete položku pro stav nebo zkopírujte odkaz /t/…"
   },
   "tenantSlug": {
     "workspace": "Pracovní prostor",

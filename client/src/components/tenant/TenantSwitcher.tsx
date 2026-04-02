@@ -1,9 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, Link2 } from "lucide-react";
 import { api } from "../../lib/api";
 import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 import type { Tenant, TenantMembership } from "../../types/models";
+
+type WorkspaceRegRow = {
+  id: string;
+  teamName: string;
+  slug: string;
+  status: string;
+  createdAt: string;
+  reviewNote: string | null;
+};
 
 type Props = {
   activeTenant: Tenant | null;
@@ -15,9 +25,26 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
+  const [regRequests, setRegRequests] = useState<WorkspaceRegRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [copyOk, setCopyOk] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const memberSlugSet = useMemo(
+    () => new Set(memberships.map((m) => m.tenant.slug.trim().toLowerCase())),
+    [memberships]
+  );
+
+  /** Registration rows where the user is not yet a member (workspace applications). */
+  const appliedWorkspaces = useMemo(
+    () =>
+      regRequests.filter(
+        (r) =>
+          !memberSlugSet.has(r.slug.trim().toLowerCase()) &&
+          (r.status === "PENDING" || r.status === "APPROVED" || r.status === "REJECTED")
+      ),
+    [regRequests, memberSlugSet]
+  );
 
   const flashCopy = useCallback(() => {
     setCopyOk(true);
@@ -43,13 +70,22 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
 
   const loadTenants = useCallback(async () => {
     if (loaded) return;
+    let tenants: TenantMembership[] = [];
     try {
       const res = await api.getMyTenants();
-      setMemberships(res.tenants);
-      setLoaded(true);
+      tenants = res.tenants;
     } catch {
-      setMemberships([]);
+      tenants = [];
     }
+    let regs: WorkspaceRegRow[] = [];
+    try {
+      regs = (await api.getMyWorkspaceRegistrationRequests()).requests;
+    } catch {
+      regs = [];
+    }
+    setMemberships(tenants);
+    setRegRequests(regs);
+    setLoaded(true);
   }, [loaded]);
 
   const handleToggle = useCallback(() => {
@@ -69,8 +105,21 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
 
   if (!activeTenant) return null;
 
-  // Single tenant — no switcher needed, just show name
-  if (loaded && memberships.length <= 1) {
+  const regStatusLabel = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return t("tenant.switcherStatusPending");
+      case "APPROVED":
+        return t("tenant.switcherStatusApproved");
+      case "REJECTED":
+        return t("tenant.switcherStatusRejected");
+      default:
+        return status;
+    }
+  };
+
+  // Single tenant and no pending applications — compact header row only
+  if (loaded && memberships.length <= 1 && appliedWorkspaces.length === 0) {
     return (
       <div className="flex items-center gap-1.5 text-sm text-slate-500">
         <Building2 size={14} className="text-slate-400" />
@@ -149,7 +198,54 @@ export function TenantSwitcher({ activeTenant, onSwitch, compact }: Props) {
               </button>
             </div>
           ))}
+          {appliedWorkspaces.length > 0 ? (
+            <>
+              <div className="mt-1 border-t border-slate-100 px-3 py-2 text-xs font-semibold uppercase text-slate-400">
+                {t("tenant.switcherApplications")}
+              </div>
+              {appliedWorkspaces.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-0.5 px-1 py-0.5 hover:bg-slate-50"
+                >
+                  <Link
+                    to={`/t/${encodeURIComponent(r.slug)}`}
+                    onClick={() => setOpen(false)}
+                    className="flex min-w-0 flex-1 items-center justify-between rounded px-2 py-2 text-left text-sm text-slate-700"
+                    title={t("tenant.switcherOpenWorkspacePage", { name: r.teamName })}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{r.teamName}</span>
+                      <span className="font-mono text-[10px] text-slate-400">/t/{r.slug}</span>
+                    </span>
+                    <span
+                      className={`ml-2 shrink-0 text-[10px] ${
+                        r.status === "REJECTED" ? "text-amber-700" : "text-slate-400"
+                      }`}
+                    >
+                      {regStatusLabel(r.status)}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    title={t("tenant.copyEntryLink")}
+                    aria-label={t("tenant.copyEntryLink")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void copyLink(r.slug);
+                    }}
+                    className="shrink-0 rounded p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  >
+                    <Link2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </>
+          ) : null}
           <p className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400">{t("tenant.entryLinkHelp")}</p>
+          {appliedWorkspaces.length > 0 ? (
+            <p className="px-3 pb-2 text-[10px] text-slate-400">{t("tenant.switcherApplicationsHelp")}</p>
+          ) : null}
         </div>
       )}
     </div>

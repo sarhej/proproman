@@ -43,6 +43,11 @@ import { TenantSlugLoginPage } from "./pages/TenantSlugLoginPage";
 import { TenantWorkspaceNoAccessPage } from "./pages/TenantWorkspaceNoAccessPage";
 import type { Initiative, Tenant, UserRole } from "./types/models";
 import { getRoleCode } from "./types/models";
+import {
+  POST_AUTH_WORKSPACE_SLUG_KEY,
+  clearPostAuthWorkspaceSlugIfSlugPath,
+  hasPostAuthWorkspaceSlugPendingOnRoot,
+} from "./lib/postAuthWorkspaceSlug";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
@@ -153,9 +158,31 @@ function App() {
   }, [user?.role, user?.id]);
 
   useLayoutEffect(() => {
+    if (!user || authLoading) return;
+    clearPostAuthWorkspaceSlugIfSlugPath(location.pathname);
+    if (location.pathname !== "/") return;
+    try {
+      const slug = sessionStorage.getItem(POST_AUTH_WORKSPACE_SLUG_KEY)?.trim();
+      if (slug) {
+        navigate(`/t/${encodeURIComponent(slug)}`, { replace: true });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [user?.id, authLoading, location.pathname, navigate]);
+
+  useLayoutEffect(() => {
     if (!tenantSlug || !user || authLoading) {
       setWorkspaceSlugGate({ state: "idle" });
       return;
+    }
+    try {
+      const stored = sessionStorage.getItem(POST_AUTH_WORKSPACE_SLUG_KEY)?.trim();
+      if (stored && stored.toLowerCase() === tenantSlug.trim().toLowerCase()) {
+        sessionStorage.removeItem(POST_AUTH_WORKSPACE_SLUG_KEY);
+      }
+    } catch {
+      /* ignore */
     }
     setWorkspaceSlugGate((prev) => {
       if (
@@ -191,11 +218,7 @@ function App() {
             return;
           }
         } catch {
-          if (!cancelled) {
-            setWorkspaceSlugGate({ state: "idle" });
-            navigate("/", { replace: true });
-          }
-          return;
+          /* e.g. transient /me/tenants failure — still resolve slug via public API */
         }
       }
 
@@ -357,6 +380,14 @@ function App() {
             ) : null}
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  if (hasPostAuthWorkspaceSlugPendingOnRoot(location.pathname)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <p className="text-sm text-slate-500">{t("app.resolvingWorkspaceLink")}</p>
       </div>
     );
   }
