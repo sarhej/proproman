@@ -4,7 +4,7 @@
       "url": "http://localhost:8080/mcp"
     },
     "tymio-remote": {
-      "url": "https://drdhub.up.railway.app/mcp"
+      "url": "https://tymio.app/mcp"
     },
     "tymio-stdio": {
       "type": "stdio",

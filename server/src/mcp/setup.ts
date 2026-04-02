@@ -28,7 +28,7 @@ const transports = new Map<string, StreamableHTTPServerTransport>();
 export function mountMcp(app: express.Express): void {
   const base = getMcpBaseUrl();
   if (env.NODE_ENV === "production" && (base.includes("localhost") || base.startsWith("http://127."))) {
-    console.warn("[MCP] CLIENT_URL should be your public app URL in production (e.g. https://drdhub.up.railway.app). Current base:", base);
+    console.warn("[MCP] CLIENT_URL should be your public app URL in production (e.g. https://tymio.app). Current base:", base);
   }
   const issuerUrl = new URL(base);
   const resourceServerUrl = new URL(`${base}/mcp`);
