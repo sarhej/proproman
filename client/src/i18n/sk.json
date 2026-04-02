@@ -64,7 +64,8 @@
     "messagesEmpty": "Žiadne správy",
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
-    "logout": "Odhlásiť"
+    "logout": "Odhlásiť",
+    "workspaceSettings": "Nastavenia pracovného priestoru"
   },
   "filters": {
     "domain": "Pilier",
@@ -746,7 +747,8 @@
     "en": "English",
     "cs": "Čeština",
     "sk": "Slovenčina",
-    "uk": "Українська"
+    "uk": "Українська",
+    "pl": "Poľština"
   },
   "notificationSubscriptions": {
     "title": "Moje odbery notifikácií",
@@ -785,5 +787,18 @@
     "switcherStatusRejected": "Zamietnuté",
     "switcherOpenWorkspacePage": "Otvoriť stránku priestoru {{name}}",
     "switcherApplicationsHelp": "Priestory, o ktoré ste požiadali; otvorte položku pre stav alebo skopírujte odkaz /t/…"
+  },
+  "workspaceSettings": {
+    "title": "Nastavenia pracovného priestoru",
+    "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru.",
+    "languagesTitle": "Jazyky",
+    "languagesDesc": "Vyberte jazyky zobrazené v hlavičke aplikácie. Každý používateľ si stále vyberie vlastný jazyk z povolených možností.",
+    "save": "Uložiť",
+    "saving": "Ukladanie…",
+    "saved": "Uložené.",
+    "noAccess": "Iba vlastníci a správcovia priestoru môžu tieto nastavenia meniť.",
+    "needWorkspace": "Najprv vyberte pracovný priestor.",
+    "minOne": "Ponechajte aspoň jeden povolený jazyk.",
+    "errorSave": "Uloženie zlyhalo. Skúste znova."
   }
 }

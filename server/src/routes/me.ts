@@ -1,7 +1,11 @@
-import { DeliveryChannel } from "@prisma/client";
+import { DeliveryChannel, Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma, prismaUnscoped } from "../db.js";
+import {
+  canManageTenantLocaleSettings,
+  normalizeEnabledLocalesPayload,
+} from "../lib/appLocales.js";
 import { requireAuth, requireSession } from "../middleware/auth.js";
 
 const channels: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
@@ -58,6 +62,56 @@ meRouter.get("/tenants", async (req, res) => {
     req.user!.activeTenantId ??
     null;
   res.json({ tenants: memberships, activeTenantId });
+});
+
+const patchLanguagesBody = z.object({
+  enabledLocales: z.array(z.string()),
+});
+
+meRouter.patch("/active-tenant/languages", async (req, res, next) => {
+  try {
+    const ctx = req.tenantContext;
+    if (!ctx) {
+      res.status(400).json({ error: "Workspace context required. Select a workspace or set X-Tenant-Id." });
+      return;
+    }
+    if (!canManageTenantLocaleSettings(req.user!.role, ctx.membershipRole)) {
+      res.status(403).json({ error: "Only workspace owners and admins can change language options." });
+      return;
+    }
+    const parsed = patchLanguagesBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const normalized = normalizeEnabledLocalesPayload(parsed.data.enabledLocales);
+    if (!normalized) {
+      res.status(400).json({
+        error: "enabledLocales must list at least one supported language (en, cs, sk, uk, pl).",
+      });
+      return;
+    }
+    const existing = await prismaUnscoped.tenant.findUnique({
+      where: { id: ctx.tenantId },
+      select: { settings: true },
+    });
+    const prevRaw = existing?.settings;
+    const prev =
+      prevRaw !== null &&
+      prevRaw !== undefined &&
+      typeof prevRaw === "object" &&
+      !Array.isArray(prevRaw)
+        ? { ...(prevRaw as Record<string, unknown>) }
+        : {};
+    prev.enabledLocales = normalized;
+    await prismaUnscoped.tenant.update({
+      where: { id: ctx.tenantId },
+      data: { settings: prev as Prisma.InputJsonValue },
+    });
+    res.json({ enabledLocales: normalized });
+  } catch (err) {
+    next(err);
+  }
 });
 
 meRouter.post("/tenants/switch", async (req, res) => {

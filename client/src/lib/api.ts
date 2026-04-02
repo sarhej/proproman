@@ -493,6 +493,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ tenantId }),
     }),
+  patchActiveTenantLanguages: async (body: { enabledLocales: string[] }) =>
+    request<{ enabledLocales: string[] }>("/api/me/active-tenant/languages", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
 
   // Tenant registration (public)
   submitTenantRequest: async (body: {

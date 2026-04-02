@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
+import { PublicLanguageSwitcher } from "./components/i18n/PublicLanguageSwitcher";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
 import { InitiativeDetailPanel } from "./components/initiatives/InitiativeDetailPanel";
@@ -39,6 +40,7 @@ import { ExecutionBoardPage } from "./pages/ExecutionBoardPage";
 import { BoardSettingsPage } from "./pages/BoardSettingsPage";
 import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
 import { LandingPage } from "./pages/LandingPage";
+import { WorkspaceSettingsPage } from "./pages/WorkspaceSettingsPage";
 import { RegisterTeamPage } from "./pages/RegisterTeamPage";
 import { TenantSlugLoginPage } from "./pages/TenantSlugLoginPage";
 import { TenantWorkspaceNoAccessPage } from "./pages/TenantWorkspaceNoAccessPage";
@@ -49,11 +51,12 @@ import {
   clearPostAuthWorkspaceSlugIfSlugPath,
   hasPostAuthWorkspaceSlugPendingOnRoot,
 } from "./lib/postAuthWorkspaceSlug";
+import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode } from "./lib/appLocales";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
 function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, activeTenant, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const [needsTenantPick, setNeedsTenantPick] = useState(false);
   const [slugRegistrationHint, setSlugRegistrationHint] = useState<{
@@ -86,6 +89,32 @@ function App() {
   const board = useBoardData(!!user && !needsTenantPick && !blockWorkspaceSlugGate);
   const perms = usePermissions(user);
   const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
+
+  const shellLocales = useMemo(() => {
+    const allowed = activeTenant?.enabledLocales;
+    if (!allowed?.length) return [...APP_LOCALE_CODES];
+    const set = new Set(allowed);
+    return APP_LOCALE_CODES.filter((c) => set.has(c));
+  }, [activeTenant?.enabledLocales]);
+
+  const canManageWorkspaceStructure = useMemo(
+    () => (user ? canManageWorkspaceLanguages(user.role, activeTenant) : false),
+    [user, activeTenant]
+  );
+
+  useEffect(() => {
+    if (!user || !activeTenant) return;
+    const cur = normalizeUiLanguageCode(i18n.language);
+    if (!shellLocales.includes(cur)) {
+      const fallback = shellLocales[0] ?? "en";
+      void i18n.changeLanguage(fallback);
+      try {
+        localStorage.setItem("lang", fallback);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [user?.id, activeTenant?.id, shellLocales, i18n]);
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [landingView, setLandingView] = useState<"landing" | "signin" | "register">("landing");
@@ -114,6 +143,7 @@ function App() {
     location.pathname.startsWith("/requirements/") ||
     location.pathname.includes("/execution-board") ||
     location.pathname.includes("/board-settings") ||
+    location.pathname === "/workspace-settings" ||
     location.pathname === "/partners" ||
     location.pathname === "/buyer-user" ||
     location.pathname === "/accounts" ||
@@ -269,35 +299,44 @@ function App() {
   }, [workspaceSlugGate.state, tenantSlug, user?.id, user?.role, authLoading, navigate, refreshAuth]);
 
   if (authLoading) {
-    return <div className="p-8">{t("app.loadingAuth")}</div>;
+    return (
+      <>
+        <PublicLanguageSwitcher />
+        <div className="p-8">{t("app.loadingAuth")}</div>
+      </>
+    );
   }
 
   if (!user) {
-    if (tenantSlug) {
-      return (
+    const guestMain =
+      tenantSlug ? (
         <TenantSlugLoginPage
           workspaceSlug={tenantSlug}
           onAuthenticated={() => window.location.reload()}
         />
-      );
-    }
-
-    if (landingView === "register") {
-      return <RegisterTeamPage onBack={() => setLandingView("landing")} />;
-    }
-
-    if (landingView === "landing" && !searchParams.get("error") && !authError) {
-      return (
+      ) : landingView === "register" ? (
+        <RegisterTeamPage onBack={() => setLandingView("landing")} />
+      ) : landingView === "landing" && !searchParams.get("error") && !authError ? (
         <LandingPage
           onSignIn={() => setLandingView("signin")}
           onRegister={() => setLandingView("register")}
         />
+      ) : null;
+
+    if (guestMain) {
+      return (
+        <>
+          <PublicLanguageSwitcher />
+          {guestMain}
+        </>
       );
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="max-w-md p-6">
+      <>
+        <PublicLanguageSwitcher />
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+          <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
             <button
               onClick={() => setLandingView("landing")}
@@ -381,7 +420,8 @@ function App() {
             ) : null}
           </div>
         </Card>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -517,6 +557,8 @@ function App() {
       permissions={perms}
       hiddenNavPaths={uiSettings.hiddenNavPaths}
       activeTenant={activeTenant}
+      localePickerCodes={shellLocales}
+      canManageWorkspaceStructure={canManageWorkspaceStructure}
       onTenantSwitch={() => setNeedsTenantPick(true)}
       onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
@@ -704,6 +746,18 @@ function App() {
                   onRefreshBoard={board.refresh}
                   quickFilter={board.filters.quick}
                   boardFilters={board.filters}
+                />
+              </ViewRoute>
+            }
+          />
+          <Route
+            path="/workspace-settings"
+            element={
+              <ViewRoute user={user} path="/workspace-settings" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                <WorkspaceSettingsPage
+                  user={user}
+                  activeTenant={activeTenant}
+                  onSaved={() => void refreshAuth()}
                 />
               </ViewRoute>
             }

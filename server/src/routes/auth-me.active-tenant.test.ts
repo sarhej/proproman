@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import express, { type NextFunction, type Request, type Response } from "express";
 import request from "supertest";
-import { UserRole } from "@prisma/client";
+import { MembershipRole, UserRole } from "@prisma/client";
 
 const { mockResolveActiveTenant } = vi.hoisted(() => ({
   mockResolveActiveTenant: vi.fn(),
@@ -34,6 +34,8 @@ describe("GET /api/auth/me activeTenant", () => {
       slug: "acme",
       status: "ACTIVE",
       isSystem: false,
+      enabledLocales: ["en"],
+      membershipRole: MembershipRole.MEMBER,
     });
 
     const app = express();
@@ -59,6 +61,8 @@ describe("GET /api/auth/me activeTenant", () => {
       slug: "acme",
       status: "ACTIVE",
       isSystem: false,
+      enabledLocales: ["en"],
+      membershipRole: MembershipRole.MEMBER,
     });
     expect(mockResolveActiveTenant).toHaveBeenCalledWith("u1", "t1");
   });
@@ -93,6 +97,8 @@ describe("GET /api/auth/me activeTenant", () => {
       slug: "hdr",
       status: "ACTIVE",
       isSystem: false,
+      enabledLocales: ["en", "cs"],
+      membershipRole: MembershipRole.OWNER,
     });
 
     const app = express();

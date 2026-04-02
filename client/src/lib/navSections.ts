@@ -6,6 +6,7 @@ import {
   Filter,
   Grid2x2,
   KanbanSquare,
+  Languages,
   Megaphone,
   Network,
   Settings,
@@ -26,6 +27,8 @@ export type NavItem = {
   fullPage?: boolean;
   /** Only show for SUPER_ADMIN */
   superAdminOnly?: boolean;
+  /** Workspace OWNER / ADMIN (or platform SUPER_ADMIN) */
+  workspaceStructureOnly?: boolean;
 };
 
 export type NavSection = {
@@ -59,7 +62,15 @@ export const navSections: NavSection[] = [
   },
   {
     labelKey: "nav.structure",
-    items: [{ to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network }]
+    items: [
+      { to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network },
+      {
+        to: "/workspace-settings",
+        labelKey: "nav.workspaceSettings",
+        icon: Languages,
+        workspaceStructureOnly: true,
+      },
+    ]
   },
   {
     labelKey: "nav.commercial",

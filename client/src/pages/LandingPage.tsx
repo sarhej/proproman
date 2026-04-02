@@ -10,15 +10,24 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-lg">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 via-white to-sky-50/40 p-6">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        aria-hidden
+        style={{
+          backgroundImage: `radial-gradient(ellipse 80% 50% at 50% -20%, rgb(14 165 233 / 0.18), transparent),
+            radial-gradient(ellipse 60% 40% at 100% 50%, rgb(99 102 241 / 0.08), transparent),
+            radial-gradient(ellipse 50% 30% at 0% 80%, rgb(14 165 233 / 0.1), transparent)`,
+        }}
+      />
+      <div className="relative w-full max-w-lg">
         <div className="mb-8 text-center">
-          <img src="/logo.svg" alt="Tymio" className="mx-auto mb-4 h-12" />
-          <h1 className="text-2xl font-bold text-slate-800">{t("landing.title")}</h1>
+          <img src="/logo.svg" alt="Tymio" className="mx-auto mb-4 h-12 drop-shadow-sm" />
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">{t("landing.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("landing.subtitle")}</p>
         </div>
         <div className="grid gap-4">
-          <Card className="cursor-pointer p-5 transition-shadow hover:shadow-md" onClick={onSignIn}>
+          <Card className="cursor-pointer border-slate-200/80 bg-white/90 p-5 shadow-md shadow-slate-900/[0.04] backdrop-blur-sm transition-shadow hover:shadow-lg" onClick={onSignIn}>
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-100">
                 <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -34,7 +43,7 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
               </svg>
             </div>
           </Card>
-          <Card className="cursor-pointer p-5 transition-shadow hover:shadow-md" onClick={onRegister}>
+          <Card className="cursor-pointer border-slate-200/80 bg-white/90 p-5 shadow-md shadow-slate-900/[0.04] backdrop-blur-sm transition-shadow hover:shadow-lg" onClick={onRegister}>
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100">
                 <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

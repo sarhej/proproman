@@ -7,8 +7,7 @@ import { navSections } from "../../lib/navSections";
 import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
 import { TenantSwitcher } from "../tenant/TenantSwitcher";
-
-const LANGS = ["en", "cs", "sk", "uk"] as const;
+import { APP_LOCALE_CODES, normalizeUiLanguageCode, type AppLocaleCode } from "../../lib/appLocales";
 
 type Props = {
   user: User;
@@ -17,6 +16,10 @@ type Props = {
   /** Routes hidden for non–super-admins (from /api/ui-settings). */
   hiddenNavPaths: Set<string>;
   activeTenant?: Tenant | null;
+  /** Locales shown in the header picker (workspace policy + app catalog). */
+  localePickerCodes?: readonly AppLocaleCode[];
+  /** Show workspace-only nav items (e.g. workspace settings). */
+  canManageWorkspaceStructure?: boolean;
   onTenantSwitch?: () => void;
   onNewInitiative?: () => void;
   onLogout: () => void;
@@ -27,6 +30,7 @@ type Props = {
 function NavContent({
   permissions,
   hiddenNavPaths,
+  canManageWorkspaceStructure,
   onNavigate,
   mobile,
   phone,
@@ -36,6 +40,7 @@ function NavContent({
 }: {
   permissions: Permissions;
   hiddenNavPaths: Set<string>;
+  canManageWorkspaceStructure?: boolean;
   onNavigate?: () => void;
   mobile?: boolean;
   phone?: boolean;
@@ -62,6 +67,7 @@ function NavContent({
           let items = mobile ? section.items.filter((i) => !i.mobileHidden) : section.items;
           if (phone) items = items.filter((i) => !i.phoneHidden);
           items = items.filter((i) => !i.superAdminOnly || permissions.isSuperAdmin);
+          items = items.filter((i) => !i.workspaceStructureOnly || canManageWorkspaceStructure);
           if (hideShellRoutes) {
             items = items.filter((i) => !hiddenNavPaths.has(i.to));
           }
@@ -214,8 +220,24 @@ function SubscriptionsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function AppShell({ user, children, permissions, hiddenNavPaths, activeTenant, onTenantSwitch, onNewInitiative, onLogout, onExport, onExportPdf }: Props) {
+export function AppShell({
+  user,
+  children,
+  permissions,
+  hiddenNavPaths,
+  activeTenant,
+  localePickerCodes,
+  canManageWorkspaceStructure,
+  onTenantSwitch,
+  onNewInitiative,
+  onLogout,
+  onExport,
+  onExportPdf,
+}: Props) {
   const { t, i18n } = useTranslation();
+  const pickerCodes =
+    localePickerCodes && localePickerCodes.length > 0 ? localePickerCodes : [...APP_LOCALE_CODES];
+  const currentLng = normalizeUiLanguageCode(i18n.language);
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [phone, setPhone] = useState(false);
@@ -316,19 +338,28 @@ export function AppShell({ user, children, permissions, hiddenNavPaths, activeTe
             <NavContent
               permissions={permissions}
               hiddenNavPaths={hiddenNavPaths}
+              canManageWorkspaceStructure={canManageWorkspaceStructure}
               onNavigate={closeDrawer}
               mobile
               phone={phone}
               onLogout={onLogout}
             />
-            <div className="mt-4 border-t border-slate-200 pt-3 flex items-center gap-1 px-3">
-              <Globe size={13} className="text-slate-400" />
-              {LANGS.map((lng) => (
+            <div className="mt-4 border-t border-slate-200 pt-3 flex flex-wrap items-center gap-1 px-3">
+              <Globe size={13} className="text-slate-400 shrink-0" />
+              {pickerCodes.map((lng) => (
                 <button
                   key={lng}
-                  onClick={() => i18n.changeLanguage(lng)}
+                  type="button"
+                  onClick={() => {
+                    void i18n.changeLanguage(lng);
+                    try {
+                      localStorage.setItem("lang", lng);
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
                   className={`px-2 py-1 text-xs font-medium rounded ${
-                    i18n.language === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
+                    currentLng === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   {lng.toUpperCase()}
@@ -434,14 +465,23 @@ export function AppShell({ user, children, permissions, hiddenNavPaths, activeTe
               onClose={() => setSubscriptionsModalOpen(false)}
             />
           )}
-          <div className="hidden lg:flex items-center gap-1 rounded border border-slate-200 px-1">
-            <Globe size={13} className="text-slate-400" />
-            {LANGS.map((lng) => (
+          <div className="hidden lg:flex max-w-[min(100%,14rem)] flex-wrap items-center justify-end gap-0.5 rounded border border-slate-200 px-1 py-0.5">
+            <Globe size={13} className="text-slate-400 shrink-0" />
+            {pickerCodes.map((lng) => (
               <button
                 key={lng}
-                onClick={() => i18n.changeLanguage(lng)}
+                type="button"
+                title={t(`lang.${lng}`)}
+                onClick={() => {
+                  void i18n.changeLanguage(lng);
+                  try {
+                    localStorage.setItem("lang", lng);
+                  } catch {
+                    /* ignore */
+                  }
+                }}
                 className={`px-1.5 py-0.5 text-[11px] font-medium rounded ${
-                  i18n.language === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
+                  currentLng === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 {lng.toUpperCase()}
@@ -461,6 +501,7 @@ export function AppShell({ user, children, permissions, hiddenNavPaths, activeTe
           <NavContent
             permissions={permissions}
             hiddenNavPaths={hiddenNavPaths}
+            canManageWorkspaceStructure={canManageWorkspaceStructure}
             onExport={onExport}
             onExportPdf={onExportPdf}
             onLogout={onLogout}

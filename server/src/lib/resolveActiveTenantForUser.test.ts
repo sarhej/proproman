@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MembershipRole } from "@prisma/client";
+import { APP_LOCALE_CODES } from "./appLocales.js";
 import { resolveActiveTenantForAuthenticatedUser } from "./resolveActiveTenantForUser.js";
 
 const { mockMembershipFindUnique } = vi.hoisted(() => ({
@@ -29,14 +31,30 @@ describe("resolveActiveTenantForAuthenticatedUser", () => {
 
   it("returns null when tenant is not ACTIVE", async () => {
     mockMembershipFindUnique.mockResolvedValue({
-      tenant: { id: "t1", name: "X", slug: "x", status: "SUSPENDED", isSystem: false },
+      role: MembershipRole.MEMBER,
+      tenant: {
+        id: "t1",
+        name: "X",
+        slug: "x",
+        status: "SUSPENDED",
+        isSystem: false,
+        settings: null,
+      },
     });
     await expect(resolveActiveTenantForAuthenticatedUser("u1", "t1")).resolves.toBeNull();
   });
 
   it("returns tenant payload when membership is active", async () => {
     mockMembershipFindUnique.mockResolvedValue({
-      tenant: { id: "t1", name: "Acme", slug: "acme", status: "ACTIVE", isSystem: false },
+      role: MembershipRole.ADMIN,
+      tenant: {
+        id: "t1",
+        name: "Acme",
+        slug: "acme",
+        status: "ACTIVE",
+        isSystem: false,
+        settings: { enabledLocales: ["en", "cs"] },
+      },
     });
     await expect(resolveActiveTenantForAuthenticatedUser("u1", "t1")).resolves.toEqual({
       id: "t1",
@@ -44,6 +62,26 @@ describe("resolveActiveTenantForAuthenticatedUser", () => {
       slug: "acme",
       status: "ACTIVE",
       isSystem: false,
+      enabledLocales: ["en", "cs"],
+      membershipRole: MembershipRole.ADMIN,
+    });
+  });
+
+  it("defaults enabledLocales when settings omit list", async () => {
+    mockMembershipFindUnique.mockResolvedValue({
+      role: MembershipRole.VIEWER,
+      tenant: {
+        id: "t1",
+        name: "Acme",
+        slug: "acme",
+        status: "ACTIVE",
+        isSystem: false,
+        settings: null,
+      },
+    });
+    await expect(resolveActiveTenantForAuthenticatedUser("u1", "t1")).resolves.toMatchObject({
+      enabledLocales: [...APP_LOCALE_CODES],
+      membershipRole: MembershipRole.VIEWER,
     });
   });
 });

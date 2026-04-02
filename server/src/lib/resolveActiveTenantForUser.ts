@@ -1,4 +1,6 @@
+import { MembershipRole } from "@prisma/client";
 import { prisma } from "../db.js";
+import { parseTenantEnabledLocales, type AppLocaleCode } from "./appLocales.js";
 
 export type ActiveTenantPayload = {
   id: string;
@@ -6,6 +8,8 @@ export type ActiveTenantPayload = {
   slug: string;
   status: string;
   isSystem: boolean;
+  enabledLocales: AppLocaleCode[];
+  membershipRole: MembershipRole;
 };
 
 /**
@@ -19,8 +23,15 @@ export async function resolveActiveTenantForAuthenticatedUser(
   if (!candidateTenantId) return null;
   const membership = await prisma.tenantMembership.findUnique({
     where: { tenantId_userId: { tenantId: candidateTenantId, userId } },
-    include: { tenant: { select: { id: true, name: true, slug: true, status: true, isSystem: true } } },
+    include: {
+      tenant: { select: { id: true, name: true, slug: true, status: true, isSystem: true, settings: true } },
+    },
   });
   if (!membership || membership.tenant.status !== "ACTIVE") return null;
-  return membership.tenant;
+  const { settings, ...tenant } = membership.tenant;
+  return {
+    ...tenant,
+    enabledLocales: parseTenantEnabledLocales(settings),
+    membershipRole: membership.role,
+  };
 }

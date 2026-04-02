@@ -5,6 +5,7 @@ import en from "./en.json";
 import cs from "./cs.json";
 import sk from "./sk.json";
 import uk from "./uk.json";
+import pl from "./pl.json";
 
 i18n
   .use(LanguageDetector)
@@ -15,6 +16,7 @@ i18n
       cs: { translation: cs },
       sk: { translation: sk },
       uk: { translation: uk },
+      pl: { translation: pl },
     },
     fallbackLng: "en",
     lng: localStorage.getItem("lang") || "en",

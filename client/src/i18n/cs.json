@@ -68,7 +68,8 @@
     "messagesEmpty": "Žádné zprávy",
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
-    "logout": "Odhlásit"
+    "logout": "Odhlásit",
+    "workspaceSettings": "Nastavení pracovního prostoru"
   },
   "filters": {
     "domain": "Pilíř",
@@ -750,7 +751,8 @@
     "en": "English",
     "cs": "Čeština",
     "sk": "Slovenčina",
-    "uk": "Українська"
+    "uk": "Українська",
+    "pl": "Polština"
   },
   "notificationSubscriptions": {
     "title": "Moje odběry notifikací",
@@ -797,6 +799,19 @@
     "switcherStatusRejected": "Zamítnuto",
     "switcherOpenWorkspacePage": "Otevřít stránku prostoru {{name}}",
     "switcherApplicationsHelp": "Prostory, o které jste požádali; otevřete položku pro stav nebo zkopírujte odkaz /t/…"
+  },
+  "workspaceSettings": {
+    "title": "Nastavení pracovního prostoru",
+    "intro": "Tato nastavení platí pro všechny členy tohoto prostoru.",
+    "languagesTitle": "Jazyky",
+    "languagesDesc": "Vyberte jazyky zobrazené v záhlaví aplikace. Každý uživatel si stále vybere vlastní jazyk z povolených možností.",
+    "save": "Uložit",
+    "saving": "Ukládání…",
+    "saved": "Uloženo.",
+    "noAccess": "Pouze vlastníci a administrátoři prostoru mohou tato nastavení měnit.",
+    "needWorkspace": "Nejprve vyberte pracovní prostor.",
+    "minOne": "Ponechte alespoň jeden povolený jazyk.",
+    "errorSave": "Uložení se nezdařilo. Zkuste to znovu."
   },
   "tenantSlug": {
     "workspace": "Pracovní prostor",

@@ -61,6 +61,10 @@ export type Tenant = {
   status: TenantStatus;
   /** Tymio product hub workspace */
   isSystem?: boolean;
+  /** Locales offered in the UI for this workspace (from Tenant.settings). */
+  enabledLocales?: string[];
+  /** Current user's role in this workspace (from membership). */
+  membershipRole?: MembershipRole;
 };
 
 export type TenantMembership = {

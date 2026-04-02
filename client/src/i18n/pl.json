@@ -70,7 +70,7 @@
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "logout": "Logout",
-    "workspaceSettings": "Workspace settings"
+    "workspaceSettings": "Ustawienia przestrzeni roboczej"
   },
   "filters": {
     "domain": "Pillar",
@@ -802,14 +802,14 @@
     "switcherApplicationsHelp": "Workspaces you applied for; open one to see status or use the link icon to copy its /t/… sign-in URL."
   },
   "landing": {
-    "title": "Welcome to Tymio",
-    "subtitle": "Product management & initiative tracking for teams",
-    "language": "Language",
-    "languageSubtitle": "Interface",
-    "signIn": "Sign in to your workspace",
-    "signInDesc": "Already have an account? Sign in to continue.",
-    "registerTeam": "Register a new team",
-    "registerDesc": "Set up a new workspace for your organization."
+    "title": "Witamy w Tymio",
+    "subtitle": "Zarządzanie produktem i inicjatywami dla zespołów",
+    "language": "Język",
+    "languageSubtitle": "Interfejs",
+    "signIn": "Zaloguj się do przestrzeni",
+    "signInDesc": "Masz już konto? Zaloguj się, aby kontynuować.",
+    "registerTeam": "Zarejestruj nowy zespół",
+    "registerDesc": "Utwórz nową przestrzeń roboczą dla swojej organizacji."
   },
   "register": {
     "title": "Register your team",
@@ -834,17 +834,17 @@
     "errorGeneric": "Something went wrong. Please try again."
   },
   "workspaceSettings": {
-    "title": "Workspace settings",
-    "intro": "These options apply to everyone in this workspace.",
-    "languagesTitle": "Languages",
-    "languagesDesc": "Choose which languages appear in the app header. Each person still picks their own language among the options you enable.",
-    "save": "Save",
-    "saving": "Saving…",
-    "saved": "Saved.",
-    "noAccess": "Only workspace owners and admins can change these settings.",
-    "needWorkspace": "Select a workspace to manage settings.",
-    "minOne": "Keep at least one language enabled.",
-    "errorSave": "Could not save. Try again."
+    "title": "Ustawienia przestrzeni roboczej",
+    "intro": "Te opcje dotyczą wszystkich członków tej przestrzeni.",
+    "languagesTitle": "Języki",
+    "languagesDesc": "Wybierz języki widoczne w nagłówku aplikacji. Każda osoba nadal wybiera własny język spośród włączonych opcji.",
+    "save": "Zapisz",
+    "saving": "Zapisywanie…",
+    "saved": "Zapisano.",
+    "noAccess": "Tylko właściciele i administratorzy przestrzeni mogą zmieniać te ustawienia.",
+    "needWorkspace": "Najpierw wybierz przestrzeń roboczą.",
+    "minOne": "Pozostaw co najmniej jeden włączony język.",
+    "errorSave": "Nie udało się zapisać. Spróbuj ponownie."
   },
   "tenantAdmin": {
     "title": "Tenant Management",
