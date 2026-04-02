@@ -55,11 +55,11 @@ Do **not** add repository-only helper scripts unless the user’s repo and workf
 
 ## 3. How to connect an agent
 
-### 3.1 Remote MCP (recommended for Cursor and modern MCP clients)
+### 3.1 Remote MCP (recommended for Cursor, Claude Code, OpenClaw, and modern MCP clients)
 
 - **Endpoint:** `POST https://tymio.app/mcp`
 - **Auth:** Zero-Trust OAuth 2.1 with PKCE and Refresh Token Rotation.
-- **Setup:** In Cursor, add a new MCP server of type `remote` (or SSE) with the URL `https://tymio.app/mcp`. Click "Connect". Cursor will open a browser window. Log in to Tymio, and the browser will automatically redirect back to Cursor to establish a stable, secure connection. **No API keys to copy or paste.**
+- **Setup:** In your MCP client (e.g., Cursor, Claude Code, OpenClaw), add a new MCP server of type `remote` (or SSE) with the URL `https://tymio.app/mcp`. Initiate the connection. The agent will open a browser window. Log in to Tymio, and the browser will automatically redirect back to the agent to establish a stable, secure connection. **No API keys to copy or paste.**
 - **Identity:** Requests run as the **signed-in Google user**, with the same role and permissions as in the browser.
 
 **Cursor-style config example (remote):**

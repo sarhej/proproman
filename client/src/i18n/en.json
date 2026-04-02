@@ -24,13 +24,13 @@
   "agentSetup": {
     "title": "Connecting a Coding Agent",
     "subtitle": "Give your AI agent secure access to your Tymio workspace.",
-    "howToConnect": "How to connect Cursor (or other MCP clients)",
+    "howToConnect": "How to connect your MCP client (Cursor, Claude Code, OpenClaw, etc.)",
     "intro": "Tymio uses the Model Context Protocol (MCP) to let your AI agent securely read and write data in your workspace. We use a Zero-Trust OAuth flow, which means you never have to copy or paste any API keys.",
-    "step1": "Open Cursor Settings",
+    "step1": "Open your agent's MCP settings",
     "step2": "Add a new MCP Server",
     "step3": "Configure the connection",
-    "step4": "Click Connect",
-    "step4Desc": "Cursor will open a browser window. Log in to Tymio and authorize the connection. The browser will automatically redirect back to Cursor, establishing a secure, stable connection.",
+    "step4": "Connect and Authorize",
+    "step4Desc": "Your agent will open a browser window. Log in to Tymio and authorize the connection. The browser will automatically redirect back to your agent, establishing a secure, stable connection.",
     "securityTitle": "Security & Zero-Trust",
     "securityDesc": "Your agent uses Refresh Token Rotation (RTR) and PKCE. Every time the agent reconnects, its token is rotated. If a token is ever intercepted and reused, the entire connection is instantly revoked to protect your workspace."
   },

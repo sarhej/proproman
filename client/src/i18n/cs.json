@@ -24,13 +24,13 @@
   "agentSetup": {
     "title": "Připojení kódovacího agenta",
     "subtitle": "Poskytněte svému AI agentovi bezpečný přístup do vašeho pracovního prostoru Tymio.",
-    "howToConnect": "Jak připojit Cursor (nebo jiné MCP klienty)",
+    "howToConnect": "Jak připojit vašeho MCP klienta (Cursor, Claude Code, OpenClaw atd.)",
     "intro": "Tymio používá Model Context Protocol (MCP), který umožňuje vašemu AI agentovi bezpečně číst a zapisovat data ve vašem pracovním prostoru. Používáme Zero-Trust OAuth flow, což znamená, že nikdy nemusíte kopírovat ani vkládat žádné API klíče.",
-    "step1": "Otevřete nastavení Cursoru",
+    "step1": "Otevřete MCP nastavení vašeho agenta",
     "step2": "Přidejte nový MCP server",
     "step3": "Nakonfigurujte připojení",
-    "step4": "Klikněte na Connect",
-    "step4Desc": "Cursor otevře okno prohlížeče. Přihlaste se do Tymio a autorizujte připojení. Prohlížeč vás automaticky přesměruje zpět do Cursoru a vytvoří bezpečné a stabilní připojení.",
+    "step4": "Připojit a autorizovat",
+    "step4Desc": "Váš agent otevře okno prohlížeče. Přihlaste se do Tymio a autorizujte připojení. Prohlížeč vás automaticky přesměruje zpět do agenta a vytvoří bezpečné a stabilní připojení.",
     "securityTitle": "Zabezpečení & Zero-Trust",
     "securityDesc": "Váš agent používá rotaci obnovovacích tokenů (RTR) a PKCE. Pokaždé, když se agent znovu připojí, jeho token se obmění. Pokud je token někdy zachycen a znovu použit, celé připojení je okamžitě zrušeno, aby byl váš pracovní prostor chráněn."
   },

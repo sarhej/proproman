@@ -33,7 +33,7 @@ export function AgentSetupPage() {
 
       <Card className="p-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-800">
-          {t("agentSetup.howToConnect", "How to connect Cursor (or other MCP clients)")}
+          {t("agentSetup.howToConnect", "How to connect your MCP client (Cursor, Claude Code, OpenClaw, etc.)")}
         </h2>
         
         <div className="space-y-4 text-sm text-slate-600">
@@ -43,12 +43,12 @@ export function AgentSetupPage() {
 
           <ol className="ml-4 list-decimal space-y-3">
             <li>
-              <strong>{t("agentSetup.step1", "Open Cursor Settings")}</strong>
-              <p className="mt-1 text-slate-500">Go to <code>Cursor Settings</code> &rarr; <code>Features</code> &rarr; <code>MCP</code>.</p>
+              <strong>{t("agentSetup.step1", "Open your agent's MCP settings")}</strong>
+              <p className="mt-1 text-slate-500">Locate the MCP configuration section in your chosen tool (e.g., <code>cursor_settings</code>, <code>claude config</code>).</p>
             </li>
             <li>
               <strong>{t("agentSetup.step2", "Add a new MCP Server")}</strong>
-              <p className="mt-1 text-slate-500">Click <code>+ Add New MCP Server</code>.</p>
+              <p className="mt-1 text-slate-500">Click to add a new MCP server connection.</p>
             </li>
             <li>
               <strong>{t("agentSetup.step3", "Configure the connection")}</strong>
@@ -74,9 +74,9 @@ export function AgentSetupPage() {
               </div>
             </li>
             <li>
-              <strong>{t("agentSetup.step4", "Click Connect")}</strong>
+              <strong>{t("agentSetup.step4", "Connect and Authorize")}</strong>
               <p className="mt-1 text-slate-500">
-                {t("agentSetup.step4Desc", "Cursor will open a browser window. Log in to Tymio and authorize the connection. The browser will automatically redirect back to Cursor, establishing a secure, stable connection.")}
+                {t("agentSetup.step4Desc", "Your agent will open a browser window. Log in to Tymio and authorize the connection. The browser will automatically redirect back to your agent, establishing a secure, stable connection.")}
               </p>
             </li>
           </ol>
