@@ -2,6 +2,7 @@
   "app": {
     "brand": "Tymio",
     "loadingAuth": "Načítanie prihlásenia...",
+    "loadingWorkspace": "Načítanie pracovného priestoru…",
     "loadingData": "Načítanie dát...",
     "loadingInitiatives": "Načítanie iniciatív...",
     "signInDesc": "Prihláste sa cez Google na správu priorít pilierov, dopadu persón a plánovanie B2B2C backlogu.",

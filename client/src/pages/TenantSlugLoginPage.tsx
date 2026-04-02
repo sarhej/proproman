@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { Button } from "../components/ui/Button";
@@ -10,10 +10,11 @@ const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "V
 
 type Props = {
   onAuthenticated: () => void;
+  /** Workspace slug from the URL path `/t/:slug` (must be passed from App — there is no `<Route path="/t/:slug">`, so `useParams()` would always be empty). */
+  workspaceSlug: string;
 };
 
-export function TenantSlugLoginPage({ onAuthenticated }: Props) {
-  const { slug } = useParams<{ slug: string }>();
+export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 
@@ -29,11 +30,16 @@ export function TenantSlugLoginPage({ onAuthenticated }: Props) {
   const authError = searchParams.get("error");
 
   useEffect(() => {
-    if (!slug) return;
+    if (!workspaceSlug.trim()) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
+    setLoading(true);
     async function resolve() {
       try {
-        const info = await api.getTenantBySlug(slug!);
+        const info = await api.getTenantBySlug(workspaceSlug.trim());
         if (!cancelled) {
           setTenantInfo(info);
           setNotFound(false);
@@ -44,33 +50,33 @@ export function TenantSlugLoginPage({ onAuthenticated }: Props) {
         if (!cancelled) setLoading(false);
       }
     }
-    resolve();
+    void resolve();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [workspaceSlug]);
 
   const handleGoogleLogin = useCallback(() => {
     const base = import.meta.env.VITE_API_BASE_URL ?? "";
-    window.location.href = `${base}/api/auth/google?tenantSlug=${encodeURIComponent(slug ?? "")}`;
-  }, [slug]);
+    window.location.href = `${base}/api/auth/google?tenantSlug=${encodeURIComponent(workspaceSlug.trim())}`;
+  }, [workspaceSlug]);
 
   const handleDevLogin = useCallback(async () => {
-    if (!slug) return;
+    if (!workspaceSlug.trim()) return;
     try {
       setDevLoading(true);
       setDevError(null);
-      await api.devLogin(devRole, undefined, slug);
+      await api.devLogin(devRole, undefined, workspaceSlug.trim());
       onAuthenticated();
     } catch (err) {
       setDevError((err as Error).message);
     } finally {
       setDevLoading(false);
     }
-  }, [slug, devRole, onAuthenticated]);
+  }, [workspaceSlug, devRole, onAuthenticated]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">{t("app.loadingAuth")}</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50" data-testid="tenant-slug-loading">
+        <p className="text-sm text-slate-500">{t("app.loadingWorkspace")}</p>
       </div>
     );
   }
@@ -78,7 +84,7 @@ export function TenantSlugLoginPage({ onAuthenticated }: Props) {
   if (notFound) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="max-w-md p-6 text-center">
+        <Card className="max-w-md p-6 text-center" data-testid="tenant-slug-not-found">
           <div className="mb-4 flex items-center justify-center gap-3">
             <img src="/logo.svg" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
@@ -102,7 +108,7 @@ export function TenantSlugLoginPage({ onAuthenticated }: Props) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <Card className="w-full max-w-md p-6">
+        <Card className="w-full max-w-md p-6" data-testid="tenant-slug-signin">
         <div className="mb-4 flex items-center gap-3">
           <img src="/logo.svg" alt="Tymio" className="h-8" />
           <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>

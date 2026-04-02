@@ -148,6 +148,7 @@ function App() {
     if (tenantSlug) {
       return (
         <TenantSlugLoginPage
+          workspaceSlug={tenantSlug}
           onAuthenticated={() => window.location.reload()}
         />
       );
