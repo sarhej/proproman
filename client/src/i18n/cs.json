@@ -810,6 +810,28 @@
     "registerTeam": "Zaregistrujte nový tým",
     "registerDesc": "Založte nový pracovní prostor pro svou organizaci."
   },
+  "register": {
+    "title": "Zaregistrujte svůj tým",
+    "subtitle": "Vyplňte údaje níže a požádejte o nový pracovní prostor. Náš tým žádost posoudí a schválí.",
+    "teamName": "Název týmu / organizace",
+    "teamNamePlaceholder": "Acme s.r.o.",
+    "slug": "Slug URL pracovního prostoru",
+    "slugPlaceholder": "acme-corp",
+    "slugHelp": "Pouze malá písmena, čísla a pomlčky.",
+    "contactName": "Vaše jméno",
+    "contactNamePlaceholder": "Jan Novák",
+    "contactEmail": "Kontaktní e-mail",
+    "contactEmailPlaceholder": "jan@acme.cz",
+    "message": "Zpráva (nepovinné)",
+    "messagePlaceholder": "Napište nám o týmu nebo zvláštních požadavcích…",
+    "submit": "Odeslat žádost o registraci",
+    "submitting": "Odesílání…",
+    "backToHome": "Zpět na úvod",
+    "successTitle": "Žádost byla odeslána!",
+    "successDesc": "Žádost jsme přijali. Po schválení vás upozorníme na {{email}}.",
+    "errorSlugTaken": "Tento slug je již obsazený. Zvolte jiný.",
+    "errorGeneric": "Něco se pokazilo. Zkuste to znovu."
+  },
   "workspaceSettings": {
     "title": "Nastavení pracovního prostoru",
     "intro": "Tato nastavení platí pro všechny členy tohoto prostoru.",

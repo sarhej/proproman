@@ -2,6 +2,7 @@
   "app": {
     "brand": "Tymio",
     "loadingAuth": "Načítanie prihlásenia...",
+    "resolvingWorkspaceLink": "Kontrola prístupu k pracovnému priestoru…",
     "loadingWorkspace": "Načítanie pracovného priestoru…",
     "loadingData": "Načítanie dát...",
     "loadingInitiatives": "Načítanie iniciatív...",
@@ -13,6 +14,9 @@
     "pendingTitle": "Žiadosť o registráciu odoslaná",
     "pendingMsg": "Váš účet <1>{{email}}</1> bol zaregistrovaný.",
     "pendingDesc": "Administrátor musí schváliť váš prístup predtým, než budete môcť aplikáciu používať. Budete sa môcť prihlásiť po aktualizácii vašej roly.",
+    "pendingWorkspaceRegTitle": "Vaša žiadosť o pracovný priestor",
+    "pendingWorkspaceRegLine": "{{team}} (/t/{{slug}}) — čaká na schválenie nového priestoru tímom Tymio.",
+    "pendingWorkspaceRegFootnote": "Je to oddelene od stavu účtu vyššie: nové tímy schvaľuje Tymio, nie daný pracovný priestor.",
     "createInitiative": "Vytvoriť iniciatívu",
     "close": "Zavrieť",
     "noNavViewsAvailable": "Pre v\u00e1\u0161 \u00fa\u010det nie s\u00fa k dispoz\u00edcii \u017eiadne poh\u013eady. Po\u017eiadajte super administr\u00e1tora, aby v Admin \u2192 Nastavenia zapol aspo\u0148 jeden poh\u013ead (Navig\u00e1cia)."
@@ -798,6 +802,28 @@
     "registerTeam": "Zaregistrujte nový tím",
     "registerDesc": "Nastavte nový pracovný priestor pre svoju organizáciu."
   },
+  "register": {
+    "title": "Zaregistrujte svoj tím",
+    "subtitle": "Vyplňte údaje nižšie a požiadajte o nový pracovný priestor. Náš tím žiadosť posúdi a schváli.",
+    "teamName": "Názov tímu / organizácie",
+    "teamNamePlaceholder": "Acme s.r.o.",
+    "slug": "Slug URL pracovného priestoru",
+    "slugPlaceholder": "acme-corp",
+    "slugHelp": "Iba malé písmená, čísla a pomlčky.",
+    "contactName": "Vaše meno",
+    "contactNamePlaceholder": "Ján Novák",
+    "contactEmail": "Kontaktný e-mail",
+    "contactEmailPlaceholder": "jan@acme.sk",
+    "message": "Správa (voliteľné)",
+    "messagePlaceholder": "Napíšte nám o tíme alebo osobitných požiadavkách…",
+    "submit": "Odoslať žiadosť o registráciu",
+    "submitting": "Odosielanie…",
+    "backToHome": "Späť na úvod",
+    "successTitle": "Žiadosť bola odoslaná!",
+    "successDesc": "Žiadosť sme prijali. Po schválení vás upozorníme na {{email}}.",
+    "errorSlugTaken": "Tento slug je už obsadený. Zvoľte iný.",
+    "errorGeneric": "Niečo sa pokazilo. Skúste znova."
+  },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",
     "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru.",
@@ -810,5 +836,27 @@
     "needWorkspace": "Najprv vyberte pracovný priestor.",
     "minOne": "Ponechajte aspoň jeden povolený jazyk.",
     "errorSave": "Uloženie zlyhalo. Skúste znova."
+  },
+  "tenantSlug": {
+    "workspace": "Pracovný priestor",
+    "signInTo": "Prihláste sa pre prístup k {{name}}.",
+    "notFound": "Pracovný priestor sa nenašiel",
+    "notFoundDesc": "Hľadaný pracovný priestor neexistuje alebo už nie je k dispozícii.",
+    "goHome": "Späť na úvod",
+    "differentWorkspace": "Prihlásiť sa do iného priestoru",
+    "registrationPendingTitle": "Priestor ešte nie je aktívny",
+    "registrationPendingBody": "Bola odoslaná žiadosť o registráciu {{team}} (/t/{{slug}}). Čaká na schválenie od Tymio, kým bude táto adresa fungovať.",
+    "registrationPendingFootnote": "Po prihlásení vám to pripomenieme, kým nebude priestor schválený.",
+    "registrationRejectedTitle": "Registrácia nebola schválená",
+    "registrationRejectedBody": "Žiadosť o vytvorenie {{team}} na /t/{{slug}} nebola schválená.",
+    "registrationRejectedNoNote": "Nebola pridaná žiadna poznámka.",
+    "provisioningTitle": "Priestor sa dokončuje",
+    "provisioningBody": "{{team}} (/t/{{slug}}) sa stále zriaďuje. Táto stránka začne fungovať, keď bude priestor aktívny.",
+    "provisioningRetry": "Obnoviť",
+    "membershipPendingTitle": "V tomto pracovnom priestore ešte nie ste",
+    "membershipPendingLead": "Ste prihlásený ako <1>{{email}}</1>. To nie je to isté ako byť členom nižšie uvedeného priestoru.",
+    "membershipPendingBody": "Priestor je aktívny, ale váš účet doň ešte nebol pridaný. Požiadajte administrátora alebo vlastníka priestoru, aby vás pozval alebo pridal ako člena. Dovtedy zostanete v priestore, ktorý už používate (napr. Tymio hub).",
+    "membershipPendingAlsoPlatform": "Váš platformový účet tiež čaká na schválenie. Aj keď vás administrátor pridá do tohto priestoru, môže byť potrebné aktivovať rolu od Tymio, kým sa aplikácia plne otvorí.",
+    "membershipPendingContinue": "Pokračovať do aplikácie"
   }
 }
