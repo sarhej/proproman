@@ -1,4 +1,5 @@
-import { AuditAction, Prisma, UserRole } from "@prisma/client";
+import { AuditAction, MembershipRole, Prisma, UserRole } from "@prisma/client";
+import type { Request, Response } from "express";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -11,12 +12,69 @@ adminRouter.use(requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN));
 
 adminRouter.use("/notification-rules", notificationRulesRouter);
 
-adminRouter.get("/users", async (_req, res) => {
-  const users = await prisma.user.findMany({
-    include: { emails: { orderBy: { isPrimary: "desc" } } },
+/** Workspace Admin lists users by membership — never the global user table (prevents cross-tenant leaks). */
+function requestTenantId(req: Request): string | undefined {
+  return req.tenantContext?.tenantId;
+}
+
+function membershipRoleForInvitedGlobalRole(role: UserRole): MembershipRole {
+  switch (role) {
+    case UserRole.SUPER_ADMIN:
+    case UserRole.ADMIN:
+      return MembershipRole.ADMIN;
+    case UserRole.EDITOR:
+    case UserRole.MARKETING:
+      return MembershipRole.MEMBER;
+    case UserRole.VIEWER:
+    case UserRole.PENDING:
+      return MembershipRole.VIEWER;
+    default:
+      return MembershipRole.MEMBER;
+  }
+}
+
+async function requireWorkspaceForUserAdmin(req: Request, res: Response): Promise<string | null> {
+  const tid = requestTenantId(req);
+  if (!tid) {
+    res.status(400).json({
+      error: "Workspace context required. Open Admin from a workspace (or set active workspace / X-Tenant-Id) to manage users."
+    });
+    return null;
+  }
+  return tid;
+}
+
+async function requireTargetUserInWorkspace(
+  req: Request,
+  res: Response,
+  userId: string
+): Promise<{ tenantId: string } | null> {
+  const tid = await requireWorkspaceForUserAdmin(req, res);
+  if (!tid) return null;
+  const m = await prisma.tenantMembership.findUnique({
+    where: { tenantId_userId: { tenantId: tid, userId } }
+  });
+  if (!m) {
+    res.status(403).json({ error: "User is not a member of this workspace." });
+    return null;
+  }
+  return { tenantId: tid };
+}
+
+adminRouter.get("/users", async (req, res) => {
+  const tid = await requireWorkspaceForUserAdmin(req, res);
+  if (!tid) return;
+
+  const members = await prisma.tenantMembership.findMany({
+    where: { tenantId: tid },
+    include: {
+      user: {
+        include: { emails: { orderBy: { isPrimary: "desc" } } }
+      }
+    },
     orderBy: { createdAt: "asc" }
   });
-  res.json({ users });
+  res.json({ users: members.map((m) => m.user) });
 });
 
 const updateUserSchema = z.object({
@@ -34,6 +92,9 @@ adminRouter.put("/users/:id", async (req, res) => {
     return;
   }
   const data = parsed.data;
+
+  const workspaceCtx = await requireTargetUserInWorkspace(req, res, id);
+  if (!workspaceCtx) return;
 
   const actorRole = req.user!.role;
 
@@ -87,6 +148,13 @@ adminRouter.put("/users/:id", async (req, res) => {
     include: { emails: { orderBy: { isPrimary: "desc" } } }
   });
 
+  if (data.role !== undefined) {
+    await prisma.tenantMembership.update({
+      where: { tenantId_userId: { tenantId: workspaceCtx.tenantId, userId: id } },
+      data: { role: membershipRoleForInvitedGlobalRole(data.role) }
+    });
+  }
+
   if (data.name && data.name !== existing.name) {
     await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "name", old: existing.name, new: data.name });
   }
@@ -117,6 +185,9 @@ adminRouter.post("/users", async (req, res) => {
   }
   const { email, name, role } = parsed.data;
 
+  const tid = await requireWorkspaceForUserAdmin(req, res);
+  if (!tid) return;
+
   const actorRole = req.user!.role;
   if (actorRole !== UserRole.SUPER_ADMIN && role === UserRole.SUPER_ADMIN) {
     res.status(403).json({ error: "Only SUPER_ADMIN can create SUPER_ADMIN users" });
@@ -137,7 +208,16 @@ adminRouter.post("/users", async (req, res) => {
     },
     include: { emails: { orderBy: { isPrimary: "desc" } } }
   });
-  await logAudit(req.user!.id, "CREATED", "USER", user.id, { email, role });
+  await prisma.tenantMembership.upsert({
+    where: { tenantId_userId: { tenantId: tid, userId: user.id } },
+    create: {
+      tenantId: tid,
+      userId: user.id,
+      role: membershipRoleForInvitedGlobalRole(role)
+    },
+    update: { role: membershipRoleForInvitedGlobalRole(role) }
+  });
+  await logAudit(req.user!.id, "CREATED", "USER", user.id, { email, role, tenantId: tid });
   res.status(201).json({ user });
 });
 
@@ -152,6 +232,8 @@ adminRouter.post("/users/:id/emails", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+
+  if (!(await requireTargetUserInWorkspace(req, res, userId))) return;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
@@ -180,6 +262,8 @@ adminRouter.delete("/users/:id/emails/:emailId", async (req, res) => {
   const userId = String(req.params.id);
   const emailId = String(req.params.emailId);
 
+  if (!(await requireTargetUserInWorkspace(req, res, userId))) return;
+
   const alias = await prisma.userEmail.findUnique({ where: { id: emailId } });
   if (!alias || alias.userId !== userId) {
     res.status(404).json({ error: "Email alias not found" });
@@ -201,18 +285,33 @@ adminRouter.delete("/users/:id", async (req, res) => {
   const id = String(req.params.id);
 
   if (id === req.user!.id) {
-    res.status(400).json({ error: "You cannot delete your own account" });
+    res.status(400).json({ error: "You cannot remove yourself from this workspace" });
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { id }, include: { emails: true } });
+  const tid = await requireWorkspaceForUserAdmin(req, res);
+  if (!tid) return;
+
+  const user = await prisma.user.findUnique({ where: { id } });
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
   }
 
-  await prisma.user.delete({ where: { id } });
-  await logAudit(req.user!.id, "DELETED", "USER", id, { email: user.email, name: user.name });
+  const removed = await prisma.tenantMembership.deleteMany({
+    where: { tenantId: tid, userId: id }
+  });
+  if (removed.count === 0) {
+    res.status(403).json({ error: "User is not a member of this workspace." });
+    return;
+  }
+
+  await logAudit(req.user!.id, "UPDATED", "USER", id, {
+    action: "remove_workspace_membership",
+    tenantId: tid,
+    email: user.email,
+    name: user.name
+  });
   res.json({ ok: true });
 });
 
