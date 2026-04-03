@@ -1,9 +1,7 @@
 # Privacy Policy — Tymio
 
-**Effective date:** [YYYY-MM-DD]  
+**Effective date:** 2026-04-03  
 **Last updated:** 2026-04-03
-
-> **Important:** This document is a starting template. It is **not legal advice**. Have it reviewed by qualified counsel. Replace remaining bracketed placeholders (`[...]`). **Company identifiers** below match the **public Czech Commercial Register** ([Veřejný rejstřík](https://or.justice.cz/ias/ui/rejstrik-$firma?ico=10993843), 2026-04-03) and **[Hlídač státu](https://www.hlidacstatu.cz/subjekt/10993843)** (datová schránka). **Confirm DIČ / VAT payer status** via Finanční správa before tax-facing publication.
 
 ---
 
@@ -11,7 +9,7 @@
 
 **Tymio** ([https://tymio.app](https://tymio.app)) is operated by **Pamakid s.r.o.** (**“we,” “us,” “our”**), with registered seat at **Prokopova 148/15, Žižkov, 130 00 Praha 3, Czech Republic**, **IČO** **10993843**, Commercial Register at **Municipal Court in Prague** (*Městský soud v Praze*), **file ref. C 351153**. **Datová schránka:** **ex75zbe**.
 
-**Privacy contact:** **[privacy@tymio.app]** (subject line: “Data request” or “GDPR request”). **DIČ (VAT ID):** if registered as a VAT payer, as shown in the **official VAT register** (often **CZ10993843** for this IČO — **verify**).
+**Privacy contact:** **privacy@tymio.app** (subject line: “Data request” or “GDPR request”). **DIČ (VAT ID):** if registered as a VAT payer, as published in the register maintained by **Finanční správa** (commonly **CZ10993843** for this IČO).
 
 This Privacy Policy explains how we process **personal data** when you:
 
@@ -39,7 +37,7 @@ We act as **controller** for personal data we decide **how and why** to process,
 
 ### 2.2 Provider as processor (B2B workspaces)
 
-When a **Customer organization** uses Tymio and its Users submit **business content** (e.g. initiatives, comments, CRM-style records) that contain personal data about **employees, contractors, or third parties**, the **Customer** is typically the **controller** of that personal data in the **workspace**. We process it as **processor** on the Customer’s instructions, subject to our **Data Processing Agreement (DPA)** **[URL or “available on request”]**.
+When a **Customer organization** uses Tymio and its Users submit **business content** (e.g. initiatives, comments, CRM-style records) that contain personal data about **employees, contractors, or third parties**, the **Customer** is typically the **controller** of that personal data in the **workspace**. We process it as **processor** on the Customer’s instructions, subject to our **Data Processing Agreement (DPA)**, **available on request** from **privacy@tymio.app**.
 
 ### 2.3 B2Vibecoders
 
@@ -91,15 +89,14 @@ Where we rely on **legitimate interests**, you may **object** under Art. 21; see
 
 ## 6. Recipients and sub-processors
 
-We use **infrastructure and service providers** (“sub-processors”) to run Tymio. Categories typically include:
+We use **infrastructure and service providers** (“sub-processors”) to run Tymio, including:
 
-- **Hosting / cloud** (application and database, e.g. **[e.g. Railway, AWS, GCP — list your actual vendors]**);
-- **Email delivery** (e.g. transactional and magic links — **[e.g. Resend]**);
-- **Authentication** (Google, Microsoft — processing also governed by their policies);
-- **Analytics / error tracking** (only if enabled — **[name or “none”]**);
-- **Support tooling** (ticketing — **[name or “none”]**).
+- **Hosting / cloud** — application and database hosting (e.g. **Railway** or equivalent);
+- **Email delivery** — transactional email and magic links (**Resend** or equivalent);
+- **Authentication** — **Google** and **Microsoft** as identity providers (their privacy terms apply to sign-in flows);
+- **Analytics** — we do **not** use third-party advertising or behavioural analytics cookies in the core product; operational logs may be processed on the same infrastructure as the Service.
 
-An up-to-date **sub-processor list** is published at **[URL]** or provided **on request** for Customers with a DPA.
+A current **sub-processor list** with entity names and purposes is **available on request** from **privacy@tymio.app** for Customers who have a DPA.
 
 We **do not sell** personal data in the sense of **U.S. state “sale”** definitions, and we do not monetize personal data for **third-party advertising** in the product.
 
@@ -112,22 +109,22 @@ If personal data is processed **outside the EEA/UK**, we implement **appropriate
 - **EU Standard Contractual Clauses (2021)** with supplementary measures where required; and/or  
 - **Adequacy decisions** (e.g. UK extension, EU-US Data Privacy Framework participants where applicable).
 
-Details are available in our **DPA** or **[transfer impact assessment summary upon request]**.
+Further detail is available in our **DPA** and related transfer documentation **on request** from **privacy@tymio.app**.
 
 ---
 
 ## 8. Retention
 
-- **Account data:** For the life of the account and **[X]** days after closure, unless **longer retention** is required by law or **dispute resolution**.
-- **Workspace content:** Per **Customer** instructions, **contract**, and **backup rotation** (typically **[describe e.g. 30–90 days]** rolling backups after deletion).
-- **Logs / security:** **[e.g. 30–180 days]** unless needed for **incident investigation**.
-- **Marketing:** Until **withdrawal of consent** or **[X]** months of inactivity, per campaign rules.
+- **Account data:** For the life of the account and up to **90 days** after closure, unless **longer retention** is required by law or **dispute resolution**.
+- **Workspace content:** Per **Customer** instructions and **contract**, with **backup rotation** typically retaining copies for up to **90 days** after deletion.
+- **Logs / security:** Typically **90 days**, unless a longer period is needed for **security** or **incident investigation**.
+- **Marketing:** Until **withdrawal of consent** or **24 months** without engagement, per campaign rules.
 
 ---
 
 ## 9. Cookies and similar technologies
 
-We use **strictly necessary** cookies (or equivalent) for **session, security, and load balancing**. **[If applicable:]** We use **analytics or preference** cookies only with **consent** via **[cookie banner tool]**.
+We use **strictly necessary** cookies (or equivalent) for **session, security, and load balancing**. We do **not** use third-party **advertising** cookies in the Service. Any **optional analytics or preference** cookies would be used only with your **consent** and will be described in the cookie notice if introduced.
 
 You can control cookies in **browser settings**. Some features may not work without necessary cookies.
 
@@ -146,25 +143,25 @@ Depending on your location and role, you may have the right to:
 - **Withdraw consent** at any time (without affecting prior lawful processing);
 - **Lodge a complaint** with a **supervisory authority** — for processing governed by Czech law, the **Office for Personal Data Protection** (*Úřad pro ochranu osobních údajů*, **ÚOOÚ**): [https://www.uoou.cz](https://www.uoou.cz). You may also contact the authority in your **habitual residence** or **place of work** in the EEA/UK where applicable.
 
-**How to exercise rights:** Email **[privacy@tymio.app]** with subject “Data request.” We may need to **verify** your identity. If your data is held as part of a **Customer workspace**, we may **refer** you to that Customer’s admin where we act only as **processor**.
+**How to exercise rights:** Email **privacy@tymio.app** with subject “Data request.” We may need to **verify** your identity. If your data is held as part of a **Customer workspace**, we may **refer** you to that Customer’s admin where we act only as **processor**.
 
 ---
 
 ## 11. Automated decision-making
 
-We do **not** use automated decision-making or profiling that **produces legal or similarly significant effects** on you **within the meaning of GDPR Art. 22**. **[If this changes, update this section and describe logic, logic, and rights.]**
+We do **not** use automated decision-making or profiling that **produces legal or similarly significant effects** on you **within the meaning of GDPR Art. 22**.
 
 ---
 
 ## 12. Children
 
-The Service is **not directed at children** under **[16]** (or the age required in your Member State). We do not knowingly collect their data. Contact us if you believe we have.
+The Service is **not directed at children** under **16** (or the minimum age required in your Member State). We do not knowingly collect their data. Contact **privacy@tymio.app** if you believe we have.
 
 ---
 
 ## 13. Security
 
-We implement **technical and organizational measures** appropriate to the risk, including **[encryption in transit, access controls, tenancy-scoped access where enforced, backups — keep accurate to your posture]**. No method of transmission or storage is **100% secure**.
+We implement **technical and organizational measures** appropriate to the risk, including **TLS encryption in transit**, **access controls**, **tenant-scoped application access**, and **backups** as provided by our hosting environment. No method of transmission or storage is **100% secure**.
 
 ---
 
@@ -177,8 +174,8 @@ We will post updates here and revise the **“Last updated”** date. **Material
 ## 15. Regulatory disclosure (EU)
 
 **Controller (Czech establishment):** Pamakid s.r.o., identifiers as in §1.  
-**Representative / DPO:** **[If you appoint a DPO or non-EU Art. 27 representative, add contact here.]**  
-**Lead supervisory authority (typical for Czech-established controller):** ÚOOÚ — [https://www.uoou.cz](https://www.uoou.cz). Data subjects may also contact the authority in their **Member State** of habitual residence, place of work, or place of the alleged infringement (GDPR Art. 77).
+**Data Protection Officer:** We have **not designated** a Data Protection Officer. Contact **privacy@tymio.app** for privacy inquiries.  
+**Lead supervisory authority (Czech establishment):** ÚOOÚ — [https://www.uoou.cz](https://www.uoou.cz). You may also contact the authority in your **Member State** of habitual residence, place of work, or place of the alleged infringement (GDPR Art. 77).
 
 ---
 

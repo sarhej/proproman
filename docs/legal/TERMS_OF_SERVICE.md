@@ -1,9 +1,7 @@
 # Terms of Service — Tymio
 
-**Effective date:** [YYYY-MM-DD]  
+**Effective date:** 2026-04-03  
 **Last updated:** 2026-04-03
-
-> **Important:** This document is a starting template. It is **not legal advice**. Have it reviewed by qualified counsel before publication. Replace remaining bracketed placeholders (`[...]`). **Company identifiers** below were taken from the **public Czech Commercial Register** ([Veřejný rejstřík](https://or.justice.cz/ias/ui/rejstrik-$firma?ico=10993843), retrieved 2026-04-03) and **[Hlídač státu](https://www.hlidacstatu.cz/subjekt/10993843)** (datová schránka). **Confirm DIČ / VAT payer status** in the official register of VAT payers (Finanční správa) before publishing on invoices or tax-facing pages.
 
 ---
 
@@ -15,9 +13,9 @@ These Terms of Service (**“Terms”**) govern access to and use of **Tymio** (
 
 The product or community may be referred to as **Vibecoders** or similar branding; the **contracting legal entity** remains **Pamakid s.r.o.**
 
-**DIČ (VAT ID):** If Pamakid s.r.o. is registered as a **VAT payer** (*plátce DPH*), the VAT ID is shown in the **official VAT register**. For Czech legal entities it often follows the form **CZ** + **IČO** (i.e. **CZ10993843**) — **verify** before you rely on it in public documents.
+**DIČ (VAT ID):** If Pamakid s.r.o. is registered as a **VAT payer** (*plátce DPH*), the VAT ID is published in the register maintained by **Finanční správa**; for Czech legal entities it commonly follows the form **CZ** + **IČO** (e.g. **CZ10993843**).
 
-**Contact:** **[legal@tymio.app]** or **[privacy@tymio.app]** (legal / privacy) · **[support@tymio.app]** (product support).
+**Contact:** **legal@tymio.app** or **privacy@tymio.app** (legal / privacy) · **support@tymio.app** (product support).
 
 **Product website:** [https://tymio.app](https://tymio.app)
 
@@ -130,7 +128,7 @@ Each party may receive **non-public** information from the other (**“Confident
 
 12.1 **Nothing** in these Terms limits liability that **cannot** be limited under applicable law (including **death or personal injury** caused by negligence, **fraud**, or **willful misconduct**, where applicable).
 
-12.2 Subject to 12.1, **total aggregate liability** of Provider arising from or related to the Service in any **twelve (12) month** period is limited to the **greater of** (a) **[amount]** or (b) **fees paid by Customer to Provider for the Service in that period** (or, for free/B2Vibecoders without fees, **[EUR X]**).
+12.2 Subject to 12.1, **total aggregate liability** of Provider arising from or related to the Service in any **twelve (12) month** period is limited to **fees paid by Customer to Provider for the Service in that period**, or **EUR 100** if no fees were paid in that period.
 
 12.3 Subject to 12.1, we are **not liable** for **indirect, consequential, special, punitive, or exemplary** damages, or **loss of profits, revenue, goodwill, or data**, even if advised of the possibility.
 
@@ -148,7 +146,7 @@ Customer will **defend and indemnify** Provider against third-party claims arisi
 
 14.2 **Customer** may stop using the Service and, where applicable, **cancel** via account settings or by notice as described in your plan.
 
-14.3 We may **suspend** access for **risk, non-payment,** or **breach**, and **terminate** if breach is **not cured** within **[14]** days of notice where curable.
+14.3 We may **suspend** access for **risk, non-payment,** or **breach**, and **terminate** if breach is **not cured** within **14** days of notice where curable.
 
 14.4 On termination, **access ends**. We will delete or return Customer Data per the **Privacy Policy** and **DPA** (if any), subject to **backup retention** and **legal retention** windows described there.
 
@@ -156,7 +154,7 @@ Customer will **defend and indemnify** Provider against third-party claims arisi
 
 ## 15. Data protection (summary)
 
-Processing of **personal data** is described in our **[Privacy Policy](./PRIVACY_POLICY.md)**. For **B2B Customers** that are controllers of personal data in Customer Data, a **Data Processing Agreement (DPA)** incorporating **Standard Contractual Clauses** (or equivalent) is **[available at URL or upon request]** and forms part of the agreement where required by law.
+Processing of **personal data** is described in our **[Privacy Policy](./PRIVACY_POLICY.md)**. For **B2B Customers** that are controllers of personal data in Customer Data, a **Data Processing Agreement (DPA)** incorporating **Standard Contractual Clauses** (or equivalent) is **available on request** from **privacy@tymio.app** and forms part of the agreement where required by law.
 
 ---
 
