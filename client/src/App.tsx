@@ -87,7 +87,14 @@ function App() {
     !authLoading &&
     (workspaceSlugGate.state === "checking" || workspaceSlugGate.state === "no_membership");
 
-  const board = useBoardData(!!user && !needsTenantPick && !blockWorkspaceSlugGate);
+  /** PENDING users are not allowed past requireAuth on tenant-scoped APIs — do not load board/meta/initiatives. */
+  const boardDataEnabled =
+    !!user &&
+    user.role !== "PENDING" &&
+    !needsTenantPick &&
+    !blockWorkspaceSlugGate;
+
+  const board = useBoardData(boardDataEnabled);
   const perms = usePermissions(user);
   const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
 

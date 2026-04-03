@@ -75,8 +75,9 @@ app.use(
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "img-src": ["'self'", "data:", "https://*.googleusercontent.com", "https://*.ggpht.com"],
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-inline/eval needed for some dev tools/react
-        "connect-src": ["'self'", "ws:", "wss:"], // Allow websockets for HMR
+        // Cloudflare Web Analytics injects beacon from static.cloudflareinsights.com (blocked if omitted).
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://static.cloudflareinsights.com"],
+        "connect-src": ["'self'", "ws:", "wss:", "https://cloudflareinsights.com"],
       },
     },
   })
