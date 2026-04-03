@@ -87,6 +87,11 @@ export const api = {
   getDevTenants: async () =>
     request<{ tenants: Tenant[] }>("/api/auth/dev-tenants"),
   logout: async () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
+  requestMagicLink: async (email: string) =>
+    request<{ ok: boolean }>("/api/auth/email/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
   getMeta: async () => request<MetaPayload>("/api/meta"),
   getMessages: async (unreadOnly?: boolean) =>
     request<{ messages: UserMessage[]; unreadCount: number }>(`/api/messages${unreadOnly ? "?unreadOnly=true" : ""}`),

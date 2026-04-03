@@ -326,6 +326,7 @@ export function AppShell({
               <div className="mb-3 border-b border-slate-200 pb-3">
                 <TenantSwitcher
                   activeTenant={activeTenant}
+                  currentUser={{ name: user.name, email: user.email }}
                   onSwitch={() => {
                     closeDrawer();
                     onTenantSwitch?.();
@@ -379,6 +380,7 @@ export function AppShell({
             <div className="hidden lg:block">
               <TenantSwitcher
                 activeTenant={activeTenant}
+                currentUser={{ name: user.name, email: user.email }}
                 onSwitch={() => {
                   onTenantSwitch?.();
                   window.location.reload();

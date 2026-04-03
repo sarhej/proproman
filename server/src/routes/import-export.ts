@@ -250,6 +250,7 @@ async function replaceImport(data: any) {
           data: {
             email: u.email, name: u.name, avatarUrl: u.avatarUrl ?? null,
             role: u.role, isActive: u.isActive ?? true, googleId: u.googleId ?? null,
+            microsoftId: u.microsoftId ?? null,
           },
         });
         idMap.set(u.id, created.id);
@@ -500,6 +501,7 @@ async function mergeImport(data: any) {
             data: {
               email: u.email, name: u.name, avatarUrl: u.avatarUrl ?? null,
               role: u.role, isActive: u.isActive ?? true, googleId: u.googleId ?? null,
+              microsoftId: u.microsoftId ?? null,
             },
           });
           idMap.set(u.id, created.id);

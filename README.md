@@ -36,4 +36,4 @@ Details and Google redirect URIs: **[docs/HUB.md](docs/HUB.md)** §6.
 
 ## Deploy
 
-Railway (or any Node host): Postgres, env from `server/.env.example`, set `GOOGLE_CALLBACK_URL` and `CLIENT_URL`, run migrations. Do **not** run full `db:seed` in production.
+Railway (or any Node host): Postgres, env from `server/.env.example`, set OAuth callback URLs (`GOOGLE_CALLBACK_URL`, optional `MICROSOFT_CALLBACK_URL`) and `CLIENT_URL`, optional Resend for email magic link (`RESEND_API_KEY`, `RESEND_FROM`, and `API_PUBLIC_URL` when the API origin differs from the SPA). Run migrations. Do **not** run full `db:seed` in production.

@@ -47,6 +47,7 @@ export type User = {
   isActive?: boolean;
   lastLoginAt?: string | null;
   googleId?: string | null;
+  microsoftId?: string | null;
   activeTenantId?: string | null;
   emails?: UserEmail[];
 };

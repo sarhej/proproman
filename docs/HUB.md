@@ -47,7 +47,7 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 |-------|------------|
 | Frontend | React, Vite, TypeScript, Tailwind, React Router, i18next — **UI locales:** `en`, `cs`, `sk`, `uk`, `pl` (workspace admins may restrict the in-app picker via `Tenant.settings.enabledLocales`; guests choose language on public pages). SEO/agent metadata: `client/index.html` (meta, Open Graph, JSON-LD), `client/public/llms.txt`, `GET /api/mcp/agent-context` → `supportedUiLocales`. |
 | Backend | Express, TypeScript, Prisma, PostgreSQL |
-| Auth | Google OAuth (Passport), cookie sessions (PostgreSQL session store) |
+| Auth | Google + Microsoft OAuth (Passport), optional email magic link (Resend), cookie sessions (PostgreSQL session store) — [IDENTITY_AUTH_STRATEGY.md](./IDENTITY_AUTH_STRATEGY.md) |
 | Agents | MCP Streamable HTTP on the same Express app (`/mcp`) + optional stdio server in `mcp/` |
 
 **Layout:** Workspace packages — `client/` (SPA), `server/` (API + static `client/dist` in production), `mcp/` (local MCP over API key).
@@ -69,7 +69,8 @@ The REST prefix **`/api/admin`** is the JSON API for workspace admin features; i
 
 ## 3. Authentication and roles
 
-- **Production:** Google OAuth; callback path `/api/auth/google/callback` (full URL in `GOOGLE_CALLBACK_URL`). Optional **`tenantSlug`** on **`/api/auth/google`** is stored in session and, after login, switches the user into that tenant if they are a member, then redirects to **`/t/<slug>`** (see `server/src/routes/auth.ts`).
+- **Strategy & roadmap (P0 email + Microsoft, matrix, passkeys):** [IDENTITY_AUTH_STRATEGY.md](./IDENTITY_AUTH_STRATEGY.md).
+- **Production:** Google OAuth (`/api/auth/google/callback`), Microsoft OAuth (`/api/auth/microsoft/callback`), optional email magic link (`POST /api/auth/email/request`, `GET /api/auth/email/verify`). Callback URLs in env (`GOOGLE_CALLBACK_URL`, `MICROSOFT_CALLBACK_URL`). Optional **`tenantSlug`** on **`/api/auth/google`** or **`/api/auth/microsoft`** is stored in session and, after login, switches the user into that tenant if they are a member, then redirects to **`/t/<slug>`** (see `server/src/routes/auth.ts`). Magic-link verify does not carry `tenantSlug` yet (user lands on `/`).
 - **Platform roles:** `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `MARKETING`, `VIEWER`, `PENDING` on **`User`** — see server middleware and `usePermissions` on the client.
 - **Workspace roles:** `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` on **`TenantMembership`** — used for tenant-scoped admin operations where enforced.
 - **Active workspace:** `GET /api/auth/me` returns **`activeTenant`** from **`user.activeTenantId`** (and resolver may override with header/session). **`GET /api/me/tenants`** lists memberships; **`POST /api/me/tenants/switch`** sets **`activeTenantId`** and **`session.activeTenantId`**.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { PublicLanguageSwitcher } from "./components/i18n/PublicLanguageSwitcher";
@@ -118,12 +118,40 @@ function App() {
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [landingView, setLandingView] = useState<"landing" | "signin" | "register">("landing");
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicSending, setMagicSending] = useState(false);
+  const [magicSent, setMagicSent] = useState(false);
+  const [magicErr, setMagicErr] = useState<string | null>(null);
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
   const [devRole, setDevRole] = useState<UserRole>("SUPER_ADMIN");
   const [devTenants, setDevTenants] = useState<Tenant[]>([]);
   const [devTenantId, setDevTenantId] = useState<string>("");
   const showDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === "true";
+
+  const handleMagicLinkSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setMagicErr(null);
+      const em = magicEmail.trim();
+      if (!em) return;
+      setMagicSending(true);
+      try {
+        await api.requestMagicLink(em);
+        setMagicSent(true);
+      } catch (err) {
+        const status = (err as Error & { status?: number }).status;
+        if (status === 503) {
+          setMagicErr(t("app.magicLinkUnavailable"));
+        } else {
+          setMagicErr(t("app.magicLinkError"));
+        }
+      } finally {
+        setMagicSending(false);
+      }
+    },
+    [magicEmail, t]
+  );
 
   const loadDevTenants = useCallback(async () => {
     if (!showDevLogin) return;
@@ -365,6 +393,38 @@ function App() {
             <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
               {t("app.continueGoogle")}
             </Button>
+            <Button
+              variant="secondary"
+              onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/microsoft`)}
+            >
+              {t("app.continueMicrosoft")}
+            </Button>
+            <p className="mt-3 text-center text-xs text-slate-400">{t("app.emailSignInDivider")}</p>
+            {magicSent ? (
+              <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800" data-testid="magic-link-sent">
+                {t("app.magicLinkSent")}
+              </p>
+            ) : (
+              <form onSubmit={(e) => void handleMagicLinkSubmit(e)} className="grid gap-2">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  name="email"
+                  value={magicEmail}
+                  onChange={(e) => setMagicEmail(e.target.value)}
+                  placeholder={t("app.emailPlaceholder")}
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+                />
+                <Button type="submit" variant="secondary" disabled={magicSending}>
+                  {magicSending ? "…" : t("app.sendMagicLink")}
+                </Button>
+                {magicErr ? (
+                  <p className="text-sm text-red-600" data-testid="magic-link-err">
+                    {magicErr}
+                  </p>
+                ) : null}
+              </form>
+            )}
             {showDevLogin ? (
               <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Developer Login</p>

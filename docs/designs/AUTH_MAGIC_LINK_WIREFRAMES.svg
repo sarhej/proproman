@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
+  <title>Tymio sign-in: OAuth plus email magic link</title>
+  <rect width="960" height="520" fill="#f8fafc"/>
+  <text x="480" y="36" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" font-weight="600" fill="#334155">Sign-in screen (desktop)</text>
+  <rect x="300" y="64" width="360" height="400" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="320" y="100" font-family="system-ui,sans-serif" font-size="13" fill="#64748b">Brand / title</text>
+  <rect x="320" y="120" width="320" height="40" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="330" y="145" font-family="system-ui,sans-serif" font-size="12" fill="#475569">Continue with Google</text>
+  <rect x="320" y="172" width="320" height="40" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="330" y="197" font-family="system-ui,sans-serif" font-size="12" fill="#475569">Continue with Microsoft</text>
+  <text x="480" y="244" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8">or sign in with email</text>
+  <rect x="320" y="256" width="320" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="330" y="278" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8">you@company.com</text>
+  <rect x="320" y="302" width="320" height="36" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="330" y="325" font-family="system-ui,sans-serif" font-size="12" fill="#475569">Email me a sign-in link</text>
+  <text x="320" y="370" font-family="system-ui,sans-serif" font-size="11" fill="#64748b">Implementation notes:</text>
+  <text x="320" y="390" font-family="system-ui,sans-serif" font-size="10" fill="#64748b">- POST /api/auth/email/request; GET /api/auth/email/verify sets session.</text>
+  <text x="320" y="408" font-family="system-ui,sans-serif" font-size="10" fill="#64748b">- Success state: green banner &#x201C;Check your inbox&#x201D; (no email in UI).</text>
+  <text x="320" y="426" font-family="system-ui,sans-serif" font-size="10" fill="#64748b">- Same layout on /t/:slug sign-in; mobile: stack buttons full width.</text>
+</svg>

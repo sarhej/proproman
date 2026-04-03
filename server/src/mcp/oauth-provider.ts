@@ -1,11 +1,9 @@
 import crypto from "node:crypto";
 import { Response } from "express";
 import * as jose from "jose";
-import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
-import { logAudit } from "../services/audit.js";
-import { autoRoleForGoogleEmail } from "../auth/googleAutoRole.js";
+import { resolveOrCreateOAuthUser } from "../auth/oauthUserService.js";
 import type {
   OAuthServerProvider,
   AuthorizationParams
@@ -87,44 +85,6 @@ const clientsStore: OAuthRegisteredClientsStore = {
     return full;
   }
 };
-
-// --- User resolution (mirrors passport.ts logic) ---
-
-async function resolveOrCreateUser(profile: { email: string; name: string; googleId: string; avatarUrl?: string }) {
-  const { email, name, googleId, avatarUrl } = profile;
-
-  const existingByGoogle = await prisma.user.findUnique({ where: { googleId } });
-  if (existingByGoogle) {
-    if (!existingByGoogle.isActive) throw new Error("Account deactivated.");
-    await prisma.user.update({ where: { id: existingByGoogle.id }, data: { lastLoginAt: new Date() } });
-    await logAudit(existingByGoogle.id, "LOGIN", "USER", existingByGoogle.id);
-    return existingByGoogle;
-  }
-
-  const alias = await prisma.userEmail.findUnique({ where: { email }, include: { user: true } });
-  const existingByEmail = alias?.user ?? await prisma.user.findUnique({ where: { email } });
-  if (existingByEmail) {
-    if (!existingByEmail.isActive) throw new Error("Account deactivated.");
-    const linked = await prisma.user.update({
-      where: { id: existingByEmail.id },
-      data: { googleId, avatarUrl: avatarUrl ?? existingByEmail.avatarUrl, lastLoginAt: new Date() }
-    });
-    const hasAlias = await prisma.userEmail.findUnique({ where: { email } });
-    if (!hasAlias) await prisma.userEmail.create({ data: { email, userId: linked.id, isPrimary: linked.email === email } });
-    await logAudit(linked.id, "LOGIN", "USER", linked.id);
-    return linked;
-  }
-
-  const autoRole = autoRoleForGoogleEmail(email) ?? UserRole.PENDING;
-  const created = await prisma.user.create({
-    data: {
-      email, name, avatarUrl, googleId, role: autoRole, lastLoginAt: new Date(),
-      emails: { create: { email, isPrimary: true } }
-    }
-  });
-  await logAudit(created.id, "CREATED", "USER", created.id, { firstLogin: true, autoRole, pending: autoRole === UserRole.PENDING });
-  return created;
-}
 
 // --- JWT helpers ---
 
@@ -352,10 +312,11 @@ export async function handleGoogleCallback(code: string, state: string): Promise
   if (!userInfoRes.ok) throw new Error(`Google userinfo failed: ${userInfoRes.status}`);
   const userInfo = await userInfoRes.json() as { id: string; email: string; name: string; picture?: string };
 
-  const user = await resolveOrCreateUser({
+  const user = await resolveOrCreateOAuthUser({
+    provider: "google",
+    providerUserId: userInfo.id,
     email: userInfo.email,
     name: userInfo.name,
-    googleId: userInfo.id,
     avatarUrl: userInfo.picture
   });
 

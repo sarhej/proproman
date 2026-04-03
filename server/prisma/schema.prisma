@@ -365,6 +365,7 @@ model User {
   isActive                  Boolean                        @default(true)
   lastLoginAt               DateTime?
   googleId                  String?                        @unique
+  microsoftId               String?                        @unique
   activeTenantId            String?
   emails                    UserEmail[]
   memberships               TenantMembership[]
@@ -427,6 +428,19 @@ model UserEmail {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+/// One-time magic-link tokens for email sign-in (hashed at rest).
+model EmailLoginToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
 }
 
 model Product {

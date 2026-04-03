@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { api } from "../lib/api";
+import { generateWorkspaceSlugFromTeamName } from "../lib/workspaceRegistration";
 
 type Props = {
   onBack: () => void;
@@ -18,16 +19,6 @@ export function RegisterTeamPage({ onBack }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-
-  function generateSlug(name: string) {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 50);
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,8 +105,8 @@ export function RegisterTeamPage({ onBack }: Props) {
               value={teamName}
               onChange={(e) => {
                 setTeamName(e.target.value);
-                if (!slug || slug === generateSlug(teamName)) {
-                  setSlug(generateSlug(e.target.value));
+                if (!slug || slug === generateWorkspaceSlugFromTeamName(teamName)) {
+                  setSlug(generateWorkspaceSlugFromTeamName(e.target.value));
                 }
               }}
               placeholder={t("register.teamNamePlaceholder")}

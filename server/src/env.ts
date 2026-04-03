@@ -17,6 +17,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
   GOOGLE_CALLBACK_URL: optionalString,
+  MICROSOFT_CLIENT_ID: optionalString,
+  MICROSOFT_CLIENT_SECRET: optionalString,
+  MICROSOFT_CALLBACK_URL: optionalString,
   CLIENT_URL: z.string().default("http://localhost:5173"),
   ALLOW_DEV_AUTH: z
     .string()
@@ -41,33 +44,35 @@ const envSchema = z.object({
   TYMI_SYSTEM_TENANT_SLUG: z.string().min(2).max(50).default("tymio"),
   /** Optional: override MCP footer text for “how to report feedback” (otherwise built from CLIENT_URL + system workspace slug). */
   MCP_FEEDBACK_INSTRUCTIONS: optionalString,
+  /** Resend API key (https://resend.com) for magic-link email. */
+  RESEND_API_KEY: optionalString,
+  /** Verified sender in Resend, e.g. onboarding@resend.dev or noreply@yourdomain.com */
+  RESEND_FROM: optionalString,
+  /** Public origin of this API (for magic-link URLs). Defaults to http://127.0.0.1:PORT in development. */
+  API_PUBLIC_URL: optionalString,
+  EMAIL_MAGIC_LINK_TTL_MINUTES: z.preprocess(
+    (val) => (val === undefined || val === "" ? "30" : val),
+    z.coerce.number().int().min(5).max(120)
+  ),
 });
 
 export const env = envSchema
   .superRefine((value, ctx) => {
     const usingDevAuthFallback = value.NODE_ENV !== "production" && value.ALLOW_DEV_AUTH;
-    if (!usingDevAuthFallback) {
-      if (!value.GOOGLE_CLIENT_ID) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["GOOGLE_CLIENT_ID"],
-          message: "Required unless ALLOW_DEV_AUTH=true in non-production."
-        });
-      }
-      if (!value.GOOGLE_CLIENT_SECRET) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["GOOGLE_CLIENT_SECRET"],
-          message: "Required unless ALLOW_DEV_AUTH=true in non-production."
-        });
-      }
-      if (!value.GOOGLE_CALLBACK_URL) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["GOOGLE_CALLBACK_URL"],
-          message: "Required unless ALLOW_DEV_AUTH=true in non-production."
-        });
-      }
+    const hasGoogle =
+      !!value.GOOGLE_CLIENT_ID && !!value.GOOGLE_CLIENT_SECRET && !!value.GOOGLE_CALLBACK_URL;
+    const hasMicrosoft =
+      !!value.MICROSOFT_CLIENT_ID &&
+      !!value.MICROSOFT_CLIENT_SECRET &&
+      !!value.MICROSOFT_CALLBACK_URL;
+    const hasEmailMagicLink = !!value.RESEND_API_KEY && !!value.RESEND_FROM;
+    if (!usingDevAuthFallback && !hasGoogle && !hasMicrosoft && !hasEmailMagicLink) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["GOOGLE_CLIENT_ID"],
+        message:
+          "Set Google and/or Microsoft OAuth, or Resend (RESEND_API_KEY + RESEND_FROM) for email magic link, or ALLOW_DEV_AUTH=true in non-production."
+      });
     }
   })
   .parse(process.env);

@@ -1,10 +1,9 @@
 import passport from "passport";
+import OAuth2Strategy from "passport-oauth2";
 import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
-import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
-import { logAudit } from "../services/audit.js";
-import { autoRoleForGoogleEmail } from "./googleAutoRole.js";
+import { resolveOrCreateOAuthUser } from "./oauthUserService.js";
 
 passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
@@ -38,73 +37,75 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
             return done(new Error("Google account does not have an email."));
           }
 
-          const existingByGoogle = await prisma.user.findUnique({
-            where: { googleId: profile.id }
+          const user = await resolveOrCreateOAuthUser({
+            provider: "google",
+            providerUserId: profile.id,
+            email,
+            name: profile.displayName || email.split("@")[0] || "User",
+            avatarUrl: profile.photos?.[0]?.value
           });
+          return done(null, user);
+        } catch (error) {
+          return done(error as Error);
+        }
+      }
+    )
+  );
+}
 
-          if (existingByGoogle) {
-            if (!existingByGoogle.isActive) {
-              return done(new Error("Account deactivated. Contact an administrator."));
-            }
-            await prisma.user.update({
-              where: { id: existingByGoogle.id },
-              data: { lastLoginAt: new Date() }
-            });
-            await logAudit(existingByGoogle.id, "LOGIN", "USER", existingByGoogle.id);
-            return done(null, existingByGoogle);
+if (
+  env.MICROSOFT_CLIENT_ID &&
+  env.MICROSOFT_CLIENT_SECRET &&
+  env.MICROSOFT_CALLBACK_URL
+) {
+  passport.use(
+    "microsoft",
+    new OAuth2Strategy(
+      {
+        authorizationURL: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        tokenURL: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        clientID: env.MICROSOFT_CLIENT_ID,
+        clientSecret: env.MICROSOFT_CLIENT_SECRET,
+        callbackURL: env.MICROSOFT_CALLBACK_URL,
+        scope: ["openid", "profile", "email", "User.Read"].join(" "),
+        state: true,
+        skipUserProfile: true
+      },
+      async (
+        accessToken: string,
+        _refreshToken: string,
+        _profile: unknown,
+        done: (err: Error | null, user?: Express.User | false) => void
+      ) => {
+        try {
+          const graphRes = await fetch("https://graph.microsoft.com/v1.0/me", {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          if (!graphRes.ok) {
+            return done(new Error(`Microsoft Graph failed: ${graphRes.status}`));
           }
-
-          // Look up by email alias table first, then fall back to User.email
-          const alias = await prisma.userEmail.findUnique({
-            where: { email },
-            include: { user: true }
-          });
-          const existingByEmail = alias?.user
-            ?? await prisma.user.findUnique({ where: { email } });
-
-          if (existingByEmail) {
-            if (!existingByEmail.isActive) {
-              return done(new Error("Account deactivated. Contact an administrator."));
-            }
-            const linked = await prisma.user.update({
-              where: { id: existingByEmail.id },
-              data: {
-                googleId: profile.id,
-                avatarUrl: profile.photos?.[0]?.value ?? existingByEmail.avatarUrl,
-                lastLoginAt: new Date()
-              }
-            });
-            // Ensure this email exists in the alias table
-            const hasAlias = await prisma.userEmail.findUnique({ where: { email } });
-            if (!hasAlias) {
-              await prisma.userEmail.create({
-                data: { email, userId: linked.id, isPrimary: linked.email === email }
-              });
-            }
-            await logAudit(linked.id, "LOGIN", "USER", linked.id);
-            return done(null, linked);
+          const me = (await graphRes.json()) as {
+            id: string;
+            mail?: string | null;
+            userPrincipalName?: string;
+            displayName?: string;
+          };
+          const emailRaw = me.mail || me.userPrincipalName;
+          if (!emailRaw || !me.id) {
+            return done(new Error("Microsoft account does not have a usable email."));
           }
-
-          const autoRole = autoRoleForGoogleEmail(email) ?? UserRole.PENDING;
-
-          const created = await prisma.user.create({
-            data: {
-              email,
-              name: profile.displayName || email.split("@")[0] || "User",
-              avatarUrl: profile.photos?.[0]?.value,
-              googleId: profile.id,
-              role: autoRole,
-              lastLoginAt: new Date(),
-              emails: { create: { email, isPrimary: true } }
-            }
+          const email = emailRaw.trim();
+          if (!email.includes("@")) {
+            return done(new Error("Microsoft account email is not in a recognized format."));
+          }
+          const user = await resolveOrCreateOAuthUser({
+            provider: "microsoft",
+            providerUserId: me.id,
+            email,
+            name: me.displayName?.trim() || email.split("@")[0] || "User",
+            avatarUrl: null
           });
-
-          await logAudit(created.id, "CREATED", "USER", created.id, {
-            firstLogin: true,
-            autoRole: autoRole,
-            pending: autoRole === UserRole.PENDING,
-          });
-          return done(null, created);
+          return done(null, user);
         } catch (error) {
           return done(error as Error);
         }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
@@ -33,6 +33,10 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
   const [devRole, setDevRole] = useState<UserRole>("EDITOR");
   const [devLoading, setDevLoading] = useState(false);
   const [devError, setDevError] = useState<string | null>(null);
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicSending, setMagicSending] = useState(false);
+  const [magicSent, setMagicSent] = useState(false);
+  const [magicErr, setMagicErr] = useState<string | null>(null);
 
   const authError = searchParams.get("error");
   const slugTrim = workspaceSlug.trim();
@@ -105,6 +109,36 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
     const base = import.meta.env.VITE_API_BASE_URL ?? "";
     window.location.href = `${base}/api/auth/google?tenantSlug=${encodeURIComponent(slugTrim)}`;
   }, [slugTrim]);
+
+  const handleMicrosoftLogin = useCallback(() => {
+    rememberPostAuthWorkspaceSlug(slugTrim);
+    const base = import.meta.env.VITE_API_BASE_URL ?? "";
+    window.location.href = `${base}/api/auth/microsoft?tenantSlug=${encodeURIComponent(slugTrim)}`;
+  }, [slugTrim]);
+
+  const handleMagicLinkSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setMagicErr(null);
+      const em = magicEmail.trim();
+      if (!em) return;
+      setMagicSending(true);
+      try {
+        await api.requestMagicLink(em);
+        setMagicSent(true);
+      } catch (err) {
+        const status = (err as Error & { status?: number }).status;
+        if (status === 503) {
+          setMagicErr(t("app.magicLinkUnavailable"));
+        } else {
+          setMagicErr(t("app.magicLinkError"));
+        }
+      } finally {
+        setMagicSending(false);
+      }
+    },
+    [magicEmail, t]
+  );
 
   const handleDevLogin = useCallback(async () => {
     if (!slugTrim) return;
@@ -181,7 +215,30 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           <p className="mb-6 text-sm text-slate-500">{t("tenantSlug.registrationPendingFootnote")}</p>
           <div className="grid gap-2">
             <Button onClick={handleGoogleLogin}>{t("app.continueGoogle")}</Button>
+            <Button variant="secondary" onClick={handleMicrosoftLogin}>
+              {t("app.continueMicrosoft")}
+            </Button>
           </div>
+          <p className="mt-3 text-center text-xs text-slate-400">{t("app.emailSignInDivider")}</p>
+          {magicSent ? (
+            <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{t("app.magicLinkSent")}</p>
+          ) : (
+            <form onSubmit={(e) => void handleMagicLinkSubmit(e)} className="grid gap-2">
+              <input
+                type="email"
+                autoComplete="email"
+                name="email"
+                value={magicEmail}
+                onChange={(e) => setMagicEmail(e.target.value)}
+                placeholder={t("app.emailPlaceholder")}
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+              />
+              <Button type="submit" variant="secondary" disabled={magicSending}>
+                {magicSending ? "…" : t("app.sendMagicLink")}
+              </Button>
+              {magicErr ? <p className="text-sm text-red-600">{magicErr}</p> : null}
+            </form>
+          )}
           <div className="mt-4 text-center">
             <a
               href="/"
@@ -284,6 +341,29 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
 
         <div className="grid gap-2">
           <Button onClick={handleGoogleLogin}>{t("app.continueGoogle")}</Button>
+          <Button variant="secondary" onClick={handleMicrosoftLogin}>
+            {t("app.continueMicrosoft")}
+          </Button>
+          <p className="mt-2 text-center text-xs text-slate-400">{t("app.emailSignInDivider")}</p>
+          {magicSent ? (
+            <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{t("app.magicLinkSent")}</p>
+          ) : (
+            <form onSubmit={(e) => void handleMagicLinkSubmit(e)} className="grid gap-2">
+              <input
+                type="email"
+                autoComplete="email"
+                name="email"
+                value={magicEmail}
+                onChange={(e) => setMagicEmail(e.target.value)}
+                placeholder={t("app.emailPlaceholder")}
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+              />
+              <Button type="submit" variant="secondary" disabled={magicSending}>
+                {magicSending ? "…" : t("app.sendMagicLink")}
+              </Button>
+              {magicErr ? <p className="text-sm text-red-600">{magicErr}</p> : null}
+            </form>
+          )}
 
           {showDevLogin && (
             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
