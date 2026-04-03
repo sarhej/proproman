@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Card } from "../components/ui/Card";
 
 type Props = {
@@ -60,6 +61,7 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
             </div>
           </Card>
         </div>
+        <LegalFooterLinks />
       </div>
     </div>
   );

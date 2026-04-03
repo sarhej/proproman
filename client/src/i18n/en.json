@@ -825,7 +825,9 @@
     "signIn": "Sign in to your workspace",
     "signInDesc": "Already have an account? Sign in to continue.",
     "registerTeam": "Register a new team",
-    "registerDesc": "Set up a new workspace for your organization."
+    "registerDesc": "Set up a new workspace for your organization.",
+    "legalTerms": "Terms of Service",
+    "legalPrivacy": "Privacy Policy"
   },
   "register": {
     "title": "Register your team",

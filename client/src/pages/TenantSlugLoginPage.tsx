@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { clearPostAuthWorkspaceSlug, rememberPostAuthWorkspaceSlug } from "../lib/postAuthWorkspaceSlug";
+import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import type { UserRole } from "../types/models";
@@ -318,7 +319,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
   const tenantInfo = gate.tenant;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
         <Card className="w-full max-w-md p-6" data-testid="tenant-slug-signin">
         <div className="mb-4 flex items-center gap-3">
           <img src="/logo.svg" alt="Tymio" className="h-8" />
@@ -403,6 +404,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           </a>
         </div>
       </Card>
+      <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
     </div>
   );
 }

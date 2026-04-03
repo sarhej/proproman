@@ -58,6 +58,7 @@ import {
 import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
 import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
+import { registerLegalRoutes } from "./legal/serveLegalPages.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -236,6 +237,9 @@ app.get("/api/export/initiatives.csv", requireAuth, requireTenant, async (_req, 
   res.setHeader("Content-Disposition", "attachment; filename=initiatives.csv");
   res.send(lines.join("\n"));
 });
+
+/** Public legal pages (same origin as API in production; Vite proxies /legal in dev). */
+registerLegalRoutes(app);
 
 if (env.NODE_ENV === "production") {
   // Separate SPA: SUPER_ADMIN tenant & registration console (not workspace /admin in main client).

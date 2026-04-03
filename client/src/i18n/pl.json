@@ -825,7 +825,9 @@
     "signIn": "Zaloguj się do przestrzeni",
     "signInDesc": "Masz już konto? Zaloguj się, aby kontynuować.",
     "registerTeam": "Zarejestruj nowy zespół",
-    "registerDesc": "Utwórz nową przestrzeń roboczą dla swojej organizacji."
+    "registerDesc": "Utwórz nową przestrzeń roboczą dla swojej organizacji.",
+    "legalTerms": "Regulamin",
+    "legalPrivacy": "Polityka prywatności"
   },
   "register": {
     "title": "Zarejestruj swój zespół",

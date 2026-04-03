@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { api } from "../lib/api";
@@ -63,13 +64,14 @@ export function RegisterTeamPage({ onBack }: Props) {
           <Button variant="secondary" onClick={onBack}>
             {t("register.backToHome")}
           </Button>
+          <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
       <Card className="w-full max-w-lg p-6">
         <div className="mb-5">
           <button
@@ -174,6 +176,7 @@ export function RegisterTeamPage({ onBack }: Props) {
           </Button>
         </form>
       </Card>
+      <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
     </div>
   );
 }

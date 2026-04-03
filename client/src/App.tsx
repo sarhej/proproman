@@ -39,6 +39,7 @@ import { RequirementDetailPage } from "./pages/RequirementDetailPage";
 import { ExecutionBoardPage } from "./pages/ExecutionBoardPage";
 import { BoardSettingsPage } from "./pages/BoardSettingsPage";
 import { RequirementsKanbanPage } from "./pages/RequirementsKanbanPage";
+import { LegalFooterLinks } from "./components/legal/LegalFooterLinks";
 import { LandingPage } from "./pages/LandingPage";
 import { WorkspaceSettingsPage } from "./pages/WorkspaceSettingsPage";
 import { RegisterTeamPage } from "./pages/RegisterTeamPage";
@@ -479,6 +480,7 @@ function App() {
               </div>
             ) : null}
           </div>
+          <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
         </Card>
         </div>
       </>

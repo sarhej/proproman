@@ -816,7 +816,9 @@
     "signIn": "Prihláste sa do svojho pracovného priestoru",
     "signInDesc": "Už máte účet? Prihláste sa a pokračujte.",
     "registerTeam": "Zaregistrujte nový tím",
-    "registerDesc": "Nastavte nový pracovný priestor pre svoju organizáciu."
+    "registerDesc": "Nastavte nový pracovný priestor pre svoju organizáciu.",
+    "legalTerms": "Obchodné podmienky",
+    "legalPrivacy": "Zásady ochrany osobných údajov"
   },
   "register": {
     "title": "Zaregistrujte svoj tím",

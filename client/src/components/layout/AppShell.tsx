@@ -6,6 +6,7 @@ import { api } from "../../lib/api";
 import { navSections } from "../../lib/navSections";
 import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
+import { LegalFooterLinks } from "../legal/LegalFooterLinks";
 import { TenantSwitcher } from "../tenant/TenantSwitcher";
 import { APP_LOCALE_CODES, normalizeUiLanguageCode, type AppLocaleCode } from "../../lib/appLocales";
 
@@ -345,6 +346,7 @@ export function AppShell({
               phone={phone}
               onLogout={onLogout}
             />
+            <LegalFooterLinks className="mt-3 border-t border-slate-100 px-3 pt-3 text-[11px] leading-snug text-slate-400" />
             <div className="mt-4 border-t border-slate-200 pt-3 flex flex-wrap items-center gap-1 px-3">
               <Globe size={13} className="text-slate-400 shrink-0" />
               {pickerCodes.map((lng) => (
@@ -508,6 +510,7 @@ export function AppShell({
             onExportPdf={onExportPdf}
             onLogout={onLogout}
           />
+          <LegalFooterLinks className="mt-4 border-t border-slate-100 px-2 pb-2 pt-3 text-[11px] leading-snug text-slate-400" />
         </aside>
         <main data-print-content>{children}</main>
       </div>
