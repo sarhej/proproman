@@ -98,7 +98,7 @@ export function RegisterTeamPage({ onBack }: Props) {
 
         <form onSubmit={handleSubmit} className="grid gap-4">
           <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">{t("register.teamName")}</span>
+            <span className="text-sm font-medium text-slate-700">{t("register.workspaceName")}</span>
             <input
               type="text"
               required
@@ -111,7 +111,7 @@ export function RegisterTeamPage({ onBack }: Props) {
                   setSlug(generateWorkspaceSlugFromTeamName(e.target.value));
                 }
               }}
-              placeholder={t("register.teamNamePlaceholder")}
+              placeholder={t("register.workspaceNamePlaceholder")}
               className="rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </label>

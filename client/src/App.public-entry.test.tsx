@@ -162,10 +162,10 @@ describe("App public entry + locale policy", () => {
     );
 
     expect(screen.getByText(/Welcome to Tymio/i)).toBeInTheDocument();
-    await user.click(screen.getByText(/Register a new team/i));
+    await user.click(screen.getByText(/Register a new workspace/i));
 
     expect(screen.getByRole("group", { name: /language/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Register your team/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Request a workspace/i })).toBeInTheDocument();
   });
 
   it("clamps UI language to workspace enabledLocales when signed in", async () => {

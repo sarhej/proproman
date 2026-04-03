@@ -368,7 +368,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-slate-50 text-left text-xs font-medium uppercase text-slate-500">
-                      <th className="px-4 py-2">Team</th>
+                      <th className="px-4 py-2">Workspace</th>
                       <th className="px-4 py-2">Slug</th>
                       <th className="px-4 py-2">Contact</th>
                       <th className="px-4 py-2">Status</th>
@@ -427,7 +427,7 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-slate-50 text-left text-xs font-medium uppercase text-slate-500">
-                      <th className="px-4 py-2">Team</th>
+                      <th className="px-4 py-2">Workspace</th>
                       <th className="px-4 py-2">Slug</th>
                       <th className="px-4 py-2">Status</th>
                       <th className="px-4 py-2">Members</th>

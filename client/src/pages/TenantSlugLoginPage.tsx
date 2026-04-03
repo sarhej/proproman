@@ -211,7 +211,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenantSlug.registrationPendingTitle")}</h2>
           <p className="mb-1 text-sm text-slate-600">
-            {t("tenantSlug.registrationPendingBody", { team: gate.teamName, slug: gate.slug })}
+            {t("tenantSlug.registrationPendingBody", { workspaceName: gate.teamName, slug: gate.slug })}
           </p>
           <p className="mb-6 text-sm text-slate-500">{t("tenantSlug.registrationPendingFootnote")}</p>
           <div className="grid gap-2">
@@ -264,7 +264,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenantSlug.registrationRejectedTitle")}</h2>
           <p className="mb-2 text-sm text-slate-600">
-            {t("tenantSlug.registrationRejectedBody", { team: gate.teamName, slug: gate.slug })}
+            {t("tenantSlug.registrationRejectedBody", { workspaceName: gate.teamName, slug: gate.slug })}
           </p>
           {gate.reviewNote ? (
             <p className="mb-4 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-600">
@@ -297,7 +297,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenantSlug.provisioningTitle")}</h2>
           <p className="mb-6 text-sm text-slate-600">
-            {t("tenantSlug.provisioningBody", { team: gate.teamName, slug: gate.slug })}
+            {t("tenantSlug.provisioningBody", { workspaceName: gate.teamName, slug: gate.slug })}
           </p>
           <Button variant="secondary" onClick={() => window.location.reload()}>
             {t("tenantSlug.provisioningRetry")}

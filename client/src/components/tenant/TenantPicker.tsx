@@ -91,11 +91,11 @@ export function TenantPicker({ onSelected }: Props) {
                 {regRequests.map((r) => (
                   <li key={r.id} className="text-sm text-slate-600">
                     {r.status === "PENDING"
-                      ? t("tenant.pendingRegsPending", { team: r.teamName, slug: r.slug })
+                      ? t("tenant.pendingRegsPending", { workspaceName: r.teamName, slug: r.slug })
                       : r.status === "APPROVED"
-                        ? t("tenant.pendingRegsApprovedNoTenant", { team: r.teamName, slug: r.slug })
+                        ? t("tenant.pendingRegsApprovedNoTenant", { workspaceName: r.teamName, slug: r.slug })
                         : r.status === "REJECTED"
-                          ? t("tenant.pendingRegsRejected", { team: r.teamName, slug: r.slug })
+                          ? t("tenant.pendingRegsRejected", { workspaceName: r.teamName, slug: r.slug })
                           : `${r.teamName} (/t/${r.slug}) — ${r.status}`}
                   </li>
                 ))}

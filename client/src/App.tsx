@@ -551,7 +551,7 @@ function App() {
               {slugRegistrationHint?.kind === "PENDING" ? (
                 <p className="text-sm text-slate-700">
                   {t("app.pendingWorkspaceRegLine", {
-                    team: slugRegistrationHint.teamName,
+                    workspaceName: slugRegistrationHint.teamName,
                     slug: slugRegistrationHint.slug,
                   })}
                 </p>
@@ -559,7 +559,7 @@ function App() {
               {slugRegistrationHint?.kind === "APPROVED_NO_ACCESS" ? (
                 <p className="text-sm text-slate-700">
                   {t("tenant.pendingRegsApprovedNoTenant", {
-                    team: slugRegistrationHint.teamName,
+                    workspaceName: slugRegistrationHint.teamName,
                     slug: slugRegistrationHint.slug,
                   })}
                 </p>
@@ -573,7 +573,7 @@ function App() {
                 )
                 .map((r) => (
                   <p key={r.id} className="text-sm text-slate-700">
-                    {t("app.pendingWorkspaceRegLine", { team: r.teamName, slug: r.slug })}
+                    {t("app.pendingWorkspaceRegLine", { workspaceName: r.teamName, slug: r.slug })}
                   </p>
                 ))}
               <p className="mt-2 text-xs text-slate-500">{t("app.pendingWorkspaceRegFootnote")}</p>
@@ -643,11 +643,11 @@ function App() {
             {slugRegistrationHint.kind === "PENDING"
               ? t("tenant.slugRegBannerPending", {
                   slug: slugRegistrationHint.slug,
-                  team: slugRegistrationHint.teamName,
+                  workspaceName: slugRegistrationHint.teamName,
                 })
               : t("tenant.slugRegBannerApprovedNoAccess", {
                   slug: slugRegistrationHint.slug,
-                  team: slugRegistrationHint.teamName,
+                  workspaceName: slugRegistrationHint.teamName,
                 })}
           </p>
           <button

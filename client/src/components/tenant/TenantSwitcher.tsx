@@ -155,7 +155,7 @@ function RequestWorkspaceModal({
 
             <form onSubmit={(e) => void handleSubmit(e)} className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">{t("register.teamName")}</span>
+                <span className="text-sm font-medium text-slate-700">{t("register.workspaceName")}</span>
                 <input
                   ref={nameInputRef}
                   type="text"
@@ -170,7 +170,7 @@ function RequestWorkspaceModal({
                       setSlug(generateWorkspaceSlugFromTeamName(v));
                     }
                   }}
-                  placeholder={t("register.teamNamePlaceholder")}
+                  placeholder={t("register.workspaceNamePlaceholder")}
                   className="rounded border border-slate-300 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
                 />
               </label>

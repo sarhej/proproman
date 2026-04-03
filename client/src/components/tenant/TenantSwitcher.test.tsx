@@ -206,7 +206,7 @@ describe("TenantSwitcher", () => {
     await user.click(screen.getByRole("button", { name: /Request new workspace/i }));
 
     expect(await screen.findByRole("heading", { name: /Request new workspace/i })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /Team \/ Organization name/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /Workspace name/i })).toBeInTheDocument();
   });
 
   it("shows Request button on compact single-workspace row after load", async () => {
@@ -273,7 +273,7 @@ describe("TenantSwitcher", () => {
     await screen.findByText("Beta");
     await user.click(screen.getByRole("button", { name: /Request new workspace/i }));
 
-    const teamInput = await screen.findByRole("textbox", { name: /Team \/ Organization name/i });
+    const teamInput = await screen.findByRole("textbox", { name: /Workspace name/i });
     await user.clear(teamInput);
     await user.type(teamInput, "x");
     const slugInput = screen.getByRole("textbox", { name: /Workspace URL slug/i });
@@ -315,7 +315,7 @@ describe("TenantSwitcher", () => {
     await screen.findByText("Beta");
     await user.click(screen.getByRole("button", { name: /Request new workspace/i }));
 
-    const teamInput = await screen.findByRole("textbox", { name: /Team \/ Organization name/i });
+    const teamInput = await screen.findByRole("textbox", { name: /Workspace name/i });
     await user.clear(teamInput);
     await user.type(teamInput, "Delta Team");
     const slugInput = screen.getByRole("textbox", { name: /Workspace URL slug/i });
@@ -361,7 +361,7 @@ describe("TenantSwitcher", () => {
     await screen.findByText("Beta");
     await user.click(screen.getByRole("button", { name: /Request new workspace/i }));
 
-    const teamInput = await screen.findByRole("textbox", { name: /Team \/ Organization name/i });
+    const teamInput = await screen.findByRole("textbox", { name: /Workspace name/i });
     await user.type(teamInput, "Taken Co");
     const slugInput = screen.getByRole("textbox", { name: /Workspace URL slug/i });
     await user.clear(slugInput);

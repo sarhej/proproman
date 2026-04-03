@@ -52,7 +52,7 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold text-slate-800">{t("landing.registerTeam")}</h2>
+                <h2 className="text-base font-semibold text-slate-800">{t("landing.registerWorkspace")}</h2>
                 <p className="text-sm text-slate-500">{t("landing.registerDesc")}</p>
               </div>
               <svg className="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
