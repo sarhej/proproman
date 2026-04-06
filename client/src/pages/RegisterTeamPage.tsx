@@ -6,32 +6,54 @@ import { Button } from "../components/ui/Button";
 import { api } from "../lib/api";
 import { generateWorkspaceSlugFromTeamName } from "../lib/workspaceRegistration";
 
-type Props = {
+export type RegisterTeamPageProps = {
   onBack: () => void;
+  /** Logged-in user: prefill contact fields (e.g. platform PENDING flow). */
+  prefilledContact?: { email: string; name: string };
+  /** i18n key for back navigation (default: register.backToHome). */
+  backLabelKey?: string;
 };
 
-export function RegisterTeamPage({ onBack }: Props) {
-  const { t } = useTranslation();
+function normalizeUiLocale(i18nLanguage: string): string | undefined {
+  const base = i18nLanguage.split("-")[0]?.toLowerCase() ?? "en";
+  if (["en", "cs", "sk", "pl", "uk"].includes(base)) return base;
+  return undefined;
+}
+
+export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: RegisterTeamPageProps) {
+  const { t, i18n } = useTranslation();
+  const backLabel = t(backLabelKey ?? "register.backToHome");
   const [teamName, setTeamName] = useState("");
   const [slug, setSlug] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
+  const [contactName, setContactName] = useState(prefilledContact?.name ?? "");
+  const [contactEmail, setContactEmail] = useState(prefilledContact?.email ?? "");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitEmailMeta, setSubmitEmailMeta] = useState<{
+    adminsNotifiedOnSubmit: boolean;
+    decisionEmailsConfigured: boolean;
+  }>({ adminsNotifiedOnSubmit: false, decisionEmailsConfigured: false });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await api.submitTenantRequest({
+      const locale = normalizeUiLocale(i18n.language);
+      const res = await api.submitTenantRequest({
         teamName: teamName.trim(),
         slug: slug.trim(),
         contactName: contactName.trim(),
         contactEmail: contactEmail.trim(),
         message: message.trim() || undefined,
+        ...(locale ? { locale } : {}),
+      });
+      const n = res.emailNotifications;
+      setSubmitEmailMeta({
+        adminsNotifiedOnSubmit: n?.adminsNotifiedOnSubmit === true,
+        decisionEmailsConfigured: n?.decisionEmailsConfigured === true,
       });
       setSubmitted(true);
     } catch (err) {
@@ -58,11 +80,19 @@ export function RegisterTeamPage({ onBack }: Props) {
             </div>
           </div>
           <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("register.successTitle")}</h2>
-          <p className="mb-6 text-sm text-slate-600">
-            {t("register.successDesc", { email: contactEmail })}
-          </p>
+          <div className="mb-6 space-y-2 text-sm text-slate-600">
+            <p>{t("register.successLead")}</p>
+            {submitEmailMeta.adminsNotifiedOnSubmit ? (
+              <p>{t("register.successAdminsEmailed")}</p>
+            ) : null}
+            {submitEmailMeta.decisionEmailsConfigured ? (
+              <p>{t("register.successDecisionEmailPromise", { email: contactEmail })}</p>
+            ) : (
+              <p>{t("register.successNoDecisionEmailPromise")}</p>
+            )}
+          </div>
           <Button variant="secondary" onClick={onBack}>
-            {t("register.backToHome")}
+            {backLabel}
           </Button>
           <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
         </Card>
@@ -81,7 +111,7 @@ export function RegisterTeamPage({ onBack }: Props) {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
-            {t("register.backToHome")}
+            {backLabel}
           </button>
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="Tymio" className="h-8" />

@@ -84,6 +84,7 @@ export type TenantRequest = {
   slug: string;
   contactEmail: string;
   contactName: string;
+  preferredLocale?: string | null;
   message?: string | null;
   status: TenantRequestStatus;
   reviewedBy?: string | null;

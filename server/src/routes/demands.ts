@@ -107,13 +107,14 @@ demandsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => 
   await prisma.$transaction(async (tx) => {
     if (payload.links) {
       await tx.demandLink.deleteMany({ where: { demandId: id } });
-      await tx.demandLink.createMany({
-        data: payload.links.map((l) => ({
-          demandId: id,
-          initiativeId: l.initiativeId ?? null,
-          featureId: l.featureId ?? null
-        }))
-      });
+      const rows = payload.links.map((l) => ({
+        demandId: id,
+        initiativeId: l.initiativeId ?? null,
+        featureId: l.featureId ?? null
+      }));
+      if (rows.length > 0) {
+        await tx.demandLink.createMany({ data: rows });
+      }
     }
     await tx.demand.update({
       where: { id },

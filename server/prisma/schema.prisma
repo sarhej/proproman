@@ -326,6 +326,7 @@ model TenantRequest {
   slug         String              @unique
   contactEmail String
   contactName  String
+  preferredLocale String?
   message      String?
   status       TenantRequestStatus @default(PENDING)
   reviewedBy   String?

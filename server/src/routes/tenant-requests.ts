@@ -4,11 +4,26 @@ import { UserRole } from "@prisma/client";
 import { prisma, prismaUnscoped } from "../db.js";
 import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
 import { requireRole } from "../middleware/auth.js";
+import {
+  isTransactionalEmailEnabled,
+  isTransactionalEmailReady,
+  logTransactionalEmail,
+  sendTransactionalEmail,
+} from "../services/transactionalMail.js";
+import { getSuperAdminEmailsOrdered, layoutE1Recipients } from "../services/transactionalRecipients.js";
+import {
+  buildE1NewWorkspaceRequestEmail,
+  buildE2WorkspaceApprovedEmail,
+  buildE3WorkspaceRejectedEmail,
+  normalizeTransactionalLocale,
+} from "../services/transactionalTemplates.js";
 import { provisionTenant } from "../tenant/tenantProvisioning.js";
 
 export const tenantRequestsRouter = Router();
 
 const slugRegex = /^[a-z0-9-]+$/;
+
+const uiLocaleSchema = z.enum(["en", "cs", "sk", "pl", "uk"]).optional();
 
 const createRequestSchema = z.object({
   teamName: z.string().min(2).max(100),
@@ -20,6 +35,7 @@ const createRequestSchema = z.object({
   contactEmail: z.string().email(),
   contactName: z.string().min(1).max(100),
   message: z.string().max(1000).optional(),
+  locale: uiLocaleSchema,
 });
 
 /**
@@ -53,10 +69,49 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
         contactEmail: data.contactEmail,
         contactName: data.contactName,
         message: data.message,
+        preferredLocale: data.locale ?? null,
       },
     });
 
-    res.status(201).json(tenantRequest);
+    let adminsNotifiedOnSubmit = false;
+    if (isTransactionalEmailEnabled() && isTransactionalEmailReady()) {
+      try {
+        const ordered = await getSuperAdminEmailsOrdered();
+        const layout = layoutE1Recipients(ordered);
+        if (layout) {
+          const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
+          const mail = buildE1NewWorkspaceRequestEmail({
+            locale,
+            teamName: tenantRequest.teamName,
+            slug: tenantRequest.slug,
+            contactEmail: tenantRequest.contactEmail,
+            contactName: tenantRequest.contactName,
+            requestId: tenantRequest.id,
+          });
+          await sendTransactionalEmail({
+            to: layout.to,
+            cc: layout.cc.length > 0 ? layout.cc : undefined,
+            subject: mail.subject,
+            text: mail.text,
+            html: mail.html,
+            tags: [{ name: "event", value: "E1" }],
+          });
+          adminsNotifiedOnSubmit = true;
+          logTransactionalEmail("E1", { ok: true, requestId: tenantRequest.id });
+        } else {
+          logTransactionalEmail("E1", { ok: false, reason: "no_recipients" });
+        }
+      } catch (err) {
+        console.error("[transactional-email] E1 send failed:", err);
+        logTransactionalEmail("E1", { ok: false, requestId: tenantRequest.id });
+      }
+    }
+
+    const decisionEmailsConfigured = isTransactionalEmailEnabled() && isTransactionalEmailReady();
+    res.status(201).json({
+      ...tenantRequest,
+      emailNotifications: { adminsNotifiedOnSubmit, decisionEmailsConfigured },
+    });
   } catch (err) {
     next(err);
   }
@@ -204,7 +259,36 @@ tenantRequestsRouter.post(
             reviewNote: data.reviewNote ?? null,
           },
         });
-        res.json(updated);
+
+        let requesterNotifiedOnDecision = false;
+        if (isTransactionalEmailEnabled() && isTransactionalEmailReady()) {
+          try {
+            const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
+            const mail = buildE3WorkspaceRejectedEmail({
+              locale,
+              teamName: tenantRequest.teamName,
+              slug: tenantRequest.slug,
+              reviewNote: updated.reviewNote,
+            });
+            await sendTransactionalEmail({
+              to: tenantRequest.contactEmail,
+              subject: mail.subject,
+              text: mail.text,
+              html: mail.html,
+              tags: [{ name: "event", value: "E3" }],
+            });
+            requesterNotifiedOnDecision = true;
+            logTransactionalEmail("E3", { ok: true, requestId: id });
+          } catch (err) {
+            console.error("[transactional-email] E3 send failed:", err);
+            logTransactionalEmail("E3", { ok: false, requestId: id });
+          }
+        }
+
+        res.json({
+          ...updated,
+          emailNotifications: { requesterNotifiedOnDecision },
+        });
         return;
       }
 
@@ -272,7 +356,35 @@ tenantRequestsRouter.post(
         },
       });
 
-      res.json({ request: updated, tenant: provisionedTenant ?? tenant });
+      let requesterNotifiedOnDecision = false;
+      if (isTransactionalEmailEnabled() && isTransactionalEmailReady()) {
+        try {
+          const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
+          const mail = buildE2WorkspaceApprovedEmail({
+            locale,
+            teamName: tenantRequest.teamName,
+            slug: tenantRequest.slug,
+          });
+          await sendTransactionalEmail({
+            to: tenantRequest.contactEmail,
+            subject: mail.subject,
+            text: mail.text,
+            html: mail.html,
+            tags: [{ name: "event", value: "E2" }],
+          });
+          requesterNotifiedOnDecision = true;
+          logTransactionalEmail("E2", { ok: true, requestId: id });
+        } catch (err) {
+          console.error("[transactional-email] E2 send failed:", err);
+          logTransactionalEmail("E2", { ok: false, requestId: id });
+        }
+      }
+
+      res.json({
+        request: updated,
+        tenant: provisionedTenant ?? tenant,
+        emailNotifications: { requesterNotifiedOnDecision },
+      });
     } catch (err) {
       next(err);
     }

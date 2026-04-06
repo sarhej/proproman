@@ -54,6 +54,8 @@ const envSchema = z.object({
     (val) => (val === undefined || val === "" ? "30" : val),
     z.coerce.number().int().min(5).max(120)
   ),
+  /** When true, send E1–E4 transactional mail via Resend (still requires API key + From). */
+  TRANSACTIONAL_EMAIL_ENABLED: z.string().optional().transform((v) => v === "true"),
 });
 
 export const env = envSchema

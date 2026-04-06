@@ -511,8 +511,17 @@ export const api = {
     contactEmail: string;
     contactName: string;
     message?: string;
+    /** UI language (en, cs, sk, pl, uk) for server-side email templates. */
+    locale?: string;
   }) =>
-    request<TenantRequest>("/api/tenant-requests", {
+    request<
+      TenantRequest & {
+        emailNotifications?: {
+          adminsNotifiedOnSubmit?: boolean;
+          decisionEmailsConfigured?: boolean;
+        };
+      }
+    >("/api/tenant-requests", {
       method: "POST",
       body: JSON.stringify(body),
     }),

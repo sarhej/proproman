@@ -306,6 +306,7 @@ describe("TenantSwitcher", () => {
       message: null,
       reviewNote: null,
       tenantId: null,
+      emailNotifications: { adminsNotifiedOnSubmit: false, decisionEmailsConfigured: true },
     } as Awaited<ReturnType<typeof api.submitTenantRequest>>);
 
     const user = userEvent.setup();
@@ -326,13 +327,15 @@ describe("TenantSwitcher", () => {
     await user.click(screen.getByRole("button", { name: /^Submit request$/i }));
 
     await waitFor(() => {
-      expect(mockSubmitTenantRequest).toHaveBeenCalledWith({
-        teamName: "Delta Team",
-        slug: "delta",
-        contactName: currentUser.name,
-        contactEmail: currentUser.email,
-        message: undefined,
-      });
+      expect(mockSubmitTenantRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          teamName: "Delta Team",
+          slug: "delta",
+          contactName: currentUser.name,
+          contactEmail: currentUser.email,
+          message: undefined,
+        })
+      );
     });
 
     expect(await screen.findByText(/Registration request submitted/i)).toBeInTheDocument();

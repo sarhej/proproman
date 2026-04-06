@@ -5,6 +5,13 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireRole } from "../middleware/auth.js";
 import { logAudit } from "../services/audit.js";
+import {
+  isTransactionalEmailEnabled,
+  isTransactionalEmailReady,
+  logTransactionalEmail,
+  sendTransactionalEmail,
+} from "../services/transactionalMail.js";
+import { buildE4PlatformRoleActivatedEmail } from "../services/transactionalTemplates.js";
 import { notificationRulesRouter } from "./notification-rules.js";
 
 export const adminRouter = Router();
@@ -168,7 +175,36 @@ adminRouter.put("/users/:id", async (req, res) => {
     await logAudit(req.user!.id, "UPDATED", "USER", id, { field: "isActive", old: existing.isActive, new: data.isActive });
   }
 
-  res.json({ user });
+  let platformRoleActivatedEmailSent = false;
+  if (
+    actorRole === UserRole.SUPER_ADMIN &&
+    data.role !== undefined &&
+    existing.role === UserRole.PENDING &&
+    data.role !== UserRole.PENDING &&
+    isTransactionalEmailEnabled() &&
+    isTransactionalEmailReady()
+  ) {
+    try {
+      const mail = buildE4PlatformRoleActivatedEmail({ name: existing.name || "" });
+      await sendTransactionalEmail({
+        to: existing.email,
+        subject: mail.subject,
+        text: mail.text,
+        html: mail.html,
+        tags: [{ name: "event", value: "E4" }],
+      });
+      platformRoleActivatedEmailSent = true;
+      logTransactionalEmail("E4", { ok: true, userId: id });
+    } catch (err) {
+      console.error("[transactional-email] E4 send failed:", err);
+      logTransactionalEmail("E4", { ok: false, userId: id });
+    }
+  }
+
+  res.json({
+    user,
+    emailNotifications: { platformRoleActivatedEmailSent },
+  });
 });
 
 const createUserSchema = z.object({

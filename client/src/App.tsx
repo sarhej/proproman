@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { PublicLanguageSwitcher } from "./components/i18n/PublicLanguageSwitcher";
 import { AppShell } from "./components/layout/AppShell";
 import { FiltersBar } from "./components/layout/FiltersBar";
@@ -43,6 +43,7 @@ import { LegalFooterLinks } from "./components/legal/LegalFooterLinks";
 import { LandingPage } from "./pages/LandingPage";
 import { WorkspaceSettingsPage } from "./pages/WorkspaceSettingsPage";
 import { RegisterTeamPage } from "./pages/RegisterTeamPage";
+import { PlatformPendingPage } from "./pages/PlatformPendingPage";
 import { TenantSlugLoginPage } from "./pages/TenantSlugLoginPage";
 import { TenantWorkspaceNoAccessPage } from "./pages/TenantWorkspaceNoAccessPage";
 import type { Initiative, Tenant, UserRole } from "./types/models";
@@ -126,6 +127,7 @@ function App() {
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [landingView, setLandingView] = useState<"landing" | "signin" | "register">("landing");
+  const [pendingSubView, setPendingSubView] = useState<"setup" | "register">("setup");
   const [magicEmail, setMagicEmail] = useState("");
   const [magicSending, setMagicSending] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
@@ -223,6 +225,10 @@ function App() {
       });
     return () => { cancelled = true; };
   }, [user?.role, user?.id]);
+
+  useEffect(() => {
+    setPendingSubView("setup");
+  }, [user?.id]);
 
   useLayoutEffect(() => {
     if (!user || authLoading) return;
@@ -525,78 +531,35 @@ function App() {
   }
 
   if (user.role === "PENDING") {
+    if (pendingSubView === "register") {
+      return (
+        <>
+          <PublicLanguageSwitcher />
+          <RegisterTeamPage
+            onBack={() => setPendingSubView("setup")}
+            prefilledContact={{ email: user.email, name: user.name ?? "" }}
+            backLabelKey="app.pendingBackToSetup"
+          />
+        </>
+      );
+    }
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="max-w-md p-6 text-center">
-          <div className="mb-4 flex items-center justify-center gap-3">
-            <img src="/logo.svg" alt="Tymio" className="h-8" />
-            <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
-          </div>
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-              <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-            </div>
-          </div>
-          <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("app.pendingTitle")}</h2>
-          <p className="mb-1 text-sm text-slate-600">
-            <Trans
-              i18nKey="app.pendingMsg"
-              values={{ email: user.email }}
-              components={{ 1: <strong className="font-semibold text-slate-800" /> }}
-            />
-          </p>
-          <p className="mb-6 text-sm text-slate-500">
-            {t("app.pendingDesc")}
-          </p>
-          {(slugRegistrationHint || pendingUserWorkspaceRegs.some((r) => r.status === "PENDING")) && (
-            <div className="mb-6 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-left">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-700">
-                {t("app.pendingWorkspaceRegTitle")}
-              </p>
-              {slugRegistrationHint?.kind === "PENDING" ? (
-                <p className="text-sm text-slate-700">
-                  {t("app.pendingWorkspaceRegLine", {
-                    workspaceName: slugRegistrationHint.teamName,
-                    slug: slugRegistrationHint.slug,
-                  })}
-                </p>
-              ) : null}
-              {slugRegistrationHint?.kind === "APPROVED_NO_ACCESS" ? (
-                <p className="text-sm text-slate-700">
-                  {t("tenant.pendingRegsApprovedNoTenant", {
-                    workspaceName: slugRegistrationHint.teamName,
-                    slug: slugRegistrationHint.slug,
-                  })}
-                </p>
-              ) : null}
-              {pendingUserWorkspaceRegs
-                .filter((r) => r.status === "PENDING")
-                .filter(
-                  (r) =>
-                    !slugRegistrationHint ||
-                    r.slug.toLowerCase() !== slugRegistrationHint.slug.toLowerCase()
-                )
-                .map((r) => (
-                  <p key={r.id} className="text-sm text-slate-700">
-                    {t("app.pendingWorkspaceRegLine", { workspaceName: r.teamName, slug: r.slug })}
-                  </p>
-                ))}
-              <p className="mt-2 text-xs text-slate-500">{t("app.pendingWorkspaceRegFootnote")}</p>
-            </div>
-          )}
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await api.logout();
-              window.location.reload();
-            }}
-          >
-            {t("app.signOut")}
-          </Button>
-        </Card>
-      </div>
+      <>
+        <PublicLanguageSwitcher />
+        <PlatformPendingPage
+          userEmail={user.email}
+          slugRegistrationHint={slugRegistrationHint}
+          pendingUserWorkspaceRegs={pendingUserWorkspaceRegs}
+          onSignOut={async () => {
+            await api.logout();
+            window.location.reload();
+          }}
+          onNavigateToWorkspace={(slug) => {
+            navigate(`/t/${encodeURIComponent(slug)}`);
+          }}
+          onRequestNewWorkspace={() => setPendingSubView("register")}
+        />
+      </>
     );
   }
 

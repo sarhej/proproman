@@ -28,18 +28,26 @@ type Props = {
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 
+function normalizeUiLocale(i18nLanguage: string): string | undefined {
+  const base = i18nLanguage.split("-")[0]?.toLowerCase() ?? "en";
+  if (["en", "cs", "sk", "pl", "uk"].includes(base)) return base;
+  return undefined;
+}
+
 function RequestWorkspaceModal({
   open,
   currentUser,
   onClose,
   onSubmitted,
   t,
+  i18nLanguage,
 }: {
   open: boolean;
   currentUser: Pick<User, "name" | "email">;
   onClose: () => void;
   onSubmitted: () => void;
   t: (key: string, opts?: Record<string, string>) => string;
+  i18nLanguage: string;
 }) {
   const [teamName, setTeamName] = useState("");
   const [slug, setSlug] = useState("");
@@ -47,6 +55,10 @@ function RequestWorkspaceModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [submitEmailMeta, setSubmitEmailMeta] = useState<{
+    adminsNotifiedOnSubmit: boolean;
+    decisionEmailsConfigured: boolean;
+  }>({ adminsNotifiedOnSubmit: false, decisionEmailsConfigured: false });
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +68,7 @@ function RequestWorkspaceModal({
     setMessage("");
     setError(null);
     setSuccess(false);
+    setSubmitEmailMeta({ adminsNotifiedOnSubmit: false, decisionEmailsConfigured: false });
     setSubmitting(false);
     const id = window.requestAnimationFrame(() => nameInputRef.current?.focus());
     return () => window.cancelAnimationFrame(id);
@@ -85,12 +98,19 @@ function RequestWorkspaceModal({
     }
     setSubmitting(true);
     try {
-      await api.submitTenantRequest({
+      const locale = normalizeUiLocale(i18nLanguage);
+      const res = await api.submitTenantRequest({
         teamName: tn,
         slug: sl,
         contactName: currentUser.name.trim(),
         contactEmail: currentUser.email.trim(),
         message: message.trim() || undefined,
+        ...(locale ? { locale } : {}),
+      });
+      const n = res.emailNotifications;
+      setSubmitEmailMeta({
+        adminsNotifiedOnSubmit: n?.adminsNotifiedOnSubmit === true,
+        decisionEmailsConfigured: n?.decisionEmailsConfigured === true,
       });
       setSuccess(true);
       onSubmitted();
@@ -139,7 +159,15 @@ function RequestWorkspaceModal({
               </div>
             </div>
             <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("register.successTitle")}</h2>
-            <p className="mb-6 text-sm text-slate-600">{t("register.successDesc", { email: currentUser.email })}</p>
+            <div className="mb-6 space-y-2 text-sm text-slate-600">
+              <p>{t("register.successLead")}</p>
+              {submitEmailMeta.adminsNotifiedOnSubmit ? <p>{t("register.successAdminsEmailed")}</p> : null}
+              {submitEmailMeta.decisionEmailsConfigured ? (
+                <p>{t("register.successDecisionEmailPromise", { email: currentUser.email })}</p>
+              ) : (
+                <p>{t("register.successNoDecisionEmailPromise")}</p>
+              )}
+            </div>
             <Button type="button" variant="secondary" onClick={onClose}>
               {t("tenant.requestNewWorkspaceClose")}
             </Button>
@@ -227,7 +255,7 @@ function RequestWorkspaceModal({
 }
 
 export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
@@ -366,6 +394,7 @@ export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }:
       onClose={() => setRequestModalOpen(false)}
       onSubmitted={handleRequestSubmitted}
       t={t}
+      i18nLanguage={i18n.language}
     />
   );
 
