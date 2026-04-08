@@ -629,6 +629,7 @@ function FeatureRow({
 
 function InitiativeRow({
   initiative,
+  treeProductId,
   reorderSiblingInitiatives,
   reorderSiblingFeatures,
   users,
@@ -646,6 +647,8 @@ function InitiativeRow({
   searchActive
 }: {
   initiative: Initiative;
+  /** Product id for this row (Initiative.productId is optional in types; tree always has a product). */
+  treeProductId: string;
   /** Full epic list under this product (reorder / drag payloads). */
   reorderSiblingInitiatives: Initiative[];
   /** Full feature list under this initiative (reorder API). */
@@ -707,7 +710,7 @@ function InitiativeRow({
     next[ni] = tmp;
     const updates = next.map((init, i) => ({ id: init.id, domainId: init.domainId, sortOrder: i }));
     const nextWithSort = next.map((init, i) => ({ ...init, sortOrder: i }));
-    onProductInitiativesReordered?.(initiative.productId, nextWithSort);
+    onProductInitiativesReordered?.(treeProductId, nextWithSort);
     try {
       await api.reorderInitiatives(updates);
     } catch {
@@ -1132,6 +1135,7 @@ function ProductRow({
             <InitiativeRow
               key={initiative.id}
               initiative={initiative}
+              treeProductId={product.id}
               reorderSiblingInitiatives={reorderInitiativesList}
               reorderSiblingFeatures={reorderFeatures}
               users={users}
@@ -1315,6 +1319,9 @@ export function ProductTree({
             <tbody>
               <InitiativeRow
                 initiative={draggingInitiative}
+                treeProductId={
+                  hierarchy.find((p) => p.initiatives.some((i) => i.id === draggingInitiative.id))?.id ?? ""
+                }
                 reorderSiblingInitiatives={dragOverlayReorder.rInits}
                 reorderSiblingFeatures={dragOverlayReorder.rFeats}
                 users={users}
