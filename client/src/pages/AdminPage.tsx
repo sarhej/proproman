@@ -43,14 +43,16 @@ const AUDIT_ACTIONS: AuditAction[] = ["CREATED", "UPDATED", "DELETED", "STATUS_C
 const RECIPIENT_KINDS: NotificationRecipientKind[] = ["OBJECT_OWNER", "OBJECT_ROLE", "GLOBAL_ROLE", "OBJECT_ASSIGNEE"];
 const DELIVERY_CHANNELS: DeliveryChannel[] = ["IN_APP", "EMAIL", "SLACK", "WHATSAPP"];
 
-type Tab = "users" | "activity" | "settings" | "data" | "notificationRules" | "ontology";
+type SettingsAreaTab = "settings" | "data" | "activity" | "notificationRules" | "ontology";
 
 export function AdminPage({
+  mode,
   currentUser,
   quickFilter,
   onMetaChanged,
   onUiSettingsChanged
 }: {
+  mode: "users" | "settings";
   currentUser: User;
   quickFilter?: string;
   onMetaChanged?: () => void;
@@ -58,10 +60,17 @@ export function AdminPage({
   onUiSettingsChanged?: () => void;
 }) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>("users");
+  const [tab, setTab] = useState<SettingsAreaTab>("settings");
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "users", label: t("admin.users") },
+  if (mode === "users") {
+    return (
+      <div className="space-y-6">
+        <UsersTab currentUser={currentUser} quickFilter={quickFilter} />
+      </div>
+    );
+  }
+
+  const tabs: { key: SettingsAreaTab; label: string }[] = [
     { key: "settings", label: t("admin.settings") },
     { key: "data", label: t("admin.data") },
     { key: "activity", label: t("admin.activity") },
@@ -72,17 +81,17 @@ export function AdminPage({
   return (
     <div className="space-y-6">
       <div className="flex gap-2 overflow-x-auto border-b lg:overflow-x-visible">
-        {tabs.map((t) => (
+        {tabs.map((tb) => (
           <button
-            key={t.key}
-            className={`shrink-0 px-4 py-2 -mb-px text-sm font-medium ${tab === t.key ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            type="button"
+            className={`shrink-0 px-4 py-2 -mb-px text-sm font-medium ${tab === tb.key ? "border-b-2 border-indigo-600 text-indigo-700" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setTab(tb.key)}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
-      {tab === "users" && <UsersTab currentUser={currentUser} quickFilter={quickFilter} />}
       {tab === "settings" && (
         <SettingsTab currentUser={currentUser} onMetaChanged={onMetaChanged} onUiSettingsChanged={onUiSettingsChanged} />
       )}

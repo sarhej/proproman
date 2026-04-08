@@ -153,7 +153,11 @@ const DEFAULT_CAPABILITIES: {
     userJob: "Manage users, reference data, import/export, ontology, audit, notification rules.",
     status: "ACTIVE",
     sortOrder: 120,
-    bindings: [{ type: "ROUTE", key: "/admin", isPrimary: true }, { type: "PAGE", key: "AdminPage" }]
+    bindings: [
+      { type: "ROUTE", key: "/admin/users", isPrimary: true },
+      { type: "ROUTE", key: "/admin/settings" },
+      { type: "PAGE", key: "AdminPage" }
+    ]
   },
   {
     slug: "mcp-agents",

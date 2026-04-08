@@ -52,7 +52,12 @@ function NavContent({
   const { t } = useTranslation();
   const hideShellRoutes = !permissions.isSuperAdmin && hiddenNavPaths.size > 0;
   const sections = navSections
-    .filter((s) => !s.adminOnly || permissions.canManageUsers)
+    .filter(
+      (s) =>
+        !s.adminOnly ||
+        permissions.canManageUsers ||
+        Boolean(canManageWorkspaceStructure)
+    )
     .filter((s) => !mobile || !s.mobileHidden)
     .filter((s) => !phone || !s.phoneHidden);
 
@@ -69,6 +74,7 @@ function NavContent({
           if (phone) items = items.filter((i) => !i.phoneHidden);
           items = items.filter((i) => !i.superAdminOnly || permissions.isSuperAdmin);
           items = items.filter((i) => !i.workspaceStructureOnly || canManageWorkspaceStructure);
+          items = items.filter((i) => !i.userManagementOnly || permissions.canManageUsers);
           if (hideShellRoutes) {
             items = items.filter(
               (i) =>
@@ -97,6 +103,7 @@ function NavContent({
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    end
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       `flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm ${isActive ? "bg-sky-100 text-sky-900" : "text-slate-700 hover:bg-slate-100"}`

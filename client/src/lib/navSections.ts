@@ -12,6 +12,7 @@ import {
   Settings,
   Shield,
   Table,
+  Users,
   Users2,
   Bot
 } from "lucide-react";
@@ -29,6 +30,8 @@ export type NavItem = {
   superAdminOnly?: boolean;
   /** Workspace OWNER / ADMIN (or platform SUPER_ADMIN) */
   workspaceStructureOnly?: boolean;
+  /** Global ADMIN / SUPER_ADMIN — not workspace owner alone */
+  userManagementOnly?: boolean;
 };
 
 export type NavSection = {
@@ -62,15 +65,7 @@ export const navSections: NavSection[] = [
   },
   {
     labelKey: "nav.structure",
-    items: [
-      { to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network },
-      {
-        to: "/workspace-settings",
-        labelKey: "nav.workspaceSettings",
-        icon: Settings2,
-        workspaceStructureOnly: true,
-      },
-    ]
+    items: [{ to: "/product-explorer", labelKey: "nav.productExplorer", icon: Network }]
   },
   {
     labelKey: "nav.commercial",
@@ -97,14 +92,22 @@ export const navSections: NavSection[] = [
     labelKey: "nav.admin",
     adminOnly: true,
     items: [
-      { to: "/admin", labelKey: "nav.usersActivity", icon: Settings },
-      { to: "/agent-setup", labelKey: "nav.agentSetup", icon: Bot },
+      { to: "/admin/users", labelKey: "nav.adminUsers", icon: Users, userManagementOnly: true },
+      { to: "/admin/settings", labelKey: "nav.adminMenuSettings", icon: Settings, userManagementOnly: true },
+      {
+        to: "/workspace-settings",
+        labelKey: "nav.workspaceSettings",
+        icon: Settings2,
+        workspaceStructureOnly: true
+      },
+      { to: "/agent-setup", labelKey: "nav.agentSetup", icon: Bot, userManagementOnly: true },
       {
         to: "/platform/",
         labelKey: "nav.platformConsole",
         icon: Shield,
         fullPage: true,
-        superAdminOnly: true
+        superAdminOnly: true,
+        userManagementOnly: true
       }
     ]
   }

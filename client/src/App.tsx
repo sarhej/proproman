@@ -194,6 +194,7 @@ function App() {
     location.pathname.startsWith("/requirements/") ||
     location.pathname.includes("/execution-board") ||
     location.pathname.includes("/board-settings") ||
+    location.pathname.startsWith("/admin") ||
     location.pathname === "/workspace-settings" ||
     location.pathname === "/partners" ||
     location.pathname === "/buyer-user" ||
@@ -999,10 +1000,24 @@ function App() {
           />
           {perms.canManageUsers && (
             <>
+              <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
               <Route
-                path="/admin"
+                path="/admin/users"
                 element={
                   <AdminPage
+                    mode="users"
+                    currentUser={user}
+                    quickFilter={board.filters.quick}
+                    onMetaChanged={() => void board.refresh()}
+                    onUiSettingsChanged={() => void uiSettings.refresh()}
+                  />
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <AdminPage
+                    mode="settings"
                     currentUser={user}
                     quickFilter={board.filters.quick}
                     onMetaChanged={() => void board.refresh()}
