@@ -124,13 +124,48 @@ describe("ExecutionBoardPage", () => {
     mockApi.saveExecutionBoardLayout.mockResolvedValue({ ok: true });
   });
 
-  it("renders heading and requirement in unassigned when no column id", async () => {
+  it("renders heading and requirement in unassigned when no column id and not done", async () => {
     renderBoard();
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
     });
     expect(await screen.findByText("Task One")).toBeInTheDocument();
     expect(screen.getByText("Unassigned")).toBeInTheDocument();
+  });
+
+  it("places done requirement in Done column when executionColumnId is missing", async () => {
+    const product = minimalProduct();
+    const reqs = product.initiatives[0]!.features![0]!.requirements!;
+    reqs[0] = { ...reqs[0]!, isDone: true, status: "DONE" };
+    mockApi.getProducts.mockResolvedValue({ products: [product] });
+
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
+    });
+
+    function columnShell(from: Element): HTMLElement | null {
+      let el: Element | null = from;
+      while (el) {
+        if (
+          el instanceof HTMLElement &&
+          el.className.includes("min-h-[160px]") &&
+          el.className.includes("w-[200px]")
+        ) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    }
+    const doneCols = screen.getAllByText("Done");
+    const doneShell = columnShell(doneCols[0]!);
+    const unassignedShell = columnShell(screen.getByText("Unassigned"));
+    expect(doneShell).toBeTruthy();
+    expect(unassignedShell).toBeTruthy();
+    expect(await screen.findByText("Task One")).toBeInTheDocument();
+    expect(within(doneShell!).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
   });
 
   it("places requirement in mapped column when executionColumnId matches", async () => {
@@ -178,10 +213,10 @@ describe("ExecutionBoardPage", () => {
     expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
   });
 
-  it("sends orphan executionColumnId to Unassigned bucket", async () => {
+  it("sends orphan executionColumnId to Unassigned when requirement is not done", async () => {
     const product = minimalProduct();
     const reqs = product.initiatives[0]!.features![0]!.requirements!;
-    reqs[0] = { ...reqs[0]!, executionColumnId: "unknown-col" };
+    reqs[0] = { ...reqs[0]!, executionColumnId: "unknown-col", isDone: false };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
     renderBoard();
@@ -190,6 +225,44 @@ describe("ExecutionBoardPage", () => {
     });
     expect(screen.getByText("Unassigned")).toBeInTheDocument();
     expect(await screen.findByText("Task One")).toBeInTheDocument();
+  });
+
+  it("places done requirement with orphan executionColumnId in Done column", async () => {
+    const product = minimalProduct();
+    const reqs = product.initiatives[0]!.features![0]!.requirements!;
+    reqs[0] = {
+      ...reqs[0]!,
+      executionColumnId: "unknown-col",
+      isDone: true,
+      status: "DONE"
+    };
+    mockApi.getProducts.mockResolvedValue({ products: [product] });
+
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
+    });
+
+    function columnShell(from: Element): HTMLElement | null {
+      let el: Element | null = from;
+      while (el) {
+        if (
+          el instanceof HTMLElement &&
+          el.className.includes("min-h-[160px]") &&
+          el.className.includes("w-[200px]")
+        ) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    }
+    const doneShell = columnShell(screen.getAllByText("Done")[0]!);
+    const unassignedShell = columnShell(screen.getByText("Unassigned"));
+    expect(doneShell).toBeTruthy();
+    expect(await screen.findByText("Task One")).toBeInTheDocument();
+    expect(within(doneShell!).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
   });
 
   it("labels product as System when itemType is SYSTEM", async () => {

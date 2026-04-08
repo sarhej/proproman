@@ -126,6 +126,25 @@ export function ProductExplorerPage({
     );
   }, []);
 
+  const onProductInitiativesReordered = useCallback((productId: string, nextInitiatives: Initiative[]) => {
+    const withSort = nextInitiatives.map((init, i) => ({ ...init, sortOrder: i }));
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, initiatives: withSort } : p))
+    );
+  }, []);
+
+  const onInitiativeFeaturesReordered = useCallback((initiativeId: string, nextFeatures: Feature[]) => {
+    const withSort = nextFeatures.map((f, i) => ({ ...f, sortOrder: i }));
+    setProducts((prev) =>
+      prev.map((p) => ({
+        ...p,
+        initiatives: p.initiatives.map((ini) =>
+          ini.id === initiativeId ? { ...ini, features: withSort } : ini
+        )
+      }))
+    );
+  }, []);
+
   const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
   const filtered = useMemo(() => {
@@ -320,6 +339,8 @@ export function ProductExplorerPage({
         onInitiativeUpdated={onInitiativeUpdated}
         onFeatureUpdated={onFeatureUpdated}
         onRequirementUpdated={onRequirementUpdated}
+        onProductInitiativesReordered={onProductInitiativesReordered}
+        onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
         onAddProduct={async (name) => {
           await api.createProduct({ name, sortOrder: products.length + 1 });
           await load();

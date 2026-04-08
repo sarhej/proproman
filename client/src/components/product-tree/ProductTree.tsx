@@ -39,6 +39,10 @@ type Props = {
   onInitiativeUpdated?: (initiative: Initiative) => void;
   onFeatureUpdated?: (feature: Feature) => void;
   onRequirementUpdated?: (requirement: Requirement) => void;
+  /** Merge reordered epics for a product without refetching the tree (avoids flicker after reorder). */
+  onProductInitiativesReordered?: (productId: string, initiatives: Initiative[]) => void;
+  /** Merge reordered features for an initiative without refetching. */
+  onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
 };
 
 function avgImpact(initiative: Initiative): number {
@@ -456,6 +460,7 @@ function FeatureRow({
   onRefresh,
   onFeatureUpdated,
   onRequirementUpdated,
+  onInitiativeFeaturesReordered,
   expandAllSignal,
   collapseAllSignal,
   searchActive
@@ -468,6 +473,7 @@ function FeatureRow({
   onRefresh: () => Promise<void>;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
+  onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
   expandAllSignal?: number;
   collapseAllSignal?: number;
   searchActive?: boolean;
@@ -497,8 +503,13 @@ function FeatureRow({
     next[idx] = next[ni]!;
     next[ni] = tmp;
     const updates = next.map((f, i) => ({ id: f.id, sortOrder: i }));
-    await api.reorderFeatures(updates);
-    await onRefresh();
+    const nextWithSort = next.map((f, i) => ({ ...f, sortOrder: i }));
+    onInitiativeFeaturesReordered?.(feature.initiativeId, nextWithSort);
+    try {
+      await api.reorderFeatures(updates);
+    } catch {
+      await onRefresh();
+    }
   }
 
   return (
@@ -627,6 +638,8 @@ function InitiativeRow({
   onInitiativeUpdated,
   onFeatureUpdated,
   onRequirementUpdated,
+  onProductInitiativesReordered,
+  onInitiativeFeaturesReordered,
   isDragOverlay,
   expandAllSignal,
   collapseAllSignal,
@@ -644,6 +657,8 @@ function InitiativeRow({
   onInitiativeUpdated?: (i: Initiative) => void;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
+  onProductInitiativesReordered?: (productId: string, initiatives: Initiative[]) => void;
+  onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
   isDragOverlay?: boolean;
   expandAllSignal?: number;
   collapseAllSignal?: number;
@@ -691,8 +706,13 @@ function InitiativeRow({
     next[idx] = next[ni]!;
     next[ni] = tmp;
     const updates = next.map((init, i) => ({ id: init.id, domainId: init.domainId, sortOrder: i }));
-    await api.reorderInitiatives(updates);
-    await onRefresh();
+    const nextWithSort = next.map((init, i) => ({ ...init, sortOrder: i }));
+    onProductInitiativesReordered?.(initiative.productId, nextWithSort);
+    try {
+      await api.reorderInitiatives(updates);
+    } catch {
+      await onRefresh();
+    }
   }
 
   const epicBg = explorerInitiativeRowBg(initiative.status);
@@ -804,6 +824,7 @@ function InitiativeRow({
             onRefresh={onRefresh}
             onFeatureUpdated={onFeatureUpdated}
             onRequirementUpdated={onRequirementUpdated}
+            onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
             expandAllSignal={expandAllSignal}
             collapseAllSignal={collapseAllSignal}
             searchActive={searchActive && !isDragOverlay}
@@ -934,6 +955,8 @@ function ProductRow({
   onInitiativeUpdated,
   onFeatureUpdated,
   onRequirementUpdated,
+  onProductInitiativesReordered,
+  onInitiativeFeaturesReordered,
   expandAllSignal,
   collapseAllSignal,
   searchActive
@@ -951,6 +974,8 @@ function ProductRow({
   onInitiativeUpdated?: (i: Initiative) => void;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
+  onProductInitiativesReordered?: (productId: string, initiatives: Initiative[]) => void;
+  onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
   expandAllSignal?: number;
   collapseAllSignal?: number;
   searchActive?: boolean;
@@ -1116,6 +1141,8 @@ function ProductRow({
               onInitiativeUpdated={onInitiativeUpdated}
               onFeatureUpdated={onFeatureUpdated}
               onRequirementUpdated={onRequirementUpdated}
+              onProductInitiativesReordered={onProductInitiativesReordered}
+              onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
               expandAllSignal={expandAllSignal}
               collapseAllSignal={collapseAllSignal}
               searchActive={searchActive}
@@ -1157,6 +1184,8 @@ export function ProductTree({
   onInitiativeUpdated,
   onFeatureUpdated,
   onRequirementUpdated,
+  onProductInitiativesReordered,
+  onInitiativeFeaturesReordered,
   onAddProduct
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
@@ -1206,8 +1235,13 @@ export function ProductTree({
       const reordered = sorted.filter((i) => i.id !== initiative.id);
       reordered.splice(toIdx, 0, initiative);
       const updates = reordered.map((init, i) => ({ id: init.id, domainId: init.domainId, sortOrder: i }));
-      await api.reorderInitiatives(updates);
-      await onRefresh();
+      const nextWithSort = reordered.map((init, i) => ({ ...init, sortOrder: i }));
+      onProductInitiativesReordered?.(product.id, nextWithSort);
+      try {
+        await api.reorderInitiatives(updates);
+      } catch {
+        await onRefresh();
+      }
       return;
     }
 
@@ -1253,6 +1287,8 @@ export function ProductTree({
                 onInitiativeUpdated={onInitiativeUpdated}
                 onFeatureUpdated={onFeatureUpdated}
                 onRequirementUpdated={onRequirementUpdated}
+                onProductInitiativesReordered={onProductInitiativesReordered}
+                onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
               />
             ))}
             {products.length === 0 && (

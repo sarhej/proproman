@@ -44,6 +44,18 @@ function flattenRequirements(product: ProductWithHierarchy): CardItem[] {
   return out;
 }
 
+/** True when PM state is "done" even if executionColumnId was never set (e.g. checkbox in Product Explorer). */
+function requirementDoneForBoard(r: Requirement): boolean {
+  return r.isDone === true || r.status === "DONE";
+}
+
+/** First column on this board mapped to DONE (by sortOrder), if any. */
+function doneColumnIdForBoard(boardColumns: ExecutionColumn[]): string | null {
+  const ordered = boardColumns.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+  const col = ordered.find((c) => c.mappedStatus === "DONE");
+  return col?.id ?? null;
+}
+
 /** Column keys: UNASSIGNED + each execution column id for the selected board. */
 export function buildColumnItemIds(
   product: ProductWithHierarchy,
@@ -53,10 +65,19 @@ export function buildColumnItemIds(
   const byId = new Map(items.map((x) => [x.requirement.id, x.requirement]));
   const map: Record<string, string[]> = { [UNASSIGNED]: [] };
   for (const c of boardColumns) map[c.id] = [];
+  const doneColId = doneColumnIdForBoard(boardColumns);
   for (const item of items) {
-    const cid = item.requirement.executionColumnId;
-    const key = cid && map[cid] !== undefined ? cid : UNASSIGNED;
-    map[key].push(item.requirement.id);
+    const r = item.requirement;
+    const cid = r.executionColumnId;
+    let key: string;
+    if (cid && map[cid] !== undefined) {
+      key = cid;
+    } else if (requirementDoneForBoard(r) && doneColId) {
+      key = doneColId;
+    } else {
+      key = UNASSIGNED;
+    }
+    map[key].push(r.id);
   }
   for (const k of Object.keys(map)) {
     map[k].sort((a, b) => {
