@@ -981,7 +981,7 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
   const { t } = useTranslation();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [savingPath, setSavingPath] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -1005,6 +1005,9 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
   const visibleCount = MANAGED_NAV_PATHS.length - hidden.size;
 
   const setPathVisible = async (path: string, visible: boolean) => {
+    if (savingPath !== null) {
+      return;
+    }
     const next = new Set(hidden);
     if (visible) next.delete(path);
     else {
@@ -1014,7 +1017,7 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
       }
       next.add(path);
     }
-    setBusy(true);
+    setSavingPath(path);
     setErr(null);
     try {
       await api.updateUiSettings({ hiddenNavPaths: Array.from(next) });
@@ -1024,7 +1027,7 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
       setErr((e as Error).message);
       void load();
     } finally {
-      setBusy(false);
+      setSavingPath(null);
     }
   };
 
@@ -1057,7 +1060,7 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
                           <input
                             type="checkbox"
                             checked={visible}
-                            disabled={busy || (disableOff && visible)}
+                            disabled={(disableOff && visible) || savingPath === item.to}
                             onChange={(e) => void setPathVisible(item.to, e.target.checked)}
                           />
                           {t("admin.navViews.visible")}

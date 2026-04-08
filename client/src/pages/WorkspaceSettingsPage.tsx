@@ -10,10 +10,13 @@ export function WorkspaceSettingsPage({
   user,
   activeTenant,
   onSaved,
+  /** Nav visibility only — avoid full auth refresh so checkboxes do not flash disabled across the list. */
+  onNavViewsSaved,
 }: {
   user: User;
   activeTenant: Tenant | null;
   onSaved: () => void;
+  onNavViewsSaved?: () => void;
 }) {
   const { t } = useTranslation();
   const can = canManageWorkspaceLanguages(user.role, activeTenant);
@@ -97,7 +100,7 @@ export function WorkspaceSettingsPage({
           ))}
         </ul>
       </section>
-      <WorkspaceNavViewsSection onSaved={onSaved} />
+      <WorkspaceNavViewsSection onSaved={onNavViewsSaved ?? onSaved} />
       {err ? <p className="text-sm text-red-600">{err}</p> : null}
       {ok ? <p className="text-sm text-emerald-600">{t("workspaceSettings.saved")}</p> : null}
       <button
@@ -121,7 +124,8 @@ function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
   const [globalHidden, setGlobalHidden] = useState<Set<string>>(new Set());
   const [tenantHidden, setTenantHidden] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  /** Only the row being saved is disabled — avoids all checkboxes flickering via global disabled={busy}. */
+  const [savingPath, setSavingPath] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const effectiveHidden = useMemo(() => mergeSets(globalHidden, tenantHidden), [globalHidden, tenantHidden]);
@@ -147,6 +151,9 @@ function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
   const visibleCount = MANAGED_NAV_PATHS.length - effectiveHidden.size;
 
   const setPathVisible = async (path: string, visible: boolean) => {
+    if (savingPath !== null) {
+      return;
+    }
     if (!visible && globalHidden.has(path)) {
       return;
     }
@@ -160,7 +167,7 @@ function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
       }
       nextTenant.add(path);
     }
-    setBusy(true);
+    setSavingPath(path);
     setErr(null);
     try {
       await api.updateUiSettingsWorkspace({ hiddenNavPaths: Array.from(nextTenant) });
@@ -170,7 +177,7 @@ function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
       setErr((e as Error).message);
       void load();
     } finally {
-      setBusy(false);
+      setSavingPath(null);
     }
   };
 
@@ -210,7 +217,9 @@ function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
                           <input
                             type="checkbox"
                             checked={visible}
-                            disabled={busy || platformLocked || (disableOff && visible)}
+                            disabled={
+                              platformLocked || (disableOff && visible) || savingPath === item.to
+                            }
                             onChange={(e) => void setPathVisible(item.to, e.target.checked)}
                           />
                           {t("admin.navViews.visible")}

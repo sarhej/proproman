@@ -848,6 +848,7 @@ function App() {
                     void refreshAuth();
                     void uiSettings.refresh();
                   }}
+                  onNavViewsSaved={() => void uiSettings.refresh()}
                 />
               </ViewRoute>
             }
