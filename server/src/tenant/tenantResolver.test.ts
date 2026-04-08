@@ -6,12 +6,14 @@ import type { Request, Response, NextFunction } from "express";
 
 vi.mock("../db.js", () => ({
   prisma: {
-    tenantMembership: { findUnique: vi.fn() },
+    tenantMembership: { findUnique: vi.fn(), findMany: vi.fn() },
+    user: { update: vi.fn() },
   },
 }));
 
 const mockPrisma = prisma as unknown as {
-  tenantMembership: { findUnique: ReturnType<typeof vi.fn> };
+  tenantMembership: { findUnique: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> };
+  user: { update: ReturnType<typeof vi.fn> };
 };
 
 function createReq(overrides: Partial<Request> = {}): Request {
@@ -34,6 +36,8 @@ function createRes(): Response {
 describe("tenantResolver middleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrisma.tenantMembership.findMany.mockResolvedValue([]);
+    mockPrisma.user.update.mockResolvedValue({} as never);
   });
 
   it("calls next without tenant context when no user", async () => {
@@ -183,6 +187,9 @@ describe("tenantResolver middleware", () => {
     expect(next).toHaveBeenCalledOnce();
     expect(req.tenantContext).toBeUndefined();
     expect(mockPrisma.tenantMembership.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.tenantMembership.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "u1" } })
+    );
   });
 
   it("passes through without context when membership not found", async () => {
@@ -307,5 +314,35 @@ describe("tenantResolver middleware", () => {
         where: { tenantId_userId: { tenantId: "t-bad-header", userId: "u1" } },
       })
     );
+    expect(mockPrisma.tenantMembership.findMany).not.toHaveBeenCalled();
+  });
+
+  it("uses first ACTIVE membership when session and User.activeTenantId are empty", async () => {
+    const user = { id: "u1", activeTenantId: null } as Express.User;
+    const req = createReq({ user });
+    const res = createRes();
+    const next = vi.fn();
+
+    mockPrisma.tenantMembership.findMany.mockResolvedValue([
+      {
+        role: "ADMIN" as const,
+        tenant: {
+          id: "t-fp",
+          slug: "futureplace",
+          schemaName: "tenant_futureplace",
+          status: "ACTIVE" as const,
+        },
+      },
+    ]);
+
+    await tenantResolver(req, res, next);
+
+    expect(req.tenantContext!.tenantId).toBe("t-fp");
+    expect(req.tenantContext!.tenantSlug).toBe("futureplace");
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { activeTenantId: "t-fp" },
+    });
+    expect(user.activeTenantId).toBe("t-fp");
   });
 });
