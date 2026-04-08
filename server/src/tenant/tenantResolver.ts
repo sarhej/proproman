@@ -21,6 +21,53 @@ async function tryResolveActiveTenant(
   };
 }
 
+/**
+ * Resolve tenant when there is no valid X-Tenant-Id: session → User.activeTenantId → first ACTIVE membership.
+ * Also used as fallback when the client sends a stale/invalid X-Tenant-Id (e.g. tab sessionStorage after losing access).
+ */
+async function resolveTenantWithoutHeader(user: Express.User, req: Request): Promise<TenantContext | null> {
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+  const sessionId =
+    typeof req.session?.activeTenantId === "string" && req.session.activeTenantId.trim() !== ""
+      ? req.session.activeTenantId.trim()
+      : undefined;
+  const persistedTenantId =
+    typeof user.activeTenantId === "string" && user.activeTenantId.trim() !== ""
+      ? user.activeTenantId.trim()
+      : undefined;
+  for (const id of [sessionId, persistedTenantId]) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    candidates.push(id);
+  }
+  let ctx: TenantContext | null = null;
+  for (const tenantId of candidates) {
+    ctx = await tryResolveActiveTenant(user.id, tenantId);
+    if (ctx) break;
+  }
+
+  if (!ctx) {
+    ctx = await firstActiveMembershipContext(user.id);
+    if (ctx && user.activeTenantId !== ctx.tenantId) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { activeTenantId: ctx.tenantId },
+        });
+        user.activeTenantId = ctx.tenantId;
+        console.warn("[tenant] repaired User.activeTenantId from first ACTIVE membership", {
+          userId: user.id,
+          tenantSlug: ctx.tenantSlug,
+        });
+      } catch (repairErr) {
+        console.error("[tenant] failed to persist activeTenantId repair:", (repairErr as Error)?.message);
+      }
+    }
+  }
+  return ctx;
+}
+
 /** When session / User.activeTenantId are missing or invalid, pick first ACTIVE membership (same sort as GET /me/tenants). */
 async function firstActiveMembershipContext(userId: string): Promise<TenantContext | null> {
   const rows = await prisma.tenantMembership.findMany({
@@ -40,13 +87,11 @@ async function firstActiveMembershipContext(userId: string): Promise<TenantConte
 
 /**
  * Resolve tenant from:
- *   1. X-Tenant-Id header (explicit) — tried alone; no fallback if invalid (caller chose a workspace).
- *   2. Otherwise, in order: req.session.activeTenantId, req.user.activeTenantId — try each until one
- *      is an ACTIVE membership. This heals stale sessions (e.g. session still points at a removed
- *      workspace while the DB default was updated) so /api/auth/me and /api/meta stay consistent.
- *   3. If those fail, use the first ACTIVE workspace the user belongs to (by tenant name) and
- *      persist User.activeTenantId when it was wrong or null — fixes accounts stuck with no context
- *      despite a valid membership (e.g. Futureplace).
+ *   1. X-Tenant-Id header when valid (ACTIVE membership).
+ *   2. If the header is missing or invalid (stale tab storage, removed workspace), fall back in order:
+ *      req.session.activeTenantId, req.user.activeTenantId, then first ACTIVE membership (by tenant name).
+ *      This keeps /api/meta and tenant-scoped routes working when the browser still sends an old id.
+ *   3. When falling back to first membership, persist User.activeTenantId when it was wrong or null.
  *
  * When a tenant is resolved, session.activeTenantId is updated to match so the next request agrees.
  */
@@ -66,45 +111,15 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
 
     if (fromHeader) {
       ctx = await tryResolveActiveTenant(user.id, fromHeader);
-    } else {
-      const seen = new Set<string>();
-      const candidates: string[] = [];
-      const sessionId =
-        typeof req.session?.activeTenantId === "string" && req.session.activeTenantId.trim() !== ""
-          ? req.session.activeTenantId.trim()
-          : undefined;
-      const persistedTenantId =
-        typeof user.activeTenantId === "string" && user.activeTenantId.trim() !== ""
-          ? user.activeTenantId.trim()
-          : undefined;
-      for (const id of [sessionId, persistedTenantId]) {
-        if (!id || seen.has(id)) continue;
-        seen.add(id);
-        candidates.push(id);
-      }
-      for (const tenantId of candidates) {
-        ctx = await tryResolveActiveTenant(user.id, tenantId);
-        if (ctx) break;
-      }
-
       if (!ctx) {
-        ctx = await firstActiveMembershipContext(user.id);
-        if (ctx && user.activeTenantId !== ctx.tenantId) {
-          try {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { activeTenantId: ctx.tenantId },
-            });
-            user.activeTenantId = ctx.tenantId;
-            console.warn("[tenant] repaired User.activeTenantId from first ACTIVE membership", {
-              userId: user.id,
-              tenantSlug: ctx.tenantSlug,
-            });
-          } catch (repairErr) {
-            console.error("[tenant] failed to persist activeTenantId repair:", (repairErr as Error)?.message);
-          }
-        }
+        console.warn("[tenant] X-Tenant-Id not usable; falling back to session/default workspace", {
+          userId: user.id,
+          headerTenantId: fromHeader,
+        });
       }
+    }
+    if (!ctx) {
+      ctx = await resolveTenantWithoutHeader(user, req);
     }
 
     if (!ctx) {

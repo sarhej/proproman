@@ -294,7 +294,7 @@ describe("tenantResolver middleware", () => {
     expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledTimes(2);
   });
 
-  it("does not fall back when X-Tenant-Id is set but invalid", async () => {
+  it("falls back when X-Tenant-Id is stale or invalid (e.g. tab sessionStorage)", async () => {
     const req = createReq({
       user: { id: "u1", activeTenantId: "t-user" } as Express.User,
       headers: { "x-tenant-id": "t-bad-header" },
@@ -303,18 +303,33 @@ describe("tenantResolver middleware", () => {
     const res = createRes();
     const next = vi.fn();
 
-    mockPrisma.tenantMembership.findUnique.mockResolvedValue(null);
+    mockPrisma.tenantMembership.findUnique.mockImplementation(
+      async (args: { where: { tenantId_userId: { tenantId: string; userId: string } } }) => {
+        const tid = args.where.tenantId_userId.tenantId;
+        if (tid === "t-bad-header") return null;
+        if (tid === "t-session") {
+          return {
+            role: "MEMBER" as const,
+            tenant: { id: "t-session", slug: "sess", schemaName: "tenant_sess", status: "ACTIVE" as const },
+          };
+        }
+        return null;
+      }
+    );
 
     await tenantResolver(req, res, next);
 
-    expect(req.tenantContext).toBeUndefined();
-    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledTimes(1);
+    expect(req.tenantContext!.tenantId).toBe("t-session");
     expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { tenantId_userId: { tenantId: "t-bad-header", userId: "u1" } },
       })
     );
-    expect(mockPrisma.tenantMembership.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenantId_userId: { tenantId: "t-session", userId: "u1" } },
+      })
+    );
   });
 
   it("uses first ACTIVE membership when session and User.activeTenantId are empty", async () => {
