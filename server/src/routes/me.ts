@@ -45,24 +45,64 @@ meSessionRouter.get("/workspace-registration-requests", async (req, res, next) =
   }
 });
 
+/**
+ * List / switch workspaces: requireSession only (not requireAuth).
+ * Platform role PENDING must still see memberships and set activeTenant — otherwise TenantPicker
+ * gets 403, the client treats it like an empty list, and users see "No workspaces available".
+ */
+meSessionRouter.get("/tenants", async (req, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const memberships = await prisma.tenantMembership.findMany({
+      where: { userId },
+      include: {
+        tenant: { select: { id: true, name: true, slug: true, status: true, isSystem: true } },
+      },
+      orderBy: { tenant: { name: "asc" } },
+    });
+    const activeTenantId =
+      req.tenantContext?.tenantId ??
+      req.user!.activeTenantId ??
+      null;
+    res.json({ tenants: memberships, activeTenantId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+meSessionRouter.post("/tenants/switch", async (req, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const parsed = z.object({ tenantId: z.string().min(1) }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const { tenantId } = parsed.data;
+    const membership = await prisma.tenantMembership.findUnique({
+      where: { tenantId_userId: { tenantId, userId } },
+      include: { tenant: { select: { id: true, slug: true, status: true } } },
+    });
+    if (!membership || membership.tenant.status !== "ACTIVE") {
+      res.status(403).json({ error: "Not a member of this tenant or tenant is not active." });
+      return;
+    }
+    await prisma.user.update({ where: { id: userId }, data: { activeTenantId: tenantId } });
+    req.session.activeTenantId = tenantId;
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        next(saveErr);
+        return;
+      }
+      res.json({ ok: true, activeTenantId: tenantId });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export const meRouter = Router();
 meRouter.use(requireAuth);
-
-meRouter.get("/tenants", async (req, res) => {
-  const userId = req.user!.id;
-  const memberships = await prisma.tenantMembership.findMany({
-    where: { userId },
-    include: {
-      tenant: { select: { id: true, name: true, slug: true, status: true, isSystem: true } },
-    },
-    orderBy: { tenant: { name: "asc" } },
-  });
-  const activeTenantId =
-    req.tenantContext?.tenantId ??
-    req.user!.activeTenantId ??
-    null;
-  res.json({ tenants: memberships, activeTenantId });
-});
 
 const patchLanguagesBody = z.object({
   enabledLocales: z.array(z.string()),
@@ -112,29 +152,6 @@ meRouter.patch("/active-tenant/languages", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-
-meRouter.post("/tenants/switch", async (req, res) => {
-  const userId = req.user!.id;
-  const parsed = z.object({ tenantId: z.string().min(1) }).safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
-    return;
-  }
-  const { tenantId } = parsed.data;
-  const membership = await prisma.tenantMembership.findUnique({
-    where: { tenantId_userId: { tenantId, userId } },
-    include: { tenant: { select: { id: true, slug: true, status: true } } },
-  });
-  if (!membership || membership.tenant.status !== "ACTIVE") {
-    res.status(403).json({ error: "Not a member of this tenant or tenant is not active." });
-    return;
-  }
-  await prisma.user.update({ where: { id: userId }, data: { activeTenantId: tenantId } });
-  req.session.activeTenantId = tenantId;
-  req.session.save(() => {
-    res.json({ ok: true, activeTenantId: tenantId });
-  });
 });
 
 meRouter.get("/notification-preferences", async (req, res) => {

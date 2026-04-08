@@ -2,8 +2,9 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 
 /**
- * Platform `PENDING` users are rejected by `requireAuth` (e.g. GET /api/me/tenants, POST switch).
- * Adding them to a workspace is an explicit invite — grant minimum app access and default workspace.
+ * Most routes use `requireAuth`, which rejects platform `PENDING`. Workspace list/switch is on
+ * `meSessionRouter`, but invite acceptance still promotes to `VIEWER` and sets `activeTenantId`
+ * so the rest of the app works without a separate approval step.
  */
 export async function applyWorkspaceInviteSideEffects(userId: string, tenantId: string): Promise<void> {
   const user = await prisma.user.findUnique({

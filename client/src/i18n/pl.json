@@ -809,6 +809,7 @@
     "selectWorkspaceDesc": "Masz dostęp do wielu przestrzeni. Wybierz jedną, aby kontynuować.",
     "noWorkspaces": "Brak dostępnych przestrzeni",
     "noWorkspacesDesc": "Nie jesteś jeszcze członkiem żadnej przestrzeni. Skontaktuj się z administratorem.",
+    "loadWorkspacesFailed": "Nie udało się wczytać przestrzeni roboczych",
     "pendingRegsHeading": "Rejestracje przestrzeni na Twój e-mail",
     "pendingRegsPending": "{{workspaceName}} (/t/{{slug}}) — oczekuje na zatwierdzenie przez Tymio.",
     "pendingRegsApprovedNoTenant": "{{workspaceName}} (/t/{{slug}}) — zatwierdzono; jeśli nadal nie masz dostępu, skontaktuj się z pomocą.",

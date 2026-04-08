@@ -60,6 +60,19 @@ describe("TenantPicker", () => {
     expect(screen.queryByTestId("tenant-picker-registration-section")).not.toBeInTheDocument();
   });
 
+  it("shows load error instead of empty workspace copy when getMyTenants fails", async () => {
+    mockGetMyTenants.mockRejectedValue(new Error("PENDING_APPROVAL"));
+
+    render(<TenantPicker onSelected={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Could not load workspaces/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("heading", { name: /No workspaces available/i })).not.toBeInTheDocument();
+    expect(screen.getByText("PENDING_APPROVAL")).toBeInTheDocument();
+  });
+
   it("renders APPROVED and REJECTED registration lines", async () => {
     mockGetMyTenants.mockResolvedValue({ tenants: [], activeTenantId: null });
     mockGetRegs.mockResolvedValue({

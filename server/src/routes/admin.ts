@@ -220,7 +220,7 @@ adminRouter.post("/users", async (req, res) => {
     return;
   }
   const { email, name, role } = parsed.data;
-  /** Never create workspace invites as platform PENDING — they cannot load /api/me/tenants or switch tenant. */
+  /** Never assign global PENDING when creating a workspace user — use VIEWER (or higher) for normal app access. */
   const effectiveGlobalRole = role === UserRole.PENDING ? UserRole.VIEWER : role;
 
   const tid = await requireWorkspaceForUserAdmin(req, res);

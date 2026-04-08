@@ -145,6 +145,7 @@ function authAs(userId: string, role: UserRole) {
 
 describe("/me route RBAC (HTTP)", () => {
   let meRouter: express.Router;
+  let meSessionRouter: express.Router;
   let appNoAuth: express.Express;
   let appPending: express.Express;
   let appDeactivated: express.Express;
@@ -152,6 +153,7 @@ describe("/me route RBAC (HTTP)", () => {
   it("loads router", async () => {
     const mod = await import("./me.js");
     meRouter = mod.meRouter;
+    meSessionRouter = mod.meSessionRouter;
 
     appNoAuth = express();
     appNoAuth.use(express.json());
@@ -159,11 +161,13 @@ describe("/me route RBAC (HTTP)", () => {
       (req as unknown as { isAuthenticated: () => boolean }).isAuthenticated = () => false;
       next();
     });
+    appNoAuth.use("/api/me", meSessionRouter);
     appNoAuth.use("/api/me", meRouter);
 
     appPending = express();
     appPending.use(express.json());
     appPending.use(authAs("p1", UserRole.PENDING));
+    appPending.use("/api/me", meSessionRouter);
     appPending.use("/api/me", meRouter);
 
     appDeactivated = express();
@@ -180,6 +184,7 @@ describe("/me route RBAC (HTTP)", () => {
       } as Express.User;
       next();
     });
+    appDeactivated.use("/api/me", meSessionRouter);
     appDeactivated.use("/api/me", meRouter);
   });
 
@@ -188,9 +193,10 @@ describe("/me route RBAC (HTTP)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("PENDING user cannot access /me/tenants", async () => {
+  it("PENDING user can list /me/tenants (session-only)", async () => {
     const res = await request(appPending).get("/api/me/tenants");
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ tenants: expect.any(Array), activeTenantId: null });
   });
 
   it("deactivated user cannot access /me/tenants", async () => {
@@ -205,11 +211,12 @@ describe("/me route RBAC (HTTP)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("PENDING user cannot switch tenant", async () => {
+  it("PENDING user gets 403 from handler when switching to unknown tenant", async () => {
     const res = await request(appPending)
       .post("/api/me/tenants/switch")
       .send({ tenantId: "t-1" });
     expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/Not a member/);
   });
 
   it("unauthenticated user cannot access notification preferences", async () => {

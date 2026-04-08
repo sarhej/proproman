@@ -30,6 +30,7 @@ export function TenantPicker({ onSelected }: Props) {
           /* optional: user may lack session in edge cases */
         }
         if (!cancelled) {
+          setError(null);
           setMemberships(res.tenants);
           setRegRequests(regs);
           if (res.tenants.length === 1) {
@@ -77,8 +78,17 @@ export function TenantPicker({ onSelected }: Props) {
             <img src="/logo.svg" alt="Tymio" className="h-8" />
             <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
           </div>
-          <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenant.noWorkspaces")}</h2>
-          <p className="text-sm text-slate-500">{t("tenant.noWorkspacesDesc")}</p>
+          {error ? (
+            <>
+              <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenant.loadWorkspacesFailed")}</h2>
+              <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("tenant.noWorkspaces")}</h2>
+              <p className="text-sm text-slate-500">{t("tenant.noWorkspacesDesc")}</p>
+            </>
+          )}
           {regRequests.length > 0 ? (
             <div
               className="mt-6 border-t border-slate-200 pt-4 text-left"

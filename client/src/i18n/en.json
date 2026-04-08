@@ -809,6 +809,7 @@
     "selectWorkspaceDesc": "You have access to multiple workspaces. Choose one to continue.",
     "noWorkspaces": "No workspaces available",
     "noWorkspacesDesc": "You are not a member of any workspace yet. Contact an administrator to get access.",
+    "loadWorkspacesFailed": "Could not load workspaces",
     "pendingRegsHeading": "Workspace registrations on your email",
     "pendingRegsPending": "{{workspaceName}} (/t/{{slug}}) — waiting for approval from Tymio.",
     "pendingRegsApprovedNoTenant": "{{workspaceName}} (/t/{{slug}}) — approved; if you still cannot access it, contact support.",

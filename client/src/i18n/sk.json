@@ -808,6 +808,7 @@
     "selectWorkspaceDesc": "Máte prístup k viacerým pracovným priestorom. Vyberte si jeden pre pokračovanie.",
     "noWorkspaces": "Žiadne pracovné priestory",
     "noWorkspacesDesc": "Nie ste členom žiadneho pracovného priestoru. Kontaktujte administrátora pre získanie prístupu.",
+    "loadWorkspacesFailed": "Nepodarilo sa načítať pracovné priestory",
     "pendingRegsHeading": "Registrácie pracovných priestorov na váš e-mail",
     "pendingRegsPending": "{{workspaceName}} (/t/{{slug}}) — čaká na schválenie od Tymio.",
     "pendingRegsApprovedNoTenant": "{{workspaceName}} (/t/{{slug}}) — schválené; ak stále nemáte prístup, kontaktujte podporu.",
