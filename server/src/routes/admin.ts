@@ -128,8 +128,8 @@ adminRouter.put("/users/:id", async (req, res) => {
     return;
   }
 
-  if (data.email && existing.googleId) {
-    res.status(400).json({ error: "Cannot change email after Google account is linked" });
+  if (data.email && (existing.googleId || existing.microsoftId)) {
+    res.status(400).json({ error: "Cannot change email after Google or Microsoft sign-in is linked" });
     return;
   }
 

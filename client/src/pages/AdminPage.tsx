@@ -33,6 +33,11 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
+/** OAuth providers stored on the user row (Google and/or Microsoft Passport). */
+function userOAuthLinked(u: User): boolean {
+  return Boolean(u.googleId) || Boolean(u.microsoftId);
+}
+
 const ENTITY_TYPES = ["INITIATIVE", "FEATURE", "CAMPAIGN", "PRODUCT", "DOMAIN", "PERSONA", "REVENUE_STREAM", "ACCOUNT", "PARTNER", "DEMAND", "MILESTONE", "KPI", "STAKEHOLDER", "DECISION", "RISK", "REQUIREMENT", "ASSET", "CAMPAIGN_LINK", "COMMENT", "SUCCESS_CRITERION", "CAPABILITY", "CAPABILITY_BINDING", "COMPILED_BRIEF", "UI_SETTINGS"] as const;
 const AUDIT_ACTIONS: AuditAction[] = ["CREATED", "UPDATED", "DELETED", "STATUS_CHANGED", "ROLE_CHANGED", "LOGIN"];
 const RECIPIENT_KINDS: NotificationRecipientKind[] = ["OBJECT_OWNER", "OBJECT_ROLE", "GLOBAL_ROLE", "OBJECT_ASSIGNEE"];
@@ -315,10 +320,14 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                 >
                   {u.isActive !== false ? t("common.active") : t("common.inactive")}
                 </button>
-                {u.googleId ? (
-                  <span className="text-green-600 text-xs font-medium">Google &#10003;</span>
+                {userOAuthLinked(u) ? (
+                  <span className="text-green-600 text-xs font-medium">
+                    {[u.googleId ? t("admin.signInGoogle") : null, u.microsoftId ? t("admin.signInMicrosoft") : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
                 ) : (
-                  <span className="text-amber-500 text-xs font-medium">Unlinked</span>
+                  <span className="text-amber-500 text-xs font-medium">{t("common.unlinked")}</span>
                 )}
                 {u.id !== currentUser.id && (
                   <button
@@ -376,14 +385,14 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
       </div>
 
       {/* Desktop table view */}
-      <div className="hidden lg:block overflow-x-auto text-sm">
-        <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+        <div className="hidden lg:block overflow-x-auto text-sm">
+        <div className="grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_minmax(100px,1fr)_80px] border-b text-left text-xs text-gray-500 uppercase tracking-wider">
           <div className="py-2 px-3">{t("common.name")}</div>
           <div className="py-2 px-3">{t("common.email")}</div>
           <div className="py-2 px-3">{t("common.role")}</div>
           <div className="py-2 px-3 text-center">{t("common.active")}</div>
           <div className="py-2 px-3">{t("admin.lastLogin")}</div>
-          <div className="py-2 px-3 text-center">{t("admin.google")}</div>
+          <div className="py-2 px-3 text-center">{t("admin.signInColumn")}</div>
           <div className="py-2 px-3 text-center">{t("admin.deleteUser")}</div>
         </div>
         <div>
@@ -392,7 +401,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
               const isExpanded = expandedUser === u.id;
               return (
                 <div key={u.id} className="border-b hover:bg-gray-50">
-                    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_80px_80px] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
+                    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(180px,1.5fr)_140px_80px_140px_minmax(100px,1fr)_80px] items-center ${u.role === "PENDING" ? "bg-amber-50" : ""}`}>
                       <div className="py-2 px-3 flex items-center gap-2">
                         {u.avatarUrl && <img src={u.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
                         <InlineEdit value={u.name} onSave={(v) => updateField(u.id, { name: v })} />
@@ -400,7 +409,7 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                       </div>
                       <div className="py-2 px-3 text-gray-600">
                         <div className="flex items-center gap-1.5">
-                          {u.googleId ? (
+                          {userOAuthLinked(u) ? (
                             <span title={t("admin.emailLocked")}>{u.email}</span>
                           ) : (
                             <InlineEdit value={u.email} onSave={(v) => updateField(u.id, { email: v })} />
@@ -443,10 +452,14 @@ function UsersTab({ currentUser, quickFilter }: { currentUser: User; quickFilter
                       </div>
                       <div className="py-2 px-3 text-gray-500 text-xs">{formatDate(u.lastLoginAt)}</div>
                       <div className="py-2 px-3 text-center">
-                        {u.googleId ? (
-                          <span className="text-green-600 text-xs font-medium">Linked</span>
+                        {userOAuthLinked(u) ? (
+                          <span className="text-green-600 text-xs font-medium leading-tight">
+                            {[u.googleId ? t("admin.signInGoogle") : null, u.microsoftId ? t("admin.signInMicrosoft") : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
                         ) : (
-                          <span className="text-amber-500 text-xs font-medium">Unlinked</span>
+                          <span className="text-amber-500 text-xs font-medium">{t("common.unlinked")}</span>
                         )}
                       </div>
                       <div className="py-2 px-3 text-center">
