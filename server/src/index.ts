@@ -59,6 +59,7 @@ import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
 import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
+import { isTransactionalEmailEnabled, isTransactionalEmailReady } from "./services/transactionalMail.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -283,5 +284,15 @@ async function bootstrap(): Promise<void> {
 void bootstrap().then(() => {
   app.listen(Number(env.PORT), () => {
     console.log(`Server running on port ${env.PORT}`);
+    if (env.RESEND_API_KEY && env.RESEND_FROM && !isTransactionalEmailEnabled()) {
+      console.warn(
+        "[transactional-email] Resend is configured but TRANSACTIONAL_EMAIL_ENABLED is not true — registration/approval emails (E1–E4) are disabled."
+      );
+    }
+    if (isTransactionalEmailEnabled() && !isTransactionalEmailReady()) {
+      console.warn(
+        "[transactional-email] TRANSACTIONAL_EMAIL_ENABLED=true but RESEND_API_KEY or RESEND_FROM is missing — transactional sends will no-op."
+      );
+    }
   });
 });

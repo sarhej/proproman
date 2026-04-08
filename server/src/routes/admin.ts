@@ -220,12 +220,14 @@ adminRouter.post("/users", async (req, res) => {
     return;
   }
   const { email, name, role } = parsed.data;
+  /** Never create workspace invites as platform PENDING — they cannot load /api/me/tenants or switch tenant. */
+  const effectiveGlobalRole = role === UserRole.PENDING ? UserRole.VIEWER : role;
 
   const tid = await requireWorkspaceForUserAdmin(req, res);
   if (!tid) return;
 
   const actorRole = req.user!.role;
-  if (actorRole !== UserRole.SUPER_ADMIN && role === UserRole.SUPER_ADMIN) {
+  if (actorRole !== UserRole.SUPER_ADMIN && effectiveGlobalRole === UserRole.SUPER_ADMIN) {
     res.status(403).json({ error: "Only SUPER_ADMIN can create SUPER_ADMIN users" });
     return;
   }
@@ -239,21 +241,28 @@ adminRouter.post("/users", async (req, res) => {
 
   const user = await prisma.user.create({
     data: {
-      email, name, role,
-      emails: { create: { email, isPrimary: true } }
+      email,
+      name,
+      role: effectiveGlobalRole,
+      activeTenantId: tid,
+      emails: { create: { email, isPrimary: true } },
     },
-    include: { emails: { orderBy: { isPrimary: "desc" } } }
+    include: { emails: { orderBy: { isPrimary: "desc" } } },
   });
   await prisma.tenantMembership.upsert({
     where: { tenantId_userId: { tenantId: tid, userId: user.id } },
     create: {
       tenantId: tid,
       userId: user.id,
-      role: membershipRoleForInvitedGlobalRole(role)
+      role: membershipRoleForInvitedGlobalRole(effectiveGlobalRole),
     },
-    update: { role: membershipRoleForInvitedGlobalRole(role) }
+    update: { role: membershipRoleForInvitedGlobalRole(effectiveGlobalRole) },
   });
-  await logAudit(req.user!.id, "CREATED", "USER", user.id, { email, role, tenantId: tid });
+  await logAudit(req.user!.id, "CREATED", "USER", user.id, {
+    email,
+    role: effectiveGlobalRole,
+    tenantId: tid,
+  });
   res.status(201).json({ user });
 });
 

@@ -6,6 +6,7 @@ import { Prisma, UserRole } from "@prisma/client";
 import { provisionTenant, backfillTenantId } from "../tenant/tenantProvisioning.js";
 import { createTenantSchema, schemaExists, listTenantSchemas } from "../tenant/tenantSchemaManager.js";
 import { slugToSchemaName } from "../tenant/tenantSlug.js";
+import { applyWorkspaceInviteSideEffects } from "../lib/workspaceInviteSideEffects.js";
 
 export const tenantsRouter = Router();
 
@@ -155,9 +156,10 @@ const addMemberSchema = z.object({
 tenantsRouter.post("/:id/members", async (req, res, next) => {
   try {
     const data = addMemberSchema.parse(req.body);
+    const tenantId = req.params.id;
     const membership = await prisma.tenantMembership.create({
       data: {
-        tenantId: req.params.id,
+        tenantId,
         userId: data.userId,
         role: data.role,
       },
@@ -165,6 +167,7 @@ tenantsRouter.post("/:id/members", async (req, res, next) => {
         user: { select: { id: true, email: true, name: true } },
       },
     });
+    await applyWorkspaceInviteSideEffects(data.userId, tenantId);
     res.status(201).json(membership);
   } catch (err) {
     next(err);
