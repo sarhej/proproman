@@ -3,6 +3,7 @@ import { api } from "./api";
 import type { User, Tenant, TenantRequest, TenantRequestStatus, TenantDetail } from "./api";
 import { Button } from "./Button";
 import { Card } from "./Card";
+import { TenantWorkspaceSettings } from "./TenantWorkspaceSettings";
 import { copyText, workspaceSignInUrl } from "./workspaceUrl";
 
 const DEV_ROLES = ["SUPER_ADMIN"] as const;
@@ -590,6 +591,8 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                   </table>
                 </div>
               )}
+
+              <TenantWorkspaceSettings tenantId={tenantDetail.id} />
 
               {!tenantDetail.isSystem && (
                 <div className="mt-6 border-t border-slate-200 pt-4">

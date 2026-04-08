@@ -113,4 +113,29 @@ export const api = {
 
   deleteAdminTenant: (id: string) =>
     request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
+
+  getTenantWorkspaceSettings: (tenantId: string) =>
+    request<{
+      managedNavPaths: string[];
+      enabledLocales: string[];
+      hiddenNavPaths: string[];
+      globalHiddenNavPaths: string[];
+      tenantHiddenNavPaths: string[];
+    }>(`/api/tenants/${tenantId}/workspace-settings`),
+
+  patchTenantWorkspaceLanguages: (tenantId: string, body: { enabledLocales: string[] }) =>
+    request<{ enabledLocales: string[] }>(`/api/tenants/${tenantId}/workspace-settings/languages`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  putTenantWorkspaceNavVisibility: (tenantId: string, body: { hiddenNavPaths: string[] }) =>
+    request<{
+      hiddenNavPaths: string[];
+      globalHiddenNavPaths: string[];
+      tenantHiddenNavPaths: string[];
+    }>(`/api/tenants/${tenantId}/workspace-settings/nav-visibility`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };

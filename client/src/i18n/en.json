@@ -903,7 +903,10 @@
     "noAccess": "Only workspace owners and admins can change these settings.",
     "needWorkspace": "Select a workspace to manage settings.",
     "minOne": "Keep at least one language enabled.",
-    "errorSave": "Could not save. Try again."
+    "errorSave": "Could not save. Try again.",
+    "superAdminUsePlatform": "As a platform super administrator, workspace shell settings are managed in the platform console, not in the regular workspace menu.",
+    "superAdminUsePlatformSteps": "Open Platform console, go to Workspaces, select a workspace, then use Workspace shell settings below the member list.",
+    "openPlatformConsole": "Open platform console"
   },
   "tenantAdmin": {
     "title": "Tenant Management",

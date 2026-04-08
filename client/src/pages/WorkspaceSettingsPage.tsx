@@ -6,11 +6,28 @@ import { MANAGED_NAV_PATHS } from "../lib/navViewPaths";
 import { navSections } from "../lib/navSections";
 import type { Tenant, User } from "../types/models";
 
-export function WorkspaceSettingsPage({
+function WorkspaceSettingsSuperAdminHint() {
+  const { t } = useTranslation();
+  const platformUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/platform/`;
+  return (
+    <div className="mx-auto max-w-xl space-y-4 p-6">
+      <h1 className="text-xl font-bold text-slate-800">{t("workspaceSettings.title")}</h1>
+      <p className="text-sm text-slate-600">{t("workspaceSettings.superAdminUsePlatform")}</p>
+      <p className="text-sm text-slate-500">{t("workspaceSettings.superAdminUsePlatformSteps")}</p>
+      <a
+        href={platformUrl}
+        className="inline-flex rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+      >
+        {t("workspaceSettings.openPlatformConsole")}
+      </a>
+    </div>
+  );
+}
+
+function WorkspaceSettingsPageInner({
   user,
   activeTenant,
   onSaved,
-  /** Nav visibility only — avoid full auth refresh so checkboxes do not flash disabled across the list. */
   onNavViewsSaved,
 }: {
   user: User;
@@ -113,6 +130,18 @@ export function WorkspaceSettingsPage({
       </button>
     </div>
   );
+}
+
+export function WorkspaceSettingsPage(props: {
+  user: User;
+  activeTenant: Tenant | null;
+  onSaved: () => void;
+  onNavViewsSaved?: () => void;
+}) {
+  if (props.user.role === "SUPER_ADMIN") {
+    return <WorkspaceSettingsSuperAdminHint />;
+  }
+  return <WorkspaceSettingsPageInner {...props} />;
 }
 
 function mergeSets(a: Set<string>, b: Set<string>): Set<string> {

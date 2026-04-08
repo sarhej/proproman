@@ -902,7 +902,10 @@
     "noAccess": "Pouze vlastníci a administrátoři prostoru mohou tato nastavení měnit.",
     "needWorkspace": "Nejprve vyberte pracovní prostor.",
     "minOne": "Ponechte alespoň jeden povolený jazyk.",
-    "errorSave": "Uložení se nezdařilo. Zkuste to znovu."
+    "errorSave": "Uložení se nezdařilo. Zkuste to znovu.",
+    "superAdminUsePlatform": "Jako super administrátor platformy se nastavení obálky pracovního prostoru spravují v konzoli platformy, ne v běžné nabídce pracovního prostoru.",
+    "superAdminUsePlatformSteps": "Otevřete konzoli platformy, přejděte na Pracovní prostory, vyberte prostor a níže pod seznamem členů použijte Nastavení obálky pracovního prostoru.",
+    "openPlatformConsole": "Otevřít konzoli platformy"
   },
   "tenantAdmin": {
     "title": "Správa platformy",

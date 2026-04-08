@@ -7,6 +7,17 @@ import { provisionTenant, backfillTenantId } from "../tenant/tenantProvisioning.
 import { createTenantSchema, schemaExists, listTenantSchemas } from "../tenant/tenantSchemaManager.js";
 import { slugToSchemaName } from "../tenant/tenantSlug.js";
 import { applyWorkspaceInviteSideEffects } from "../lib/workspaceInviteSideEffects.js";
+import { parseTenantEnabledLocales, normalizeEnabledLocalesPayload } from "../lib/appLocales.js";
+import { logAudit } from "../services/audit.js";
+import {
+  MANAGED_NAV_PATHS,
+  atLeastOneNavVisible,
+  loadPlatformHiddenNavPaths,
+  loadTenantExtraHiddenNavPaths,
+  mergeHiddenNavPaths,
+  persistTenantExtraHiddenNavPaths,
+  type ManagedNavPath
+} from "../services/navViewsSettings.js";
 
 export const tenantsRouter = Router();
 
@@ -53,6 +64,125 @@ tenantsRouter.post("/", async (req, res, next) => {
     });
 
     res.status(201).json(tenant);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const tenantWorkspaceLanguagesBody = z.object({
+  enabledLocales: z.array(z.string())
+});
+
+const pathEnum = z.enum(MANAGED_NAV_PATHS as unknown as [ManagedNavPath, ...ManagedNavPath[]]);
+const tenantWorkspaceNavBody = z.object({
+  hiddenNavPaths: z.array(pathEnum)
+});
+
+/** SUPER_ADMIN: read workspace shell settings for any tenant (languages + merged nav visibility). */
+tenantsRouter.get("/:id/workspace-settings", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const tenant = await prisma.tenant.findUnique({
+      where: { id },
+      select: { id: true, settings: true }
+    });
+    if (!tenant) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+    const platformHidden = await loadPlatformHiddenNavPaths();
+    const tenantExtra = await loadTenantExtraHiddenNavPaths(id);
+    const merged = mergeHiddenNavPaths(platformHidden, tenantExtra);
+    const enabledLocales = parseTenantEnabledLocales(tenant.settings);
+    res.json({
+      managedNavPaths: [...MANAGED_NAV_PATHS],
+      enabledLocales,
+      hiddenNavPaths: merged,
+      globalHiddenNavPaths: platformHidden,
+      tenantHiddenNavPaths: tenantExtra
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** SUPER_ADMIN: update enabled UI locales for a workspace (Tenant.settings.enabledLocales). */
+tenantsRouter.patch("/:id/workspace-settings/languages", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const tenant = await prisma.tenant.findUnique({
+      where: { id },
+      select: { id: true, settings: true }
+    });
+    if (!tenant) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+    const parsed = tenantWorkspaceLanguagesBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const normalized = normalizeEnabledLocalesPayload(parsed.data.enabledLocales);
+    if (!normalized) {
+      res.status(400).json({
+        error: "enabledLocales must list at least one supported language (en, cs, sk, uk, pl)."
+      });
+      return;
+    }
+    const prevRaw = tenant.settings;
+    const prev =
+      prevRaw !== null &&
+      prevRaw !== undefined &&
+      typeof prevRaw === "object" &&
+      !Array.isArray(prevRaw)
+        ? { ...(prevRaw as Record<string, unknown>) }
+        : {};
+    prev.enabledLocales = normalized;
+    await prisma.tenant.update({
+      where: { id },
+      data: { settings: prev as Prisma.InputJsonValue }
+    });
+    await logAudit(req.user!.id, "UPDATED", "TENANT", id, { enabledLocales: normalized });
+    res.json({ enabledLocales: normalized });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** SUPER_ADMIN: set tenant-only hidden shell routes (union with platform ceiling). */
+tenantsRouter.put("/:id/workspace-settings/nav-visibility", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const existing = await prisma.tenant.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+    const parsed = tenantWorkspaceNavBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const platformHidden = await loadPlatformHiddenNavPaths();
+    const tenantExtra = parsed.data.hiddenNavPaths;
+    const merged = mergeHiddenNavPaths(platformHidden, tenantExtra);
+    if (!atLeastOneNavVisible(merged)) {
+      res.status(400).json({
+        error: "At least one navigation view must remain visible for non–super-admin users."
+      });
+      return;
+    }
+    await persistTenantExtraHiddenNavPaths(id, tenantExtra);
+    await logAudit(req.user!.id, "UPDATED", "UI_SETTINGS", `tenant:${id}`, {
+      tenantId: id,
+      tenantHiddenNavPaths: tenantExtra
+    });
+    res.json({
+      hiddenNavPaths: merged,
+      globalHiddenNavPaths: platformHidden,
+      tenantHiddenNavPaths: tenantExtra
+    });
   } catch (err) {
     next(err);
   }

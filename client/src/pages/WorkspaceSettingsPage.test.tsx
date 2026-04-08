@@ -63,7 +63,7 @@ describe("WorkspaceSettingsPage", () => {
     expect(screen.getByText(/only workspace owners and admins/i)).toBeInTheDocument();
   });
 
-  it("SUPER_ADMIN can edit even with VIEWER membership", () => {
+  it("SUPER_ADMIN is directed to the platform console instead of the in-hub editor", () => {
     const sa: User = { ...editor, role: "SUPER_ADMIN" };
     render(
       <WorkspaceSettingsPage
@@ -73,6 +73,10 @@ describe("WorkspaceSettingsPage", () => {
       />
     );
     expect(screen.getByRole("heading", { name: /workspace settings/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/platform console/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("link", { name: /open platform console/i }).getAttribute("href")).toMatch(
+      /\/platform\/$/
+    );
   });
 
   it("loads checkboxes from tenant.enabledLocales and saves via API", async () => {

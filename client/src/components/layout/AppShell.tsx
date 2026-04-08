@@ -3,7 +3,7 @@ import { Bell, Globe, Home, Menu, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
-import { navSections } from "../../lib/navSections";
+import { computeNavShellSections } from "../../lib/navShellModel";
 import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
 import type { Permissions } from "../../hooks/usePermissions";
 import { LegalFooterLinks } from "../legal/LegalFooterLinks";
@@ -50,16 +50,13 @@ function NavContent({
   onLogout?: () => void;
 }) {
   const { t } = useTranslation();
-  const hideShellRoutes = !permissions.isSuperAdmin && hiddenNavPaths.size > 0;
-  const sections = navSections
-    .filter(
-      (s) =>
-        !s.adminOnly ||
-        permissions.canManageUsers ||
-        Boolean(canManageWorkspaceStructure)
-    )
-    .filter((s) => !mobile || !s.mobileHidden)
-    .filter((s) => !phone || !s.phoneHidden);
+  const navBlocks = computeNavShellSections({
+    permissions,
+    canManageWorkspaceStructure,
+    hiddenNavPaths,
+    mobile,
+    phone
+  });
 
   return (
     <>
@@ -69,20 +66,7 @@ function NavContent({
         </div>
       )}
       <nav className="grid gap-0.5">
-        {sections.map((section) => {
-          let items = mobile ? section.items.filter((i) => !i.mobileHidden) : section.items;
-          if (phone) items = items.filter((i) => !i.phoneHidden);
-          items = items.filter((i) => !i.superAdminOnly || permissions.isSuperAdmin);
-          items = items.filter((i) => !i.workspaceStructureOnly || canManageWorkspaceStructure);
-          items = items.filter((i) => !i.userManagementOnly || permissions.canManageUsers);
-          if (hideShellRoutes) {
-            items = items.filter(
-              (i) =>
-                !hiddenNavPaths.has(i.to) ||
-                (Boolean(i.workspaceStructureOnly) && Boolean(canManageWorkspaceStructure))
-            );
-          }
-          if (items.length === 0) return null;
+        {navBlocks.map(({ section, items }) => {
           return (
             <div key={section.labelKey}>
               <div className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">

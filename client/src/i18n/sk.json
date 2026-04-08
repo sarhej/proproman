@@ -902,7 +902,10 @@
     "noAccess": "Iba vlastníci a správcovia priestoru môžu tieto nastavenia meniť.",
     "needWorkspace": "Najprv vyberte pracovný priestor.",
     "minOne": "Ponechajte aspoň jeden povolený jazyk.",
-    "errorSave": "Uloženie zlyhalo. Skúste znova."
+    "errorSave": "Uloženie zlyhalo. Skúste znova.",
+    "superAdminUsePlatform": "Ako super administrátor platformy sa nastavenia obalu pracovného priestoru spravujú v konzole platformy, nie v bežnej ponuke pracovného priestoru.",
+    "superAdminUsePlatformSteps": "Otvorte konzolu platformy, choďte na Pracovné priestory, vyberte priestor a pod zoznamom členov použite Nastavenia obalu pracovného priestoru.",
+    "openPlatformConsole": "Otvoriť konzolu platformy"
   },
   "tenantAdmin": {
     "title": "Správa platformy",

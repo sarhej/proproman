@@ -903,7 +903,10 @@
     "noAccess": "Tylko właściciele i administratorzy przestrzeni mogą zmieniać te ustawienia.",
     "needWorkspace": "Najpierw wybierz przestrzeń roboczą.",
     "minOne": "Pozostaw co najmniej jeden włączony język.",
-    "errorSave": "Nie udało się zapisać. Spróbuj ponownie."
+    "errorSave": "Nie udało się zapisać. Spróbuj ponownie.",
+    "superAdminUsePlatform": "Jako super administrator platformy ustawienia powłoki przestrzeni roboczej zarządzasz w konsoli platformy, a nie w zwykłym menu przestrzeni.",
+    "superAdminUsePlatformSteps": "Otwórz konsolę platformy, przejdź do Workspaces, wybierz przestrzeń, a poniżej listy członków użyj ustawień powłoki przestrzeni.",
+    "openPlatformConsole": "Otwórz konsolę platformy"
   },
   "tenantAdmin": {
     "title": "Zarządzanie platformą",
