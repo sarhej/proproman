@@ -115,7 +115,7 @@ export function TenantWorkspaceSettings({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="mt-6 space-y-6">
+    <div id="workspace-shell-settings" className="mt-6 space-y-6 scroll-mt-4">
       <div>
         <h3 className="text-sm font-semibold text-slate-800">Workspace shell settings</h3>
         <p className="mt-1 text-xs text-slate-500">

@@ -419,6 +419,11 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
         {/* Tenants Tab */}
         {tab === "tenants" && !selectedTenantId && (
           <>
+            <p className="mb-3 text-sm text-slate-600">
+              <span className="font-medium text-slate-800">Workspace shell settings</span> (enabled languages and which
+              hub sidebar routes are visible) live inside each workspace: click{" "}
+              <span className="font-medium">Details</span>, then use the sections below the sign-in URL.
+            </p>
             {loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading...</p>
             ) : tenants.length === 0 ? (
@@ -556,7 +561,9 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                 </div>
               </div>
 
-              <h3 className="mb-2 text-sm font-semibold text-slate-700">Members</h3>
+              <TenantWorkspaceSettings tenantId={tenantDetail.id} />
+
+              <h3 className="mb-2 mt-8 text-sm font-semibold text-slate-700">Members</h3>
               {tenantDetail.memberships.length === 0 ? (
                 <p className="text-sm text-slate-500">No members yet.</p>
               ) : (
@@ -591,8 +598,6 @@ function TenantManagement({ user, onLogout }: { user: User; onLogout: () => void
                   </table>
                 </div>
               )}
-
-              <TenantWorkspaceSettings tenantId={tenantDetail.id} />
 
               {!tenantDetail.isSystem && (
                 <div className="mt-6 border-t border-slate-200 pt-4">
