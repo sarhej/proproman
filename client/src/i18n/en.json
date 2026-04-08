@@ -890,7 +890,7 @@
   },
   "workspaceSettings": {
     "title": "Workspace settings",
-    "intro": "These options apply to everyone in this workspace.",
+    "intro": "These options apply to everyone in this workspace. Use Languages for the header language list; use Navigation views (below) to show or hide hub screens in the sidebar for members.",
     "navViewsTitle": "Navigation views",
     "navViewsDesc": "Hide extra views for this workspace only. The platform may already hide some routes for all workspaces; those stay off here and cannot be re-enabled. Changes merge with the platform list (union). At least one view must remain visible for members.",
     "navViewsPlatform": "Platform",

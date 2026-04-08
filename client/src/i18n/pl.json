@@ -890,7 +890,7 @@
   },
   "workspaceSettings": {
     "title": "Ustawienia przestrzeni roboczej",
-    "intro": "Te opcje dotyczą wszystkich członków tej przestrzeni.",
+    "intro": "Te opcje dotyczą wszystkich członków tej przestrzeni. Języki w nagłówku ustawiasz w sekcji Języki; widoki nawigacji (poniżej) decydują, które ekrany huba są widoczne na pasku bocznym dla członków.",
     "navViewsTitle": "Widoki nawigacji",
     "navViewsDesc": "Ukryj dodatkowe widoki tylko w tej przestrzeni. Platforma może już wyłączyć niektóre trasy dla wszystkich; tutaj nie można ich ponownie włączyć. Wynik jest sumą z listą platformy. Co najmniej jeden widok musi pozostać widoczny dla członków.",
     "navViewsPlatform": "Platforma",

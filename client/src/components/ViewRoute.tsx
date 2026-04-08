@@ -8,13 +8,15 @@ type Props = {
   user: User;
   path: string;
   hiddenNavPaths: Set<string>;
+  /** When true, this route stays reachable even if listed in ui-settings (e.g. workspace settings for OWNER/ADMIN). */
+  ignoreHide?: boolean;
   children: ReactNode;
 };
 
 /** Blocks the route for non–super-admins when this path is hidden in ui-settings. */
-export function ViewRoute({ user, path, hiddenNavPaths, children }: Props) {
+export function ViewRoute({ user, path, hiddenNavPaths, ignoreHide, children }: Props) {
   const { t } = useTranslation();
-  if (user.role === "SUPER_ADMIN" || !hiddenNavPaths.has(path)) {
+  if (user.role === "SUPER_ADMIN" || ignoreHide || !hiddenNavPaths.has(path)) {
     return <>{children}</>;
   }
   const next = firstAvailableNavPath(hiddenNavPaths);

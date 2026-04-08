@@ -835,7 +835,12 @@ function App() {
           <Route
             path="/workspace-settings"
             element={
-              <ViewRoute user={user} path="/workspace-settings" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+              <ViewRoute
+                user={user}
+                path="/workspace-settings"
+                hiddenNavPaths={uiSettings.hiddenNavPaths}
+                ignoreHide={canManageWorkspaceStructure}
+              >
                 <WorkspaceSettingsPage
                   user={user}
                   activeTenant={activeTenant}

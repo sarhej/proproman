@@ -6,9 +6,9 @@ import {
   Filter,
   Grid2x2,
   KanbanSquare,
-  Languages,
   Megaphone,
   Network,
+  Settings2,
   Settings,
   Shield,
   Table,
@@ -67,7 +67,7 @@ export const navSections: NavSection[] = [
       {
         to: "/workspace-settings",
         labelKey: "nav.workspaceSettings",
-        icon: Languages,
+        icon: Settings2,
         workspaceStructureOnly: true,
       },
     ]

@@ -889,7 +889,7 @@
   },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",
-    "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru.",
+    "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru. Jazyky v hlavičke nastavíte v časti Jazyky; pohľady navigácie (nižšie) určujú, ktoré obrazovky hubu sa členom zobrazia v bočnom paneli.",
     "navViewsTitle": "Pohľady navigácie",
     "navViewsDesc": "Skryte ďalšie pohľady len pre tento priestor. Platforma môže niektoré trasy už vypnúť pre všetkých; tie tu nie je možné znova zapnúť. Výsledok sa zlúči so zoznamom platformy (zjednotenie). Aspoň jeden pohľad musí zostať viditeľný pre členov.",
     "navViewsPlatform": "Platforma",

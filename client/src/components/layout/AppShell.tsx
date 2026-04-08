@@ -70,7 +70,11 @@ function NavContent({
           items = items.filter((i) => !i.superAdminOnly || permissions.isSuperAdmin);
           items = items.filter((i) => !i.workspaceStructureOnly || canManageWorkspaceStructure);
           if (hideShellRoutes) {
-            items = items.filter((i) => !hiddenNavPaths.has(i.to));
+            items = items.filter(
+              (i) =>
+                !hiddenNavPaths.has(i.to) ||
+                (Boolean(i.workspaceStructureOnly) && Boolean(canManageWorkspaceStructure))
+            );
           }
           if (items.length === 0) return null;
           return (
