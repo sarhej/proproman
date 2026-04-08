@@ -419,6 +419,8 @@ export type Initiative = {
   strategicTier?: StrategicTier | null;
   notes?: string | null;
   sortOrder: number;
+  /** ISO timestamp; used for optimistic locking (baseUpdatedAt) on save */
+  updatedAt?: string | null;
   archivedAt?: string | null;
   personaImpacts: PersonaImpact[];
   revenueWeights: InitiativeRevenueWeight[];
