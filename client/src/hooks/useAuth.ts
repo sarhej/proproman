@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { ensureWorkspaceTenantSession } from "../lib/workspaceTenantHeader";
 import type { Tenant, User } from "../types/models";
 
 export function useAuth() {
@@ -13,6 +14,7 @@ export function useAuth() {
       const payload = await api.getMe();
       setUser(payload.user);
       setActiveTenant(payload.activeTenant ?? null);
+      ensureWorkspaceTenantSession(payload.activeTenant?.id ?? null);
       setError(null);
     } catch (e) {
       setUser(null);
@@ -31,6 +33,7 @@ export function useAuth() {
         if (!cancelled) {
           setUser(payload.user);
           setActiveTenant(payload.activeTenant ?? null);
+          ensureWorkspaceTenantSession(payload.activeTenant?.id ?? null);
           setError(null);
         }
       } catch (e) {

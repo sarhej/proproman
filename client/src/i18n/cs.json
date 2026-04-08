@@ -38,6 +38,13 @@
     "close": "Zavřít",
     "noNavViewsAvailable": "Pro váš účet nejsou k dispozici žádné pohledy. Požádejte super administrátora, aby v Admin \u2192 Nastaven\u00ed zapnul alespo\u0148 jeden pohled (Navigace)."
   },
+  "hub": {
+    "remoteEditBanner": "Iniciativa byla mezitím změněna jinde, zatímco máte neuložené úpravy. Obnovte pro aktuální verzi, nebo zavřete upozornění a pokračujte v úpravách.",
+    "saveConflict": "Uložení se nezdařilo, protože někdo jiný uložil dříve. Obnovte data ze serveru, nebo pokračujte v úpravách a zkuste znovu.",
+    "reloadFromServer": "Obnovit ze serveru",
+    "dismiss": "Zavřít",
+    "keepEditing": "Pokračovat v úpravách"
+  },
   "agentSetup": {
     "title": "Připojení kódovacího agenta",
     "subtitle": "Poskytněte svému AI agentovi bezpečný přístup do vašeho pracovního prostoru Tymio.",
@@ -652,6 +659,7 @@
     "navViews": {
       "section": "Pohledy navigace",
       "desc": "Vypnutím pohledu zmizí z postranního panelu a nebude dostupný přímý odkaz pro uživatele kromě super administrátorů. Alespoň jeden pohled musí zůstat zapnutý.",
+      "platformOnly": "Tato nastavení určují výchozí stav platformy pro všechny prostory. Vlastníci prostoru mohou skrýt další pohledy v Nastavení pracovního prostoru. Zde nelze znovu zapnout pohled, který platforma vypnula.",
       "visible": "Viditelné pro uživatele",
       "keepOne": "Alespoň jeden pohled musí zůstat viditelný."
     },
@@ -882,6 +890,9 @@
   "workspaceSettings": {
     "title": "Nastavení pracovního prostoru",
     "intro": "Tato nastavení platí pro všechny členy tohoto prostoru.",
+    "navViewsTitle": "Pohledy navigace",
+    "navViewsDesc": "Skryjte další pohledy jen pro tento prostor. Platforma může některé trasy již vypnout pro všechny; ty zde nelze znovu zapnout. Výsledek se sloučí se seznamem platformy (sjednocení). Alespoň jeden pohled musí zůstat viditelný pro členy.",
+    "navViewsPlatform": "Platforma",
     "languagesTitle": "Jazyky",
     "languagesDesc": "Vyberte jazyky zobrazené v záhlaví aplikace. Každý uživatel si stále vybere vlastní jazyk z povolených možností.",
     "save": "Uložit",

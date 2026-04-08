@@ -119,7 +119,12 @@ describe("MCP tenant guards", () => {
     await expect(
       runWithTenant(tenantContext, () =>
         createInitiative!(
-          { title: "Founding Provider Programme", domainId: "d1", ownerId: "other-user" },
+          {
+            workspaceSlug: "demo",
+            title: "Founding Provider Programme",
+            domainId: "d1",
+            ownerId: "other-user",
+          },
           { authInfo: { extra: { userId: "caller", role: "ADMIN" } } }
         )
       )
@@ -137,7 +142,12 @@ describe("MCP tenant guards", () => {
     await expect(
       runWithTenant(tenantContext, () =>
         createFeature!(
-          { initiativeId: "i1", title: "Feature", ownerId: "other-user" },
+          {
+            workspaceSlug: "demo",
+            initiativeId: "i1",
+            title: "Feature",
+            ownerId: "other-user",
+          },
           { authInfo: { extra: { userId: "caller", role: "ADMIN" } } }
         )
       )
@@ -154,6 +164,7 @@ describe("MCP tenant guards", () => {
       runWithTenant(tenantContext, () =>
         createReq!(
           {
+            workspaceSlug: "demo",
             featureId: "f1",
             title: "Task",
             assigneeId: "stranger",

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, Link2, Plus } from "lucide-react";
 import { api } from "../../lib/api";
+import { setWorkspaceTenantSessionForTab } from "../../lib/workspaceTenantHeader";
 import { generateWorkspaceSlugFromTeamName } from "../../lib/workspaceRegistration";
 import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 import type { Tenant, TenantMembership, User } from "../../types/models";
@@ -342,6 +343,7 @@ export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }:
   const handleSelect = useCallback(async (tenant: Tenant) => {
     setOpen(false);
     try {
+      setWorkspaceTenantSessionForTab(tenant.id);
       await api.switchTenant(tenant.id);
       onSwitch(tenant);
     } catch {

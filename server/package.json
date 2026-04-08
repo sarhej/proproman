@@ -16,6 +16,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-notification-rules": "tsx prisma/seed-notification-rules.ts",
     "db:populate-tymio-demo": "tsx scripts/populate-tymio-demo-hub.ts",
+    "db:populate-tymio-recent": "tsx scripts/populate-tymio-workspace-recent-shipping.ts",
     "ontology:refresh": "tsx scripts/ontology-refresh.ts"
   },
   "prisma": {

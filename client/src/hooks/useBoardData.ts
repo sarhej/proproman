@@ -1,3 +1,4 @@
+import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import type { Initiative, MetaPayload } from "../types/models";
@@ -17,7 +18,12 @@ export type BoardFilters = {
   searchInAllFields?: boolean;
 };
 
-export function useBoardData(enabled = true) {
+export type UseBoardDataOptions = {
+  /** When true, `refreshSilent` no-ops (e.g. during Product Explorer drag). */
+  hubRefreshSuppressedRef?: MutableRefObject<boolean>;
+};
+
+export function useBoardData(enabled = true, options?: UseBoardDataOptions) {
   const [meta, setMeta] = useState<MetaPayload | null>(null);
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [filters, setFilters] = useState<BoardFilters>({});
@@ -58,6 +64,7 @@ export function useBoardData(enabled = true) {
   /** Same data as refresh but never toggles global loading (avoids full-app flash after small mutations). */
   const refreshSilent = useCallback(async () => {
     if (!enabled) return;
+    if (options?.hubRefreshSuppressedRef?.current) return;
     try {
       const [metaPayload, initiativesPayload] = await Promise.all([
         api.getMeta(),
@@ -69,11 +76,20 @@ export function useBoardData(enabled = true) {
     } catch (err) {
       setError((err as Error).message);
     }
-  }, [query, enabled]);
+  }, [query, enabled, options?.hubRefreshSuppressedRef]);
 
   useEffect(() => {
     if (enabled) refresh();
   }, [refresh, enabled]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const onVis = () => {
+      if (document.visibilityState === "visible") void refreshSilent();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [enabled, refreshSilent]);
 
   const filteredInitiatives = useMemo(() => {
     const quick = filters.quick?.trim().toLowerCase();

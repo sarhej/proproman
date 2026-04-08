@@ -122,6 +122,19 @@ function setupMembershipMock() {
   );
 }
 
+describe("MCP workspaceSlug guard", () => {
+  it("rejects when workspaceSlug does not match session tenant", async () => {
+    setupMembershipMock();
+    const tools = createToolRegistry();
+    const listDomains = tools.get("drd_list_domains");
+    await expect(
+      runWithTenant(tenant("MEMBER"), () =>
+        listDomains!({ workspaceSlug: "wrong-workspace" }, ctx("u-a", "EDITOR"))
+      )
+    ).rejects.toThrow(/does not match the active workspace/);
+  });
+});
+
 describe("MCP drd_meta tenant user list", () => {
   let listSpy: ReturnType<typeof vi.spyOn>;
 
@@ -137,7 +150,7 @@ describe("MCP drd_meta tenant user list", () => {
   it("loads users only via listTenantMemberUsersPublic for current tenant", async () => {
     const tools = createToolRegistry();
     const drdMeta = tools.get("drd_meta");
-    const result = await runWithTenant(tenant("MEMBER"), () => drdMeta!({}, ctx("u-a", "EDITOR")));
+    const result = await runWithTenant(tenant("MEMBER"), () => drdMeta!({ workspaceSlug: "ws" }, ctx("u-a", "EDITOR")));
     const payload = parseMetaText(result);
     expect(listSpy).toHaveBeenCalledWith("t-ws");
     expect(payload.users).toEqual([
@@ -159,7 +172,7 @@ describe("MCP workspace role matrix (writes)", () => {
     await expect(
       runWithTenant(tenant("VIEWER"), () =>
         createInitiative!(
-          { title: "X", domainId: "d1" },
+          { workspaceSlug: "ws", title: "X", domainId: "d1" },
           ctx("caller", "EDITOR")
         )
       )
@@ -171,7 +184,7 @@ describe("MCP workspace role matrix (writes)", () => {
     mocks.domainFindMany.mockResolvedValueOnce([{ id: "d1", name: "Dom", sortOrder: 0, color: "#000" }]);
     const tools = createToolRegistry();
     const listDomains = tools.get("drd_list_domains");
-    const result = await runWithTenant(tenant("VIEWER"), () => listDomains!({}, ctx("caller", "VIEWER")));
+    const result = await runWithTenant(tenant("VIEWER"), () => listDomains!({ workspaceSlug: "ws" }, ctx("caller", "VIEWER")));
     const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
     expect(JSON.parse(text!)).toEqual([{ id: "d1", name: "Dom", sortOrder: 0, color: "#000" }]);
   });
@@ -180,7 +193,9 @@ describe("MCP workspace role matrix (writes)", () => {
     const tools = createToolRegistry();
     const del = tools.get("drd_delete_initiative");
     await expect(
-      runWithTenant(tenant("MEMBER"), () => del!({ id: "i1" }, ctx("caller", "EDITOR")))
+      runWithTenant(tenant("MEMBER"), () =>
+        del!({ workspaceSlug: "ws", id: "i1" }, ctx("caller", "EDITOR"))
+      )
     ).rejects.toThrow("requires workspace OWNER or ADMIN");
     expect(mocks.initiativeDelete).not.toHaveBeenCalled();
   });
@@ -190,7 +205,7 @@ describe("MCP workspace role matrix (writes)", () => {
     const createProduct = tools.get("drd_create_product");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
-        createProduct!({ name: "P" }, ctx("caller", "EDITOR"))
+        createProduct!({ workspaceSlug: "ws", name: "P" }, ctx("caller", "EDITOR"))
       )
     ).rejects.toThrow("requires workspace OWNER or ADMIN");
     expect(mocks.productCreate).not.toHaveBeenCalled();
@@ -201,10 +216,20 @@ describe("MCP workspace role matrix (writes)", () => {
     const createDomain = tools.get("drd_create_domain");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
-        createDomain!({ name: "Growth", color: "#336699" }, ctx("caller", "EDITOR"))
+        createDomain!({ workspaceSlug: "ws", name: "Growth", color: "#336699" }, ctx("caller", "EDITOR"))
       )
     ).rejects.toThrow("requires workspace OWNER or ADMIN");
     expect(mocks.domainCreate).not.toHaveBeenCalled();
+  });
+
+  it("MEMBER cannot create execution board (structure)", async () => {
+    const tools = createToolRegistry();
+    const createBoard = tools.get("drd_create_execution_board");
+    await expect(
+      runWithTenant(tenant("MEMBER"), () =>
+        createBoard!({ workspaceSlug: "ws", productId: "p1", name: "Sprint" }, ctx("caller", "EDITOR"))
+      )
+    ).rejects.toThrow("requires workspace OWNER or ADMIN");
   });
 
   it("MEMBER can create initiative as self owner", async () => {
@@ -213,7 +238,7 @@ describe("MCP workspace role matrix (writes)", () => {
     const createInitiative = tools.get("drd_create_initiative");
     await runWithTenant(tenant("MEMBER"), () =>
       createInitiative!(
-        { title: "Roadmap", domainId: "d1" },
+        { workspaceSlug: "ws", title: "Roadmap", domainId: "d1" },
         ctx("caller", "EDITOR")
       )
     );
@@ -233,7 +258,7 @@ describe("MCP matrix: global SUPER_ADMIN bypasses workspace VIEWER", () => {
     const createInitiative = tools.get("drd_create_initiative");
     await runWithTenant(tenant("VIEWER"), () =>
       createInitiative!(
-        { title: "Admin path", domainId: "d1" },
+        { workspaceSlug: "ws", title: "Admin path", domainId: "d1" },
         ctx("caller", UserRole.SUPER_ADMIN)
       )
     );
@@ -244,7 +269,9 @@ describe("MCP matrix: global SUPER_ADMIN bypasses workspace VIEWER", () => {
     mocks.initiativeDelete.mockResolvedValueOnce({});
     const tools = createToolRegistry();
     const del = tools.get("drd_delete_initiative");
-    await runWithTenant(tenant("MEMBER"), () => del!({ id: "i1" }, ctx("caller", UserRole.SUPER_ADMIN)));
+    await runWithTenant(tenant("MEMBER"), () =>
+      del!({ workspaceSlug: "ws", id: "i1" }, ctx("caller", UserRole.SUPER_ADMIN))
+    );
     expect(mocks.initiativeDelete).toHaveBeenCalled();
   });
 });
@@ -263,7 +290,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
     const tools = createToolRegistry();
     const del = tools.get("drd_delete_initiative");
     await runWithTenant(tenant(membership), () =>
-      del!({ id: "i1" }, ctx("u1", UserRole.VIEWER))
+      del!({ workspaceSlug: "ws", id: "i1" }, ctx("u1", UserRole.VIEWER))
     );
     expect(mocks.initiativeDelete).toHaveBeenCalledWith({ where: { id: "i1" } });
   });
@@ -276,7 +303,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
     const tools = createToolRegistry();
     const createProduct = tools.get("drd_create_product");
     await runWithTenant(tenant(membership), () =>
-      createProduct!({ name: "Prod" }, ctx("u1", UserRole.VIEWER))
+      createProduct!({ workspaceSlug: "ws", name: "Prod" }, ctx("u1", UserRole.VIEWER))
     );
     expect(mocks.productCreate).toHaveBeenCalled();
   });
@@ -289,7 +316,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
     const tools = createToolRegistry();
     const createDomain = tools.get("drd_create_domain");
     await runWithTenant(tenant(membership), () =>
-      createDomain!({ name: "Growth", color: "#336699" }, ctx("u1", UserRole.VIEWER))
+      createDomain!({ workspaceSlug: "ws", name: "Growth", color: "#336699" }, ctx("u1", UserRole.VIEWER))
     );
     expect(mocks.domainCreate).toHaveBeenCalled();
   });
@@ -302,15 +329,49 @@ describe("MCP matrix: VIEWER denied on all sampled content-write tools", () => {
   });
 
   it.each([
-    ["drd_create_feature", { initiativeId: "i1", title: "Feat" }],
-    ["drd_update_initiative", { id: "i1", title: "Renamed" }],
-    ["drd_create_requirement", { featureId: "f1", title: "Task" }],
+    ["drd_create_feature", { workspaceSlug: "ws", initiativeId: "i1", title: "Feat" }],
+    ["drd_update_initiative", { workspaceSlug: "ws", id: "i1", title: "Renamed" }],
+    ["drd_create_requirement", { workspaceSlug: "ws", featureId: "f1", title: "Task" }],
+    [
+      "drd_reorder_initiatives",
+      { workspaceSlug: "ws", positions: [{ id: "i1", domainId: "d1", sortOrder: 0 }] },
+    ],
+    [
+      "drd_reorder_features",
+      { workspaceSlug: "ws", items: [{ id: "f1", sortOrder: 0 }] },
+    ],
+    [
+      "drd_reorder_requirements",
+      { workspaceSlug: "ws", items: [{ id: "r1", sortOrder: 0 }] },
+    ],
+    [
+      "drd_set_execution_layout",
+      {
+        workspaceSlug: "ws",
+        productId: "p1",
+        columns: [{ executionColumnId: null, requirementIds: [] }],
+      },
+    ],
+    [
+      "drd_move_feature",
+      { workspaceSlug: "ws", featureId: "f1", targetInitiativeId: "i2" },
+    ],
   ] as const)("VIEWER blocked: %s", async (toolName, args) => {
     const tools = createToolRegistry();
     const handler = tools.get(toolName);
     await expect(
       runWithTenant(tenant("VIEWER"), () => handler!(args, ctx("u1", UserRole.EDITOR)))
     ).rejects.toThrow("workspace VIEWER cannot modify");
+  });
+
+  it("VIEWER cannot create execution board (structure write)", async () => {
+    const tools = createToolRegistry();
+    const createBoard = tools.get("drd_create_execution_board");
+    await expect(
+      runWithTenant(tenant("VIEWER"), () =>
+        createBoard!({ workspaceSlug: "ws", productId: "p1", name: "Board" }, ctx("u1", UserRole.EDITOR))
+      )
+    ).rejects.toThrow("requires workspace OWNER or ADMIN");
   });
 });
 
@@ -324,7 +385,7 @@ describe("MCP matrix: read tools for VIEWER", () => {
   it("drd_list_initiatives succeeds", async () => {
     const tools = createToolRegistry();
     const list = tools.get("drd_list_initiatives");
-    const result = await runWithTenant(tenant("VIEWER"), () => list!({}, ctx("u1", UserRole.VIEWER)));
+    const result = await runWithTenant(tenant("VIEWER"), () => list!({ workspaceSlug: "ws" }, ctx("u1", UserRole.VIEWER)));
     const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
     expect(JSON.parse(text!)).toEqual([{ id: "i1", title: "Init", domainId: "d1" }]);
   });
@@ -332,16 +393,28 @@ describe("MCP matrix: read tools for VIEWER", () => {
   it("tymio_list_capabilities succeeds", async () => {
     const tools = createToolRegistry();
     const list = tools.get("tymio_list_capabilities");
-    await runWithTenant(tenant("VIEWER"), () => list!({}, ctx("u1", UserRole.VIEWER)));
+    await runWithTenant(tenant("VIEWER"), () => list!({ workspaceSlug: "ws" }, ctx("u1", UserRole.VIEWER)));
     expect(mocks.capabilityFindMany).toHaveBeenCalled();
   });
 
   it("tymio_get_coding_agent_guide succeeds", async () => {
     const tools = createToolRegistry();
     const guide = tools.get("tymio_get_coding_agent_guide");
-    const result = await runWithTenant(tenant("VIEWER"), () => guide!({}, ctx("u1", UserRole.VIEWER)));
+    const result = await runWithTenant(tenant("VIEWER"), () => guide!({ workspaceSlug: "ws" }, ctx("u1", UserRole.VIEWER)));
     const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
     expect(text).toContain("Coding agent guide");
+  });
+
+  it("drd_search_initiatives succeeds for VIEWER (read)", async () => {
+    mocks.initiativeFindMany.mockReset();
+    mocks.initiativeFindMany.mockResolvedValueOnce([]);
+    const tools = createToolRegistry();
+    const search = tools.get("drd_search_initiatives");
+    const result = await runWithTenant(tenant("VIEWER"), () =>
+      search!({ workspaceSlug: "ws", query: "roadmap", limit: 10, offset: 0 }, ctx("u1", UserRole.VIEWER))
+    );
+    const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
+    expect(JSON.parse(text!)).toMatchObject({ items: [], hasMore: false, limit: 10, offset: 0 });
   });
 });
 
@@ -357,7 +430,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
     const createFeature = tools.get("drd_create_feature");
     await runWithTenant(tenant("MEMBER"), () =>
       createFeature!(
-        { initiativeId: "i1", title: "Story" },
+        { workspaceSlug: "ws", initiativeId: "i1", title: "Story" },
         ctx("caller", UserRole.EDITOR)
       )
     );
@@ -370,7 +443,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
     const createReq = tools.get("drd_create_requirement");
     await runWithTenant(tenant("MEMBER"), () =>
       createReq!(
-        { featureId: "f1", title: "Do work" },
+        { workspaceSlug: "ws", featureId: "f1", title: "Do work" },
         ctx("caller", UserRole.EDITOR)
       )
     );
@@ -381,7 +454,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
     const tools = createToolRegistry();
     const update = tools.get("drd_update_initiative");
     await runWithTenant(tenant("MEMBER"), () =>
-      update!({ id: "i1", title: "New title" }, ctx("caller", UserRole.EDITOR))
+      update!({ workspaceSlug: "ws", id: "i1", title: "New title" }, ctx("caller", UserRole.EDITOR))
     );
     expect(mocks.initiativeUpdate).toHaveBeenCalled();
   });
@@ -397,7 +470,9 @@ describe("MCP matrix: global ADMIN cannot bypass workspace VIEWER on structure",
     const tools = createToolRegistry();
     const del = tools.get("drd_delete_initiative");
     await expect(
-      runWithTenant(tenant("VIEWER"), () => del!({ id: "i1" }, ctx("u1", UserRole.ADMIN)))
+      runWithTenant(tenant("VIEWER"), () =>
+        del!({ workspaceSlug: "ws", id: "i1" }, ctx("u1", UserRole.ADMIN))
+      )
     ).rejects.toThrow("requires workspace OWNER or ADMIN");
     expect(mocks.initiativeDelete).not.toHaveBeenCalled();
   });

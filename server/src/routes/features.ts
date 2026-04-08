@@ -7,6 +7,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
+import { notifyHubChange } from "../services/hubChangeHub.js";
 import { featureReorderSchema, labelsSchema } from "./schemas.js";
 
 const featureStatusValues = ["IDEA", "PLANNED", "IN_PROGRESS", "BUSINESS_APPROVAL", "DONE"] as const;
@@ -67,6 +68,13 @@ featuresRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, res)
       })
     )
   );
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "FEATURE",
+    operation: "REORDER",
+    entityId: null,
+    initiativeId: first.initiativeId
+  });
   res.json({ ok: true });
 });
 
@@ -97,6 +105,13 @@ featuresRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req
     include: { owner: true }
   });
   await logAudit(req.user!.id, "CREATED", "FEATURE", feature.id, { title: feature.title });
+  notifyHubChange({
+    tenantId,
+    entityType: "FEATURE",
+    operation: "CREATE",
+    entityId: feature.id,
+    initiativeId
+  });
   res.status(201).json({ feature });
 });
 
@@ -131,12 +146,29 @@ featuresRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
     include: { owner: true }
   });
   await logAudit(req.user!.id, "UPDATED", "FEATURE", feature.id);
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "FEATURE",
+    operation: "UPDATE",
+    entityId: feature.id,
+    initiativeId: feature.initiativeId
+  });
   res.json({ feature });
 });
 
 featuresRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
+  const prev = await prisma.feature.findUnique({ where: { id }, select: { initiativeId: true } });
   await prisma.feature.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "FEATURE", id);
+  if (prev) {
+    notifyHubChange({
+      tenantId: getTenantId(req),
+      entityType: "FEATURE",
+      operation: "DELETE",
+      entityId: id,
+      initiativeId: prev.initiativeId
+    });
+  }
   res.status(204).send();
 });

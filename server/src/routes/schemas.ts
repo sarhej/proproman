@@ -62,7 +62,9 @@ export const initiativeInputSchema = z.object({
         allocation: z.number().int().min(0).max(100).nullable().optional()
       })
     )
-    .optional()
+    .optional(),
+  /** When sent on PUT, server returns 409 if initiative.updatedAt differs (optimistic locking). */
+  baseUpdatedAt: z.string().datetime().optional()
 });
 
 export const updatePositionsSchema = z.array(

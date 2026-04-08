@@ -42,6 +42,7 @@ import { notificationSubscriptionsRouter } from "./routes/notification-subscript
 import { meRouter, meSessionRouter } from "./routes/me.js";
 import { ontologyRouter } from "./routes/ontology.js";
 import { uiSettingsRouter } from "./routes/ui-settings.js";
+import { hubEventsRouter } from "./routes/hub-events.js";
 import { agentGuideRouter } from "./routes/agent-guide.js";
 import { prisma, prismaUnscoped } from "./db.js";
 import { normalizePublicTenantSlug } from "./lib/publicTenantSlug.js";
@@ -95,7 +96,8 @@ app.use(
 app.use(
   cors({
     origin: env.CLIENT_URL.replace(/\/$/, ""),
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "X-Tenant-Id"]
   })
 );
 app.use(express.json({ limit: "10mb" }));
@@ -177,6 +179,7 @@ function mountTenantScoped(path: string, router: express.Router): void {
 
 app.use("/api/auth", authRouter);
 mountTenantScoped("/api/meta", metaRouter);
+mountTenantScoped("/api/hub-events", hubEventsRouter);
 mountTenantScoped("/api/initiatives", initiativesRouter);
 mountTenantScoped("/api/features", featuresRouter);
 mountTenantScoped("/api/decisions", decisionsRouter);

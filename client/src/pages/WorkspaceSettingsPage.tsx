@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { APP_LOCALE_CODES, canManageWorkspaceLanguages, type AppLocaleCode } from "../lib/appLocales";
+import { MANAGED_NAV_PATHS } from "../lib/navViewPaths";
+import { navSections } from "../lib/navSections";
 import type { Tenant, User } from "../types/models";
 
 export function WorkspaceSettingsPage({
@@ -95,6 +97,7 @@ export function WorkspaceSettingsPage({
           ))}
         </ul>
       </section>
+      <WorkspaceNavViewsSection onSaved={onSaved} />
       {err ? <p className="text-sm text-red-600">{err}</p> : null}
       {ok ? <p className="text-sm text-emerald-600">{t("workspaceSettings.saved")}</p> : null}
       <button
@@ -106,5 +109,124 @@ export function WorkspaceSettingsPage({
         {busy ? t("workspaceSettings.saving") : t("workspaceSettings.save")}
       </button>
     </div>
+  );
+}
+
+function mergeSets(a: Set<string>, b: Set<string>): Set<string> {
+  return new Set([...a, ...b]);
+}
+
+function WorkspaceNavViewsSection({ onSaved }: { onSaved: () => void }) {
+  const { t } = useTranslation();
+  const [globalHidden, setGlobalHidden] = useState<Set<string>>(new Set());
+  const [tenantHidden, setTenantHidden] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const effectiveHidden = useMemo(() => mergeSets(globalHidden, tenantHidden), [globalHidden, tenantHidden]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const data = await api.getUiSettings();
+      setGlobalHidden(new Set(data.globalHiddenNavPaths ?? []));
+      setTenantHidden(new Set(data.tenantHiddenNavPaths ?? []));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const visibleCount = MANAGED_NAV_PATHS.length - effectiveHidden.size;
+
+  const setPathVisible = async (path: string, visible: boolean) => {
+    if (!visible && globalHidden.has(path)) {
+      return;
+    }
+    const nextTenant = new Set(tenantHidden);
+    if (visible) {
+      nextTenant.delete(path);
+    } else {
+      if (visibleCount <= 1 && !effectiveHidden.has(path)) {
+        setErr(t("admin.navViews.keepOne"));
+        return;
+      }
+      nextTenant.add(path);
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.updateUiSettingsWorkspace({ hiddenNavPaths: Array.from(nextTenant) });
+      setTenantHidden(nextTenant);
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+      void load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="text-sm text-slate-500">{t("common.loading")}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-slate-800">{t("workspaceSettings.navViewsTitle")}</h2>
+      <p className="mt-1 text-sm text-slate-500">{t("workspaceSettings.navViewsDesc")}</p>
+      {err ? <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+      <div className="mt-4 space-y-4">
+        {navSections
+          .filter((s) => !s.adminOnly)
+          .map((section) => {
+            const rows = section.items.filter((i) => (MANAGED_NAV_PATHS as readonly string[]).includes(i.to));
+            if (rows.length === 0) return null;
+            return (
+              <div key={section.labelKey} className="rounded border border-slate-100 bg-slate-50/50 p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {t(section.labelKey)}
+                </h3>
+                <ul className="space-y-2">
+                  {rows.map((item) => {
+                    const visible = !effectiveHidden.has(item.to);
+                    const platformLocked = globalHidden.has(item.to);
+                    const disableOff = visible && visibleCount <= 1;
+                    return (
+                      <li key={item.to} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="font-medium text-slate-800">{t(item.labelKey)}</span>
+                        <label className="flex items-center gap-2 text-xs text-slate-600">
+                          <input
+                            type="checkbox"
+                            checked={visible}
+                            disabled={busy || platformLocked || (disableOff && visible)}
+                            onChange={(e) => void setPathVisible(item.to, e.target.checked)}
+                          />
+                          {t("admin.navViews.visible")}
+                        </label>
+                        {platformLocked ? (
+                          <span className="text-[10px] font-medium text-amber-700">{t("workspaceSettings.navViewsPlatform")}</span>
+                        ) : null}
+                        <code className="text-[10px] text-slate-400">{item.to}</code>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+      </div>
+    </section>
   );
 }

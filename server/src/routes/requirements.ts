@@ -7,6 +7,7 @@ import { getTenantId } from "../tenant/requireTenant.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
+import { notifyHubChange } from "../services/hubChangeHub.js";
 import { executionBoardLayoutSchema, labelsSchema, requirementReorderSchema } from "./schemas.js";
 import {
   applyExecutionColumn,
@@ -78,6 +79,17 @@ requirementsRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, 
       })
     )
   );
+  const feat = await prisma.feature.findUnique({
+    where: { id: first.featureId },
+    select: { initiativeId: true }
+  });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "REQUIREMENT",
+    operation: "REORDER",
+    entityId: null,
+    initiativeId: feat?.initiativeId ?? null
+  });
   res.json({ ok: true });
 });
 
@@ -138,6 +150,13 @@ requirementsRouter.post("/execution-layout", requireWorkspaceContentWrite(), asy
         });
       }
     }
+  });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "REQUIREMENT",
+    operation: "UPDATE",
+    entityId: null,
+    initiativeId: null
   });
   res.json({ ok: true });
 });
@@ -221,6 +240,17 @@ requirementsRouter.post("/", requireWorkspaceContentWrite(), async (req, res) =>
     include: { assignee: true, executionColumn: true }
   });
   await logAudit(req.user!.id, "CREATED", "REQUIREMENT", requirement.id, { featureId: parsed.data.featureId, title: requirement.title });
+  const feat = await prisma.feature.findUnique({
+    where: { id: parsed.data.featureId },
+    select: { initiativeId: true }
+  });
+  notifyHubChange({
+    tenantId,
+    entityType: "REQUIREMENT",
+    operation: "CREATE",
+    entityId: requirement.id,
+    initiativeId: feat?.initiativeId ?? null
+  });
   res.status(201).json({ requirement });
 });
 
@@ -306,13 +336,33 @@ requirementsRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) 
     include: { assignee: true, executionColumn: true }
   });
   await logAudit(req.user!.id, "UPDATED", "REQUIREMENT", id, { featureId: requirement.featureId, title: requirement.title });
+  const feat = await prisma.feature.findUnique({
+    where: { id: requirement.featureId },
+    select: { initiativeId: true }
+  });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "REQUIREMENT",
+    operation: "UPDATE",
+    entityId: id,
+    initiativeId: feat?.initiativeId ?? null
+  });
   res.json({ requirement });
 });
 
 requirementsRouter.delete("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
-  const existing = await prisma.requirement.findUnique({ where: { id } });
+  const existing = await prisma.requirement.findUnique({ where: { id }, include: { feature: { select: { initiativeId: true } } } });
   await prisma.requirement.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "REQUIREMENT", id, { featureId: existing?.featureId, title: existing?.title });
+  if (existing) {
+    notifyHubChange({
+      tenantId: getTenantId(req),
+      entityType: "REQUIREMENT",
+      operation: "DELETE",
+      entityId: id,
+      initiativeId: existing.feature.initiativeId
+    });
+  }
   res.status(204).send();
 });

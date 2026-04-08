@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PublicLanguageSwitcher } from "./components/i18n/PublicLanguageSwitcher";
@@ -11,6 +11,7 @@ import { Card } from "./components/ui/Card";
 import { ViewRoute } from "./components/ViewRoute";
 import { useAuth } from "./hooks/useAuth";
 import { useBoardData } from "./hooks/useBoardData";
+import { useWorkspaceHubEvents } from "./hooks/useWorkspaceHubEvents";
 import { usePermissions } from "./hooks/usePermissions";
 import { useUiSettings } from "./hooks/useUiSettings";
 import { api } from "./lib/api";
@@ -53,7 +54,13 @@ import {
   clearPostAuthWorkspaceSlugIfSlugPath,
   hasPostAuthWorkspaceSlugPendingOnRoot,
 } from "./lib/postAuthWorkspaceSlug";
+import {
+  clearWorkspaceTenantSession,
+  getWorkspaceTenantIdForApi,
+  setWorkspaceTenantSessionForTab,
+} from "./lib/workspaceTenantHeader";
 import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode } from "./lib/appLocales";
+import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
@@ -95,9 +102,15 @@ function App() {
     !needsTenantPick &&
     !blockWorkspaceSlugGate;
 
-  const board = useBoardData(boardDataEnabled);
+  const hubRefreshSuppressedRef = useRef(false);
+  const initiativeFormDirtyRef = useRef(false);
+  const [hubRemoteChangePending, setHubRemoteChangePending] = useState(false);
+  const board = useBoardData(boardDataEnabled, { hubRefreshSuppressedRef });
   const perms = usePermissions(user);
-  const uiSettings = useUiSettings(!!user && user.role !== "PENDING");
+  const uiSettings = useUiSettings(
+    !!user && user.role !== "PENDING",
+    `${activeTenant?.id ?? ""}|${getWorkspaceTenantIdForApi() ?? ""}`
+  );
 
   const shellLocales = useMemo(() => {
     const allowed = activeTenant?.enabledLocales;
@@ -192,6 +205,39 @@ function App() {
     [board.initiatives, selected]
   );
 
+  const handleHubEvent = useCallback(
+    (e: HubChangeEventPayload) => {
+      const openId = selected?.id;
+      const sameInitiative = (id: string | null | undefined) => id != null && id === openId;
+      const affectsOpen =
+        openId &&
+        ((e.entityType === "INITIATIVE" &&
+          (sameInitiative(e.entityId) || e.operation === "REORDER")) ||
+          (e.entityType === "FEATURE" && sameInitiative(e.initiativeId)) ||
+          (e.entityType === "REQUIREMENT" && sameInitiative(e.initiativeId)));
+
+      if (!openId || !affectsOpen) {
+        void board.refreshSilent();
+        return;
+      }
+      if (initiativeFormDirtyRef.current) {
+        setHubRemoteChangePending(true);
+        return;
+      }
+      void board.refreshSilent();
+    },
+    [board, selected?.id]
+  );
+
+  useWorkspaceHubEvents({
+    enabled: boardDataEnabled && Boolean(activeTenant?.id),
+    onEvent: handleHubEvent
+  });
+
+  useEffect(() => {
+    setHubRemoteChangePending(false);
+  }, [selected?.id]);
+
   useEffect(() => {
     const initiativeId = searchParams.get("initiative");
     if (initiativeId && board.initiatives.length > 0 && !selected) {
@@ -282,6 +328,7 @@ function App() {
           if (cancelled) return;
           const match = myTenants.tenants.find((m) => m.tenant.slug.toLowerCase() === slugNorm);
           if (match) {
+            setWorkspaceTenantSessionForTab(match.tenant.id);
             await api.switchTenant(match.tenant.id);
             if (!cancelled) {
               await refreshAuth();
@@ -594,6 +641,7 @@ function App() {
       onTenantSwitch={() => setNeedsTenantPick(true)}
       onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
+        clearWorkspaceTenantSession();
         await api.logout();
         window.location.reload();
       }}
@@ -777,6 +825,9 @@ function App() {
                   onOpenInitiative={(i) => setSelected(i)}
                   quickFilter={board.filters.quick}
                   boardFilters={board.filters}
+                  onExplorerHubLockChange={(locked) => {
+                    hubRefreshSuppressedRef.current = locked;
+                  }}
                 />
               </ViewRoute>
             }
@@ -788,7 +839,10 @@ function App() {
                 <WorkspaceSettingsPage
                   user={user}
                   activeTenant={activeTenant}
-                  onSaved={() => void refreshAuth()}
+                  onSaved={() => {
+                    void refreshAuth();
+                    void uiSettings.refresh();
+                  }}
                 />
               </ViewRoute>
             }
@@ -1011,6 +1065,15 @@ function App() {
         revenueStreams={board.meta.revenueStreams}
         domains={board.meta.domains}
         currentUserId={user?.id ?? null}
+        formDirtyRef={initiativeFormDirtyRef}
+        remoteChangePending={hubRemoteChangePending}
+        onDismissRemoteChange={() => setHubRemoteChangePending(false)}
+        onReloadFromServerAfterRemoteChange={async (id) => {
+          const r = await api.getInitiative(id);
+          setSelected(r.initiative);
+          setHubRemoteChangePending(false);
+          await board.refreshSilent();
+        }}
         adminOnlyFields={perms.isAdmin}
         readOnly={(() => {
           const roleCode = getRoleCode(user);

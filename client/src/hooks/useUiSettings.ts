@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 
-export function useUiSettings(enabled: boolean) {
+/**
+ * @param workspaceKey When the active workspace changes (or tab-local X-Tenant-Id target), refetch
+ *   merged nav visibility so multi-tab / switcher stays correct.
+ */
+export function useUiSettings(enabled: boolean, workspaceKey?: string | null) {
   const [hiddenNavPaths, setHiddenNavPaths] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function useUiSettings(enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, refresh]);
+  }, [enabled, workspaceKey, refresh]);
 
   return { hiddenNavPaths, loading, error, refresh };
 }

@@ -68,7 +68,11 @@ async function mockAuthenticatedNoAccessToNakamapi(page: import("@playwright/tes
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ hiddenNavPaths: [] }),
+        body: JSON.stringify({
+          hiddenNavPaths: [],
+          globalHiddenNavPaths: [],
+          tenantHiddenNavPaths: [],
+        }),
       });
       return;
     }

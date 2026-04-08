@@ -43,6 +43,8 @@ type Props = {
   onProductInitiativesReordered?: (productId: string, initiatives: Initiative[]) => void;
   /** Merge reordered features for an initiative without refetching. */
   onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
+  /** True while an initiative row is being dragged (suppresses hub-driven list refresh). */
+  onExplorerDragActiveChange?: (active: boolean) => void;
 };
 
 function avgImpact(initiative: Initiative): number {
@@ -1190,6 +1192,7 @@ export function ProductTree({
   onRequirementUpdated,
   onProductInitiativesReordered,
   onInitiativeFeaturesReordered,
+  onExplorerDragActiveChange,
   onAddProduct
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
@@ -1215,10 +1218,12 @@ export function ProductTree({
   function handleDragStart(event: DragStartEvent) {
     const initiative = event.active.data.current?.initiative as Initiative | undefined;
     setDraggingInitiative(initiative ?? null);
+    onExplorerDragActiveChange?.(true);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     setDraggingInitiative(null);
+    onExplorerDragActiveChange?.(false);
     const { active, over } = event;
     if (!over) return;
 

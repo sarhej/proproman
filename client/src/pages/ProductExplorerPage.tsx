@@ -15,6 +15,8 @@ type Props = {
   quickFilter?: string;
   /** Same filters as the nav FiltersBar (pillar, owner, priority, horizon, archived, …) — applied to epics in the tree */
   boardFilters?: BoardFilters;
+  /** Pause hub-driven board refresh while dragging in the explorer tree */
+  onExplorerHubLockChange?: (locked: boolean) => void;
 };
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
@@ -59,7 +61,8 @@ export function ProductExplorerPage({
   currentUserId,
   onOpenInitiative,
   quickFilter,
-  boardFilters
+  boardFilters,
+  onExplorerHubLockChange
 }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
@@ -341,6 +344,7 @@ export function ProductExplorerPage({
         onRequirementUpdated={onRequirementUpdated}
         onProductInitiativesReordered={onProductInitiativesReordered}
         onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
+        onExplorerDragActiveChange={onExplorerHubLockChange}
         onAddProduct={async (name) => {
           await api.createProduct({ name, sortOrder: products.length + 1 });
           await load();

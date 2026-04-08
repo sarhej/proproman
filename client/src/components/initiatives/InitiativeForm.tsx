@@ -156,6 +156,7 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
       await onSubmit({
         title: form.title,
         productId: form.productId || null,
+        ...(initiative?.updatedAt ? { baseUpdatedAt: initiative.updatedAt } : {}),
         description: form.description || null,
         problemStatement: form.problemStatement || null,
         successCriteria: form.successCriteria || null,

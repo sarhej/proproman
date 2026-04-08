@@ -38,6 +38,13 @@
     "close": "Zamknij",
     "noNavViewsAvailable": "Brak widoków nawigacji dla Twojego konta. Poproś superadministratora, aby włączył co najmniej jeden widok: Admin \u2192 Ustawienia \u2192 Widoki nawigacji."
   },
+  "hub": {
+    "remoteEditBanner": "Inicjatywa została zaktualizowana gdzie indziej, gdy masz niezapisane zmiany. Odśwież, aby zobaczyć najnowszą wersję, lub odrzuć i edytuj dalej.",
+    "saveConflict": "Zapis nie powiódł się, bo ktoś zapisał wcześniej. Odśwież z serwera lub kontynuuj edycję i spróbuj ponownie.",
+    "reloadFromServer": "Odśwież z serwera",
+    "dismiss": "Odrzuć",
+    "keepEditing": "Kontynuuj edycję"
+  },
   "agentSetup": {
     "title": "Connecting a Coding Agent",
     "subtitle": "Give your AI agent secure access to your Tymio workspace.",
@@ -653,6 +660,7 @@
     "navViews": {
       "section": "Navigation views",
       "desc": "Turn a view off to remove it from the sidebar and block direct URLs for everyone except super admins. At least one view must stay on.",
+      "platformOnly": "These toggles set the platform default for every workspace. Workspace owners can hide additional views under Workspace settings. Nothing here can be overridden to show a view the platform has hidden.",
       "visible": "Visible for users",
       "keepOne": "At least one view must remain visible."
     },
@@ -883,6 +891,9 @@
   "workspaceSettings": {
     "title": "Ustawienia przestrzeni roboczej",
     "intro": "Te opcje dotyczą wszystkich członków tej przestrzeni.",
+    "navViewsTitle": "Widoki nawigacji",
+    "navViewsDesc": "Ukryj dodatkowe widoki tylko w tej przestrzeni. Platforma może już wyłączyć niektóre trasy dla wszystkich; tutaj nie można ich ponownie włączyć. Wynik jest sumą z listą platformy. Co najmniej jeden widok musi pozostać widoczny dla członków.",
+    "navViewsPlatform": "Platforma",
     "languagesTitle": "Języki",
     "languagesDesc": "Wybierz języki widoczne w nagłówku aplikacji. Każda osoba nadal wybiera własny język spośród włączonych opcji.",
     "save": "Zapisz",

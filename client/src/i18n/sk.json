@@ -38,6 +38,13 @@
     "close": "Zavrieť",
     "noNavViewsAvailable": "Pre v\u00e1\u0161 \u00fa\u010det nie s\u00fa k dispoz\u00edcii \u017eiadne poh\u013eady. Po\u017eiadajte super administr\u00e1tora, aby v Admin \u2192 Nastavenia zapol aspo\u0148 jeden poh\u013ead (Navig\u00e1cia)."
   },
+  "hub": {
+    "remoteEditBanner": "Iniciat\u00edva bola medzi\u010dasom zmenen\u00e1 inde, k\u00fdm m\u00e1te neulo\u017een\u00e9 zmeny. Obnovte pre aktu\u00e1lnu verziu alebo zavrite upozornenie a pokra\u010dujte v \u00faprav\u00e1ch.",
+    "saveConflict": "Ulo\u017eenie zlyhalo, lebo niekto in\u00fd ulo\u017eil sk\u00f4r. Obnovte zo servera alebo pokra\u010dujte v \u00faprav\u00e1ch a sk\u00faste znova.",
+    "reloadFromServer": "Obnovi\u0165 zo servera",
+    "dismiss": "Zavrie\u0165",
+    "keepEditing": "Pokra\u010dova\u0165 v \u00faprav\u00e1ch"
+  },
   "agentSetup": {
     "title": "Pripojenie kódovacieho agenta",
     "subtitle": "Poskytnite svojmu AI agentovi bezpečný prístup do vášho pracovného priestoru Tymio.",
@@ -652,6 +659,7 @@
     "navViews": {
       "section": "Pohľady navigácie",
       "desc": "Vypnutím pohľadu zmizne z bočného panela a priamy odkaz nebude dostupný pre používateľov okrem super administrátorov. Aspoň jeden pohľad musí zostať zapnutý.",
+      "platformOnly": "Tieto prepínače nastavujú predvolený stav platformy pre všetky priestory. Vlastníci môžu skryť ďalšie pohľady v Nastaveniach pracovného priestoru. Tu nie je možné znova zapnúť pohľad, ktorý platforma vypla.",
       "visible": "Viditeľné pre používateľov",
       "keepOne": "Aspoň jeden pohľad musí zostať viditeľný."
     },
@@ -882,6 +890,9 @@
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",
     "intro": "Tieto možnosti platia pre všetkých členov tohto priestoru.",
+    "navViewsTitle": "Pohľady navigácie",
+    "navViewsDesc": "Skryte ďalšie pohľady len pre tento priestor. Platforma môže niektoré trasy už vypnúť pre všetkých; tie tu nie je možné znova zapnúť. Výsledok sa zlúči so zoznamom platformy (zjednotenie). Aspoň jeden pohľad musí zostať viditeľný pre členov.",
+    "navViewsPlatform": "Platforma",
     "languagesTitle": "Jazyky",
     "languagesDesc": "Vyberte jazyky zobrazené v hlavičke aplikácie. Každý používateľ si stále vyberie vlastný jazyk z povolených možností.",
     "save": "Uložiť",

@@ -988,8 +988,9 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
     setLoading(true);
     setErr(null);
     try {
-      const { hiddenNavPaths } = await api.getUiSettings();
-      setHidden(new Set(hiddenNavPaths));
+      const data = await api.getUiSettings();
+      const globalList = data.globalHiddenNavPaths ?? data.hiddenNavPaths;
+      setHidden(new Set(globalList));
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -1032,6 +1033,9 @@ function NavViewsSection({ onSaved }: { onSaved?: () => void }) {
   return (
     <div className="space-y-4 max-w-3xl">
       <p className="text-sm text-gray-600">{t("admin.navViews.desc")}</p>
+      <p className="text-xs text-amber-800 rounded border border-amber-200 bg-amber-50 px-3 py-2">
+        {t("admin.navViews.platformOnly")}
+      </p>
       {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
       <div className="space-y-4">
         {navSections

@@ -41,13 +41,17 @@ import type {
   ExecutionColumn
 } from "../types/models";
 
+import { getWorkspaceTenantIdForApi } from "./workspaceTenantHeader";
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const tenantId = getWorkspaceTenantIdForApi();
   const response = await fetch(`${baseUrl}${path}`, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
       ...(init?.headers || {})
     },
     ...init
@@ -487,9 +491,22 @@ export const api = {
     if (!response.ok) throw new Error(`Brief failed: ${response.status}`);
     return response.text();
   },
-  getUiSettings: async () => request<{ hiddenNavPaths: string[] }>("/api/ui-settings"),
+  getUiSettings: async () =>
+    request<{
+      hiddenNavPaths: string[];
+      globalHiddenNavPaths?: string[];
+      tenantHiddenNavPaths?: string[];
+    }>("/api/ui-settings"),
+  /** Platform (super admin): singleton ceiling merged with every workspace. */
   updateUiSettings: async (body: { hiddenNavPaths: string[] }) =>
     request<{ hiddenNavPaths: string[] }>("/api/ui-settings", { method: "PUT", body: JSON.stringify(body) }),
+  /** Workspace OWNER/ADMIN: extra hidden paths (union with platform). */
+  updateUiSettingsWorkspace: async (body: { hiddenNavPaths: string[] }) =>
+    request<{
+      hiddenNavPaths: string[];
+      globalHiddenNavPaths: string[];
+      tenantHiddenNavPaths: string[];
+    }>("/api/ui-settings/workspace", { method: "PUT", body: JSON.stringify(body) }),
 
   getMyTenants: async () =>
     request<{ tenants: TenantMembership[]; activeTenantId: string | null }>("/api/me/tenants"),

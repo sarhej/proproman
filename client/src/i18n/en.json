@@ -38,6 +38,13 @@
     "close": "Close",
     "noNavViewsAvailable": "No navigation views are available for your account. Ask a super admin to enable at least one view in Admin \u2192 Settings \u2192 Navigation views."
   },
+  "hub": {
+    "remoteEditBanner": "This initiative was updated elsewhere while you had unsaved changes. Reload to see the latest version, or dismiss to keep editing (your draft stays local until you save).",
+    "saveConflict": "Your save failed because someone else saved first. Reload to get their version, or keep editing and try again.",
+    "reloadFromServer": "Reload from server",
+    "dismiss": "Dismiss",
+    "keepEditing": "Keep editing"
+  },
   "agentSetup": {
     "title": "Connecting a Coding Agent",
     "subtitle": "Give your AI agent secure access to your Tymio workspace.",
@@ -653,6 +660,7 @@
     "navViews": {
       "section": "Navigation views",
       "desc": "Turn a view off to remove it from the sidebar and block direct URLs for everyone except super admins. At least one view must stay on.",
+      "platformOnly": "These toggles set the platform default for every workspace. Workspace owners can hide additional views under Workspace settings. Nothing here can be overridden to show a view the platform has hidden.",
       "visible": "Visible for users",
       "keepOne": "At least one view must remain visible."
     },
@@ -883,6 +891,9 @@
   "workspaceSettings": {
     "title": "Workspace settings",
     "intro": "These options apply to everyone in this workspace.",
+    "navViewsTitle": "Navigation views",
+    "navViewsDesc": "Hide extra views for this workspace only. The platform may already hide some routes for all workspaces; those stay off here and cannot be re-enabled. Changes merge with the platform list (union). At least one view must remain visible for members.",
+    "navViewsPlatform": "Platform",
     "languagesTitle": "Languages",
     "languagesDesc": "Choose which languages appear in the app header. Each person still picks their own language among the options you enable.",
     "save": "Save",

@@ -8,10 +8,13 @@ import type { Tenant, User } from "../types/models";
 vi.mock("../lib/api", () => ({
   api: {
     patchActiveTenantLanguages: vi.fn(),
+    getUiSettings: vi.fn(),
+    updateUiSettingsWorkspace: vi.fn(),
   },
 }));
 
 const mockPatch = vi.mocked(api.patchActiveTenantLanguages);
+const mockGetUi = vi.mocked(api.getUiSettings);
 
 const editor: User = {
   id: "u1",
@@ -37,6 +40,11 @@ describe("WorkspaceSettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPatch.mockResolvedValue({ enabledLocales: ["en"] });
+    mockGetUi.mockResolvedValue({
+      hiddenNavPaths: [],
+      globalHiddenNavPaths: [],
+      tenantHiddenNavPaths: [],
+    });
   });
 
   it("shows need-workspace copy when there is no active tenant", () => {

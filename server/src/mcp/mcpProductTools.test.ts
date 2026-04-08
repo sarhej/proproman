@@ -106,7 +106,7 @@ describe("MCP product tools (slug + structure write)", () => {
     const fn = tools.get("drd_create_product")!;
 
     await runWithTenant(tenantCtx, () =>
-      fn({ name: "Line A" }, ctx("u1", UserRole.ADMIN))
+      fn({ workspaceSlug: "ws", name: "Line A" }, ctx("u1", UserRole.ADMIN))
     );
 
     expect(mocks.productCreate).toHaveBeenCalledWith({
@@ -131,7 +131,7 @@ describe("MCP product tools (slug + structure write)", () => {
     const fn = tools.get("drd_create_product")!;
 
     await runWithTenant(tenantCtx, () =>
-      fn({ name: "B", slug: "custom-slug" }, ctx("u1", UserRole.ADMIN))
+      fn({ workspaceSlug: "ws", name: "B", slug: "custom-slug" }, ctx("u1", UserRole.ADMIN))
     );
 
     expect(mocks.productCreate).toHaveBeenCalledWith({
@@ -153,7 +153,7 @@ describe("MCP product tools (slug + structure write)", () => {
 
     await expect(
       runWithTenant(tenantCtx, () =>
-        fn({ id: "p1", slug: "taken" }, ctx("u1", UserRole.ADMIN))
+        fn({ workspaceSlug: "ws", id: "p1", slug: "taken" }, ctx("u1", UserRole.ADMIN))
       )
     ).rejects.toThrow(/slug already in use/i);
 
@@ -179,7 +179,7 @@ describe("MCP product tools (slug + structure write)", () => {
     const fn = tools.get("drd_update_product")!;
 
     const out = await runWithTenant(tenantCtx, () =>
-      fn({ id: "p1", slug: "a2" }, ctx("u1", UserRole.ADMIN))
+      fn({ workspaceSlug: "ws", id: "p1", slug: "a2" }, ctx("u1", UserRole.ADMIN))
     );
 
     expect(mocks.productUpdate).toHaveBeenCalled();

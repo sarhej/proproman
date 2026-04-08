@@ -1,3 +1,4 @@
+import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -97,6 +98,12 @@ type Props = {
   currentUserId: string | null;
   readOnly: boolean;
   adminOnlyFields?: boolean;
+  /** Tracks whether the details form has unsaved edits (for hub refresh gating). */
+  formDirtyRef?: MutableRefObject<boolean>;
+  /** Another user or MCP changed this initiative while the form was dirty */
+  remoteChangePending?: boolean;
+  onDismissRemoteChange?: () => void;
+  onReloadFromServerAfterRemoteChange?: (initiativeId: string) => Promise<void>;
   onClose: () => void;
   onSaved: () => Promise<void>;
 };
@@ -184,6 +191,10 @@ export function InitiativeDetailPanel({
   currentUserId,
   readOnly,
   adminOnlyFields = true,
+  formDirtyRef,
+  remoteChangePending = false,
+  onDismissRemoteChange,
+  onReloadFromServerAfterRemoteChange,
   onClose,
   onSaved
 }: Props) {
@@ -230,6 +241,15 @@ export function InitiativeDetailPanel({
   const [successCriteria, setSuccessCriteria] = useState<SuccessCriterion[]>([]);
   const [newCriterionTitle, setNewCriterionTitle] = useState("");
   const [displayInitiative, setDisplayInitiative] = useState<Initiative | null>(null);
+  const [saveConflict, setSaveConflict] = useState(false);
+
+  const trackDirty = useCallback(
+    (dirty: boolean) => {
+      setIsDirty(dirty);
+      if (formDirtyRef) formDirtyRef.current = dirty;
+    },
+    [formDirtyRef]
+  );
 
   const availableDependencies = useMemo(
     () => allInitiatives.filter((i) => i.id !== initiative?.id),
@@ -253,7 +273,8 @@ export function InitiativeDetailPanel({
   useEffect(() => {
     const current = displayInitiative ?? initiative;
     if (!current) return;
-    setIsDirty(false);
+    trackDirty(false);
+    setSaveConflict(false);
     setShowUnsavedDialog(false);
     setSelectedFeatureId(current.features?.[0]?.id ?? "");
     setTimelineStart(current.startDate ? current.startDate.slice(0, 10) : "");
@@ -262,7 +283,7 @@ export function InitiativeDetailPanel({
     void api.getDemands().then((r) => setDemands(r.demands));
     void api.getInitiativeComments(current.id).then((r) => setComments(r.comments));
     setSuccessCriteria(current.successCriteriaItems ?? []);
-  }, [displayInitiative, initiative]);
+  }, [displayInitiative, initiative, trackDirty]);
 
   if (!initiative) return null;
   const current = displayInitiative ?? initiative;
@@ -300,6 +321,44 @@ export function InitiativeDetailPanel({
       <div className="h-full w-full max-w-full lg:max-w-[780px] overflow-y-auto bg-white p-4 lg:p-6" onClick={(e) => e.stopPropagation()}>
         <div className="h-1 w-full rounded-t" style={{ background: initiative.domain?.color || "#94a3b8" }} />
 
+        {(remoteChangePending || saveConflict) && (
+          <div
+            className="mb-3 flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+            data-print-hide
+          >
+            <p>{saveConflict ? t("hub.saveConflict") : t("hub.remoteEditBanner")}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={async () => {
+                  if (onReloadFromServerAfterRemoteChange) {
+                    await onReloadFromServerAfterRemoteChange(initiative.id);
+                  } else {
+                    const r = await api.getInitiative(initiative.id);
+                    setDisplayInitiative(r.initiative);
+                  }
+                  setSaveConflict(false);
+                  onDismissRemoteChange?.();
+                  trackDirty(false);
+                  await onSaved();
+                }}
+              >
+                {t("hub.reloadFromServer")}
+              </Button>
+              {saveConflict ? (
+                <Button variant="ghost" type="button" onClick={() => setSaveConflict(false)}>
+                  {t("hub.keepEditing")}
+                </Button>
+              ) : (
+                <Button variant="ghost" type="button" onClick={() => onDismissRemoteChange?.()}>
+                  {t("hub.dismiss")}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {showUnsavedDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => e.stopPropagation()}>
             <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
@@ -315,7 +374,7 @@ export function InitiativeDetailPanel({
                   variant="danger"
                   onClick={() => {
                     setShowUnsavedDialog(false);
-                    setIsDirty(false);
+                    trackDirty(false);
                     onClose();
                   }}
                 >
@@ -394,12 +453,22 @@ export function InitiativeDetailPanel({
                 readOnly={readOnly}
                 adminOnlyFields={adminOnlyFields}
                 hideSaveButton
-                onDirtyChange={setIsDirty}
+                onDirtyChange={trackDirty}
                 onSubmit={async (payload) => {
-                  const r = await api.updateInitiative(initiative.id, payload);
-                  setDisplayInitiative(r.initiative);
-                  setIsDirty(false);
-                  await onSaved();
+                  try {
+                    const r = await api.updateInitiative(initiative.id, payload);
+                    setDisplayInitiative(r.initiative);
+                    trackDirty(false);
+                    setSaveConflict(false);
+                    await onSaved();
+                  } catch (e) {
+                    const err = e as Error & { status?: number; body?: { initiative?: Initiative; error?: string } };
+                    if (err.status === 409 && err.body?.initiative) {
+                      setSaveConflict(true);
+                      return;
+                    }
+                    throw e;
+                  }
                 }}
                 onArchive={
                   readOnly

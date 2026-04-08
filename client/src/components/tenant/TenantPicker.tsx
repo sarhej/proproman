@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
+import { setWorkspaceTenantSessionForTab } from "../../lib/workspaceTenantHeader";
 import type { Tenant, TenantMembership } from "../../types/models";
 import { Card } from "../ui/Card";
 
@@ -53,6 +54,7 @@ export function TenantPicker({ onSelected }: Props) {
     setSwitching(tenant.id);
     setError(null);
     try {
+      setWorkspaceTenantSessionForTab(tenant.id);
       await api.switchTenant(tenant.id);
       onSelected(tenant);
     } catch (e) {

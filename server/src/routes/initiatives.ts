@@ -11,6 +11,7 @@ import {
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite, requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
+import { notifyHubChange } from "../services/hubChangeHub.js";
 import { getTenantId } from "../tenant/requireTenant.js";
 import { initiativeInclude } from "./serializers.js";
 import { initiativeInputSchema, updatePositionsSchema } from "./schemas.js";
@@ -306,6 +307,13 @@ initiativesRouter.post("/", requireWorkspaceContentWrite(), async (req, res) => 
   });
 
   await logAudit(req.user!.id, "CREATED", "INITIATIVE", initiative.id, { title: initiative.title });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "INITIATIVE",
+    operation: "CREATE",
+    entityId: initiative.id,
+    initiativeId: initiative.id
+  });
   res.status(201).json({ initiative });
 });
 
@@ -354,6 +362,23 @@ initiativesRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) =
     delete payload.dealStage;
     delete payload.isEpic;
   }
+
+  if (payload.baseUpdatedAt !== undefined) {
+    const clientMs = new Date(payload.baseUpdatedAt).getTime();
+    const serverMs = existing.updatedAt.getTime();
+    if (Number.isNaN(clientMs) || Math.abs(clientMs - serverMs) > 2) {
+      const initiativeConflict = await prisma.initiative.findUnique({
+        where: { id },
+        include: initiativeInclude
+      });
+      res.status(409).json({
+        error: "Conflict: initiative was changed elsewhere.",
+        initiative: initiativeConflict
+      });
+      return;
+    }
+  }
+  delete (payload as { baseUpdatedAt?: string }).baseUpdatedAt;
 
   await prisma.$transaction(async (tx) => {
     if (payload.personaImpacts) {
@@ -439,6 +464,13 @@ initiativesRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) =
   } else {
     await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id);
   }
+  notifyHubChange({
+    tenantId,
+    entityType: "INITIATIVE",
+    operation: "UPDATE",
+    entityId: id,
+    initiativeId: id
+  });
   res.json({ initiative });
 });
 
@@ -466,6 +498,13 @@ initiativesRouter.post("/reorder", requireWorkspaceContentWrite(), async (req, r
       })
     )
   );
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "INITIATIVE",
+    operation: "REORDER",
+    entityId: null,
+    initiativeId: null
+  });
   res.json({ ok: true });
 });
 
@@ -481,6 +520,13 @@ initiativesRouter.patch("/:id/archive", requireWorkspaceContentWrite(), async (r
     include: initiativeInclude
   });
   await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id, { archived: true });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "INITIATIVE",
+    operation: "UPDATE",
+    entityId: id,
+    initiativeId: id
+  });
   res.json({ initiative });
 });
 
@@ -496,6 +542,13 @@ initiativesRouter.patch("/:id/unarchive", requireWorkspaceContentWrite(), async 
     include: initiativeInclude
   });
   await logAudit(req.user!.id, "UPDATED", "INITIATIVE", id, { archived: false });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "INITIATIVE",
+    operation: "UPDATE",
+    entityId: id,
+    initiativeId: id
+  });
   res.json({ initiative });
 });
 
@@ -504,5 +557,12 @@ initiativesRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, r
   const existing = await prisma.initiative.findUnique({ where: { id } });
   await prisma.initiative.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "INITIATIVE", id, { title: existing?.title });
+  notifyHubChange({
+    tenantId: getTenantId(req),
+    entityType: "INITIATIVE",
+    operation: "DELETE",
+    entityId: id,
+    initiativeId: id
+  });
   res.status(204).send();
 });
