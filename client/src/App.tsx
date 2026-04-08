@@ -775,7 +775,6 @@ function App() {
                   canCreateInitiative={perms.canEditContent}
                   currentUserId={user?.id ?? null}
                   onOpenInitiative={(i) => setSelected(i)}
-                  onRefreshBoard={board.refresh}
                   quickFilter={board.filters.quick}
                   boardFilters={board.filters}
                 />

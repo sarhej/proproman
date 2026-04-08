@@ -14,6 +14,11 @@ import { DomainBadge } from "../ui/DomainBadge";
 
 type Props = {
   products: ProductWithHierarchy[];
+  /**
+   * Unfiltered hierarchy from the server (parent state before quick filter / labels narrow children).
+   * Required for correct feature/initiative reorder API payloads. Defaults to `products` when omitted.
+   */
+  hierarchyProducts?: ProductWithHierarchy[];
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
@@ -105,6 +110,36 @@ function statusColor(status: string): string {
     case "PLANNED": return "bg-amber-100 text-amber-800";
     case "BLOCKED": return "bg-red-100 text-red-800";
     default: return "bg-slate-100 text-slate-600";
+  }
+}
+
+/** Product Explorer row tint: done = green, in progress = yellow, not started = light blue. */
+function explorerInitiativeRowBg(status: string): string {
+  switch (status) {
+    case "DONE":
+      return "bg-emerald-50";
+    case "IN_PROGRESS":
+      return "bg-yellow-50";
+    case "BLOCKED":
+      return "bg-red-50";
+    case "IDEA":
+    case "PLANNED":
+    default:
+      return "bg-sky-50";
+  }
+}
+
+function explorerFeatureRowBg(status: string): string {
+  switch (status) {
+    case "DONE":
+      return "bg-emerald-50";
+    case "IN_PROGRESS":
+    case "BUSINESS_APPROVAL":
+      return "bg-yellow-50";
+    case "IDEA":
+    case "PLANNED":
+    default:
+      return "bg-sky-50";
   }
 }
 
@@ -415,7 +450,7 @@ function RequirementRow({
 
 function FeatureRow({
   feature,
-  orderedSiblingFeatures,
+  reorderSiblingFeatures,
   users,
   isAdmin,
   onRefresh,
@@ -426,7 +461,8 @@ function FeatureRow({
   searchActive
 }: {
   feature: Feature;
-  orderedSiblingFeatures: Feature[];
+  /** Full sibling list for this initiative (server order); reorder API requires every feature id once. */
+  reorderSiblingFeatures: Feature[];
   users: User[];
   isAdmin: boolean;
   onRefresh: () => Promise<void>;
@@ -451,12 +487,12 @@ function FeatureRow({
     if (onFeatureUpdated && res) onFeatureUpdated({ ...res.feature, requirements: feature.requirements });
     else await onRefresh();
   };
-  const featIndex = orderedSiblingFeatures.findIndex((f) => f.id === feature.id);
+  const featIndex = reorderSiblingFeatures.findIndex((f) => f.id === feature.id);
   async function reorderFeature(delta: -1 | 1) {
-    const idx = orderedSiblingFeatures.findIndex((f) => f.id === feature.id);
+    const idx = reorderSiblingFeatures.findIndex((f) => f.id === feature.id);
     const ni = idx + delta;
-    if (idx < 0 || ni < 0 || ni >= orderedSiblingFeatures.length) return;
-    const next = orderedSiblingFeatures.slice();
+    if (idx < 0 || ni < 0 || ni >= reorderSiblingFeatures.length) return;
+    const next = reorderSiblingFeatures.slice();
     const tmp = next[idx]!;
     next[idx] = next[ni]!;
     next[ni] = tmp;
@@ -467,7 +503,9 @@ function FeatureRow({
 
   return (
     <>
-      <tr className="group/row border-t border-slate-100 text-xs hover:bg-slate-50">
+      <tr
+        className={`group/row border-t border-slate-100 text-xs ${explorerFeatureRowBg(feature.status)} hover:brightness-[0.98]`}
+      >
         <td className="py-1.5 pl-12 pr-2">
           <button
             type="button"
@@ -481,7 +519,7 @@ function FeatureRow({
             {displayOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           {isAdmin ? (
-            <ReorderArrows index={featIndex} count={orderedSiblingFeatures.length} onMove={reorderFeature} />
+            <ReorderArrows index={featIndex} count={reorderSiblingFeatures.length} onMove={reorderFeature} />
           ) : null}
           {isAdmin ? (
             <>
@@ -580,6 +618,8 @@ function FeatureRow({
 
 function InitiativeRow({
   initiative,
+  reorderSiblingInitiatives,
+  reorderSiblingFeatures,
   users,
   isAdmin,
   onOpen,
@@ -593,6 +633,10 @@ function InitiativeRow({
   searchActive
 }: {
   initiative: Initiative;
+  /** Full epic list under this product (reorder / drag payloads). */
+  reorderSiblingInitiatives: Initiative[];
+  /** Full feature list under this initiative (reorder API). */
+  reorderSiblingFeatures: Feature[];
   users: User[];
   isAdmin: boolean;
   onOpen: (initiative: Initiative) => void;
@@ -635,12 +679,29 @@ function InitiativeRow({
   };
 
   const orderedFeatures = sortSiblingsByOrder(initiative.features ?? []);
+  const initReorderIndex = reorderSiblingInitiatives.findIndex((i) => i.id === initiative.id);
+
+  async function reorderInitiative(delta: -1 | 1) {
+    const list = reorderSiblingInitiatives;
+    const idx = list.findIndex((i) => i.id === initiative.id);
+    const ni = idx + delta;
+    if (idx < 0 || ni < 0 || ni >= list.length) return;
+    const next = list.slice();
+    const tmp = next[idx]!;
+    next[idx] = next[ni]!;
+    next[ni] = tmp;
+    const updates = next.map((init, i) => ({ id: init.id, domainId: init.domainId, sortOrder: i }));
+    await api.reorderInitiatives(updates);
+    await onRefresh();
+  }
+
+  const epicBg = explorerInitiativeRowBg(initiative.status);
 
   return (
     <>
       <tr
         ref={!isDragOverlay ? mergeRef : undefined}
-        className={`group/row border-t border-slate-200 text-sm hover:bg-slate-50 ${isDragging && !isDragOverlay ? "opacity-30" : ""} ${isDragOverlay ? "bg-white shadow-lg" : ""} ${isOver && !isDragOverlay ? "ring-1 ring-inset ring-sky-300 bg-sky-50/50" : ""}`}
+        className={`group/row border-t border-slate-200 text-sm ${epicBg} hover:brightness-[0.98] ${isDragging && !isDragOverlay ? "opacity-30" : ""} ${isDragOverlay ? "bg-white shadow-lg" : ""} ${isOver && !isDragOverlay ? "ring-1 ring-inset ring-sky-300" : ""}`}
       >
         <td className="py-2 pl-8 pr-2">
           {isAdmin ? (
@@ -663,6 +724,13 @@ function InitiativeRow({
           >
             {displayOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
+          {isAdmin && !isDragOverlay ? (
+            <ReorderArrows
+              index={initReorderIndex}
+              count={reorderSiblingInitiatives.length}
+              onMove={reorderInitiative}
+            />
+          ) : null}
           <button
             type="button"
             className="font-medium hover:text-sky-700 hover:underline"
@@ -730,7 +798,7 @@ function InitiativeRow({
           <FeatureRow
             key={feature.id}
             feature={feature}
-            orderedSiblingFeatures={orderedFeatures}
+            reorderSiblingFeatures={reorderSiblingFeatures}
             users={users}
             isAdmin={isAdmin}
             onRefresh={onRefresh}
@@ -854,6 +922,7 @@ function InlineAddInitiative({
 
 function ProductRow({
   product,
+  hierarchySource,
   users,
   domains,
   isAdmin,
@@ -870,6 +939,7 @@ function ProductRow({
   searchActive
 }: {
   product: ProductWithHierarchy;
+  hierarchySource: ProductWithHierarchy[];
   users: User[];
   domains: Domain[];
   isAdmin: boolean;
@@ -906,7 +976,9 @@ function ProductRow({
     },
     { done: 0, total: 0 }
   );
-  const sortedInitiatives = product.initiatives.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+  const sourceProduct = hierarchySource.find((p) => p.id === product.id) ?? product;
+  const reorderInitiativesList = sortSiblingsByOrder(sourceProduct.initiatives);
+  const displayInitiatives = sortSiblingsByOrder(product.initiatives);
 
   return (
     <>
@@ -1027,22 +1099,29 @@ function ProductRow({
           </div>
         </td>
       </tr>
-      {displayOpen && sortedInitiatives.map((initiative) => (
-        <InitiativeRow
-          key={initiative.id}
-          initiative={initiative}
-          users={users}
-          isAdmin={isAdmin}
-          onOpen={onOpenInitiative}
-          onRefresh={onRefresh}
-          onInitiativeUpdated={onInitiativeUpdated}
-          onFeatureUpdated={onFeatureUpdated}
-          onRequirementUpdated={onRequirementUpdated}
-          expandAllSignal={expandAllSignal}
-          collapseAllSignal={collapseAllSignal}
-          searchActive={searchActive}
-        />
-      ))}
+      {displayOpen &&
+        displayInitiatives.map((initiative) => {
+          const fullInit = sourceProduct.initiatives.find((i) => i.id === initiative.id) ?? initiative;
+          const reorderFeatures = sortSiblingsByOrder(fullInit.features ?? []);
+          return (
+            <InitiativeRow
+              key={initiative.id}
+              initiative={initiative}
+              reorderSiblingInitiatives={reorderInitiativesList}
+              reorderSiblingFeatures={reorderFeatures}
+              users={users}
+              isAdmin={isAdmin}
+              onOpen={onOpenInitiative}
+              onRefresh={onRefresh}
+              onInitiativeUpdated={onInitiativeUpdated}
+              onFeatureUpdated={onFeatureUpdated}
+              onRequirementUpdated={onRequirementUpdated}
+              expandAllSignal={expandAllSignal}
+              collapseAllSignal={collapseAllSignal}
+              searchActive={searchActive}
+            />
+          );
+        })}
       {displayOpen && canCreateInitiative && product.initiatives.length > 0 ? (
         <tr className="border-t border-slate-100 text-xs">
           <td className="py-1 pl-8 pr-2">
@@ -1063,6 +1142,7 @@ function ProductRow({
 
 export function ProductTree({
   products,
+  hierarchyProducts,
   users,
   domains,
   isAdmin,
@@ -1081,13 +1161,23 @@ export function ProductTree({
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
   const searchActive = Boolean(quickFilter?.trim());
+  const hierarchy = hierarchyProducts ?? products;
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
-  const allInitiatives = products.flatMap((p) => p.initiatives);
+  const allInitiatives = hierarchy.flatMap((p) => p.initiatives);
+
+  const dragOverlayReorder =
+    draggingInitiative &&
+    (() => {
+      const op = hierarchy.find((p) => p.initiatives.some((i) => i.id === draggingInitiative.id));
+      const rInits = op ? sortSiblingsByOrder(op.initiatives) : [draggingInitiative];
+      const full = op?.initiatives.find((i) => i.id === draggingInitiative.id) ?? draggingInitiative;
+      return { rInits, rFeats: sortSiblingsByOrder(full.features ?? []) };
+    })();
 
   function handleDragStart(event: DragStartEvent) {
     const initiative = event.active.data.current?.initiative as Initiative | undefined;
@@ -1107,7 +1197,7 @@ export function ProductTree({
     if (!overId.startsWith("product-")) {
       const targetInitiative = allInitiatives.find((i) => i.id === overId);
       if (!targetInitiative || initiative.productId !== targetInitiative.productId || initiative.id === targetInitiative.id) return;
-      const product = products.find((p) => p.id === initiative.productId);
+      const product = hierarchy.find((p) => p.id === initiative.productId);
       if (!product) return;
       const sorted = product.initiatives.slice().sort((a, b) => a.sortOrder - b.sortOrder);
       const fromIdx = sorted.findIndex((i) => i.id === initiative.id);
@@ -1148,6 +1238,7 @@ export function ProductTree({
               <ProductRow
                 key={product.id}
                 product={product}
+                hierarchySource={hierarchy}
                 users={users}
                 domains={domains}
                 isAdmin={isAdmin}
@@ -1183,11 +1274,13 @@ export function ProductTree({
         </table>
       </div>
       <DragOverlay>
-        {draggingInitiative ? (
+        {draggingInitiative && dragOverlayReorder ? (
           <table className="w-full text-left">
             <tbody>
               <InitiativeRow
                 initiative={draggingInitiative}
+                reorderSiblingInitiatives={dragOverlayReorder.rInits}
+                reorderSiblingFeatures={dragOverlayReorder.rFeats}
                 users={users}
                 isAdmin={false}
                 onOpen={() => {}}

@@ -12,7 +12,6 @@ type Props = {
   canCreateInitiative: boolean;
   currentUserId: string | null;
   onOpenInitiative: (initiative: Initiative) => void;
-  onRefreshBoard?: () => Promise<void>;
   quickFilter?: string;
   /** Same filters as the nav FiltersBar (pillar, owner, priority, horizon, archived, …) — applied to epics in the tree */
   boardFilters?: BoardFilters;
@@ -59,7 +58,6 @@ export function ProductExplorerPage({
   canCreateInitiative,
   currentUserId,
   onOpenInitiative,
-  onRefreshBoard,
   quickFilter,
   boardFilters
 }: Props) {
@@ -307,6 +305,7 @@ export function ProductExplorerPage({
       </div>
       <ProductTree
         products={filtered}
+        hierarchyProducts={products}
         expandAllSignal={expandAllTick}
         collapseAllSignal={collapseAllTick}
         quickFilter={quickFilter}
@@ -317,10 +316,7 @@ export function ProductExplorerPage({
         canCreateInitiative={canCreateInitiative}
         currentUserId={currentUserId}
         onOpenInitiative={onOpenInitiative}
-        onRefresh={async () => {
-          await load();
-          await onRefreshBoard?.();
-        }}
+        onRefresh={load}
         onInitiativeUpdated={onInitiativeUpdated}
         onFeatureUpdated={onFeatureUpdated}
         onRequirementUpdated={onRequirementUpdated}
