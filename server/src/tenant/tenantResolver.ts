@@ -2,17 +2,33 @@ import { NextFunction, Request, Response } from "express";
 import { prisma } from "../db.js";
 import { runWithTenant, TenantContext } from "./tenantContext.js";
 
+async function tryResolveActiveTenant(
+  userId: string,
+  tenantId: string
+): Promise<TenantContext | null> {
+  const membership = await prisma.tenantMembership.findUnique({
+    where: { tenantId_userId: { tenantId, userId } },
+    include: { tenant: { select: { id: true, slug: true, schemaName: true, status: true } } },
+  });
+  if (!membership || membership.tenant.status !== "ACTIVE") {
+    return null;
+  }
+  return {
+    tenantId: membership.tenant.id,
+    tenantSlug: membership.tenant.slug,
+    schemaName: membership.tenant.schemaName,
+    membershipRole: membership.role,
+  };
+}
+
 /**
  * Resolve tenant from:
- *   1. X-Tenant-Id header (explicit, e.g. API clients)
- *   2. req.session.activeTenantId (browser sessions)
- *   3. req.user.activeTenantId (persisted default)
+ *   1. X-Tenant-Id header (explicit) — tried alone; no fallback if invalid (caller chose a workspace).
+ *   2. Otherwise, in order: req.session.activeTenantId, req.user.activeTenantId — try each until one
+ *      is an ACTIVE membership. This heals stale sessions (e.g. session still points at a removed
+ *      workspace while the DB default was updated) so /api/auth/me and /api/meta stay consistent.
  *
- * After resolution, validates membership and wraps the rest of the
- * request in an AsyncLocalStorage context carrying TenantContext.
- *
- * If no tenant can be resolved the request continues without tenant context.
- * Routes that require it should use requireTenant middleware.
+ * When a tenant is resolved, session.activeTenantId is updated to match so the next request agrees.
  */
 export async function tenantResolver(req: Request, res: Response, next: NextFunction): Promise<void> {
   const user = req.user;
@@ -24,33 +40,43 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
   const rawHeader = req.headers["x-tenant-id"];
   const fromHeader =
     typeof rawHeader === "string" && rawHeader.trim() !== "" ? rawHeader.trim() : undefined;
-  const tenantId =
-    fromHeader ?? req.session?.activeTenantId ?? user.activeTenantId ?? undefined;
-
-  if (!tenantId) {
-    next();
-    return;
-  }
 
   try {
-    const membership = await prisma.tenantMembership.findUnique({
-      where: { tenantId_userId: { tenantId, userId: user.id } },
-      include: { tenant: { select: { id: true, slug: true, schemaName: true, status: true } } },
-    });
+    let ctx: TenantContext | null = null;
 
-    if (!membership || membership.tenant.status !== "ACTIVE") {
+    if (fromHeader) {
+      ctx = await tryResolveActiveTenant(user.id, fromHeader);
+    } else {
+      const seen = new Set<string>();
+      const candidates: string[] = [];
+      const sessionId =
+        typeof req.session?.activeTenantId === "string" && req.session.activeTenantId.trim() !== ""
+          ? req.session.activeTenantId.trim()
+          : undefined;
+      const userId =
+        typeof user.activeTenantId === "string" && user.activeTenantId.trim() !== ""
+          ? user.activeTenantId.trim()
+          : undefined;
+      for (const id of [sessionId, userId]) {
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        candidates.push(id);
+      }
+      for (const tenantId of candidates) {
+        ctx = await tryResolveActiveTenant(user.id, tenantId);
+        if (ctx) break;
+      }
+    }
+
+    if (!ctx) {
       next();
       return;
     }
 
-    const ctx: TenantContext = {
-      tenantId: membership.tenant.id,
-      tenantSlug: membership.tenant.slug,
-      schemaName: membership.tenant.schemaName,
-      membershipRole: membership.role,
-    };
-
     req.tenantContext = ctx;
+    if (req.session && req.session.activeTenantId !== ctx.tenantId) {
+      req.session.activeTenantId = ctx.tenantId;
+    }
 
     runWithTenant(ctx, () => next());
   } catch (err) {

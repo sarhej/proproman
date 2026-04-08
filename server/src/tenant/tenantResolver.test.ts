@@ -250,4 +250,62 @@ describe("tenantResolver middleware", () => {
     expect(next).toHaveBeenCalledOnce();
     expect(req.tenantContext).toBeUndefined();
   });
+
+  it("falls back to user.activeTenantId when session points at a removed or invalid workspace", async () => {
+    const session = { activeTenantId: "t-stale" } as Request["session"];
+    const req = createReq({
+      user: { id: "u1", activeTenantId: "t-user" } as Express.User,
+      session,
+    });
+    const res = createRes();
+    const next = vi.fn();
+
+    mockPrisma.tenantMembership.findUnique.mockImplementation(
+      async (args: { where: { tenantId_userId: { tenantId: string; userId: string } } }) => {
+        const tid = args.where.tenantId_userId.tenantId;
+        if (tid === "t-stale") return null;
+        if (tid === "t-user") {
+          return {
+            role: "ADMIN" as const,
+            tenant: {
+              id: "t-user",
+              slug: "gamma",
+              schemaName: "tenant_gamma",
+              status: "ACTIVE" as const,
+            },
+          };
+        }
+        return null;
+      }
+    );
+
+    await tenantResolver(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(req.tenantContext!.tenantId).toBe("t-user");
+    expect(session.activeTenantId).toBe("t-user");
+    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not fall back when X-Tenant-Id is set but invalid", async () => {
+    const req = createReq({
+      user: { id: "u1", activeTenantId: "t-user" } as Express.User,
+      headers: { "x-tenant-id": "t-bad-header" },
+      session: { activeTenantId: "t-session" } as Request["session"],
+    });
+    const res = createRes();
+    const next = vi.fn();
+
+    mockPrisma.tenantMembership.findUnique.mockResolvedValue(null);
+
+    await tenantResolver(req, res, next);
+
+    expect(req.tenantContext).toBeUndefined();
+    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.tenantMembership.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenantId_userId: { tenantId: "t-bad-header", userId: "u1" } },
+      })
+    );
+  });
 });
