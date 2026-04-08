@@ -151,7 +151,7 @@ server.registerTool(
   }
 );
 
-// --- Domains, products, personas (read-only list)
+// --- Domains, products, personas
 server.registerTool(
   "drd_list_domains",
   {
@@ -162,6 +162,30 @@ server.registerTool(
   async () => {
     const data = await drdFetch<{ domains: unknown[] }>("/api/domains");
     return textContent(JSON.stringify(data.domains, null, 2));
+  }
+);
+
+server.registerTool(
+  "drd_create_domain",
+  {
+    title: "Create domain",
+    description: "Create a new domain (pillar). Requires workspace OWNER or ADMIN.",
+    inputSchema: z.object({
+      name: z.string().min(1),
+      color: z.string().min(1),
+      sortOrder: z.number().int().optional()
+    })
+  },
+  async (body) => {
+    const data = await drdFetch<{ domain: unknown }>("/api/domains", {
+      method: "POST",
+      body: JSON.stringify({
+        name: body.name,
+        color: body.color,
+        sortOrder: body.sortOrder ?? 0
+      })
+    });
+    return textContent(JSON.stringify(data.domain, null, 2));
   }
 );
 

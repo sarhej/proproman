@@ -6,6 +6,7 @@ import * as tenantUserRefs from "../lib/tenantUserRefs.js";
 
 const mocks = vi.hoisted(() => ({
   domainFindMany: vi.fn().mockResolvedValue([]),
+  domainCreate: vi.fn(),
   personaFindMany: vi.fn().mockResolvedValue([]),
   revenueStreamFindMany: vi.fn().mockResolvedValue([]),
   productFindMany: vi.fn().mockResolvedValue([]),
@@ -45,7 +46,7 @@ vi.mock("../services/ontologyBrief.js", () => ({
 
 vi.mock("../db.js", () => ({
   prisma: {
-    domain: { findMany: mocks.domainFindMany },
+    domain: { findMany: mocks.domainFindMany, create: mocks.domainCreate },
     persona: { findMany: mocks.personaFindMany },
     revenueStream: { findMany: mocks.revenueStreamFindMany },
     product: {
@@ -195,6 +196,17 @@ describe("MCP workspace role matrix (writes)", () => {
     expect(mocks.productCreate).not.toHaveBeenCalled();
   });
 
+  it("MEMBER cannot create domain (structure)", async () => {
+    const tools = createToolRegistry();
+    const createDomain = tools.get("drd_create_domain");
+    await expect(
+      runWithTenant(tenant("MEMBER"), () =>
+        createDomain!({ name: "Growth", color: "#336699" }, ctx("caller", "EDITOR"))
+      )
+    ).rejects.toThrow("requires workspace OWNER or ADMIN");
+    expect(mocks.domainCreate).not.toHaveBeenCalled();
+  });
+
   it("MEMBER can create initiative as self owner", async () => {
     mocks.initiativeCreate.mockResolvedValueOnce({ id: "new-i" });
     const tools = createToolRegistry();
@@ -267,6 +279,19 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
       createProduct!({ name: "Prod" }, ctx("u1", UserRole.VIEWER))
     );
     expect(mocks.productCreate).toHaveBeenCalled();
+  });
+
+  it.each([
+    ["OWNER", "OWNER"] as const,
+    ["ADMIN", "ADMIN"] as const,
+  ])("%s can create domain", async (_label, membership) => {
+    mocks.domainCreate.mockResolvedValueOnce({ id: "dom-new", name: "Growth", color: "#336699", sortOrder: 0 });
+    const tools = createToolRegistry();
+    const createDomain = tools.get("drd_create_domain");
+    await runWithTenant(tenant(membership), () =>
+      createDomain!({ name: "Growth", color: "#336699" }, ctx("u1", UserRole.VIEWER))
+    );
+    expect(mocks.domainCreate).toHaveBeenCalled();
   });
 });
 

@@ -377,6 +377,33 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
+    "drd_create_domain",
+    {
+      title: "Create domain",
+      description:
+        "Create a new domain (pillar). Requires workspace OWNER or ADMIN (structure write).",
+      inputSchema: z.object({
+        name: z.string().min(1),
+        color: z.string().min(1),
+        sortOrder: z.number().int().optional()
+      })
+    },
+    async (body, ctx) => {
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const domain = await prisma.domain.create({
+        data: {
+          name: body.name,
+          color: body.color,
+          sortOrder: body.sortOrder ?? 0
+        }
+      });
+      return textContent(JSON.stringify(domain, null, 2));
+    }
+  );
+
+  server.registerTool(
     "drd_list_products",
     { title: "List products", description: "List all products (with hierarchy).", inputSchema: z.object({}) },
     async (_args, ctx) => {
