@@ -619,6 +619,10 @@ function App() {
                 onBack={() => navigate("/")}
                 prefilledContact={{ email: user.email, name: user.name ?? "" }}
                 backLabelKey="app.pendingBackToSetup"
+                onWorkspaceProvisioned={async (slug) => {
+                  await refreshAuth();
+                  navigate(`/t/${encodeURIComponent(slug)}`, { replace: true });
+                }}
               />
             }
           />
@@ -1075,6 +1079,10 @@ function App() {
               <RegisterTeamPage
                 onBack={() => navigate("/")}
                 prefilledContact={{ email: user.email, name: user.name ?? "" }}
+                onWorkspaceProvisioned={async (slug) => {
+                  await refreshAuth();
+                  navigate(`/t/${encodeURIComponent(slug)}`, { replace: true });
+                }}
               />
             }
           />

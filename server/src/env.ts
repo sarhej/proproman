@@ -71,6 +71,14 @@ const envSchema = z.object({
       if (s === "true" || s === "1" || s === "yes") return true;
       return null;
     }),
+  /**
+   * Temporary onboarding: after POST /api/tenant-requests, immediately provision the workspace (no SUPER_ADMIN review).
+   * Set to false or unset when manual approval is required again.
+   */
+  AUTO_APPROVE_WORKSPACE_REQUESTS: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1" || v === "yes"),
 });
 
 export const env = envSchema

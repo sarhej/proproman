@@ -3,6 +3,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { SeoHead } from "../components/seo/SeoHead";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { suggestSlugFromEmailDomain } from "../lib/workspaceSlugFromEmail";
 
 const SLUG_PATTERN = /^[a-z0-9-]{2,50}$/;
 
@@ -30,7 +31,7 @@ export function PlatformPendingPage({
   onRequestNewWorkspace,
 }: Props) {
   const { t } = useTranslation();
-  const [slugDraft, setSlugDraft] = useState("");
+  const [slugDraft, setSlugDraft] = useState(() => suggestSlugFromEmailDomain(userEmail) ?? "");
   const [slugErr, setSlugErr] = useState<string | null>(null);
 
   function handleOpenWorkspace(e: React.FormEvent) {

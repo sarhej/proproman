@@ -15,6 +15,8 @@ export type RegisterTeamPageProps = {
   prefilledContact?: { email: string; name: string };
   /** i18n key for back navigation (default: register.backToHome). */
   backLabelKey?: string;
+  /** When server auto-provisions the workspace (AUTO_APPROVE), navigate without manual review. */
+  onWorkspaceProvisioned?: (slug: string) => void | Promise<void>;
 };
 
 function normalizeUiLocale(i18nLanguage: string): string | undefined {
@@ -23,7 +25,7 @@ function normalizeUiLocale(i18nLanguage: string): string | undefined {
   return undefined;
 }
 
-export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: RegisterTeamPageProps) {
+export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWorkspaceProvisioned }: RegisterTeamPageProps) {
   const { t, i18n } = useTranslation();
   const backLabel = t(backLabelKey ?? "register.backToHome");
   const domainSuggestion = prefilledContact?.email ? suggestSlugFromEmailDomain(prefilledContact.email) : null;
@@ -92,6 +94,11 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: Reg
         trustCompanyDomain: trustCompanyDomain && canTrustDomain ? true : undefined,
         ...(locale ? { locale } : {}),
       });
+      const provisionedSlug = res.tenant?.slug;
+      if (res.status === "APPROVED" && provisionedSlug && onWorkspaceProvisioned) {
+        await onWorkspaceProvisioned(provisionedSlug);
+        return;
+      }
       const n = res.emailNotifications;
       setSubmitEmailMeta({
         adminsNotifiedOnSubmit: n?.adminsNotifiedOnSubmit === true,

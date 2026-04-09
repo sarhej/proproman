@@ -535,9 +535,14 @@ export const api = {
   }) =>
     request<
       TenantRequest & {
+        tenant?: Tenant | null;
         emailNotifications?: {
           adminsNotifiedOnSubmit?: boolean;
           decisionEmailsConfigured?: boolean;
+          autoApproved?: boolean;
+          autoApproveFailed?: boolean;
+          requesterNotifiedOnDecision?: boolean;
+          inviteesNotifiedCount?: number;
         };
       }
     >("/api/tenant-requests", {
