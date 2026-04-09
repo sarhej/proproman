@@ -839,6 +839,7 @@
     "default": "{{type}}: {{title}}"
   },
   "tenant": {
+    "requestNewWorkspaceFullPage": "Pełna strona rejestracji (logowanie, zaproszenia, domena)",
     "loading": "Ładowanie przestrzeni…",
     "selectWorkspace": "Wybierz przestrzeń",
     "selectWorkspaceDesc": "Masz dostęp do wielu przestrzeni. Wybierz jedną, aby kontynuować.",
@@ -912,7 +913,15 @@
     "successDecisionEmailPromise": "Gdy zapadnie decyzja, wyślemy wiadomość na {{email}}.",
     "successNoDecisionEmailPromise": "Powiadomienia e-mail mogą być wyłączone na tym serwerze. Zapisz identyfikator zgłoszenia lub skontaktuj się z administratorem.",
     "errorSlugTaken": "Ten slug jest już zajęty. Wybierz inny.",
-    "errorGeneric": "Coś poszło nie tak. Spróbuj ponownie."
+    "errorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
+    "oauthIntro": "Zaloguj się najpierw przez Google lub Microsoft (zalecane), abyśmy mogli zweryfikować służbowy e-mail.",
+    "urlPreview": "Link do workspace",
+    "advancedToggle": "Więcej opcji (wiadomość, zaproszenia, domena firmy)",
+    "inviteEmails": "Zaproś współpracowników (e-maile)",
+    "inviteEmailsPlaceholder": "kolega@firma.pl\ninny@firma.pl",
+    "inviteEmailsHelp": "Jeden e-mail w linii lub rozdzielone przecinkami. Po zatwierdzeniu workspace utworzymy konta i wyślemy zaproszenia (maks. 20).",
+    "trustDomain": "Zarejestruj domenę e-mail mojej firmy dla tego workspace (na przyszłe zasady dostępu).",
+    "successRequestId": "ID wniosku: {{id}}"
   },
   "workspaceSettings": {
     "title": "Ustawienia przestrzeni roboczej",

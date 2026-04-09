@@ -177,6 +177,15 @@ function RequestWorkspaceModal({
           <>
             <h2 className="mb-1 pr-8 text-lg font-semibold text-slate-800">{t("tenant.requestNewWorkspaceTitle")}</h2>
             <p className="mb-4 text-sm text-slate-500">{t("tenant.requestNewWorkspaceIntro")}</p>
+            <p className="mb-4 text-center text-xs">
+              <Link
+                to="/register-workspace"
+                className="font-medium text-sky-700 underline hover:text-sky-900"
+                onClick={() => onClose()}
+              >
+                {t("tenant.requestNewWorkspaceFullPage")}
+              </Link>
+            </p>
 
             {error ? (
               <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>

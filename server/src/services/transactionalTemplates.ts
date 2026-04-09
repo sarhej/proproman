@@ -391,3 +391,97 @@ ${reason}
     },
   },
 };
+
+type E5 = {
+  subject: (team: string) => string;
+  bodyText: (p: { team: string; slug: string; workspaceUrl: string; baseUrl: string; inviteeEmail: string }) => string;
+  bodyHtml: (p: { team: string; slug: string; workspaceUrl: string; baseUrl: string; inviteeEmail: string }) => string;
+};
+
+const E5_COPY: Record<TransactionalLocale, E5> = {
+  en: {
+    subject: (team) => `You have been invited to the “${team}” workspace on Tymio`,
+    bodyText: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `Your colleague requested a Tymio workspace for your organization. An account was created for this email address (${inviteeEmail}) so you can collaborate in the “${team}” workspace (slug: ${slug}).
+
+Open the workspace: ${workspaceUrl}
+
+Sign in with Google, Microsoft, or email magic link using ${inviteeEmail}: ${baseUrl}/`,
+    bodyHtml: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `<p>Your colleague requested a Tymio workspace for your organization. An account was prepared for <strong>${escapeHtml(inviteeEmail)}</strong> so you can collaborate in the <strong>${escapeHtml(team)}</strong> workspace (slug: <code>${escapeHtml(slug)}</code>).</p><p><a href="${escapeHtml(workspaceUrl)}">Open your workspace</a></p><p>Sign in with Google, Microsoft, or email magic link using this address: <a href="${escapeHtml(baseUrl)}/">${escapeHtml(baseUrl)}/</a></p>`,
+  },
+  cs: {
+    subject: (team) => `Byli jste pozváni do workspace „${team}“ v Tymio`,
+    bodyText: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `Váš kolega zažádal o Tymio workspace pro vaši organizaci. Pro tuto e-mailovou adresu (${inviteeEmail}) byl připraven účet pro spolupráci ve workspace „${team}“ (slug: ${slug}).
+
+Otevřete workspace: ${workspaceUrl}
+
+Přihlaste se přes Google, Microsoft nebo magic link na e-mail: ${baseUrl}/`,
+    bodyHtml: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `<p>Váš kolega zažádal o Tymio workspace. Pro <strong>${escapeHtml(inviteeEmail)}</strong> byl připraven účet ve workspace <strong>${escapeHtml(team)}</strong> (slug: <code>${escapeHtml(slug)}</code>).</p><p><a href="${escapeHtml(workspaceUrl)}">Otevřít workspace</a></p><p>Přihlášení: Google, Microsoft nebo e-mail: <a href="${escapeHtml(baseUrl)}/">${escapeHtml(baseUrl)}/</a></p>`,
+  },
+  sk: {
+    subject: (team) => `Boli ste pozvaní do workspace „${team}“ v Tymio`,
+    bodyText: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `Váš kolega požiadal o Tymio workspace pre vašu organizáciu. Pre túto e-mailovú adresu (${inviteeEmail}) bol pripravený účet pre spoluprácu vo workspace „${team}“ (slug: ${slug}).
+
+Otvorte workspace: ${workspaceUrl}
+
+Prihláste sa cez Google, Microsoft alebo magic link: ${baseUrl}/`,
+    bodyHtml: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `<p>Váš kolega požiadal o Tymio workspace. Pre <strong>${escapeHtml(inviteeEmail)}</strong> bol pripravený účet vo workspace <strong>${escapeHtml(team)}</strong> (slug: <code>${escapeHtml(slug)}</code>).</p><p><a href="${escapeHtml(workspaceUrl)}">Otvoriť workspace</a></p><p>Prihlásenie: Google, Microsoft alebo e-mail: <a href="${escapeHtml(baseUrl)}/">${escapeHtml(baseUrl)}/</a></p>`,
+  },
+  pl: {
+    subject: (team) => `Zaproszono Cię do workspace „${team}” w Tymio`,
+    bodyText: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `Twój współpracownik złożył wniosek o workspace Tymio dla organizacji. Przygotowano konto dla ${inviteeEmail}, aby współpracować w workspace „${team}” (slug: ${slug}).
+
+Otwórz workspace: ${workspaceUrl}
+
+Zaloguj się przez Google, Microsoft lub link e-mailowy: ${baseUrl}/`,
+    bodyHtml: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `<p>Współpracownik złożył wniosek o workspace Tymio. Przygotowano konto dla <strong>${escapeHtml(inviteeEmail)}</strong> w workspace <strong>${escapeHtml(team)}</strong> (slug: <code>${escapeHtml(slug)}</code>).</p><p><a href="${escapeHtml(workspaceUrl)}">Otwórz workspace</a></p><p>Logowanie: Google, Microsoft lub e-mail: <a href="${escapeHtml(baseUrl)}/">${escapeHtml(baseUrl)}/</a></p>`,
+  },
+  uk: {
+    subject: (team) => `Вас запросили до workspace «${team}» у Tymio`,
+    bodyText: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `Колега подав запит на workspace Tymio для вашої організації. Обліковий запис підготовлено для ${inviteeEmail}, щоб працювати у workspace «${team}» (slug: ${slug}).
+
+Відкрийте workspace: ${workspaceUrl}
+
+Увійдіть через Google, Microsoft або magic link: ${baseUrl}/`,
+    bodyHtml: ({ team, slug, workspaceUrl, baseUrl, inviteeEmail }) =>
+      `<p>Колега подав запит на workspace Tymio. Обліковий запис для <strong>${escapeHtml(inviteeEmail)}</strong> у workspace <strong>${escapeHtml(team)}</strong> (slug: <code>${escapeHtml(slug)}</code>).</p><p><a href="${escapeHtml(workspaceUrl)}">Відкрити workspace</a></p><p>Вхід: Google, Microsoft або e-mail: <a href="${escapeHtml(baseUrl)}/">${escapeHtml(baseUrl)}/</a></p>`,
+  },
+};
+
+/** E5 — invitee notified after workspace registration approval (pre-provisioned member). */
+export function buildE5WorkspaceInviteEmail(input: {
+  locale: TransactionalLocale;
+  teamName: string;
+  slug: string;
+  inviteeEmail: string;
+}): { subject: string; text: string; html: string } {
+  const t = E5_COPY[input.locale];
+  const baseUrl = origin();
+  const workspaceUrl = `${baseUrl}/t/${encodeURIComponent(input.slug)}`;
+  const sub = t.subject(input.teamName);
+  const text =
+    t.bodyText({
+      team: input.teamName,
+      slug: input.slug,
+      workspaceUrl,
+      baseUrl,
+      inviteeEmail: input.inviteeEmail,
+    }) + footText(input.locale);
+  const html =
+    t.bodyHtml({
+      team: input.teamName,
+      slug: input.slug,
+      workspaceUrl,
+      baseUrl,
+      inviteeEmail: input.inviteeEmail,
+    }) + footHtml(input.locale);
+  return { subject: sub, text, html };
+}

@@ -17,6 +17,8 @@ declare module "express-session" {
     activeTenantId?: string;
     /** Slug of tenant the user was trying to access before OAuth redirect */
     pendingTenantSlug?: string;
+    /** Allowlisted client path to open after OAuth (e.g. /register-workspace). */
+    pendingPostLoginPath?: string;
   }
 }
 

@@ -839,6 +839,7 @@
     "default": "{{type}}: {{title}}"
   },
   "tenant": {
+    "requestNewWorkspaceFullPage": "Full registration page (sign-in, teammates, domain)",
     "loading": "Loading workspaces...",
     "selectWorkspace": "Select workspace",
     "selectWorkspaceDesc": "You have access to multiple workspaces. Choose one to continue.",
@@ -912,7 +913,15 @@
     "successDecisionEmailPromise": "When a decision is made, we will email you at {{email}}.",
     "successNoDecisionEmailPromise": "Email notifications may be disabled on this server. Save your request ID or check status later with your admin.",
     "errorSlugTaken": "This slug is already taken. Please choose another.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "oauthIntro": "Sign in with Google or Microsoft first (recommended) so we can verify your work email.",
+    "urlPreview": "Your workspace link",
+    "advancedToggle": "More options (message, invite teammates, company domain)",
+    "inviteEmails": "Invite teammates (emails)",
+    "inviteEmailsPlaceholder": "colleague@company.com\nanother@company.com",
+    "inviteEmailsHelp": "One email per line or comma-separated. We create accounts and send invitations after your workspace is approved (max 20).",
+    "trustDomain": "Register my company email domain for this workspace (for future teammate access policies).",
+    "successRequestId": "Request ID: {{id}}"
   },
   "workspaceSettings": {
     "title": "Workspace settings",

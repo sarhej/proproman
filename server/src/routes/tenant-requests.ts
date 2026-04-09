@@ -2,7 +2,10 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { z } from "zod";
 import { UserRole } from "@prisma/client";
 import { prisma, prismaUnscoped } from "../db.js";
+import { trustedBusinessDomainFromEmail } from "../lib/emailDomainPolicy.js";
 import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
+import { provisionInviteeMemberForTenant } from "../lib/provisionTenantRequestInvitees.js";
+import { applyWorkspaceInviteSideEffects } from "../lib/workspaceInviteSideEffects.js";
 import { requireRole } from "../middleware/auth.js";
 import {
   isTransactionalEmailEnabled,
@@ -15,6 +18,7 @@ import {
   buildE1NewWorkspaceRequestEmail,
   buildE2WorkspaceApprovedEmail,
   buildE3WorkspaceRejectedEmail,
+  buildE5WorkspaceInviteEmail,
   normalizeTransactionalLocale,
 } from "../services/transactionalTemplates.js";
 import { provisionTenant } from "../tenant/tenantProvisioning.js";
@@ -25,7 +29,8 @@ const slugRegex = /^[a-z0-9-]+$/;
 
 const uiLocaleSchema = z.enum(["en", "cs", "sk", "pl", "uk"]).optional();
 
-const createRequestSchema = z.object({
+/** Exported for contract tests (must match POST / body validation). */
+export const createRequestSchema = z.object({
   teamName: z.string().min(2).max(100),
   slug: z
     .string()
@@ -36,7 +41,23 @@ const createRequestSchema = z.object({
   contactName: z.string().min(1).max(100),
   message: z.string().max(1000).optional(),
   locale: uiLocaleSchema,
+  inviteEmails: z.array(z.string().email()).max(20).optional().default([]),
+  trustCompanyDomain: z.boolean().optional().default(false),
 });
+
+function normalizeInviteEmailsForRequest(contactEmail: string, inviteEmails: string[]): string[] {
+  const ce = contactEmail.trim().toLowerCase();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of inviteEmails) {
+    const e = raw.trim().toLowerCase();
+    if (!e || e === ce) continue;
+    if (seen.has(e)) continue;
+    seen.add(e);
+    out.push(e);
+  }
+  return out;
+}
 
 /**
  * Public endpoint — no auth required.
@@ -62,6 +83,16 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
       return;
     }
 
+    const inviteEmailsNorm = normalizeInviteEmailsForRequest(data.contactEmail, data.inviteEmails);
+    let trustCompanyDomain = data.trustCompanyDomain;
+    let trustedEmailDomain: string | null = null;
+    if (trustCompanyDomain) {
+      trustedEmailDomain = trustedBusinessDomainFromEmail(data.contactEmail);
+      if (!trustedEmailDomain) {
+        trustCompanyDomain = false;
+      }
+    }
+
     const tenantRequest = await prisma.tenantRequest.create({
       data: {
         teamName: data.teamName,
@@ -70,6 +101,9 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
         contactName: data.contactName,
         message: data.message,
         preferredLocale: data.locale ?? null,
+        inviteEmails: inviteEmailsNorm.length > 0 ? inviteEmailsNorm : undefined,
+        trustCompanyDomain,
+        trustedEmailDomain: trustCompanyDomain && trustedEmailDomain ? trustedEmailDomain : null,
       },
     });
 
@@ -224,7 +258,7 @@ tenantRequestsRouter.get(
   }
 );
 
-const reviewSchema = z.object({
+export const reviewSchema = z.object({
   action: z.enum(["approve", "reject"]),
   reviewNote: z.string().max(500).optional(),
 });
@@ -345,6 +379,41 @@ tenantRequestsRouter.post(
         update: { role: "OWNER" },
       });
 
+      const rawInviteJson = tenantRequest.inviteEmails;
+      const inviteParsed = Array.isArray(rawInviteJson)
+        ? rawInviteJson.filter((x): x is string => typeof x === "string")
+        : [];
+      const filteredInvites = normalizeInviteEmailsForRequest(tenantRequest.contactEmail, inviteParsed);
+
+      const inviteeUserIds: string[] = [];
+      await prisma.$transaction(async (tx) => {
+        if (tenantRequest.trustCompanyDomain && tenantRequest.trustedEmailDomain) {
+          const dom = tenantRequest.trustedEmailDomain.trim().toLowerCase();
+          const taken = await tx.tenantDomain.findUnique({ where: { domain: dom } });
+          if (!taken) {
+            await tx.tenantDomain.create({
+              data: { tenantId: tenant.id, domain: dom, isPrimary: true },
+            });
+          } else if (taken.tenantId !== tenant.id) {
+            console.warn("[tenant-requests] TenantDomain already taken; skipping trusted domain row", {
+              domain: dom,
+              tenantId: tenant.id,
+            });
+          }
+        }
+        for (const em of filteredInvites) {
+          const { userId } = await provisionInviteeMemberForTenant(tx, {
+            email: em,
+            tenantId: tenant.id,
+          });
+          inviteeUserIds.push(userId);
+        }
+      });
+
+      for (const uid of new Set(inviteeUserIds)) {
+        await applyWorkspaceInviteSideEffects(uid, tenant.id);
+      }
+
       const updated = await prisma.tenantRequest.update({
         where: { id },
         data: {
@@ -357,6 +426,7 @@ tenantRequestsRouter.post(
       });
 
       let requesterNotifiedOnDecision = false;
+      let inviteesNotifiedCount = 0;
       if (isTransactionalEmailEnabled() && isTransactionalEmailReady()) {
         try {
           const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
@@ -378,12 +448,38 @@ tenantRequestsRouter.post(
           console.error("[transactional-email] E2 send failed:", err);
           logTransactionalEmail("E2", { ok: false, requestId: id });
         }
+
+        if (filteredInvites.length > 0) {
+          const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
+          for (const inviteeEmail of filteredInvites) {
+            try {
+              const mail = buildE5WorkspaceInviteEmail({
+                locale,
+                teamName: tenantRequest.teamName,
+                slug: tenantRequest.slug,
+                inviteeEmail,
+              });
+              await sendTransactionalEmail({
+                to: inviteeEmail,
+                subject: mail.subject,
+                text: mail.text,
+                html: mail.html,
+                tags: [{ name: "event", value: "E5" }],
+              });
+              inviteesNotifiedCount += 1;
+              logTransactionalEmail("E5", { ok: true, requestId: id, inviteeEmail });
+            } catch (err) {
+              console.error("[transactional-email] E5 send failed:", err);
+              logTransactionalEmail("E5", { ok: false, requestId: id, inviteeEmail });
+            }
+          }
+        }
       }
 
       res.json({
         request: updated,
         tenant: provisionedTenant ?? tenant,
-        emailNotifications: { requesterNotifiedOnDecision },
+        emailNotifications: { requesterNotifiedOnDecision, inviteesNotifiedCount },
       });
     } catch (err) {
       next(err);

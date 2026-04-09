@@ -86,6 +86,9 @@ export type TenantRequest = {
   contactName: string;
   preferredLocale?: string | null;
   message?: string | null;
+  inviteEmails?: unknown;
+  trustCompanyDomain?: boolean;
+  trustedEmailDomain?: string | null;
   status: TenantRequestStatus;
   reviewedBy?: string | null;
   reviewedAt?: string | null;

@@ -1,4 +1,4 @@
-import { AuditAction, MembershipRole, Prisma, UserRole } from "@prisma/client";
+import { AuditAction, Prisma, UserRole } from "@prisma/client";
 import type { Request, Response } from "express";
 import { Router } from "express";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import {
 } from "../services/transactionalMail.js";
 import { buildE4PlatformRoleActivatedEmail } from "../services/transactionalTemplates.js";
 import { notificationRulesRouter } from "./notification-rules.js";
+import { membershipRoleForInvitedGlobalRole } from "../lib/membershipRoleFromGlobalRole.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN));
@@ -22,22 +23,6 @@ adminRouter.use("/notification-rules", notificationRulesRouter);
 /** Workspace Admin lists users by membership — never the global user table (prevents cross-tenant leaks). */
 function requestTenantId(req: Request): string | undefined {
   return req.tenantContext?.tenantId;
-}
-
-function membershipRoleForInvitedGlobalRole(role: UserRole): MembershipRole {
-  switch (role) {
-    case UserRole.SUPER_ADMIN:
-    case UserRole.ADMIN:
-      return MembershipRole.ADMIN;
-    case UserRole.EDITOR:
-    case UserRole.MARKETING:
-      return MembershipRole.MEMBER;
-    case UserRole.VIEWER:
-    case UserRole.PENDING:
-      return MembershipRole.VIEWER;
-    default:
-      return MembershipRole.MEMBER;
-  }
 }
 
 async function requireWorkspaceForUserAdmin(req: Request, res: Response): Promise<string | null> {

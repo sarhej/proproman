@@ -4,16 +4,29 @@ import request from "supertest";
 import { UserRole } from "@prisma/client";
 import { tenantRequestsRouter } from "./tenant-requests.js";
 
-const { mockProvisionTenant } = vi.hoisted(() => ({
+const { mockProvisionTenant, mockApplyWorkspaceInviteSideEffects } = vi.hoisted(() => ({
   mockProvisionTenant: vi.fn(),
+  mockApplyWorkspaceInviteSideEffects: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../tenant/tenantProvisioning.js", () => ({
   provisionTenant: mockProvisionTenant,
 }));
 
+vi.mock("../lib/workspaceInviteSideEffects.js", () => ({
+  applyWorkspaceInviteSideEffects: mockApplyWorkspaceInviteSideEffects,
+}));
+
 vi.mock("../db.js", () => ({
   prisma: {
+    $transaction: vi.fn(),
+    tenantDomain: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
+    userEmail: {
+      findUnique: vi.fn(),
+    },
     tenantRequest: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -29,6 +42,7 @@ vi.mock("../db.js", () => ({
     },
     tenantMembership: {
       upsert: vi.fn(),
+      create: vi.fn(),
     },
   },
 }));
@@ -50,6 +64,15 @@ const mockUser = prisma.user as unknown as {
 };
 const mockTenantMembership = prisma.tenantMembership as unknown as {
   upsert: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+};
+const mockPrismaTransaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
+const mockTenantDomain = prisma.tenantDomain as unknown as {
+  findUnique: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+};
+const mockUserEmail = prisma.userEmail as unknown as {
+  findUnique: ReturnType<typeof vi.fn>;
 };
 
 function authSuperAdmin() {
@@ -91,6 +114,15 @@ describe("tenant request approval", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockProvisionTenant.mockResolvedValue(undefined);
+    mockApplyWorkspaceInviteSideEffects.mockResolvedValue(undefined);
+    mockPrismaTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn(prisma));
+    mockTenantDomain.findUnique.mockResolvedValue(null);
+    mockUserEmail.findUnique.mockResolvedValue(null);
+    mockUser.create.mockImplementation(async (args: { data: { email: string } }) => ({
+      id: "new-invite-user",
+      email: args.data.email,
+    }));
+    mockTenantMembership.create.mockResolvedValue({});
   });
 
   it("promotes an existing pending requester to ADMIN and sets active tenant on approval", async () => {
@@ -101,6 +133,10 @@ describe("tenant request approval", () => {
       slug: "peter-workspace",
       contactEmail: "peter@pvegh.com",
       contactName: "Peter Vegh",
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      preferredLocale: null,
     });
     mockTenant.create.mockResolvedValue({
       id: "tenant1",
@@ -167,6 +203,10 @@ describe("tenant request approval", () => {
       slug: "fail-co",
       contactEmail: "fail@example.com",
       contactName: "Fail",
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      preferredLocale: null,
     });
     mockTenant.create.mockResolvedValue({
       id: "tenant-fail",
@@ -192,6 +232,10 @@ describe("tenant request approval", () => {
       slug: "old",
       contactEmail: "old@test.local",
       contactName: "Old",
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      preferredLocale: null,
     });
 
     const res = await request(app)
@@ -215,5 +259,123 @@ describe("tenant request approval", () => {
 
     expect(res.status).toBe(403);
     expect(mockTenantRequest.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("creates TenantDomain and provisions invitee when request has trust + invite emails", async () => {
+    mockTenantRequest.findUnique.mockResolvedValueOnce({
+      id: "tr-inv",
+      status: "PENDING",
+      teamName: "Acme",
+      slug: "acme-ws",
+      contactEmail: "owner@acme.com",
+      contactName: "Owner",
+      inviteEmails: ["colleague@acme.com"],
+      trustCompanyDomain: true,
+      trustedEmailDomain: "acme.com",
+      preferredLocale: null,
+    });
+    mockTenant.create.mockResolvedValue({
+      id: "tenant-acme",
+      name: "Acme",
+      slug: "acme-ws",
+      status: "PROVISIONING",
+    });
+    mockTenant.findUnique.mockResolvedValue({
+      id: "tenant-acme",
+      name: "Acme",
+      slug: "acme-ws",
+      status: "ACTIVE",
+    });
+    mockUser.findUnique.mockImplementation((args: { where: { email?: string } }) => {
+      const em = args.where.email;
+      if (em === "owner@acme.com") {
+        return Promise.resolve({
+          id: "owner-u",
+          email: "owner@acme.com",
+          name: "Owner",
+          role: UserRole.PENDING,
+          activeTenantId: null,
+        });
+      }
+      return Promise.resolve(null);
+    });
+    mockUser.update.mockResolvedValue({
+      id: "owner-u",
+      email: "owner@acme.com",
+      role: UserRole.ADMIN,
+      activeTenantId: "tenant-acme",
+    });
+    mockUser.create.mockResolvedValue({
+      id: "inv-u",
+      email: "colleague@acme.com",
+    });
+    mockTenantMembership.upsert.mockResolvedValue({});
+    mockTenantMembership.create.mockResolvedValue({});
+    mockTenantRequest.update.mockResolvedValue({
+      id: "tr-inv",
+      status: "APPROVED",
+      tenantId: "tenant-acme",
+    });
+
+    const res = await request(app).post("/api/tenant-requests/tr-inv/review").send({ action: "approve" });
+
+    expect(res.status).toBe(200);
+    expect(mockTenantDomain.create).toHaveBeenCalledWith({
+      data: { tenantId: "tenant-acme", domain: "acme.com", isPrimary: true },
+    });
+    expect(mockTenantMembership.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: "tenant-acme",
+        userId: "inv-u",
+        role: "MEMBER",
+      },
+    });
+    expect(mockApplyWorkspaceInviteSideEffects).toHaveBeenCalledWith("inv-u", "tenant-acme");
+  });
+
+  it("skips TenantDomain create when domain is already bound to another tenant", async () => {
+    mockTenantRequest.findUnique.mockResolvedValueOnce({
+      id: "tr-dom",
+      status: "PENDING",
+      teamName: "Beta",
+      slug: "beta-ws",
+      contactEmail: "owner@shared.com",
+      contactName: "Owner",
+      inviteEmails: [],
+      trustCompanyDomain: true,
+      trustedEmailDomain: "shared.com",
+      preferredLocale: null,
+    });
+    mockTenant.create.mockResolvedValue({
+      id: "tenant-beta",
+      name: "Beta",
+      slug: "beta-ws",
+      status: "PROVISIONING",
+    });
+    mockTenant.findUnique.mockResolvedValue({
+      id: "tenant-beta",
+      name: "Beta",
+      slug: "beta-ws",
+      status: "ACTIVE",
+    });
+    mockTenantDomain.findUnique.mockResolvedValue({
+      tenantId: "someone-else-tenant",
+      domain: "shared.com",
+    });
+    mockUser.findUnique.mockResolvedValue({
+      id: "u-beta",
+      email: "owner@shared.com",
+      name: "Owner",
+      role: UserRole.VIEWER,
+      activeTenantId: null,
+    });
+    mockUser.update.mockResolvedValue({});
+    mockTenantMembership.upsert.mockResolvedValue({});
+    mockTenantRequest.update.mockResolvedValue({ id: "tr-dom", status: "APPROVED" });
+
+    const res = await request(app).post("/api/tenant-requests/tr-dom/review").send({ action: "approve" });
+
+    expect(res.status).toBe(200);
+    expect(mockTenantDomain.create).not.toHaveBeenCalled();
   });
 });

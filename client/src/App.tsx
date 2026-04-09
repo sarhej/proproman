@@ -142,8 +142,7 @@ function App() {
   }, [user?.id, activeTenant?.id, shellLocales, i18n]);
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [landingView, setLandingView] = useState<"landing" | "signin" | "register">("landing");
-  const [pendingSubView, setPendingSubView] = useState<"setup" | "register">("setup");
+  const [landingView, setLandingView] = useState<"landing" | "signin">("landing");
   const [magicEmail, setMagicEmail] = useState("");
   const [magicSending, setMagicSending] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
@@ -275,10 +274,6 @@ function App() {
       });
     return () => { cancelled = true; };
   }, [user?.role, user?.id]);
-
-  useEffect(() => {
-    setPendingSubView("setup");
-  }, [user?.id]);
 
   useLayoutEffect(() => {
     if (!user || authLoading) return;
@@ -422,26 +417,14 @@ function App() {
   }
 
   if (!user) {
-    const guestMain =
-      tenantSlug ? (
-        <TenantSlugLoginPage
-          workspaceSlug={tenantSlug}
-          onAuthenticated={() => window.location.reload()}
-        />
-      ) : landingView === "register" ? (
-        <RegisterTeamPage onBack={() => setLandingView("landing")} />
-      ) : landingView === "landing" && !searchParams.get("error") && !authError ? (
-        <LandingPage
-          onSignIn={() => setLandingView("signin")}
-          onRegister={() => setLandingView("register")}
-        />
-      ) : null;
-
-    if (guestMain) {
+    if (tenantSlug) {
       return (
         <>
           <PublicLanguageSwitcher />
-          {guestMain}
+          <TenantSlugLoginPage
+            workspaceSlug={tenantSlug}
+            onAuthenticated={() => window.location.reload()}
+          />
         </>
       );
     }
@@ -449,130 +432,147 @@ function App() {
     return (
       <>
         <PublicLanguageSwitcher />
-        <SeoHead
-          title={t("seo.signInTitle")}
-          description={t("seo.signInDescription")}
-          canonicalPath="/"
-        />
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-          <Card className="max-w-md p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <button
-              onClick={() => setLandingView("landing")}
-              className="mr-1 inline-flex items-center text-slate-400 hover:text-slate-600"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-            <img src="/logo.svg" alt="Tymio" className="h-8" />
-            <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
-          </div>
-          <p className="mb-4 text-sm text-slate-600">
-            {t("app.signInDesc")}
-          </p>
-          {(authError || searchParams.get("error") === "login_failed" || searchParams.get("error") === "login_denied") ? (
-            <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" data-testid="auth-error">
-              {searchParams.get("error") === "login_denied"
-                ? t("app.loginDenied")
-                : searchParams.get("error") === "login_failed"
-                  ? t("app.loginFailed")
-                  : authError}
-            </p>
-          ) : null}
-          <div className="grid gap-2">
-            <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
-              {t("app.continueGoogle")}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/microsoft`)}
-            >
-              {t("app.continueMicrosoft")}
-            </Button>
-            <p className="mt-3 text-center text-xs text-slate-400">{t("app.emailSignInDivider")}</p>
-            {magicSent ? (
-              <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800" data-testid="magic-link-sent">
-                {t("app.magicLinkSent")}
-              </p>
-            ) : (
-              <form onSubmit={(e) => void handleMagicLinkSubmit(e)} className="grid gap-2">
-                <input
-                  type="email"
-                  autoComplete="email"
-                  name="email"
-                  value={magicEmail}
-                  onChange={(e) => setMagicEmail(e.target.value)}
-                  placeholder={t("app.emailPlaceholder")}
-                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+        <Routes>
+          <Route path="/register-workspace" element={<RegisterTeamPage onBack={() => navigate("/")} />} />
+          <Route
+            path="/"
+            element={
+              landingView === "landing" && !searchParams.get("error") && !authError ? (
+                <LandingPage
+                  onSignIn={() => setLandingView("signin")}
+                  onRegister={() => navigate("/register-workspace")}
                 />
-                <Button type="submit" variant="secondary" disabled={magicSending}>
-                  {magicSending ? "…" : t("app.sendMagicLink")}
-                </Button>
-                {magicErr ? (
-                  <p className="text-sm text-red-600" data-testid="magic-link-err">
-                    {magicErr}
-                  </p>
-                ) : null}
-              </form>
-            )}
-            {showDevLogin ? (
-              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Developer Login</p>
-                <div className="grid gap-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="grid gap-1">
-                      <span className="text-xs text-slate-500">Role</span>
-                      <select
-                        value={devRole}
-                        onChange={(e) => setDevRole(e.target.value as UserRole)}
-                        className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
-                      >
-                        {DEV_ROLES.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-xs text-slate-500">Workspace</span>
-                      <select
-                        value={devTenantId}
-                        onChange={(e) => setDevTenantId(e.target.value)}
-                        className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
-                      >
-                        {devTenants.length === 0 && <option value="">Loading...</option>}
-                        {devTenants.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </label>
+              ) : (
+                <>
+                  <SeoHead
+                    title={t("seo.signInTitle")}
+                    description={t("seo.signInDescription")}
+                    canonicalPath="/"
+                  />
+                  <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+                    <Card className="max-w-md p-6">
+                      <div className="mb-4 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setLandingView("landing")}
+                          className="mr-1 inline-flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                          </svg>
+                        </button>
+                        <img src="/logo.svg" alt="Tymio" className="h-8" />
+                        <span className="text-lg font-semibold text-slate-500">{t("app.brand")}</span>
+                      </div>
+                      <p className="mb-4 text-sm text-slate-600">{t("app.signInDesc")}</p>
+                      {(authError || searchParams.get("error") === "login_failed" || searchParams.get("error") === "login_denied") ? (
+                        <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" data-testid="auth-error">
+                          {searchParams.get("error") === "login_denied"
+                            ? t("app.loginDenied")
+                            : searchParams.get("error") === "login_failed"
+                              ? t("app.loginFailed")
+                              : authError}
+                        </p>
+                      ) : null}
+                      <div className="grid gap-2">
+                        <Button onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/google`)}>
+                          {t("app.continueGoogle")}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => (window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/auth/microsoft`)}
+                        >
+                          {t("app.continueMicrosoft")}
+                        </Button>
+                        <p className="mt-3 text-center text-xs text-slate-400">{t("app.emailSignInDivider")}</p>
+                        {magicSent ? (
+                          <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800" data-testid="magic-link-sent">
+                            {t("app.magicLinkSent")}
+                          </p>
+                        ) : (
+                          <form onSubmit={(e) => void handleMagicLinkSubmit(e)} className="grid gap-2">
+                            <input
+                              type="email"
+                              autoComplete="email"
+                              name="email"
+                              value={magicEmail}
+                              onChange={(e) => setMagicEmail(e.target.value)}
+                              placeholder={t("app.emailPlaceholder")}
+                              className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
+                            />
+                            <Button type="submit" variant="secondary" disabled={magicSending}>
+                              {magicSending ? "…" : t("app.sendMagicLink")}
+                            </Button>
+                            {magicErr ? (
+                              <p className="text-sm text-red-600" data-testid="magic-link-err">
+                                {magicErr}
+                              </p>
+                            ) : null}
+                          </form>
+                        )}
+                        {showDevLogin ? (
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Developer Login</p>
+                            <div className="grid gap-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="grid gap-1">
+                                  <span className="text-xs text-slate-500">Role</span>
+                                  <select
+                                    value={devRole}
+                                    onChange={(e) => setDevRole(e.target.value as UserRole)}
+                                    className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+                                  >
+                                    {DEV_ROLES.map((r) => (
+                                      <option key={r} value={r}>{r}</option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="grid gap-1">
+                                  <span className="text-xs text-slate-500">Workspace</span>
+                                  <select
+                                    value={devTenantId}
+                                    onChange={(e) => setDevTenantId(e.target.value)}
+                                    className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+                                  >
+                                    {devTenants.length === 0 && <option value="">Loading...</option>}
+                                    {devTenants.map((tn) => (
+                                      <option key={tn.id} value={tn.id}>{tn.name}</option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+                              <Button
+                                variant="secondary"
+                                disabled={devLoginLoading || !devTenantId}
+                                onClick={async () => {
+                                  try {
+                                    setDevLoginLoading(true);
+                                    setDevLoginError(null);
+                                    await api.devLogin(devRole, devTenantId || undefined);
+                                    window.location.reload();
+                                  } catch (error) {
+                                    setDevLoginError((error as Error).message);
+                                  } finally {
+                                    setDevLoginLoading(false);
+                                  }
+                                }}
+                              >
+                                {devLoginLoading ? "Signing in..." : `Dev Login as ${devRole}`}
+                              </Button>
+                            </div>
+                            {devLoginError ? <p className="mt-1 text-xs text-red-600">{devLoginError}</p> : null}
+                          </div>
+                        ) : null}
+                      </div>
+                      <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
+                    </Card>
                   </div>
-                  <Button
-                    variant="secondary"
-                    disabled={devLoginLoading || !devTenantId}
-                    onClick={async () => {
-                      try {
-                        setDevLoginLoading(true);
-                        setDevLoginError(null);
-                        await api.devLogin(devRole, devTenantId || undefined);
-                        window.location.reload();
-                      } catch (error) {
-                        setDevLoginError((error as Error).message);
-                      } finally {
-                        setDevLoginLoading(false);
-                      }
-                    }}
-                  >
-                    {devLoginLoading ? "Signing in..." : `Dev Login as ${devRole}`}
-                  </Button>
-                </div>
-                {devLoginError ? <p className="mt-1 text-xs text-red-600">{devLoginError}</p> : null}
-              </div>
-            ) : null}
-          </div>
-          <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
-        </Card>
-        </div>
+                </>
+              )
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </>
     );
   }
@@ -608,34 +608,39 @@ function App() {
   }
 
   if (user.role === "PENDING") {
-    if (pendingSubView === "register") {
-      return (
-        <>
-          <PublicLanguageSwitcher />
-          <RegisterTeamPage
-            onBack={() => setPendingSubView("setup")}
-            prefilledContact={{ email: user.email, name: user.name ?? "" }}
-            backLabelKey="app.pendingBackToSetup"
-          />
-        </>
-      );
-    }
     return (
       <>
         <PublicLanguageSwitcher />
-        <PlatformPendingPage
-          userEmail={user.email}
-          slugRegistrationHint={slugRegistrationHint}
-          pendingUserWorkspaceRegs={pendingUserWorkspaceRegs}
-          onSignOut={async () => {
-            await api.logout();
-            window.location.reload();
-          }}
-          onNavigateToWorkspace={(slug) => {
-            navigate(`/t/${encodeURIComponent(slug)}`);
-          }}
-          onRequestNewWorkspace={() => setPendingSubView("register")}
-        />
+        <Routes>
+          <Route
+            path="/register-workspace"
+            element={
+              <RegisterTeamPage
+                onBack={() => navigate("/")}
+                prefilledContact={{ email: user.email, name: user.name ?? "" }}
+                backLabelKey="app.pendingBackToSetup"
+              />
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <PlatformPendingPage
+                userEmail={user.email}
+                slugRegistrationHint={slugRegistrationHint}
+                pendingUserWorkspaceRegs={pendingUserWorkspaceRegs}
+                onSignOut={async () => {
+                  await api.logout();
+                  window.location.reload();
+                }}
+                onNavigateToWorkspace={(slug) => {
+                  navigate(`/t/${encodeURIComponent(slug)}`);
+                }}
+                onRequestNewWorkspace={() => navigate("/register-workspace")}
+              />
+            }
+          />
+        </Routes>
       </>
     );
   }
@@ -1064,6 +1069,15 @@ function App() {
               />
             </>
           )}
+          <Route
+            path="/register-workspace"
+            element={
+              <RegisterTeamPage
+                onBack={() => navigate("/")}
+                prefilledContact={{ email: user.email, name: user.name ?? "" }}
+              />
+            }
+          />
           <Route
             path="*"
             element={

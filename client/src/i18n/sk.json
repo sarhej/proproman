@@ -838,6 +838,7 @@
     "default": "{{type}}: {{title}}"
   },
   "tenant": {
+    "requestNewWorkspaceFullPage": "Plná stránka registrácie (prihlásenie, pozvánky, doména)",
     "loading": "Načítanie pracovných priestorov...",
     "selectWorkspace": "Vyberte pracovný priestor",
     "selectWorkspaceDesc": "Máte prístup k viacerým pracovným priestorom. Vyberte si jeden pre pokračovanie.",
@@ -911,7 +912,15 @@
     "successDecisionEmailPromise": "Keď bude rozhodnuté, pošleme vám e-mail na {{email}}.",
     "successNoDecisionEmailPromise": "E-mailové upozornenia môžu byť na tomto serveri vypnuté. Uložte si ID žiadosti alebo sa neskôr informujte u správcu.",
     "errorSlugTaken": "Tento slug je už obsadený. Zvoľte iný.",
-    "errorGeneric": "Niečo sa pokazilo. Skúste znova."
+    "errorGeneric": "Niečo sa pokazilo. Skúste znova.",
+    "oauthIntro": "Najprv sa prihláste cez Google alebo Microsoft (odporúčané), aby sme overili váš pracovný e-mail.",
+    "urlPreview": "Odkaz na workspace",
+    "advancedToggle": "Ďalšie možnosti (správa, pozvánky, doména firmy)",
+    "inviteEmails": "Pozvať kolegov (e-maily)",
+    "inviteEmailsPlaceholder": "kolega@firma.sk\niny@firma.sk",
+    "inviteEmailsHelp": "Jeden e-mail na riadok alebo oddelené čiarkou. Po schválení workspace vytvoríme účty a pošleme pozvánky (max 20).",
+    "trustDomain": "Zaregistrovať e-mailovú doménu mojej firmy pre tento workspace (pre budúce pravidlá prístupu).",
+    "successRequestId": "ID žiadosti: {{id}}"
   },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",

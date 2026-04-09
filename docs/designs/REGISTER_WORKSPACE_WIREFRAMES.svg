@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="1180" viewBox="0 0 920 1180">
+  <title>Register workspace (hyper-simple) wireframes</title>
+  <desc>vNext: dedicated route /register-workspace, OAuth-first optional sign-in, workspace name plus URL slug preview, optional reviewer message, teammate emails, trusted company domain opt-in, success with request id. Implementation notes for Tymio client and POST /api/tenant-requests.</desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; rx: 8; }
+      .phone { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.2; rx: 12; }
+      .hdr { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .sub { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 11px; font-weight: 600; fill: #334155; }
+      .txt { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 10px; fill: #475569; }
+      .mono { font-family: ui-monospace, monospace; font-size: 9px; fill: #64748b; }
+      .btn { fill: #2563eb; rx: 4; }
+      .btn2 { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 0.8; rx: 4; }
+      .ok { fill: #ecfdf5; stroke: #059669; stroke-width: 1; rx: 6; }
+      .note { fill: #fffbeb; stroke: #d97706; stroke-width: 1; rx: 6; }
+    ]]></style>
+  </defs>
+
+  <text x="460" y="26" text-anchor="middle" class="hdr" font-size="16">Register workspace &#8212; wireframes (vNext)</text>
+  <text x="460" y="44" text-anchor="middle" class="txt">Route: /register-workspace &#183; Public POST extends TenantRequest with inviteEmails JSON + trustCompanyDomain + server-derived trustedEmailDomain.</text>
+
+  <!-- Screen A -->
+  <rect class="frame" x="24" y="64" width="420" height="420"/>
+  <text x="40" y="88" class="sub">A. Primary (guest or PENDING user)</text>
+  <text x="40" y="108" class="txt">Logo + title Request a workspace.</text>
+  <text x="40" y="124" class="txt">Optional row: Continue with Google &#183; Continue with Microsoft (starts OAuth with returnTo=/register-workspace).</text>
+  <text x="40" y="144" class="mono">Divider: or continue with email below</text>
+  <rect class="phone" x="48" y="158" width="372" height="300"/>
+  <text x="64" y="182" class="sub">Workspace name</text>
+  <rect x="64" y="190" width="320" height="22" fill="#ffffff" stroke="#cbd5e1" rx="3"/>
+  <text x="64" y="230" class="sub">Workspace URL slug</text>
+  <rect x="64" y="238" width="320" height="22" fill="#ffffff" stroke="#cbd5e1" rx="3"/>
+  <text x="64" y="272" class="mono">Preview: https://tymio.app/t/your-slug</text>
+  <text x="64" y="296" class="txt">Contact name + email (hidden if session has profile)</text>
+  <rect x="64" y="304" width="150" height="20" fill="#f1f5f9" stroke="#e2e8f0" rx="3"/>
+  <rect x="226" y="304" width="158" height="20" fill="#f1f5f9" stroke="#e2e8f0" rx="3"/>
+  <text x="64" y="348" class="sub">Advanced (collapsed)</text>
+  <text x="64" y="364" class="txt">Message &#183; Invite teammate emails &#183; Trust company domain checkbox</text>
+  <rect class="btn" x="64" y="380" width="200" height="28"/>
+  <text x="164" y="398" text-anchor="middle" fill="#ffffff" class="txt">Submit registration request</text>
+
+  <!-- Screen B success -->
+  <rect class="frame" x="472" y="64" width="420" height="220"/>
+  <text x="488" y="88" class="sub">B. Success</text>
+  <rect class="ok" x="488" y="100" width="48" height="48" rx="24" fill="#d1fae5" stroke="#059669"/>
+  <text x="548" y="132" class="hdr">Request submitted</text>
+  <text x="488" y="156" class="txt">Show request id (from API) and email promise (E1/E2).</text>
+  <text x="488" y="176" class="mono">Back to home or open sign-in</text>
+  <rect class="btn2" x="488" y="192" width="120" height="26"/>
+  <text x="548" y="210" text-anchor="middle" class="txt">Back</text>
+
+  <!-- Notes -->
+  <rect class="frame" x="472" y="300" width="420" height="184"/>
+  <text x="488" y="324" class="sub">Implementation notes</text>
+  <text x="488" y="348" class="txt">1. Slug default: team name transliteration; if user signed in with a work email, suggest slug from email domain (block consumer domains and onmicrosoft).</text>
+  <text x="488" y="372" class="txt">2. After super-admin approval: provision tenant, OWNER contact, TenantDomain if trusted, pre-provision invitee users + MEMBER, send E5 invite email.</text>
+  <text x="488" y="396" class="txt">3. Auto-join by domain policy is out of scope for vNext; TenantDomain row is stored for future policy.</text>
+  <text x="488" y="420" class="mono">Align with docs/designs/TENANT_USER_ONBOARDING_FLOWS.svg state machine.</text>
+
+  <!-- Mobile -->
+  <rect class="frame" x="24" y="508" width="420" height="280"/>
+  <text x="40" y="532" class="sub">C. Mobile (same content, stacked)</text>
+  <rect class="phone" x="120" y="548" width="220" height="228"/>
+  <text x="230" y="576" text-anchor="middle" class="txt">OAuth buttons full width</text>
+  <text x="230" y="596" text-anchor="middle" class="mono">Name, slug, preview</text>
+  <text x="230" y="620" text-anchor="middle" class="txt">Advanced accordion</text>
+  <rect class="btn" x="140" y="700" width="180" height="26"/>
+  <text x="230" y="718" text-anchor="middle" fill="#ffffff" class="txt">Submit</text>
+
+  <rect class="note" x="472" y="508" width="420" height="100"/>
+  <text x="488" y="532" class="sub">Accessibility</text>
+  <text x="488" y="552" class="txt">Labels tied to inputs; slug input lowercases and strips invalid chars; preview updates live.</text>
+  <text x="488" y="572" class="txt">i18n: en, cs, sk, pl, uk for all new strings.</text>
+
+  <text x="460" y="1148" text-anchor="middle" class="mono">REGISTER_WORKSPACE_WIREFRAMES.svg &#8212; validate with xmllint --noout after edits</text>
+</svg>

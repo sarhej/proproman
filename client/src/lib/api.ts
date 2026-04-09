@@ -528,6 +528,8 @@ export const api = {
     contactEmail: string;
     contactName: string;
     message?: string;
+    inviteEmails?: string[];
+    trustCompanyDomain?: boolean;
     /** UI language (en, cs, sk, pl, uk) for server-side email templates. */
     locale?: string;
   }) =>

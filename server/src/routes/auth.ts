@@ -9,6 +9,7 @@ import { prisma, prismaUnscoped } from "../db.js";
 import { env } from "../env.js";
 import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
 import { resolveActiveTenantForAuthenticatedUser } from "../lib/resolveActiveTenantForUser.js";
+import { normalizeAllowlistedPostLoginPath } from "../lib/oauthPostLoginPath.js";
 import { getMagicLinkVerifyBaseUrl, isMagicLinkEmailConfigured, sendMagicLinkEmail } from "../services/mailer.js";
 
 export const authRouter = Router();
@@ -38,7 +39,9 @@ function finalizeSessionAfterLogin(
   providerLabel: string
 ): void {
   const pendingSlug = req.session.pendingTenantSlug;
+  const pendingPostLoginPath = req.session.pendingPostLoginPath;
   delete req.session.pendingTenantSlug;
+  delete req.session.pendingPostLoginPath;
 
   const finalize = () => {
     req.session.save((saveErr) => {
@@ -49,12 +52,18 @@ function finalizeSessionAfterLogin(
         return;
       }
       const base = env.CLIENT_URL.replace(/\/$/, "");
-      const redirectPath = pendingSlug ? `/t/${pendingSlug}` : "";
+      let redirectPath = "";
+      if (pendingSlug) {
+        redirectPath = `/t/${pendingSlug}`;
+      } else if (pendingPostLoginPath) {
+        redirectPath = pendingPostLoginPath;
+      }
       console.log("[auth] Login OK redirecting", {
         userId: sessionUser.id,
         email: sessionUser.email,
         sessionId: req.sessionID?.slice(0, 8),
         pendingSlug,
+        pendingPostLoginPath,
         provider: providerLabel
       });
       res.redirect(`${base}${redirectPath}`);
@@ -106,14 +115,24 @@ authRouter.get("/google", (req, res, next) => {
     return;
   }
   const tenantSlug = typeof req.query.tenantSlug === "string" ? req.query.tenantSlug : undefined;
+  const returnTo = normalizeAllowlistedPostLoginPath(req.query.returnTo);
+  const runAuth = () =>
+    passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
+
   if (tenantSlug) {
     req.session.pendingTenantSlug = tenantSlug;
+    delete req.session.pendingPostLoginPath;
     req.session.save(() => {
-      passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
+      runAuth();
     });
     return;
   }
-  passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
+  if (returnTo) {
+    req.session.pendingPostLoginPath = returnTo;
+  }
+  req.session.save(() => {
+    runAuth();
+  });
 });
 
 authRouter.get("/google/callback", (req, res, next) => {
@@ -132,17 +151,24 @@ authRouter.get("/microsoft", (req, res, next) => {
     return;
   }
   const tenantSlug = typeof req.query.tenantSlug === "string" ? req.query.tenantSlug : undefined;
+  const returnTo = normalizeAllowlistedPostLoginPath(req.query.returnTo);
   const authenticate = passport.authenticate("microsoft", {
     prompt: "select_account"
   });
   if (tenantSlug) {
     req.session.pendingTenantSlug = tenantSlug;
+    delete req.session.pendingPostLoginPath;
     req.session.save(() => {
       authenticate(req, res, next);
     });
     return;
   }
-  authenticate(req, res, next);
+  if (returnTo) {
+    req.session.pendingPostLoginPath = returnTo;
+  }
+  req.session.save(() => {
+    authenticate(req, res, next);
+  });
 });
 
 authRouter.get("/microsoft/callback", (req, res, next) => {

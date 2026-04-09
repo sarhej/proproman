@@ -1,23 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
 import express, { type NextFunction, type Request, type Response } from "express";
 import request from "supertest";
 import { UserRole } from "@prisma/client";
-
-const slugRegex = /^[a-z0-9-]+$/;
-
-const createRequestSchema = z.object({
-  teamName: z.string().min(2).max(100),
-  slug: z.string().min(2).max(50).regex(slugRegex, "Slug must be lowercase alphanumeric with hyphens"),
-  contactEmail: z.string().email(),
-  contactName: z.string().min(1).max(100),
-  message: z.string().max(1000).optional(),
-});
-
-const reviewSchema = z.object({
-  action: z.enum(["approve", "reject"]),
-  reviewNote: z.string().max(500).optional(),
-});
+import { createRequestSchema, reviewSchema } from "./tenant-requests.js";
 
 describe("createRequestSchema", () => {
   it("accepts valid input", () => {
@@ -148,6 +133,53 @@ describe("createRequestSchema", () => {
       contactName: "X",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("createRequestSchema inviteEmails and trustCompanyDomain", () => {
+  it("accepts optional inviteEmails and trustCompanyDomain", () => {
+    const result = createRequestSchema.safeParse({
+      teamName: "Acme Corp",
+      slug: "acme-corp",
+      contactEmail: "jane@acme.com",
+      contactName: "Jane",
+      inviteEmails: ["a@acme.com", "b@acme.com"],
+      trustCompanyDomain: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects more than 20 invite emails", () => {
+    const result = createRequestSchema.safeParse({
+      teamName: "Acme Corp",
+      slug: "acme-corp",
+      contactEmail: "jane@acme.com",
+      contactName: "Jane",
+      inviteEmails: Array.from({ length: 21 }, (_, i) => `u${i}@acme.com`),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid email in inviteEmails", () => {
+    const result = createRequestSchema.safeParse({
+      teamName: "Acme Corp",
+      slug: "acme-corp",
+      contactEmail: "jane@acme.com",
+      contactName: "Jane",
+      inviteEmails: ["not-an-email"],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("defaults inviteEmails to empty array when omitted", () => {
+    const result = createRequestSchema.safeParse({
+      teamName: "Acme Corp",
+      slug: "acme-corp",
+      contactEmail: "jane@acme.com",
+      contactName: "Jane",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.inviteEmails).toEqual([]);
   });
 });
 

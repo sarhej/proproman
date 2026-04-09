@@ -328,6 +328,11 @@ model TenantRequest {
   contactName  String
   preferredLocale String?
   message      String?
+  /** JSON string array of invitee emails (capped server-side). */
+  inviteEmails Json?
+  trustCompanyDomain Boolean      @default(false)
+  /** Normalized e.g. acme.com when trustCompanyDomain; set server-side from contact email. */
+  trustedEmailDomain String?
   status       TenantRequestStatus @default(PENDING)
   reviewedBy   String?
   reviewedAt   DateTime?
