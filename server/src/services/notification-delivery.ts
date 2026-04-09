@@ -1,7 +1,7 @@
 import { AuditAction, DeliveryChannel, NotificationDeliveryStatus } from "@prisma/client";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
-import { getRecipientsForEntry } from "./notification-matrix.js";
+import { getRecipientsWithChannelPlan } from "./notification-matrix.js";
 import {
   isTransactionalEmailEnabled,
   sendTransactionalEmail,
@@ -26,6 +26,17 @@ const WHATSAPP_ENABLED = env.NOTIFICATION_WHATSAPP_ENABLED === true;
 
 function canSendAuditNotificationEmail(): boolean {
   return env.NOTIFICATION_EMAIL_ENABLED && isTransactionalEmailEnabled();
+}
+
+/** Drop channels that are not implemented or not allowed by env (e.g. EMAIL without Resend). */
+function sanitizeChannelsForRuntime(channels: DeliveryChannel[]): DeliveryChannel[] {
+  return channels.filter((ch) => {
+    if (ch === "IN_APP") return true;
+    if (ch === "EMAIL") return canSendAuditNotificationEmail();
+    if (ch === "SLACK") return SLACK_ENABLED;
+    if (ch === "WHATSAPP") return WHATSAPP_ENABLED;
+    return false;
+  });
 }
 
 function escapeHtmlText(s: string): string {
@@ -235,7 +246,7 @@ export async function processNotificationForAuditEntry(
     entityId: entry.entityId,
     details: entry.details as Record<string, unknown> | null
   };
-  const userIds = await getRecipientsForEntry(entryForNotify);
+  const { userIds, channelsByUser } = await getRecipientsWithChannelPlan(entryForNotify);
   const payload = buildPayload(
     {
       action: entry.action,
@@ -245,11 +256,12 @@ export async function processNotificationForAuditEntry(
     },
     baseUrl
   );
-  const ruleChannels: DeliveryChannel[] = ["IN_APP"];
-  if (canSendAuditNotificationEmail()) ruleChannels.push("EMAIL");
 
   for (const userId of userIds) {
-    const channels = await getChannelsForUser(userId, ruleChannels);
+    const planned = channelsByUser.get(userId) ?? ["IN_APP"];
+    const sanitized = sanitizeChannelsForRuntime(planned);
+    const effective = sanitized.length > 0 ? sanitized : ["IN_APP"];
+    const channels = await getChannelsForUser(userId, effective);
     for (const ch of channels) {
       try {
         await deliver(userId, ch, payload, auditEntryId);
