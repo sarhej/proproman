@@ -168,8 +168,9 @@ export async function getRecipientsWithChannelPlan(
   const channelsByUser = new Map<string, DeliveryChannel[]>();
   for (const uid of filtered) {
     const set = channelMap.get(uid);
-    const arr = set && set.size > 0 ? Array.from(set) : ["IN_APP"];
-    channelsByUser.set(uid, arr.length > 0 ? arr : ["IN_APP"]);
+    const arr: DeliveryChannel[] =
+      set && set.size > 0 ? Array.from(set) : (["IN_APP"] as DeliveryChannel[]);
+    channelsByUser.set(uid, arr.length > 0 ? arr : (["IN_APP"] as DeliveryChannel[]));
   }
 
   return { userIds: filtered, channelsByUser };
