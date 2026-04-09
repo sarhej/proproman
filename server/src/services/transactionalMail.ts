@@ -3,8 +3,10 @@ import { env } from "../env.js";
 
 let warnedMissingConfig = false;
 
+/** False only when TRANSACTIONAL_EMAIL_ENABLED is explicitly false; otherwise follows Resend readiness. */
 export function isTransactionalEmailEnabled(): boolean {
-  return env.TRANSACTIONAL_EMAIL_ENABLED === true;
+  if (env.TRANSACTIONAL_EMAIL_ENABLED === false) return false;
+  return isTransactionalEmailReady();
 }
 
 export function isTransactionalEmailReady(): boolean {

@@ -2,6 +2,10 @@ import { AuditAction, DeliveryChannel, NotificationDeliveryStatus } from "@prism
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { getRecipientsForEntry } from "./notification-matrix.js";
+import {
+  isTransactionalEmailEnabled,
+  sendTransactionalEmail,
+} from "./transactionalMail.js";
 
 export type NotificationPayload = {
   titleKey: string;
@@ -17,9 +21,41 @@ export type NotificationPayload = {
   type: string;
 };
 
-const EMAIL_ENABLED = env.NOTIFICATION_EMAIL_ENABLED === true;
 const SLACK_ENABLED = env.NOTIFICATION_SLACK_ENABLED === true;
 const WHATSAPP_ENABLED = env.NOTIFICATION_WHATSAPP_ENABLED === true;
+
+function canSendAuditNotificationEmail(): boolean {
+  return env.NOTIFICATION_EMAIL_ENABLED && isTransactionalEmailEnabled();
+}
+
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderNotificationEmail(payload: NotificationPayload): { subject: string; text: string; html: string } {
+  const title = payload.titleParams.title ?? "Tymio";
+  const subject = title.length > 120 ? `${title.slice(0, 117)}...` : title;
+  const text = `${title}\n\n${payload.linkUrl}`;
+  const html = `<p>${escapeHtmlText(title)}</p><p><a href="${escapeHtmlText(payload.linkUrl)}">Open in Tymio</a></p>`;
+  return { subject, text, html };
+}
+
+async function resolveEmailRecipient(userId: string): Promise<string | null> {
+  const pref = await prisma.userNotificationPreference.findUnique({
+    where: { userId_channel: { userId, channel: "EMAIL" } }
+  });
+  const ident = pref?.channelIdentifier?.trim();
+  if (ident) return ident;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true }
+  });
+  return user?.email ?? null;
+}
 
 /** Deliver to IN_APP: create UserMessage and NotificationDelivery. Other channels: placeholder. */
 export async function deliver(
@@ -66,8 +102,15 @@ export async function deliver(
     });
     return;
   }
-  if (channel === "EMAIL" && EMAIL_ENABLED) {
-    await prisma.notificationDelivery.create({
+  if (channel === "EMAIL") {
+    if (!canSendAuditNotificationEmail()) return;
+    const to = await resolveEmailRecipient(userId);
+    if (!to) {
+      console.warn("[notification] EMAIL skipped: no address for user", userId);
+      return;
+    }
+    const { subject, text, html } = renderNotificationEmail(payload);
+    const delivery = await prisma.notificationDelivery.create({
       data: {
         userId,
         channel: "EMAIL",
@@ -75,6 +118,28 @@ export async function deliver(
         userMessageId: null
       }
     });
+    try {
+      await sendTransactionalEmail({
+        to,
+        subject,
+        text,
+        html,
+        tags: [
+          { name: "channel", value: "notification" },
+          { name: "type", value: payload.type.slice(0, 80) }
+        ]
+      });
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { status: NotificationDeliveryStatus.SENT, sentAt: new Date() }
+      });
+    } catch (e) {
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { status: NotificationDeliveryStatus.FAILED }
+      });
+      throw e;
+    }
     return;
   }
   if (channel === "SLACK" && SLACK_ENABLED) {
@@ -115,7 +180,10 @@ export async function getChannelsForUser(
     where: { userId, channel: { in: channels } }
   });
   const prefsMap = new Map(prefs.map((p) => [p.channel, p.enabled]));
-  return channels.filter((ch) => prefsMap.get(ch) !== false);
+  return channels.filter((ch) => {
+    if (!prefsMap.has(ch)) return ch === "IN_APP";
+    return prefsMap.get(ch) === true;
+  });
 }
 
 /** Build notification payload from audit entry (i18n keys + params). */
@@ -177,8 +245,11 @@ export async function processNotificationForAuditEntry(
     },
     baseUrl
   );
+  const ruleChannels: DeliveryChannel[] = ["IN_APP"];
+  if (canSendAuditNotificationEmail()) ruleChannels.push("EMAIL");
+
   for (const userId of userIds) {
-    const channels = await getChannelsForUser(userId, ["IN_APP"]);
+    const channels = await getChannelsForUser(userId, ruleChannels);
     for (const ch of channels) {
       try {
         await deliver(userId, ch, payload, auditEntryId);

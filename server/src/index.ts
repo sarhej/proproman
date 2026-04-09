@@ -287,12 +287,12 @@ async function bootstrap(): Promise<void> {
 void bootstrap().then(() => {
   app.listen(Number(env.PORT), () => {
     console.log(`Server running on port ${env.PORT}`);
-    if (env.RESEND_API_KEY && env.RESEND_FROM && !isTransactionalEmailEnabled()) {
+    if (isTransactionalEmailReady() && env.TRANSACTIONAL_EMAIL_ENABLED === false) {
       console.warn(
-        "[transactional-email] Resend is configured but TRANSACTIONAL_EMAIL_ENABLED is not true — registration/approval emails (E1–E4) are disabled."
+        "[transactional-email] Resend is configured but TRANSACTIONAL_EMAIL_ENABLED=false — E1–E4 and notification emails are disabled."
       );
     }
-    if (isTransactionalEmailEnabled() && !isTransactionalEmailReady()) {
+    if (!isTransactionalEmailReady() && env.TRANSACTIONAL_EMAIL_ENABLED === true) {
       console.warn(
         "[transactional-email] TRANSACTIONAL_EMAIL_ENABLED=true but RESEND_API_KEY or RESEND_FROM is missing — transactional sends will no-op."
       );

@@ -34,8 +34,11 @@ const envSchema = z.object({
   API_KEY_USER_ID: optionalString,
   /** Secret for signing MCP OAuth JWT tokens. Falls back to SESSION_SECRET if not set. */
   MCP_JWT_SECRET: optionalString,
-  /** Notification delivery: when "true", attempt to send via email (placeholder; no SMTP yet). */
-  NOTIFICATION_EMAIL_ENABLED: z.string().optional().transform((v) => v === "true"),
+  /** Audit notification emails via Resend: default on; set NOTIFICATION_EMAIL_ENABLED=false to disable. */
+  NOTIFICATION_EMAIL_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v !== "false" && v !== "0"),
   /** Notification delivery: when "true", attempt to send via Slack (placeholder; no integration yet). */
   NOTIFICATION_SLACK_ENABLED: z.string().optional().transform((v) => v === "true"),
   /** Notification delivery: when "true", attempt to send via WhatsApp (placeholder; no integration yet). */
@@ -54,8 +57,20 @@ const envSchema = z.object({
     (val) => (val === undefined || val === "" ? "30" : val),
     z.coerce.number().int().min(5).max(120)
   ),
-  /** When true, send E1–E4 transactional mail via Resend (still requires API key + From). */
-  TRANSACTIONAL_EMAIL_ENABLED: z.string().optional().transform((v) => v === "true"),
+  /**
+   * E1–E4 and Resend-backed sends: explicit false disables even when API key is set.
+   * Unset: send whenever RESEND_API_KEY + From are configured.
+   */
+  TRANSACTIONAL_EMAIL_ENABLED: z
+    .string()
+    .optional()
+    .transform((v): boolean | null => {
+      if (v === undefined || typeof v !== "string" || v.trim() === "") return null;
+      const s = v.trim().toLowerCase();
+      if (s === "false" || s === "0" || s === "no") return false;
+      if (s === "true" || s === "1" || s === "yes") return true;
+      return null;
+    }),
 });
 
 export const env = envSchema
