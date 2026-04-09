@@ -40,8 +40,13 @@
     "mcp",
     "tymio",
     "model-context-protocol",
+    "openclaw",
     "cursor",
     "oauth",
-    "stdio"
+    "stdio",
+    "product-management",
+    "roadmap",
+    "backlog",
+    "planning"
   ]
 }

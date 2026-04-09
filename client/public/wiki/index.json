@@ -1,0 +1,16 @@
+{
+  "title": "Tymio documentation wiki",
+  "description": "Public guides for humans and autonomous agents: MCP, OAuth, OpenClaw, and related integrations.",
+  "pages": [
+    {
+      "slug": "mcp-connection",
+      "title": "MCP connection overview",
+      "file": "articles/mcp-connection.md"
+    },
+    {
+      "slug": "openclaw",
+      "title": "OpenClaw gateway setup",
+      "file": "articles/openclaw.md"
+    }
+  ]
+}

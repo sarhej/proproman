@@ -25,6 +25,10 @@ The SPA ships **five** interface languages (ISO 639-1 codes):
 
 **SEO:** The main `index.html` includes `meta name="supported-languages"`, Open Graph `og:locale` / `og:locale:alternate`, and JSON-LD `WebSite` with `inLanguage` and `availableLanguage` for the same set.
 
+## Public documentation wiki
+
+- **Human-readable + agent-fetchable guides:** `/wiki` (HTML index and articles). Raw Markdown sources: `/wiki/articles/*.md` on this host (same content).
+
 ## Integrations (agents)
 
 - **MCP (Streamable HTTP):** `/mcp` on this origin — OAuth or Bearer per deployment.

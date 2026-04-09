@@ -61,6 +61,8 @@ import {
 } from "./lib/workspaceTenantHeader";
 import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode } from "./lib/appLocales";
 import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
+import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
+import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
@@ -387,6 +389,19 @@ function App() {
     void run();
     return () => { cancelled = true; };
   }, [workspaceSlugGate.state, tenantSlug, user?.id, user?.role, authLoading, navigate, refreshAuth]);
+
+  const isWikiPath = location.pathname === "/wiki" || location.pathname.startsWith("/wiki/");
+  if (isWikiPath) {
+    return (
+      <>
+        <PublicLanguageSwitcher />
+        <Routes>
+          <Route path="/wiki" element={<WikiIndexPage />} />
+          <Route path="/wiki/:slug" element={<WikiArticlePage />} />
+        </Routes>
+      </>
+    );
+  }
 
   if (authLoading) {
     return (

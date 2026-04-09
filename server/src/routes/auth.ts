@@ -78,7 +78,7 @@ function handleOAuthBrowserCallback(
   providerLabel: string
 ): void {
   if (err) {
-    console.error(`[auth] ${providerLabel} callback error:`, err?.message ?? err);
+    console.error("[auth] %s callback error:", providerLabel, err?.message ?? err);
     const base = env.CLIENT_URL.replace(/\/$/, "");
     res.redirect(`${base}/?error=login_failed`);
     return;

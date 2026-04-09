@@ -20,6 +20,7 @@
 | Coding-agent playbook (Markdown, **authenticated**) | `GET https://tymio.app/api/agent/coding-guide` — session cookie or `Authorization: Bearer <API_KEY>` (same rules as API) |
 | **Public agent + SEO context (JSON)** | `GET https://tymio.app/api/mcp/agent-context` — includes **`supportedUiLocales`**, **`scopeReference`**, **`feedbackReporting`**, **`tymioMcpCliAgentGuidanceMarkdown`** (full CLI/OAuth guide), **`tymioMcpNoUserSettingsApiKey`: true** |
 | **LLM / crawler site summary (Markdown)** | `https://tymio.app/llms.txt` — product overview, supported UI languages, MCP/API pointers |
+| **Public wiki (Markdown articles, browsable UI)** | `https://tymio.app/wiki` — MCP, OpenClaw, OAuth; raw Markdown URLs under `/wiki/articles/*.md` for agents |
 | Crawl policy | `https://tymio.app/robots.txt` |
 
 If you are pointed at a **staging or custom host**, replace `https://tymio.app` with that origin everywhere; paths stay the same.
@@ -59,12 +60,46 @@ Do **not** add repository-only helper scripts unless the user’s repo and workf
 
 ## 3. How to connect an agent
 
-### 3.1 Remote MCP (recommended for Cursor, Claude Code, OpenClaw, and modern MCP clients)
+Human-readable guides also live on the **public wiki:** `https://tymio.app/wiki` (same content as Markdown under `/wiki/articles/` for direct fetches).
 
-- **Endpoint:** `POST https://tymio.app/mcp`
+### 3.1 Local stdio MCP (`@tymio/mcp-server`) — **recommended for OpenClaw** and other CLI-first hosts
+
+The published CLI is **`tymio-mcp`** (**`@tymio/mcp-server`**). OpenClaw’s gateway typically runs MCP servers as **stdio subprocesses**; this path avoids relying on undocumented remote-OAuth behavior for outbound HTTP MCP.
+
+- **Install:** e.g. `npm install -g @tymio/mcp-server` (or use `npx` in your MCP command).
+- **Login once:** `tymio-mcp login` (browser; tokens stored on the host).
+- **Do not** set `DRD_API_KEY` / `API_KEY` on that process unless you intentionally want the smaller REST tool subset (see §3.4).
+
+**Register in OpenClaw** (config lives in `~/.openclaw/openclaw.json` under `mcp.servers`; use the CLI or edit the file, then restart the gateway):
+
+```bash
+openclaw mcp set tymio '{"command":"tymio-mcp","args":[],"description":"Tymio product hub (OAuth via tymio-mcp login)"}'
+```
+
+Optional **persona** (PM / PO / DEV / workspace) via env on that process: `TYMIO_MCP_PERSONA=pm` — see `mcp/README.md`.
+
+**Cursor-style stdio example (other clients use the same shape under their MCP key):**
+
+```json
+{
+  "mcpServers": {
+    "tymio": {
+      "command": "tymio-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-mcp instructions`**.
+
+### 3.2 Remote MCP (recommended for Cursor, Claude Code, and clients with proven Streamable HTTP + OAuth)
+
+- **Endpoint:** `POST https://tymio.app/mcp` (Streamable HTTP; not legacy SSE-only).
 - **Auth:** Zero-Trust OAuth 2.1 with PKCE and Refresh Token Rotation.
-- **Setup:** In your MCP client (e.g., Cursor, Claude Code, OpenClaw), add a new MCP server of type `remote` (or SSE) with the URL `https://tymio.app/mcp`. Initiate the connection. The agent will open a browser window. Log in to Tymio, and the browser will automatically redirect back to the agent to establish a stable, secure connection. **No API keys to copy or paste.**
+- **Setup:** In your MCP client, add a remote MCP server with URL `https://tymio.app/mcp`, connect, and complete sign-in in the browser. **No API keys to copy or paste.**
 - **Identity:** Requests run as the **signed-in Google user**, with the same role and permissions as in the browser.
+- **OpenClaw note:** Prefer **§3.1** unless your OpenClaw version documents and supports user OAuth for **remote** `mcp.servers` entries; otherwise use stdio.
 
 **Cursor-style config example (remote):**
 
@@ -78,16 +113,14 @@ Do **not** add repository-only helper scripts unless the user’s repo and workf
 }
 ```
 
-### 3.2 REST API (curl, scripts, or agents without MCP)
+### 3.3 REST API (curl, scripts, or agents without MCP)
 
 - **Base:** `https://tymio.app/api`
 - **Auth:** Logged-in **session cookie** from the browser, or **`Authorization: Bearer <API_KEY>`** when the deployment has `API_KEY` configured (automation user; role is fixed server-side).
 
-### 3.3 Local stdio MCP package (`@tymio/mcp-server`, optional)
+### 3.4 API-key / REST subset mode (stdio only, CI and automation)
 
-The published CLI is **`tymio-mcp`** (**`@tymio/mcp-server`**). **Default (recommended):** **do not** set `DRD_API_KEY` / `API_KEY` on the MCP process — run **`tymio-mcp login`** once; the binary proxies the **hosted** `/mcp` tool list over OAuth (same as remote URL in the IDE). Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-mcp instructions`**.
-
-**API-key / REST subset mode (CI, scripts):** set `DRD_API_BASE_URL=https://tymio.app` and `DRD_API_KEY=<same value as server API_KEY>` on the **stdio process**. That value is the **server** automation secret — **not** something users obtain from the Tymio UI. This mode exposes **only a subset** of tools (see section 6). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp` or stdio **without** those env vars after `tymio-mcp login`.
+Set `DRD_API_BASE_URL=https://tymio.app` and `DRD_API_KEY=<same value as server API_KEY>` on the **stdio** process. That value is the **server** automation secret — **not** something users obtain from the Tymio UI. This mode exposes **only a subset** of tools (see section 6). For the **full** tool surface, use **§3.2** or **§3.1** without those env vars after `tymio-mcp login`.
 
 ---
 

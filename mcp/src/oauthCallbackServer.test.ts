@@ -62,8 +62,10 @@ describe("startOAuthCallbackServer", () => {
       `http://127.0.0.1:${port}/callback?error=access_denied&error_description=${encodeURIComponent("<bad>")}`
     );
     expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/plain/);
     const body = await res.text();
-    expect(body).toContain("&lt;bad&gt;");
+    expect(body).toContain("Authorization failed:");
+    expect(body).toContain("<bad>");
     await failure;
 
     handle.close();

@@ -68,8 +68,12 @@ Agents usually **do not** drive the UI; they use API/MCP. UI is the source of tr
 
 ### 3.2 MCP (recommended for agents)
 
-- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure your MCP client (Cursor, Claude Code, OpenClaw, etc.) to add a new MCP server of type `remote` (or SSE) with URL `https://<host>/mcp`. Initiate the connection, log in via the browser, and the agent automatically receives a stable, secure connection. **There is no per-user MCP API key in Tymio Settings** — do not instruct users to copy one from the UI.
-- **Local stdio (`@tymio/mcp-server`):** **Default:** OAuth via **`tymio-mcp login`** (full hub tool surface via proxy). **Optional:** set `DRD_API_KEY` / `API_KEY` on the process for the REST subset only — that secret is **server deployment** configuration, not a user-facing Settings field. Canonical guide: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md), [mcp/README.md](../mcp/README.md), and `GET /api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
+Public, browsable guides: **`https://<host>/wiki`** (and raw Markdown under **`/wiki/articles/`** on the same host).
+
+- **Local stdio (`@tymio/mcp-server`):** **Default for OpenClaw and CLI-first agents:** OAuth via **`tymio-mcp login`** (full hub tool surface via proxy to hosted `/mcp`). Register the **`tymio-mcp`** binary in the client’s MCP config (e.g. OpenClaw `mcp.servers` / `openclaw mcp set`). **Optional:** set `DRD_API_KEY` / `API_KEY` on the process for the REST subset only — that secret is **server deployment** configuration, not a user-facing Settings field.
+- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure **Cursor, Claude Code**, and other clients that support **remote Streamable HTTP + OAuth** with URL `https://<host>/mcp`. Initiate the connection, log in via the browser, and the agent receives a stable connection. **There is no per-user MCP API key in Tymio Settings** — do not instruct users to copy one from the UI. For **OpenClaw**, prefer stdio (**`tymio-mcp`**) unless your gateway version documents full remote OAuth for outbound MCP.
+
+Canonical guide: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md), [mcp/README.md](../mcp/README.md), and `GET /api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
 
 **First call for a new session:** `tymio_get_coding_agent_guide` (no arguments) returns this document as Markdown from the server so the agent does not rely on a local repo checkout.
 

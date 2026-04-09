@@ -41,8 +41,8 @@ export async function startOAuthCallbackServer(
       const errParam = u.searchParams.get("error");
       if (errParam) {
         const desc = u.searchParams.get("error_description") ?? errParam;
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(`<p>Authorization failed: ${escapeHtml(desc)}</p>`);
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end(`Authorization failed: ${desc}`);
         rejectWait(new Error(desc));
         return;
       }
@@ -98,8 +98,4 @@ export async function startOAuthCallbackServer(
       server.close();
     }
   };
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

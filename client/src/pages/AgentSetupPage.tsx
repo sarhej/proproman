@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { AgentMcpCliHiddenGuidance } from "../components/agent/AgentMcpCliHiddenGuidance";
 import { Card } from "../components/ui/Card";
 import { Bot, Copy, Check } from "lucide-react";
@@ -14,6 +15,8 @@ const CURSOR_STYLE_STDIO_JSON = `{
     }
   }
 }`;
+
+const OPENCLAW_MCP_SET = `openclaw mcp set tymio '{"command":"tymio-mcp","args":[],"description":"Tymio product hub (OAuth via tymio-mcp login)"}'`;
 
 export function AgentSetupPage() {
   const { t } = useTranslation();
@@ -43,6 +46,16 @@ export function AgentSetupPage() {
         </div>
       </div>
 
+      <Card className="border-indigo-100 bg-indigo-50/90 p-4">
+        <p className="text-sm leading-relaxed text-indigo-950">
+          <Link to="/wiki" className="font-semibold text-indigo-800 underline decoration-indigo-300 underline-offset-2">
+            {t("agentSetup.wikiLinkLabel")}
+          </Link>
+          {" — "}
+          {t("agentSetup.wikiLinkDesc")}
+        </p>
+      </Card>
+
       <Card className="border-amber-200 bg-amber-50/90 p-4">
         <h2 className="mb-2 text-sm font-semibold text-amber-950">{t("agentSetup.oauthNotApiKeyTitle")}</h2>
         <p className="text-sm leading-relaxed text-amber-950/90">{t("agentSetup.oauthNotApiKeyBody")}</p>
@@ -53,6 +66,56 @@ export function AgentSetupPage() {
         <p className="mb-6 text-sm leading-relaxed text-slate-600">{t("agentSetup.sectionIntro")}</p>
 
         <div className="space-y-6 text-sm text-slate-600">
+          <section>
+            <h3 className="mb-2 text-base font-semibold text-slate-800">{t("agentSetup.stdioTitle")}</h3>
+            <p className="mb-4 text-slate-600">{t("agentSetup.stdioLead")}</p>
+            <ol className="ml-4 list-decimal space-y-4">
+              <li>
+                <p className="text-slate-700">{t("agentSetup.stdioStep1")}</p>
+                <code className="mt-1 block w-fit rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-800">
+                  npm install -g @tymio/mcp-server
+                </code>
+              </li>
+              <li>
+                <p className="text-slate-700">{t("agentSetup.stdioStep2")}</p>
+                <code className="mt-1 block w-fit rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-800">tymio-mcp login</code>
+              </li>
+              <li>
+                <p>{t("agentSetup.stdioStep3")}</p>
+              </li>
+              <li>
+                <p className="mb-2 font-medium text-slate-700">{t("agentSetup.stdioStep4Label")}</p>
+                <pre className="overflow-x-auto rounded-md border border-slate-200 bg-slate-900 p-3 text-xs text-slate-100">
+                  {CURSOR_STYLE_STDIO_JSON}
+                </pre>
+                <p className="mt-2 text-slate-500">{t("agentSetup.stdioPathHint")}</p>
+              </li>
+            </ol>
+            <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <h4 className="mb-2 text-sm font-semibold text-slate-800">{t("agentSetup.openclawHeading")}</h4>
+              <p className="mb-2 text-slate-600">{t("agentSetup.openclawHint")}</p>
+              <pre className="overflow-x-auto rounded-md border border-slate-200 bg-slate-900 p-3 text-xs text-slate-100">
+                {OPENCLAW_MCP_SET}
+              </pre>
+            </div>
+            <p className="mt-4 text-sm text-slate-600">
+              {t("agentSetup.stdioFooterLead")}{" "}
+              <a
+                href={NPM_PACKAGE_URL}
+                className="font-medium text-indigo-600 underline decoration-indigo-600/30 underline-offset-2 hover:text-indigo-800"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                @tymio/mcp-server
+              </a>
+              {" · "}
+              <span className="text-slate-500">{t("agentSetup.stdioFooterCli")}</span>{" "}
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">tymio-mcp instructions</code>
+            </p>
+          </section>
+
+          <hr className="border-slate-200" />
+
           <section>
             <h3 className="mb-2 text-base font-semibold text-slate-800">{t("agentSetup.remoteTitle")}</h3>
             <p className="mb-4 text-slate-600">{t("agentSetup.remoteLead")}</p>
@@ -101,49 +164,6 @@ export function AgentSetupPage() {
                 <p className="mt-1 text-slate-500">{t("agentSetup.step4Desc")}</p>
               </li>
             </ol>
-          </section>
-
-          <hr className="border-slate-200" />
-
-          <section>
-            <h3 className="mb-2 text-base font-semibold text-slate-800">{t("agentSetup.stdioTitle")}</h3>
-            <p className="mb-4 text-slate-600">{t("agentSetup.stdioLead")}</p>
-            <ol className="ml-4 list-decimal space-y-4">
-              <li>
-                <p className="text-slate-700">{t("agentSetup.stdioStep1")}</p>
-                <code className="mt-1 block w-fit rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-800">
-                  npm install -g @tymio/mcp-server
-                </code>
-              </li>
-              <li>
-                <p className="text-slate-700">{t("agentSetup.stdioStep2")}</p>
-                <code className="mt-1 block w-fit rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-800">tymio-mcp login</code>
-              </li>
-              <li>
-                <p>{t("agentSetup.stdioStep3")}</p>
-              </li>
-              <li>
-                <p className="mb-2 font-medium text-slate-700">{t("agentSetup.stdioStep4Label")}</p>
-                <pre className="overflow-x-auto rounded-md border border-slate-200 bg-slate-900 p-3 text-xs text-slate-100">
-                  {CURSOR_STYLE_STDIO_JSON}
-                </pre>
-                <p className="mt-2 text-slate-500">{t("agentSetup.stdioPathHint")}</p>
-              </li>
-            </ol>
-            <p className="mt-4 text-sm text-slate-600">
-              {t("agentSetup.stdioFooterLead")}{" "}
-              <a
-                href={NPM_PACKAGE_URL}
-                className="font-medium text-indigo-600 underline decoration-indigo-600/30 underline-offset-2 hover:text-indigo-800"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                @tymio/mcp-server
-              </a>
-              {" · "}
-              <span className="text-slate-500">{t("agentSetup.stdioFooterCli")}</span>{" "}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">tymio-mcp instructions</code>
-            </p>
           </section>
         </div>
       </Card>
