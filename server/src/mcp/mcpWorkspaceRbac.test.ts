@@ -117,12 +117,52 @@ function parseMetaText(result: unknown): { users?: unknown[] } {
 
 function setupMembershipMock() {
   mocks.tenantMembershipFindMany.mockImplementation(
-    async (args: { where: { userId: { in: string[] } } }) =>
-      args.where.userId.in.map((userId: string) => ({ userId }))
+    async (args: {
+      where: { tenantId?: string; userId?: { in: string[] } };
+      include?: { user: unknown };
+    }) => {
+      const ins = args.where.userId?.in;
+      if (ins) {
+        return ins.map((userId: string) => ({ userId }));
+      }
+      if (args.where.tenantId && args.include?.user) {
+        return [
+          {
+            userId: "u-a",
+            user: {
+              id: "u-a",
+              name: "User A",
+              email: "a@test",
+              role: UserRole.EDITOR,
+            },
+          },
+        ];
+      }
+      return [];
+    }
   );
 }
 
 describe("MCP workspaceSlug guard", () => {
+  it("accepts workspaceSlug with different letter case than session tenant slug", async () => {
+    setupMembershipMock();
+    const tools = createToolRegistry();
+    const drdMeta = tools.get("drd_meta");
+    const r = await runWithTenant(tenant("MEMBER"), () =>
+      drdMeta!({ workspaceSlug: "WS" }, ctx("u-a", UserRole.EDITOR))
+    );
+    expect(parseMetaText(r)).toBeDefined();
+  });
+
+  it("rejects single-character workspaceSlug (invalid format vs hub rules)", async () => {
+    setupMembershipMock();
+    const tools = createToolRegistry();
+    const drdMeta = tools.get("drd_meta");
+    await expect(
+      runWithTenant(tenant("MEMBER"), () => drdMeta!({ workspaceSlug: "w" }, ctx("u-a", UserRole.EDITOR)))
+    ).rejects.toThrow(/does not match the active workspace/);
+  });
+
   it("rejects when workspaceSlug does not match session tenant", async () => {
     setupMembershipMock();
     const tools = createToolRegistry();

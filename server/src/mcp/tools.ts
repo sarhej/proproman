@@ -178,7 +178,9 @@ function sanitizeUserFields(value: unknown): unknown {
 /** Required on every MCP tool so agents cannot accidentally target the wrong workspace. */
 const MCP_WORKSPACE_SLUG = z
   .string()
-  .min(1)
+  .min(2)
+  .max(50)
+  .regex(/^[a-z0-9-]+$/, "Slug: lowercase letters, digits, hyphens only (same as hub workspace slug rules).")
   .describe(
     "Workspace slug this call targets. Must exactly match the active MCP session workspace, or the tool is rejected (cross-workspace protection)."
   );
@@ -195,8 +197,9 @@ function assertMcpWorkspaceSlug(slug: unknown): void {
       "workspaceSlug is required on every MCP tool call. Pass the active workspace slug (must match the session)."
     );
   }
-  const normalized = slug.trim();
-  if (normalized !== ctx.tenantSlug) {
+  const normalized = slug.trim().toLowerCase();
+  const expected = ctx.tenantSlug.trim().toLowerCase();
+  if (normalized !== expected) {
     throw new Error(
       `workspaceSlug "${slug}" does not match the active workspace "${ctx.tenantSlug}". Refusing to run cross-workspace.`
     );
@@ -212,6 +215,7 @@ function requireMcpTenantCampaignWrite(membershipRole: string, globalRole: strin
   }
 }
 
+/** When adding a tool below, update `REGISTERED_MCP_TOOL_NAMES` in `registeredMcpToolNames.ts` (Vitest enforces parity). */
 export function registerTools(server: McpServer) {
   // --- Health ---
   server.registerTool(

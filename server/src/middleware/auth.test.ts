@@ -10,6 +10,28 @@ import {
   requireMarketingAccess,
 } from "./auth.js";
 
+function makeAppApiKey(middleware: express.RequestHandler, userOverrides?: Partial<Express.User>) {
+  const app = express();
+  app.use((req, _res, next) => {
+    const defaultUser: Express.User = {
+      id: "u-api",
+      email: "api@test.local",
+      name: "API",
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+      activeTenantId: null,
+      ...userOverrides,
+    } as Express.User;
+    (req as express.Request).user = defaultUser;
+    (req as express.Request).authViaApiKey = true;
+    (req as unknown as { isAuthenticated: () => boolean }).isAuthenticated = () => false;
+    next();
+  });
+  app.use(middleware);
+  app.get("/test", (_req, res) => res.json({ ok: true }));
+  return app;
+}
+
 function makeApp(middleware: express.RequestHandler, userOverrides?: Partial<Express.User> | null) {
   const app = express();
   app.use((req, _res, next) => {
@@ -36,6 +58,11 @@ function makeApp(middleware: express.RequestHandler, userOverrides?: Partial<Exp
 }
 
 describe("requireAuth", () => {
+  it("allows API-key user without passport session when authViaApiKey is set", async () => {
+    const res = await request(makeAppApiKey(requireAuth)).get("/test");
+    expect(res.status).toBe(200);
+  });
+
   it("allows authenticated active user", async () => {
     const res = await request(makeApp(requireAuth)).get("/test");
     expect(res.status).toBe(200);
@@ -61,6 +88,11 @@ describe("requireAuth", () => {
 });
 
 describe("requireSession", () => {
+  it("allows API-key user without passport session when authViaApiKey is set", async () => {
+    const res = await request(makeAppApiKey(requireSession)).get("/test");
+    expect(res.status).toBe(200);
+  });
+
   it("allows PENDING user", async () => {
     const res = await request(makeApp(requireSession, { role: UserRole.PENDING })).get("/test");
     expect(res.status).toBe(200);

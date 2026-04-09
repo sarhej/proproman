@@ -35,12 +35,16 @@ Commands:
   tymio-mcp login [url]        Sign in with Google (browser). Saves tokens locally.
   tymio-mcp logout             Delete saved OAuth client + tokens
   tymio-mcp instructions       Full setup text for humans & coding agents (print this)
+  tymio-mcp persona list       Bundled PM/PO/DEV/workspace prompts (see also TYMIO_MCP_PERSONA)
+  tymio-mcp persona <id>       Print one persona Markdown to stdout (pm | po | dev | workspace)
   tymio-mcp help               This summary
 
 Environment:
   TYMIO_MCP_URL          Hosted MCP URL (default https://tymio.app/mcp)
   TYMIO_OAUTH_PORT       Loopback port for login callback (default 19876)
   TYMIO_MCP_QUIET        If set, suppress stderr hints when starting stdio
+  TYMIO_WORKSPACE_SLUG   Required for stdio (or DRD_WORKSPACE_SLUG): hub workspace slug this process is pinned to; every tool call must use the same slug (tests: TYMIO_MCP_SKIP_WORKSPACE_PINNING=1)
+  TYMIO_MCP_PERSONA      Optional: pm | po | dev | workspace (hub aliases workspace) — appended to MCP server instructions
   DRD_API_KEY / API_KEY  If set → API-key REST tool bridge (subset), not OAuth proxy
   DRD_API_BASE_URL       Hub origin for API-key bridge (default https://tymio.app)
 

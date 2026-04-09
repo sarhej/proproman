@@ -3,7 +3,7 @@ name: tymio-workspace
 description: >-
   Works with Tymio (tymio.app) via MCP or REST — connect, authenticate, map
   everyday language to hub entities (Product, Initiative, Feature, Requirement),
-  use ontology briefs and backlog tools safely. Use when the user mentions Tymio,
+  use ontology briefs, the backlog entity graph, and backlog tools safely. Use when the user mentions Tymio,
   tymio.app, DRD tools, drd_* or tymio_* MCP tools, workspace hub, initiatives,
   roadmap MCP, or connecting an AI agent to their product hub.
 metadata:
@@ -51,17 +51,29 @@ Public, unauthenticated pointers: `https://tymio.app/llms.txt`, `GET https://tym
 
 **Flow:** idea/demand → **Initiative** → **Features** → **Requirements** (with domain/product taxonomy from meta).
 
+## Hub ontology (required background)
+
+Agents work better when they separate **two** notions:
+
+1. **Backlog ontology** — the **work graph** (Domain, Product, Initiative, Feature, Requirement, Demands, etc.). Wrong layer = wrong `drd_*` calls (e.g. treating a hub **Capability** as a **Feature** row).
+2. **Capability ontology** — what the **product** exposes (`tymio_get_agent_brief`, `tymio_list_capabilities`, `/api/ontology/brief`). Answers “what routes/tools exist?” not “what Jira-style rows exist?”.
+
+**Read and follow:** [references/tymio-hub-ontology.md](references/tymio-hub-ontology.md) (Mermaid graphs, parent/child rules, initiative-only dependencies). Re-open it when relationships are ambiguous.
+
 ## Workflow checklist
 
-1. `tymio_get_agent_brief` or ontology brief — align plan with real routes/tools.
-2. `drd_meta` or `GET /meta` — resolve `domainId`, `productId`, etc., after auth.
-3. List/update work: `drd_list_initiatives`, `drd_get_initiative`, `drd_list_features`, `drd_list_requirements`, and matching `drd_update_*` or REST PATCH.
-4. After shipping product/API changes that affect agents, remind admins to refresh ontology bindings and recompile briefs when applicable.
+1. **Ontology graph** — skim or apply [tymio-hub-ontology.md](references/tymio-hub-ontology.md) so drill-down order and entity types match the hub.
+2. `tymio_get_agent_brief` or ontology brief — align plan with real routes/tools (capability layer).
+3. `drd_meta` or `GET /meta` — resolve `domainId`, `productId`, etc., after auth.
+4. List/update work: `drd_list_initiatives`, `drd_get_initiative`, `drd_list_features`, `drd_list_requirements`, and matching `drd_update_*` or REST PATCH.
+5. After shipping product/API changes that affect agents, remind admins to refresh ontology bindings and recompile briefs when applicable.
 
 ## Roles
 
-Respect least privilege: `VIEWER` < `EDITOR` < `ADMIN` < `SUPER_ADMIN`. Do not assume elevated rights.
+Respect least privilege (lowest to highest): `VIEWER`, `EDITOR`, `ADMIN`, `SUPER_ADMIN`. Do not assume elevated rights.
 
 ## Deeper reference
 
+- Backlog vs capability ontology (graphs): [references/tymio-hub-ontology.md](references/tymio-hub-ontology.md)
 - URLs, OAuth callbacks, tool inventory, stdio subset: [references/mcp-and-rest.md](references/mcp-and-rest.md)
+- Persona-specific agent skills (PM / PO / DEV) and capability matrix: [docs/TYMIO_AGENT_ROLES_PM_PO_DEV.md](../../../docs/TYMIO_AGENT_ROLES_PM_PO_DEV.md)

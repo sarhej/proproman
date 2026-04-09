@@ -4,6 +4,7 @@ import { runApiKeyStdio } from "./apiKeyStdio.js";
 import { runHubOAuthStdio } from "./hubProxyStdio.js";
 import { runLoginCommand } from "./loginCommand.js";
 import { removeAllOAuthFiles } from "./fileOAuthProvider.js";
+import { runPersonaCli } from "./persona.js";
 
 function useApiKeyBridge(): boolean {
   return Boolean(process.env.DRD_API_KEY?.trim() || process.env.API_KEY?.trim());
@@ -31,6 +32,11 @@ export async function runCli(argv: string[]): Promise<void> {
 
   if (args[0] === "help" || args[0] === "-h" || args[0] === "--help") {
     process.stderr.write(`${HELP_SUMMARY}\n`);
+    return;
+  }
+
+  if (args[0] === "persona") {
+    process.exitCode = runPersonaCli(args.slice(1));
     return;
   }
 

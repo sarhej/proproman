@@ -35,7 +35,9 @@ function renderMarkdown(caps: CapabilityWithBindings[]): string {
     "## Terminology",
     "",
     "- **Tenant (target):** customer org boundary; not the same as Prisma `Product` (product line / pillar).",
-    "- **Initiative / Feature / Requirement:** primary delivery hierarchy.",
+    "- **Initiative → Feature → Requirement:** primary **backlog** delivery hierarchy under a Domain (and optional Product).",
+    "- **Capability (this brief):** an Admin Ontology row describing a **product affordance** (routes, MCP tools, models, files) — **not** the same as a backlog Feature or Requirement row.",
+    "- **Dependency (hub data):** initiative-to-initiative links; not feature-level edges in the default model.",
     "",
     "## Capabilities",
     ""

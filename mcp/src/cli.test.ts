@@ -24,6 +24,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.DRD_API_KEY;
   delete process.env.API_KEY;
+  process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING = "1";
 });
 
 afterEach(() => {
@@ -31,6 +32,7 @@ afterEach(() => {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   }
+  delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
 });
 
 describe("runCli", () => {
@@ -110,6 +112,24 @@ describe("runCli", () => {
   it("defaults to hub OAuth stdio when no subcommand and no API key", async () => {
     await runCli(["node", "tymio-mcp"]);
     expect(runHubOAuthStdio).toHaveBeenCalledOnce();
+  });
+
+  it("persona pm prints to stdout and sets exit code 0", async () => {
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "persona", "pm"]);
+    const out = spy.mock.calls.map((c) => String(c[0])).join("");
+    expect(out).toMatch(/Product Manager/);
+    expect(process.exitCode).toBe(0);
+    process.exitCode = 0;
+    spy.mockRestore();
+  });
+
+  it("persona unknown sets exit code 1", async () => {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "persona", "nope"]);
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+    spy.mockRestore();
   });
 
   it("unknown first arg still starts hub OAuth stdio", async () => {

@@ -1,7 +1,7 @@
 {
   "name": "@tymio/mcp-server",
-  "version": "1.0.1",
-  "description": "Tymio MCP CLI: OAuth stdio proxy to hosted MCP, or API-key REST tool bridge",
+  "version": "2.0.0",
+  "description": "Tymio MCP CLI: OAuth stdio proxy to hosted MCP, API-key REST bridge, bundled PM/PO/DEV/workspace agent personas",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -9,6 +9,8 @@
   },
   "files": [
     "dist",
+    "personas",
+    "CHANGELOG.md",
     "README.md",
     "TYMIO_MCP_CLI_AGENT_GUIDANCE.md"
   ],

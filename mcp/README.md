@@ -37,6 +37,30 @@ Installable **`tymio-mcp`** command: connect editors and agents to **Tymio** in 
 
 **Agents / IDE:** MCP clients that support [server instructions](https://modelcontextprotocol.io) receive the same long-form guide as `tymio-mcp instructions` during the initialize handshake. You can still run `tymio-mcp instructions` in a terminal to print it, or read this README.
 
+### Bundled agent personas (PM / PO / DEV)
+
+The package ships Markdown prompts in **`personas/`** (aligned with Cursor Skills in the monorepo).
+
+| Mechanism | What it does |
+|-----------|----------------|
+| **`tymio-mcp persona list`** | Lists persona ids and usage |
+| **`tymio-mcp persona pm`** (or `po`, `dev`, `workspace`) | Prints that prompt to **stdout** (pipe into docs or paste into a chat) |
+| **`TYMIO_MCP_PERSONA=pm`** on the `tymio-mcp` process | **Appends** the same Markdown to MCP server **`instructions`** after the main CLI guide — steers the model for clients that honor instructions (no Skills required). Use `hub` as an alias for `workspace`. |
+
+Example Cursor stdio config with a Product Owner bias:
+
+```json
+{
+  "mcpServers": {
+    "tymio-po": {
+      "command": "tymio-mcp",
+      "args": [],
+      "env": { "TYMIO_MCP_PERSONA": "po" }
+    }
+  }
+}
+```
+
 ### OAuth callback port
 
 The CLI listens on **`http://127.0.0.1:19876/callback`** during `login` (override with `TYMIO_OAUTH_PORT`). That URI must be reachable from your browser and should stay stable so it matches the dynamically registered OAuth client.
@@ -84,6 +108,9 @@ Example:
 | `tymio-mcp` | Run stdio MCP (OAuth proxy unless API key env is set) |
 | `tymio-mcp login [url]` | OAuth sign-in; optional MCP URL overrides `TYMIO_MCP_URL` |
 | `tymio-mcp logout` | Delete stored OAuth client + tokens |
+| `tymio-mcp instructions` / `guide` | Print full agent Markdown (same as MCP `instructions` base) |
+| `tymio-mcp persona list` | Bundled persona ids (`pm`, `po`, `dev`, `workspace`) |
+| `tymio-mcp persona <id>` | Print one persona Markdown to stdout |
 | `tymio-mcp help` | Usage |
 
 ---

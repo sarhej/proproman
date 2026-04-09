@@ -6,6 +6,8 @@ declare global {
     interface User extends PrismaUser {}
     interface Request {
       tenantContext?: TenantContext;
+      /** Set when `Authorization: Bearer` matches deployment `API_KEY` (stateless automation). */
+      authViaApiKey?: boolean;
     }
   }
 }

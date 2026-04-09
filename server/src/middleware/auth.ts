@@ -1,8 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { UserRole } from "@prisma/client";
 
+function authenticatedOrApiKey(req: Request): boolean {
+  if (!req.user) return false;
+  if (req.authViaApiKey) return true;
+  return req.isAuthenticated();
+}
+
 export function checkAuth(req: Request, res: Response): boolean {
-  if (!req.isAuthenticated() || !req.user) {
+  if (!req.user || !authenticatedOrApiKey(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return false;
   }
@@ -23,7 +29,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 /** Logged-in + active account only (allows `UserRole.PENDING`). For endpoints that must work before platform role promotion. */
 export function requireSession(req: Request, res: Response, next: NextFunction): void {
-  if (!req.isAuthenticated() || !req.user) {
+  if (!req.user || !authenticatedOrApiKey(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

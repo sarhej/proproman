@@ -58,6 +58,31 @@ describe("drdFetch", () => {
     );
   });
 
+  it("merges X-Tenant-Id when setApiKeyBridgeTenantId was called", async () => {
+    process.env.DRD_API_KEY = "k";
+    vi.resetModules();
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+    ) as typeof fetch;
+
+    const { drdFetch, setApiKeyBridgeTenantId } = await import("./api.js");
+    setApiKeyBridgeTenantId("tenant-uuid-99");
+    await drdFetch("/api/meta");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://hub.test/api/meta",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Tenant-Id": "tenant-uuid-99",
+          Authorization: "Bearer k",
+        }),
+      })
+    );
+  });
+
   it("falls back to API_KEY when DRD_API_KEY unset", async () => {
     process.env.API_KEY = "fallback-key";
     vi.resetModules();

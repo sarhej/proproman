@@ -41,7 +41,9 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
       return;
     }
 
-    (req as Request & { user: typeof user }).user = user;
+    const r = req as Request & { user: typeof user; authViaApiKey?: boolean };
+    r.user = user;
+    r.authViaApiKey = true;
   } catch {
     // ignore DB errors and let normal auth handle it
   }

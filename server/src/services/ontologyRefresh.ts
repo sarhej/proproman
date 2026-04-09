@@ -1,5 +1,17 @@
 import { BindingType, CapabilityStatus } from "@prisma/client";
+import { REGISTERED_MCP_TOOL_NAMES } from "../mcp/registeredMcpToolNames.js";
 import { prisma } from "../db.js";
+
+function allRegisteredMcpToolBindings(): { type: BindingType; key: string; isPrimary?: boolean }[] {
+  return [
+    ...REGISTERED_MCP_TOOL_NAMES.map((key) => ({
+      type: "MCP_TOOL" as BindingType,
+      key,
+      isPrimary: key === "drd_meta"
+    })),
+    { type: "INFRA" as BindingType, key: "server/src/mcp/tools.ts" }
+  ];
+}
 
 /** Default ontology rows + generated bindings (idempotent). */
 const DEFAULT_CAPABILITIES: {
@@ -72,6 +84,8 @@ const DEFAULT_CAPABILITIES: {
     slug: "product-explorer",
     title: "Product explorer",
     userJob: "Navigate product line → initiative → feature → requirement tree; structure edits for admins.",
+    doNotConfuseWith:
+      "An Admin 'Capability' (ontology row) names a product affordance with bindings — not the same as a backlog Feature under an Initiative. Delivery hierarchy is Initiative → Feature → Requirement.",
     status: "ACTIVE",
     sortOrder: 70,
     bindings: [
@@ -148,6 +162,26 @@ const DEFAULT_CAPABILITIES: {
     ]
   },
   {
+    slug: "backlog-entity-model",
+    title: "Backlog entity graph (agents)",
+    userJob:
+      "Learn the work graph (Domain, Product, Initiative, Feature, Requirement, demands, initiative-only dependencies) before choosing MCP tools; aligns PM/PO/DEV agent skills with the hub schema.",
+    description:
+      "Repo Markdown skills describe edges and parent/child rules. Call tymio_get_agent_brief for capability bindings; use drd_meta and list tools for live tenant data.",
+    doNotConfuseWith:
+      "This capability points at documentation files, not a single UI screen. 'Capability' in Admin Ontology still means affordance + bindings, not a Requirement row.",
+    status: "ACTIVE",
+    sortOrder: 115,
+    bindings: [
+      {
+        type: "FILE_GLOB",
+        key: ".cursor/skills/tymio-workspace/references/tymio-hub-ontology.md",
+        isPrimary: true
+      },
+      { type: "FILE_GLOB", key: "docs/TYMIO_AGENT_ROLES_PM_PO_DEV.md" }
+    ]
+  },
+  {
     slug: "administration",
     title: "Admin",
     userJob: "Manage users, reference data, import/export, ontology, audit, notification rules.",
@@ -163,20 +197,11 @@ const DEFAULT_CAPABILITIES: {
     slug: "mcp-agents",
     title: "MCP agent access",
     userJob: "Agents call the same APIs via MCP tools with user permissions (remote OAuth or stdio API key).",
-    description: "Remote: POST /mcp with OAuth. Local: mcp package with API_KEY.",
+    description:
+      "Remote MCP: POST …/mcp with OAuth (full tool list). Stdio @tymio/mcp-server without API key env proxies the same list after tymio-mcp login. If DRD_API_KEY/API_KEY is set on the stdio process, the bridge exposes a smaller REST subset only — see mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md.",
     status: "ACTIVE",
     sortOrder: 130,
-    bindings: [
-      { type: "MCP_TOOL", key: "drd_meta", isPrimary: true },
-      { type: "MCP_TOOL", key: "drd_list_initiatives" },
-      { type: "MCP_TOOL", key: "drd_list_domains" },
-      { type: "MCP_TOOL", key: "drd_create_domain" },
-      { type: "MCP_TOOL", key: "tymio_get_coding_agent_guide" },
-      { type: "MCP_TOOL", key: "tymio_get_agent_brief" },
-      { type: "MCP_TOOL", key: "tymio_list_capabilities" },
-      { type: "MCP_TOOL", key: "tymio_get_capability" },
-      { type: "INFRA", key: "server/src/mcp/tools.ts" }
-    ]
+    bindings: allRegisteredMcpToolBindings()
   }
 ];
 

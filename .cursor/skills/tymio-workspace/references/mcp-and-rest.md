@@ -79,6 +79,8 @@ When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only
 
 Base: `https://tymio.app/api/ontology` — e.g. `GET /capabilities`, `GET /brief?format=md&mode=compact`. Admin routes manage compile/export.
 
+**Backlog entity graph** (Domain → Initiative → Feature → Requirement, demands, initiative-only dependencies): see [tymio-hub-ontology.md](tymio-hub-ontology.md) in this folder — use it alongside the brief so agents do not confuse **Capability** (affordance) with backlog rows.
+
 ## If the user cannot connect
 
 1. Use the **web UI** (Admin/Editor as appropriate).

@@ -73,10 +73,12 @@ Agents usually **do not** drive the UI; they use API/MCP. UI is the source of tr
 
 **First call for a new session:** `tymio_get_coding_agent_guide` (no arguments) returns this document as Markdown from the server so the agent does not rely on a local repo checkout.
 
+**Stdio CLI personas (`@tymio/mcp-server`):** to suggest role behavior without Cursor Skills, set **`TYMIO_MCP_PERSONA=pm`** (or `po`, `dev`, `workspace`) on the `tymio-mcp` process — the package **appends** a bundled Markdown persona to MCP server **`instructions`**. Inspect or pipe: **`tymio-mcp persona pm`**, **`tymio-mcp persona list`**. See [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).
+
 **Tool families:**
 
 - **Ontology (Tymio-prefixed):** `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` — **read** compiled brief and capability metadata.
-- **Backlog / data (historical `drd_*` prefix):** health, meta, initiatives, features, requirements, domains, products, accounts, partners, demands, campaigns, timeline, assignments, stakeholders, etc. Full list: `server/src/mcp/tools.ts` (server) and `mcp/src/index.ts` (stdio subset).
+- **Backlog / data (historical `drd_*` prefix):** health, meta, initiatives, features, requirements, domains, products, accounts, partners, demands, campaigns, timeline, assignments, stakeholders, etc. Full list: `server/src/mcp/tools.ts`; **canonical tool names for ontology** live in `server/src/mcp/registeredMcpToolNames.ts`. Stdio package subset: `mcp/src/index.ts`.
 
 Permissions match the **signed-in user** (or API-key user). **SUPER_ADMIN** is not implied unless that is the account.
 
@@ -93,6 +95,19 @@ Permissions match the **signed-in user** (or API-key user). **SUPER_ADMIN** is n
   (needs `DATABASE_URL`; run on a machine that can reach the target DB.)
 - **Export brief file on server filesystem:** Admin → Ontology → export, or `POST /api/ontology/export-file`.
 - **Demo / structure scripts:** e.g. `npm run db:populate-tymio-demo --workspace server` (see `server/scripts/populate-tymio-demo-hub.ts`).
+
+### 3.5 Operator checklist — new MCP tools and hub ontology
+
+When you **add or rename** an MCP tool in the server:
+
+1. **Register the tool** in `server/src/mcp/tools.ts` (`server.registerTool("name", …)`).
+2. **Update the canonical name list** in `server/src/mcp/registeredMcpToolNames.ts` (keep entries **sorted**). **`server/src/mcp/registeredMcpToolNames.test.ts`** compares this file to `tools.ts` and **fails** if they diverge — e.g. `npm run test --workspace server -- src/mcp/registeredMcpToolNames.test.ts` before merge.
+3. **Refresh the hub ontology defaults** so Admin “Refresh default bindings” and compiled briefs include every `MCP_TOOL`:  
+   `npm run ontology:refresh --workspace server`  
+   (requires `DATABASE_URL` in `server/.env`; upserts rows from `server/src/services/ontologyRefresh.ts` and recompiles stored briefs).
+4. **Optional but recommended for the repo copy of the brief:** Admin → Ontology → export, or `POST /api/ontology/export-file`, so **`context/AGENT_BRIEF.md`** matches production if you check it in.
+
+If you only change **routes, pages, or copy** for an existing capability, you may still edit bindings in **Admin → Ontology** without touching `tools.ts`; run **`ontology:refresh`** when you change **`DEFAULT_CAPABILITIES`** in `ontologyRefresh.ts` so deployments stay consistent.
 
 ---
 
@@ -136,7 +151,7 @@ Use this when the org has an existing product or backlog (docs, tickets, spreads
 6. **Optional:** run **`db:populate-tymio-demo`** only on **non-production** DBs if you want sample epics/features for a demo tenant.
 
 7. **Ontology for agents:**
-   - After schema or route changes, run **`ontology:refresh`** (or Admin compile/export) so **`AGENT_BRIEF.md`** and DB briefs stay accurate.
+   - After schema, route, or **MCP tool** changes, run **`ontology:refresh`** (or Admin compile/export) so **`AGENT_BRIEF.md`** and DB briefs stay accurate. New tools: follow **§3.5**.
 
 ---
 
@@ -154,7 +169,7 @@ Use this when the org has an existing product or backlog (docs, tickets, spreads
 
 1. Treat **requirements** as the finest hub-owned checklist items; **features** as shippable slices; **initiatives** as epics.
 2. Map hub IDs (initiative / feature / requirement) into **commit messages**, **PR descriptions**, or **issue links** in your tracker so traceability is bidirectional.
-3. After adding **routes, MCP tools, or Prisma models**, update hub **ontology** (Admin → Ontology) or run **`ontology:refresh`** so bindings stay true.
+3. After adding **routes, MCP tools, or Prisma models**, update hub **ontology** (Admin → Ontology) or run **`ontology:refresh`** so bindings stay true. For **new MCP tools**, also update **`registeredMcpToolNames.ts`** (see **§3.5**).
 
 ### 6.3 Manage state in Tymio (after shipping)
 
@@ -171,7 +186,7 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 ## 7. Checklist before closing an agent task
 
 - [ ] Initiative / feature / requirement IDs referenced or updated if the task was tracked in Tymio.
-- [ ] Ontology refreshed or Admin compile run if you changed **API surface, routes, or tools**.
+- [ ] Ontology refreshed or Admin compile run if you changed **API surface, routes, or tools**; for **new `registerTool` names**, **`registeredMcpToolNames.ts`** updated and Vitest drift test green (**§3.5**).
 - [ ] No assumption of SUPER_ADMIN unless the connected account is one.
 - [ ] Production DB: avoid destructive seeds and unreviewed **import** merges.
 
@@ -187,6 +202,8 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 | Ontology REST & MCP §6.1 | [docs/HUB.md](./HUB.md) |
 | MCP stdio package + agent OAuth guidance | [mcp/README.md](../mcp/README.md), [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md) |
 | Server MCP tool registration | `server/src/mcp/tools.ts` |
+| MCP tool names (ontology / drift test) | `server/src/mcp/registeredMcpToolNames.ts`, `registeredMcpToolNames.test.ts` |
+| Default hub capabilities + bindings manifest | `server/src/services/ontologyRefresh.ts` |
 | Prisma schema | `server/prisma/schema.prisma` |
 | UI nav config | `client/src/lib/navSections.ts` |
 | Nav visibility API | `GET/PUT /api/ui-settings`, `server/src/routes/ui-settings.ts` |

@@ -9,12 +9,14 @@ describe("runApiKeyStdio", () => {
 
   beforeEach(() => {
     process.env.TYMIO_MCP_QUIET = "1";
+    process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING = "1";
     ctx = withTempXdgConfig();
     connectSpy = vi.spyOn(McpServer.prototype, "connect").mockResolvedValue(undefined as never);
   });
 
   afterEach(() => {
     delete process.env.TYMIO_MCP_QUIET;
+    delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
     connectSpy.mockRestore();
     ctx.cleanup();
   });

@@ -8,8 +8,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { defaultMcpUrl, defaultOAuthRedirectUrl } from "./configPaths.js";
 import { FileOAuthProvider } from "./fileOAuthProvider.js";
-import { AGENT_INSTRUCTIONS } from "./cliMessages.js";
+import { getMcpServerInstructions } from "./persona.js";
 import { writeStdioStartupHint } from "./stdioHints.js";
+import { assertToolArgsMatchPinnedWorkspace, readPinnedWorkspaceSlugForStdio } from "./workspaceSlug.js";
 
 function pkgVersion(): string {
   try {
@@ -27,6 +28,7 @@ const passthroughArgs = z.object({}).passthrough();
  */
 export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<void> {
   writeStdioStartupHint("oauth");
+  const pinnedWorkspaceSlug = readPinnedWorkspaceSlugForStdio();
   const redirectUrl = defaultOAuthRedirectUrl();
   const provider = new FileOAuthProvider(redirectUrl);
   const transport = new StreamableHTTPClientTransport(mcpUrl, { authProvider: provider });
@@ -50,7 +52,7 @@ export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<v
   const { tools } = await client.listTools();
   const server = new McpServer(
     { name: "tymio-hub", version: pkgVersion() },
-    { instructions: AGENT_INSTRUCTIONS }
+    { instructions: getMcpServerInstructions() }
   );
 
   for (const tool of tools) {
@@ -63,6 +65,9 @@ export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<v
         inputSchema: passthroughArgs
       },
       async (args) => {
+        if (pinnedWorkspaceSlug) {
+          assertToolArgsMatchPinnedWorkspace(args ?? {}, pinnedWorkspaceSlug, name);
+        }
         const result = await client.callTool({
           name,
           arguments: (args as Record<string, unknown>) ?? {}

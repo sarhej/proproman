@@ -9,6 +9,7 @@
 3. **`DRD_API_KEY` / `API_KEY` on the stdio process** means the **server deployment automation secret** (the same value as the hub’s configured `API_KEY` for `Authorization: Bearer …` on REST). It is **not** something each user generates in the Tymio UI. Only operators with access to deployment secrets use it (CI, scripts, optional stdio “REST bridge” mode).
 4. **Default vs API-key stdio:** If `DRD_API_KEY` or `API_KEY` is set to a non-empty value in the **environment of the `tymio-mcp` process**, the CLI uses a **fixed REST tool subset**, not OAuth to the hosted hub. For the **full** tool surface, use **remote** `…/mcp` or stdio **without** those env vars (after `tymio-mcp login`).
 5. **Full text of this guide:** shell command `tymio-mcp instructions` (or `tymio-mcp guide`). MCP clients that support server `instructions` receive this content at initialize when using the published CLI.
+6. **Bundled agent personas (PM / PO / DEV / workspace):** optional Markdown prompts ship with the package under `personas/`. **Print a prompt:** `tymio-mcp persona pm` (or `po`, `dev`, `workspace`). **Embed in MCP `instructions`:** set `TYMIO_MCP_PERSONA=pm` (same ids; `hub` aliases `workspace`) on the `tymio-mcp` process — the stdio server appends that persona after this guide so clients that honor `instructions` steer the model without Cursor Skills. **List ids:** `tymio-mcp persona list`.
 
 ---
 

@@ -44,6 +44,7 @@ describe("runHubOAuthStdio", () => {
 
   beforeEach(() => {
     process.env.TYMIO_MCP_QUIET = "1";
+    process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING = "1";
     ctx = withTempXdgConfig();
     connectMock.mockReset();
     listToolsMock.mockReset();
@@ -67,6 +68,7 @@ describe("runHubOAuthStdio", () => {
 
   afterEach(() => {
     delete process.env.TYMIO_MCP_QUIET;
+    delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
     ctx.cleanup();
     serverConnectSpy.mockRestore();
     registerToolSpy.mockRestore();
@@ -116,5 +118,32 @@ describe("runHubOAuthStdio", () => {
       name: "drd_health",
       arguments: { k: "v" }
     });
+  });
+
+  it("refuses to proxy when workspaceSlug disagrees with TYMIO_WORKSPACE_SLUG", async () => {
+    try {
+      delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
+      process.env.TYMIO_WORKSPACE_SLUG = "pinned-ws";
+      listToolsMock.mockResolvedValueOnce({
+        tools: [{ name: "drd_meta", description: "m", title: "m" }]
+      });
+      callToolMock.mockResolvedValue({
+        content: [{ type: "text", text: "{}" }]
+      });
+      await runHubOAuthStdio(new URL("https://hub/mcp"));
+      const reg = registerToolSpy.mock.calls.find((c) => c[0] === "drd_meta");
+      const handler = reg![2] as (args: Record<string, unknown>) => Promise<unknown>;
+      await expect(handler({ workspaceSlug: "evil-ws" })).rejects.toThrow(/does not match this MCP server pin/);
+      expect(callToolMock).not.toHaveBeenCalled();
+      callToolMock.mockClear();
+      await handler({ workspaceSlug: "pinned-ws" });
+      expect(callToolMock).toHaveBeenCalledWith({
+        name: "drd_meta",
+        arguments: { workspaceSlug: "pinned-ws" }
+      });
+    } finally {
+      delete process.env.TYMIO_WORKSPACE_SLUG;
+      process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING = "1";
+    }
   });
 });

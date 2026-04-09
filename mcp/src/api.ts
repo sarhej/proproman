@@ -6,8 +6,22 @@
 const baseUrl = process.env.DRD_API_BASE_URL ?? "https://tymio.app";
 const apiKey = process.env.DRD_API_KEY ?? process.env.API_KEY ?? "";
 
+/** Set by API-key stdio after resolving slug → tenant id (never send cross-tenant requests). */
+let bridgeTenantHeaders: Record<string, string> = {};
+
+export function setApiKeyBridgeTenantId(tenantId: string): void {
+  bridgeTenantHeaders = { "X-Tenant-Id": tenantId };
+}
+
+export function clearApiKeyBridgeTenant(): void {
+  bridgeTenantHeaders = {};
+}
+
 function headers(): HeadersInit {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const h: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...bridgeTenantHeaders
+  };
   if (apiKey) h["Authorization"] = `Bearer ${apiKey}`;
   return h;
 }
