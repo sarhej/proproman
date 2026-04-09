@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SeoHead } from "../components/seo/SeoHead";
 import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -69,8 +70,15 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: Reg
   }
 
   if (submitted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+  return (
+    <>
+      <SeoHead
+        title={t("seo.registerTitle")}
+        description={t("seo.registerDescription")}
+        canonicalPath="/"
+        robots={prefilledContact ? "noindex,nofollow" : "index,follow"}
+      />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center">
           <div className="mb-4 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
@@ -97,10 +105,18 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: Reg
           <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
         </Card>
       </div>
+    </>
     );
   }
 
   return (
+    <>
+      <SeoHead
+        title={t("seo.registerTitle")}
+        description={t("seo.registerDescription")}
+        canonicalPath="/"
+        robots={prefilledContact ? "noindex,nofollow" : "index,follow"}
+      />
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
       <Card className="w-full max-w-lg p-6">
         <div className="mb-5">
@@ -208,5 +224,6 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey }: Reg
       </Card>
       <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
     </div>
+    </>
   );
 }

@@ -4,4 +4,7 @@
 User-agent: *
 Allow: /
 
+# Sitemap: update the hostname if you self-host (must match public origin).
+Sitemap: https://tymio.app/sitemap.xml
+
 # Machine-readable site summary (UI languages, MCP, APIs): /llms.txt (see https://llmstxt.org/)

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { SeoHead } from "../../components/seo/SeoHead";
+import { getPublicSiteOrigin } from "../../lib/publicSiteOrigin";
 import type { WikiIndex } from "./wikiTypes";
 import { WikiHeader } from "./WikiHeader";
 
@@ -25,8 +27,30 @@ export function WikiIndexPage() {
     };
   }, []);
 
+  const indexJsonLd = useMemo(() => {
+    if (!index) return null;
+    const origin = getPublicSiteOrigin();
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: index.title,
+      description: index.description,
+      url: `${origin}/wiki`,
+      isPartOf: { "@type": "WebSite", name: "Tymio", url: origin },
+    };
+  }, [index]);
+
   return (
     <div className="min-h-screen bg-slate-50">
+      {index ? (
+        <SeoHead
+          title={`${index.title} | Tymio`}
+          description={index.description}
+          canonicalPath="/wiki"
+          ogType="website"
+          jsonLd={indexJsonLd}
+        />
+      ) : null}
       <WikiHeader />
       <main className="mx-auto max-w-3xl px-4 py-10">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">

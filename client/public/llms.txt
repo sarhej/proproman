@@ -44,4 +44,8 @@ If you have the monorepo: `docs/HUB.md`, `docs/CODING_AGENT_TYMIO.md`, and `docs
 
 ## robots
 
-See `/robots.txt` on this host for crawl policy.
+See `/robots.txt` on this host for crawl policy (includes `Sitemap`).
+
+## sitemap
+
+HTML entry points and wiki URLs are listed in `/sitemap.xml` (absolute URLs default to `https://tymio.app/` — change when self-hosting).

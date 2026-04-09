@@ -63,6 +63,7 @@ import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode 
 import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
+import { resetDocumentSeoDefaults, SeoHead } from "./components/seo/SeoHead";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
@@ -391,6 +392,14 @@ function App() {
   }, [workspaceSlugGate.state, tenantSlug, user?.id, user?.role, authLoading, navigate, refreshAuth]);
 
   const isWikiPath = location.pathname === "/wiki" || location.pathname.startsWith("/wiki/");
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isWikiPath) return;
+    if (!user || user.role === "PENDING") return;
+    resetDocumentSeoDefaults();
+  }, [authLoading, isWikiPath, user?.id, user?.role]);
+
   if (isWikiPath) {
     return (
       <>
@@ -440,6 +449,11 @@ function App() {
     return (
       <>
         <PublicLanguageSwitcher />
+        <SeoHead
+          title={t("seo.signInTitle")}
+          description={t("seo.signInDescription")}
+          canonicalPath="/"
+        />
         <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
           <Card className="max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">

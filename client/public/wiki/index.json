@@ -5,16 +5,19 @@
     {
       "slug": "mcp-connection",
       "title": "MCP connection overview",
+      "description": "How to connect Cursor, Claude Code, and other agents to Tymio MCP: OAuth, remote /mcp URL, and what not to tell users about API keys.",
       "file": "articles/mcp-connection.md"
     },
     {
       "slug": "tymio-mcp-cli",
       "title": "tymio-mcp CLI — install and use",
+      "description": "Install @tymio/mcp-server, run tymio-mcp login, and use the CLI daily for stdio MCP without a per-user Settings API key.",
       "file": "articles/tymio-mcp-cli.md"
     },
     {
       "slug": "openclaw",
       "title": "OpenClaw gateway setup",
+      "description": "Register the Tymio MCP stdio server on an OpenClaw gateway host and restart so agents can use the hub tools.",
       "file": "articles/openclaw.md"
     }
   ]

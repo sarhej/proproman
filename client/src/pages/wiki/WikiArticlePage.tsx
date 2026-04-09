@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { SeoHead } from "../../components/seo/SeoHead";
+import { getPublicSiteOrigin } from "../../lib/publicSiteOrigin";
+import { plainTextExcerptFromMarkdown } from "./markdownExcerpt";
 import type { WikiIndex } from "./wikiTypes";
 import { WikiHeader } from "./WikiHeader";
 
@@ -9,7 +12,10 @@ const SLUG_RE = /^[a-z0-9-]+$/;
 
 export function WikiArticlePage() {
   const { slug } = useParams();
+  const location = useLocation();
   const [markdown, setMarkdown] = useState<string | null>(null);
+  const [pageTitle, setPageTitle] = useState<string | null>(null);
+  const [pageDescription, setPageDescription] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const safeSlug = useMemo(() => (slug && SLUG_RE.test(slug) ? slug : null), [slug]);
@@ -18,6 +24,8 @@ export function WikiArticlePage() {
     let cancelled = false;
     setError(null);
     setMarkdown(null);
+    setPageTitle(null);
+    setPageDescription(null);
     if (!safeSlug) {
       setError("Invalid page.");
       return;
@@ -34,15 +42,21 @@ export function WikiArticlePage() {
           setError("Page not found.");
           return;
         }
+        setPageTitle(page.title);
         const path = `/wiki/${page.file}`;
-        return fetch(path).then((r) => {
-          if (!r.ok) throw new Error(String(r.status));
-          return r.text();
-        });
+        return fetch(path)
+          .then((r) => {
+            if (!r.ok) throw new Error(String(r.status));
+            return r.text();
+          })
+          .then((text) => ({ page, text }));
       })
-      .then((text) => {
-        if (cancelled || text === undefined) return;
+      .then((result) => {
+        if (cancelled || result === undefined) return;
+        const { page, text } = result;
         setMarkdown(text);
+        const fromIndex = page.description?.trim();
+        setPageDescription(fromIndex || plainTextExcerptFromMarkdown(text, 160));
       })
       .catch(() => {
         if (!cancelled) setError("Could not load article.");
@@ -52,8 +66,54 @@ export function WikiArticlePage() {
     };
   }, [safeSlug]);
 
+  const articleJsonLd = useMemo(() => {
+    if (!safeSlug || !pageTitle || !pageDescription) return null;
+    const origin = getPublicSiteOrigin();
+    const url = `${origin}/wiki/${encodeURIComponent(safeSlug)}`;
+    return {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline: pageTitle,
+      name: pageTitle,
+      description: pageDescription,
+      url,
+      isPartOf: { "@type": "WebSite", name: "Tymio", url: origin },
+      publisher: {
+        "@type": "Organization",
+        name: "Tymio",
+        logo: { "@type": "ImageObject", url: `${origin}/logo.png` },
+      },
+    };
+  }, [safeSlug, pageTitle, pageDescription]);
+
+  const wikiSeo =
+    safeSlug && pageTitle && pageDescription ? (
+      <SeoHead
+        title={`${pageTitle} | Tymio`}
+        description={pageDescription}
+        canonicalPath={`/wiki/${safeSlug}`}
+        ogType="article"
+        jsonLd={articleJsonLd}
+      />
+    ) : safeSlug && error === "Page not found." ? (
+      <SeoHead
+        title="Page not found | Tymio documentation wiki"
+        description="The requested wiki article does not exist on this site."
+        canonicalPath={`/wiki/${safeSlug}`}
+        robots="noindex,follow"
+      />
+    ) : !safeSlug && slug ? (
+      <SeoHead
+        title="Invalid wiki link | Tymio"
+        description="This wiki URL is not valid."
+        canonicalPath={location.pathname}
+        robots="noindex,nofollow"
+      />
+    ) : null;
+
   return (
     <div className="min-h-screen bg-slate-50">
+      {wikiSeo}
       <WikiHeader />
       <main className="mx-auto max-w-3xl px-4 py-10">
         <nav className="mb-6 text-sm">

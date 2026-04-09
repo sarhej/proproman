@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { clearPostAuthWorkspaceSlug, rememberPostAuthWorkspaceSlug } from "../lib/postAuthWorkspaceSlug";
 import { AgentMcpCliHiddenGuidance } from "../components/agent/AgentMcpCliHiddenGuidance";
 import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
+import { SeoHead, type SeoHeadProps } from "../components/seo/SeoHead";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import type { UserRole } from "../types/models";
@@ -156,17 +157,77 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
     }
   }, [slugTrim, devRole, onAuthenticated]);
 
+  const tenantPath = `/t/${encodeURIComponent(slugTrim)}`;
+
+  const workspaceSeo = useMemo((): SeoHeadProps => {
+    switch (gate.kind) {
+      case "loading":
+        return {
+          title: t("seo.workspaceLoadingTitle"),
+          description: t("seo.workspaceLoadingDescription"),
+          canonicalPath: tenantPath,
+          robots: "noindex,nofollow",
+        };
+      case "not-found":
+        return {
+          title: t("seo.workspaceNotFoundTitle"),
+          description: t("seo.workspaceNotFoundDescription"),
+          canonicalPath: tenantPath,
+          robots: "noindex,nofollow",
+        };
+      case "signin":
+        return {
+          title: t("seo.workspaceSignInTitle", { name: gate.tenant.name }),
+          description: t("seo.workspaceSignInDescription", { name: gate.tenant.name }),
+          canonicalPath: tenantPath,
+          robots: "index,follow",
+        };
+      case "pending-registration":
+        return {
+          title: `${gate.teamName} — ${t("tenantSlug.registrationPendingTitle")} | Tymio`,
+          description: t("tenantSlug.registrationPendingBody", {
+            workspaceName: gate.teamName,
+            slug: gate.slug,
+          }),
+          canonicalPath: tenantPath,
+          robots: "noindex,nofollow",
+        };
+      case "rejected":
+        return {
+          title: `${t("tenantSlug.registrationRejectedTitle")} | Tymio`,
+          description: t("tenantSlug.registrationRejectedBody", {
+            workspaceName: gate.teamName,
+            slug: gate.slug,
+          }),
+          canonicalPath: tenantPath,
+          robots: "noindex,nofollow",
+        };
+      case "provisioning":
+        return {
+          title: `${t("tenantSlug.provisioningTitle")} | Tymio`,
+          description: t("tenantSlug.provisioningBody", { workspaceName: gate.teamName, slug: gate.slug }),
+          canonicalPath: tenantPath,
+          robots: "noindex,nofollow",
+        };
+    }
+  }, [gate, tenantPath, t]);
+
   if (gate.kind === "loading") {
     return (
+      <>
+        <SeoHead {...workspaceSeo} />
       <div className="flex min-h-screen items-center justify-center bg-slate-50" data-testid="tenant-slug-loading">
         <p className="text-sm text-slate-500">{t("app.loadingWorkspace")}</p>
         <AgentMcpCliHiddenGuidance />
       </div>
+      </>
     );
   }
 
   if (gate.kind === "not-found") {
     return (
+      <>
+        <SeoHead {...workspaceSeo} />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center" data-testid="tenant-slug-not-found">
           <div className="mb-4 flex items-center justify-center gap-3">
@@ -194,11 +255,14 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
+      </>
     );
   }
 
   if (gate.kind === "pending-registration") {
     return (
+      <>
+        <SeoHead {...workspaceSeo} />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center" data-testid="tenant-slug-pending-registration">
           <div className="mb-4 flex items-center justify-center gap-3">
@@ -255,11 +319,14 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
+      </>
     );
   }
 
   if (gate.kind === "rejected") {
     return (
+      <>
+        <SeoHead {...workspaceSeo} />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center" data-testid="tenant-slug-rejected">
           <div className="mb-4 flex items-center justify-center gap-3">
@@ -289,11 +356,14 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
+      </>
     );
   }
 
   if (gate.kind === "provisioning") {
     return (
+      <>
+        <SeoHead {...workspaceSeo} />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Card className="max-w-md p-6 text-center" data-testid="tenant-slug-provisioning">
           <div className="mb-4 flex items-center justify-center gap-3">
@@ -319,12 +389,15 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
+      </>
     );
   }
 
   const tenantInfo = gate.tenant;
 
   return (
+    <>
+      <SeoHead {...workspaceSeo} />
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
         <Card className="w-full max-w-md p-6" data-testid="tenant-slug-signin">
         <div className="mb-4 flex items-center gap-3">
@@ -413,5 +486,6 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
       <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
       <AgentMcpCliHiddenGuidance />
     </div>
+    </>
   );
 }

@@ -985,5 +985,21 @@
     "membershipPendingBody": "Ta przestrzeń jest aktywna, ale Twoje konto nie zostało do niej dodane. Poproś administratora lub właściciela o zaproszenie albo dodanie jako członka. Do tego czasu pozostaniesz w przestrzeni, z której już korzystasz (np. hub Tymio).",
     "membershipPendingAlsoPlatform": "Twoje konto platformowe również oczekuje na zatwierdzenie. Nawet po dodaniu do tej przestrzeni rola może wymagać aktywacji przez Tymio, zanim aplikacja w pełni się otworzy.",
     "membershipPendingContinue": "Przejdź do aplikacji"
+  },
+  "seo": {
+    "landingTitle": "Tymio — product management and initiative tracking for teams",
+    "landingDescription": "Sign in or register a workspace. Roadmaps, delivery boards, and MCP for coding agents. Interface languages: English, Czech, Slovak, Ukrainian, Polish.",
+    "signInTitle": "Sign in to Tymio",
+    "signInDescription": "Sign in with Google, Microsoft, or email. Workspace-based product management hub with initiatives, roadmaps, and requirements.",
+    "registerTitle": "Request a new Tymio workspace",
+    "registerDescription": "Submit a workspace request for your organization. Reviewed before the workspace goes live.",
+    "workspaceSignInTitle": "Sign in — {{name}} | Tymio",
+    "workspaceSignInDescription": "Sign in to the {{name}} workspace on Tymio. Google, Microsoft, or email.",
+    "workspaceLoadingTitle": "Workspace sign-in | Tymio",
+    "workspaceLoadingDescription": "Loading workspace information.",
+    "workspaceNotFoundTitle": "Workspace not found | Tymio",
+    "workspaceNotFoundDescription": "This workspace URL is not valid or is no longer available.",
+    "pendingTitle": "Find your Tymio workspace",
+    "pendingDescription": "Your account is signed in but not yet in a workspace. Enter a workspace slug or request a new organization."
   }
 }

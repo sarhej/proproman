@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { SeoHead } from "../components/seo/SeoHead";
 import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Card } from "../components/ui/Card";
 
@@ -11,6 +12,12 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
   const { t } = useTranslation();
 
   return (
+    <>
+      <SeoHead
+        title={t("seo.landingTitle")}
+        description={t("seo.landingDescription")}
+        canonicalPath="/"
+      />
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 via-white to-sky-50/40 p-6">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.35]"
@@ -64,5 +71,6 @@ export function LandingPage({ onSignIn, onRegister }: Props) {
         <LegalFooterLinks />
       </div>
     </div>
+    </>
   );
 }

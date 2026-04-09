@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { SeoHead } from "../components/seo/SeoHead";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 
@@ -44,6 +45,13 @@ export function PlatformPendingPage({
   }
 
   return (
+    <>
+      <SeoHead
+        title={t("seo.pendingTitle")}
+        description={t("seo.pendingDescription")}
+        canonicalPath="/"
+        robots="noindex,nofollow"
+      />
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <Card className="w-full max-w-md p-6 text-center">
         <div className="mb-4 flex items-center justify-center gap-3">
@@ -151,5 +159,6 @@ export function PlatformPendingPage({
         </Button>
       </Card>
     </div>
+    </>
   );
 }
