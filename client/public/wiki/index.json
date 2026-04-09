@@ -8,6 +8,11 @@
       "file": "articles/mcp-connection.md"
     },
     {
+      "slug": "tymio-mcp-cli",
+      "title": "tymio-mcp CLI — install and use",
+      "file": "articles/tymio-mcp-cli.md"
+    },
+    {
       "slug": "openclaw",
       "title": "OpenClaw gateway setup",
       "file": "articles/openclaw.md"

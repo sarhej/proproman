@@ -6,7 +6,7 @@ Tymio exposes a **Model Context Protocol (MCP)** endpoint on **`/mcp`** on your 
 
 | Situation | Recommended approach |
 |-----------|------------------------|
-| **OpenClaw** or any host that runs MCP as a **stdio subprocess** | Install **`@tymio/mcp-server`**, run **`tymio-mcp login`**, point MCP config at the **`tymio-mcp`** binary. |
+| **OpenClaw** or any host that runs MCP as a **stdio subprocess** | Install **`@tymio/mcp-server`**, run **`tymio-mcp login`**, point MCP config at the **`tymio-mcp`** binary. **Step-by-step:** [tymio-mcp CLI — install and use](/wiki/tymio-mcp-cli). |
 | **Cursor**, **Claude Code**, or clients with **remote** MCP + browser OAuth | Add a remote server URL **`https://<host>/mcp`** (Streamable HTTP) and complete sign-in in the browser. |
 | **CI / automation** | Use **`DRD_API_KEY`** / server **`API_KEY`** on the stdio process only if you accept the **smaller REST tool subset**; this is a deployment secret, not an end-user Settings field. |
 

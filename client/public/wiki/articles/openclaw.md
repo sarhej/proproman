@@ -6,6 +6,8 @@
 
 OpenClaw typically runs MCP as a **local subprocess** (stdio). The published package **`@tymio/mcp-server`** provides the **`tymio-mcp`** command: it performs **OAuth in the browser** once, stores tokens on the gateway host, and proxies Tymio’s hosted **`/mcp`** tool surface.
 
+Full **install, login, daily use, and commands** are documented here: **[tymio-mcp CLI — install and use](/wiki/tymio-mcp-cli)**.
+
 ### Steps
 
 1. Install the CLI on the **gateway host** (same machine that runs OpenClaw), e.g.  
