@@ -29,10 +29,11 @@ Optional local auth: `ALLOW_DEV_AUTH=true` in `server/.env` and `VITE_ENABLE_DEV
 
 ## MCP (Cursor and agents)
 
-- **Remote:** point MCP at `https://<your-host>/mcp` — OAuth with Google.  
-- **Local stdio:** build `mcp/` and use `API_KEY` + `DRD_API_KEY`; see [mcp/README.md](mcp/README.md).
+- **Remote (recommended):** point MCP at `https://<your-host>/mcp` — OAuth; **no API key in the Tymio UI** for users to copy.  
+- **Stdio npm package:** [`@tymio/mcp-server`](mcp/README.md) — default mode uses OAuth (`tymio-mcp login`); full agent guide in [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).  
+- **Optional API-key stdio:** set `DRD_API_KEY` / `API_KEY` on the **stdio process** only for the REST tool subset — that value is the **server deployment** secret, not something users get from Settings.
 
-Details and Google redirect URIs: **[docs/HUB.md](docs/HUB.md)** §6.
+Public JSON for agents: `GET /api/mcp/agent-context` (includes `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey: true`). Details: **[docs/HUB.md](docs/HUB.md)** §6, **[docs/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](docs/TYMIO_MCP_CLI_AGENT_GUIDANCE.md)**.
 
 ## Deploy
 

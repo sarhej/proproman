@@ -1,0 +1,57 @@
+# Manual-only: build, test, and optionally publish @tymio/mcp-server to npm.
+# Does not run on push or PR. Run from: Actions → "MCP server — build & publish" → Run workflow.
+#
+# Prerequisites for real publish:
+#   - Repository secret NPM_TOKEN (npm automation token with publish rights for @tymio scope).
+#   - Choose workflow input "publish" (not dry-run) only when you intend to release.
+
+name: MCP server — build & publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run = npm publish --dry-run only; publish = release to npm (needs NPM_TOKEN)"
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - publish
+
+jobs:
+  mcp-server:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          # So NODE_AUTH_TOKEN is written to .npmrc for the publish step (harmless for npm ci).
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies (workspaces)
+        run: npm ci
+
+      - name: Test @tymio/mcp-server
+        run: npm run test --workspace mcp
+
+      - name: Build @tymio/mcp-server
+        run: npm run build --workspace mcp
+
+      - name: Pack sanity check
+        run: npm pack -w mcp --pack-destination /tmp && ls -la /tmp/*.tgz
+
+      - name: Publish to npm (dry-run)
+        if: ${{ github.event.inputs.mode == 'dry-run' }}
+        run: npm publish -w mcp --access public --dry-run
+
+      - name: Publish to npm
+        if: ${{ github.event.inputs.mode == 'publish' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish -w mcp --access public

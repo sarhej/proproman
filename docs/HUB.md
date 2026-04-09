@@ -128,12 +128,14 @@ This only replaces default **initiative** notification rules; it is idempotent a
 
 ## 6. MCP — agents and tools
 
-Two connection modes:
+Connection modes:
 
 | Mode | URL / transport | Auth |
 |------|-----------------|------|
 | **Remote** | `POST https://<host>/mcp` (Streamable HTTP) | OAuth 2.1 with Google; per-user identity |
-| **Local** | stdio via `mcp/` package | `API_KEY` on server + `DRD_API_KEY` in MCP env |
+| **CLI stdio** (`@tymio/mcp-server`) | stdio `tymio-mcp` | **Default:** OAuth (PKCE + dynamic client); proxies the same hosted `/mcp` tools locally. **Optional:** set `DRD_API_KEY` / `API_KEY` to use the REST/API-key tool subset instead (no OAuth). |
+
+**Autonomous agents:** There is **no** per-user MCP API key in the web app **Settings**, **Profile**, or **Account**. Do not document or imply that users should copy an “MCP key” from the UI. Canonical guidance (Markdown): **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** (also `tymio-mcp instructions`, MCP `instructions` from the CLI, and **`GET /api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey: true`). All workspace entry gates on **`/t/:slug`** (loading, sign-in, not found, pending registration, rejected, provisioning) and **Connecting a coding agent** include the same Markdown as visually hidden content (`sr-only`) for tools that read the DOM.
 
 **Remote flow (high level):** Unauthenticated `POST /mcp` returns `401` with OAuth metadata; client discovers `/.well-known/oauth-protected-resource/mcp`, registers, sends the user through Google, callback at `/mcp-oauth/google/callback`, then uses JWT `Bearer` tokens on `/mcp`.
 

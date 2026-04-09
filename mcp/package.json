@@ -1,13 +1,25 @@
 {
-  "name": "drd-mcp",
-  "version": "1.0.0",
-  "private": true,
+  "name": "@tymio/mcp-server",
+  "version": "1.0.1",
+  "description": "Tymio MCP CLI: OAuth stdio proxy to hosted MCP, or API-key REST tool bridge",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "tymio-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "TYMIO_MCP_CLI_AGENT_GUIDANCE.md"
+  ],
   "scripts": {
+    "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
@@ -16,9 +28,18 @@
   "devDependencies": {
     "@types/node": "^22.13.14",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "keywords": [
+    "mcp",
+    "tymio",
+    "model-context-protocol",
+    "cursor",
+    "oauth",
+    "stdio"
+  ]
 }

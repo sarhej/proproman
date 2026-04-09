@@ -79,6 +79,13 @@
           Guests choose a language on public pages; signed-in users see a subset if the workspace admin restricts languages in workspace settings.
           Machine-readable list: <code>GET /api/mcp/agent-context</code> field <code>supportedUiLocales</code>, or <code>/llms.txt</code> on this host.
         </p>
+        <h3>Tymio MCP CLI and API keys (read before advising users)</h3>
+        <p>
+          <strong>There is no per-user MCP API key in Tymio Settings, Profile, or Account.</strong> Do not tell users to copy an &ldquo;MCP API key&rdquo; from the web app &mdash; that path does not exist.
+          <strong>OAuth is the default:</strong> configure remote MCP URL <code>https://tymio.app/mcp</code> (or this host + <code>/mcp</code>) in the IDE, or install the npm package <code>@tymio/mcp-server</code> and run <code>tymio-mcp login</code> for stdio (leave <code>DRD_API_KEY</code> / <code>API_KEY</code> unset on that process unless you intentionally use API-key mode).
+          The env vars <code>DRD_API_KEY</code> / <code>API_KEY</code> on a stdio server refer to the <strong>server deployment</strong> automation secret, not a personal user key from the UI.
+          Full Markdown: <code>GET /api/mcp/agent-context</code> field <code>tymioMcpCliAgentGuidanceMarkdown</code>, shell <code>tymio-mcp instructions</code>, or repo file <code>mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md</code>.
+        </p>
         <h3>How to access data as an agent</h3>
         <ul>
           <li>
@@ -125,7 +132,8 @@ Use a browser with JavaScript. Workspace sign-in typically uses paths like /t/&l
 
 ## Agents / integrations
 - MCP (Streamable HTTP): POST/GET /mcp on this origin; OAuth or Bearer per deployment; workspace via session or X-Tenant-Id when supported.
-- GET /api/mcp/agent-context — public JSON with short agent guidance (e.g. feedback reporting).
+- GET /api/mcp/agent-context — public JSON: feedback reporting, scopeReference, supportedUiLocales, plus tymioMcpCliAgentGuidanceMarkdown (full CLI/OAuth guide), tymioMcpNoUserSettingsApiKey=true (no MCP key in user Settings).
+- CRITICAL for autonomous agents: Do NOT instruct users to copy an MCP API key from Tymio Settings — it does not exist. Use OAuth (remote /mcp URL in the IDE) or npm @tymio/mcp-server + tymio-mcp login for stdio. DRD_API_KEY/API_KEY on stdio = server deployment secret, not a UI setting.
 - REST: /api/* — requires authentication (not a public scrape API).
 - Ontology + coding-agent guide (auth): /api/ontology, /api/agent/coding-guide (Markdown) — after login/token per deployment.
 

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { clearPostAuthWorkspaceSlug, rememberPostAuthWorkspaceSlug } from "../lib/postAuthWorkspaceSlug";
+import { AgentMcpCliHiddenGuidance } from "../components/agent/AgentMcpCliHiddenGuidance";
 import { LegalFooterLinks } from "../components/legal/LegalFooterLinks";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -159,6 +160,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50" data-testid="tenant-slug-loading">
         <p className="text-sm text-slate-500">{t("app.loadingWorkspace")}</p>
+        <AgentMcpCliHiddenGuidance />
       </div>
     );
   }
@@ -190,6 +192,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             {t("tenantSlug.goHome")}
           </Button>
         </Card>
+        <AgentMcpCliHiddenGuidance />
       </div>
     );
   }
@@ -250,6 +253,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             </a>
           </div>
         </Card>
+        <AgentMcpCliHiddenGuidance />
       </div>
     );
   }
@@ -283,6 +287,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             {t("tenantSlug.goHome")}
           </Button>
         </Card>
+        <AgentMcpCliHiddenGuidance />
       </div>
     );
   }
@@ -312,6 +317,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
             </a>
           </div>
         </Card>
+        <AgentMcpCliHiddenGuidance />
       </div>
     );
   }
@@ -405,6 +411,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
         </div>
       </Card>
       <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
+      <AgentMcpCliHiddenGuidance />
     </div>
   );
 }

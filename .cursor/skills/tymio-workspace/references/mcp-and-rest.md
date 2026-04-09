@@ -1,0 +1,86 @@
+# Tymio — MCP, REST, and tool surface
+
+Replace `https://tymio.app` with your deployment origin if not using production.
+
+**Autonomous agents:** Tymio does **not** offer a per-user MCP API key in **Settings**, **Profile**, or **Account**. Do not instruct users to copy one. Use **OAuth** (remote `/mcp` in the IDE) or **`@tymio/mcp-server`** + **`tymio-mcp login`** for stdio (default). **`DRD_API_KEY` / `API_KEY`** on stdio = **server `API_KEY`** (operator secret). Canonical Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, **`GET …/api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey`.
+
+## Local development (this monorepo)
+
+| Purpose | URL |
+|--------|-----|
+| API + MCP (typical dev) | `http://localhost:8080` |
+| MCP (Streamable HTTP) | `POST http://localhost:8080/mcp` |
+
+**Cursor example** (local + deployed) from `docs/HUB.md`:
+
+```json
+{
+  "mcpServers": {
+    "tymio-local": { "url": "http://localhost:8080/mcp" },
+    "tymio": { "url": "https://tymio.app/mcp" }
+  }
+}
+```
+
+## Production-style endpoints
+
+| Purpose | URL |
+|--------|-----|
+| Web app | `https://tymio.app` |
+| REST API | `https://tymio.app/api` |
+| Health | `GET https://tymio.app/api/health` |
+| MCP (Streamable HTTP) | `POST https://tymio.app/mcp` |
+| OAuth protected-resource (MCP discovery) | `GET https://tymio.app/.well-known/oauth-protected-resource/mcp` |
+| Public agent context (JSON) | `GET https://tymio.app/api/mcp/agent-context` |
+| LLM-oriented site summary | `https://tymio.app/llms.txt` |
+| Coding playbook (Markdown, **authenticated**) | `GET https://tymio.app/api/agent/coding-guide` |
+
+**Google OAuth redirect URIs (operators):**  
+`https://tymio.app/api/auth/google/callback` (browser),  
+`https://tymio.app/mcp-oauth/google/callback` (remote MCP).
+
+## Remote MCP config example (Cursor-style)
+
+```json
+{
+  "mcpServers": {
+    "tymio": {
+      "url": "https://tymio.app/mcp"
+    }
+  }
+}
+```
+
+## Ontology / playbook tools (`tymio_*`)
+
+- `tymio_get_coding_agent_guide` — full server coding-agent Markdown (may reference repo paths; prefer this skill + brief for portable use).
+- `tymio_get_agent_brief` — compiled capability brief.
+- `tymio_list_capabilities`, `tymio_get_capability` — capability map.
+
+## Common `drd_*` tools (remote MCP)
+
+**Meta:** `drd_health`, `drd_meta`
+
+**Initiatives:** `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`
+
+**Taxonomy:** `drd_list_domains`, `drd_list_products`, `drd_create_product`, `drd_update_product`, `drd_get_product_tree`, `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`
+
+**Work items:** `drd_list_features`, `drd_create_feature`, `drd_update_feature`, `drd_list_requirements`, `drd_create_requirement`, `drd_update_requirement`, `drd_upsert_requirement`
+
+**Other:** `drd_list_decisions`, `drd_list_risks`, `drd_list_dependencies`, `drd_list_assignments`, `drd_list_stakeholders`, `drd_timeline_calendar`, `drd_timeline_gantt`, plus campaigns/assets tools if enabled for the role.
+
+Exact names may evolve; use `tymio_get_agent_brief` or `drd_meta` on the live server when in doubt.
+
+## Stdio MCP subset
+
+When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only** a subset (no `drd_create_product` in typical setups). Use **remote MCP** or REST `POST /api/products` to create products from automation.
+
+## Ontology REST (authenticated)
+
+Base: `https://tymio.app/api/ontology` — e.g. `GET /capabilities`, `GET /brief?format=md&mode=compact`. Admin routes manage compile/export.
+
+## If the user cannot connect
+
+1. Use the **web UI** (Admin/Editor as appropriate).
+2. **REST** with exported `API_KEY` where available.
+3. **Remote MCP** with OAuth at `https://tymio.app/mcp`.

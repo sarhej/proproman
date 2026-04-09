@@ -2,7 +2,8 @@
  * Minimal Tymio hub API client for the stdio MCP server. Uses DRD_API_BASE_URL and DRD_API_KEY from env.
  */
 
-const baseUrl = process.env.DRD_API_BASE_URL ?? "http://localhost:8080";
+/** Hub origin (no `/mcp` path). Stdio bridge calls REST under `/api/...`. */
+const baseUrl = process.env.DRD_API_BASE_URL ?? "https://tymio.app";
 const apiKey = process.env.DRD_API_KEY ?? process.env.API_KEY ?? "";
 
 function headers(): HeadersInit {

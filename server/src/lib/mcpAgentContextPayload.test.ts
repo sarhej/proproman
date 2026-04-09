@@ -30,6 +30,12 @@ describe("buildMcpAgentContextJson", () => {
     expect(body.supportedUiLocales.locales.find((l) => l.code === "pl")?.name).toBe("Polish");
     expect(body.supportedUiLocales.workspaceNote).toContain("enabledLocales");
     expect(mockRefresh).toHaveBeenCalledTimes(1);
+    expect(body.tymioMcpNoUserSettingsApiKey).toBe(true);
+    expect(body.tymioMcpCliPackage).toBe("@tymio/mcp-server");
+    expect(body.tymioMcpCliBinary).toBe("tymio-mcp");
+    expect(body.tymioMcpCliInstructionsCommand).toBe("tymio-mcp instructions");
+    expect(body.tymioMcpCliAgentGuidanceMarkdown.length).toBeGreaterThan(200);
+    expect(body.tymioMcpCliAgentGuidanceMarkdown).toMatch(/Settings|OAuth|tymio-mcp/);
   });
 
   it("propagates refresh errors", async () => {

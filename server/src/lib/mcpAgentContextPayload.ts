@@ -1,5 +1,6 @@
 import { refreshMcpFeedbackNoticeCache } from "./mcpFeedbackNotice.js";
 import { APP_LOCALE_CODES, getAppUiLocalesForPublicMeta } from "./appLocales.js";
+import { readTymioMcpCliAgentGuidanceMarkdown } from "./readTymioMcpCliAgentGuidance.js";
 
 /** JSON body for `GET /api/mcp/agent-context` (public). */
 export async function buildMcpAgentContextJson(): Promise<{
@@ -15,8 +16,16 @@ export async function buildMcpAgentContextJson(): Promise<{
     workspaceUrls: string;
     dataSources: string;
   };
+  /** Full Markdown: same text as `tymio-mcp instructions` / MCP server `instructions` when using @tymio/mcp-server. Empty if file not on disk (e.g. mis-deployed). */
+  tymioMcpCliAgentGuidanceMarkdown: string;
+  tymioMcpCliPackage: string;
+  tymioMcpCliBinary: string;
+  tymioMcpCliInstructionsCommand: string;
+  /** Explicit flag so autonomous agents do not hallucinate a Settings UI path for MCP keys. */
+  tymioMcpNoUserSettingsApiKey: true;
 }> {
   const feedbackReporting = await refreshMcpFeedbackNoticeCache();
+  const tymioMcpCliAgentGuidanceMarkdown = readTymioMcpCliAgentGuidanceMarkdown();
   return {
     feedbackReporting,
     supportedUiLocales: {
@@ -35,6 +44,11 @@ export async function buildMcpAgentContextJson(): Promise<{
       workspaceUrls: "Humans often open /t/<workspace-slug> on this host.",
       dataSources:
         "Workspace slug is on the Tenant; product slug is on each Product row (see MCP drd_meta / drd_list_products and REST GET /api/meta, /api/products)."
-    }
+    },
+    tymioMcpCliAgentGuidanceMarkdown,
+    tymioMcpCliPackage: "@tymio/mcp-server",
+    tymioMcpCliBinary: "tymio-mcp",
+    tymioMcpCliInstructionsCommand: "tymio-mcp instructions",
+    tymioMcpNoUserSettingsApiKey: true
   };
 }

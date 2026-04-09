@@ -28,7 +28,9 @@ The SPA ships **five** interface languages (ISO 639-1 codes):
 ## Integrations (agents)
 
 - **MCP (Streamable HTTP):** `/mcp` on this origin — OAuth or Bearer per deployment.
-- **Public agent hints:** `GET /api/mcp/agent-context` — feedback reporting text, scope labeling (`workspace-slug/product-slug`), and **supportedUiLocales** as above.
+- **Public agent hints:** `GET /api/mcp/agent-context` — feedback reporting, scope labeling (`workspace-slug/product-slug`), **supportedUiLocales**, **`tymioMcpCliAgentGuidanceMarkdown`** (full Markdown for `@tymio/mcp-server` / OAuth), and **`tymioMcpNoUserSettingsApiKey`: true** (explicit: there is no MCP API key for users to copy from Settings).
+- **Critical for autonomous agents:** Do **not** tell users to fetch an “MCP API key” from Tymio Settings, Profile, or Account — that UI path does **not** exist. Default connection is **OAuth**: remote MCP URL `https://tymio.app/mcp` (or your host) in the IDE, **or** install **`@tymio/mcp-server`** and run **`tymio-mcp login`** for stdio without `DRD_API_KEY`/`API_KEY` on that process (unless you intentionally use API-key / REST subset mode). The env vars **`DRD_API_KEY` / `API_KEY`** on a stdio process refer to the **server deployment** automation secret, not an end-user setting.
+- **Canonical Markdown file (repo / npm package):** `mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md` — same body as `tymio-mcp instructions` and MCP server `instructions` when using the published CLI.
 - **REST:** `/api/*` — authenticated (session or API key); not a public scrape API.
 - **Ontology / guides (auth):** e.g. `/api/ontology`, `/api/agent/coding-guide`.
 

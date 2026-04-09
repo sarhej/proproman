@@ -38,6 +38,7 @@ COPY --from=builder /app/server/package.json ./server/package.json
 COPY --from=builder /app/server/prisma ./server/prisma
 COPY --from=builder /app/server/scripts ./server/scripts
 COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md ./mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/package.json ./client/package.json
 COPY --from=builder /app/admin/dist ./admin/dist

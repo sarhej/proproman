@@ -153,7 +153,7 @@ describe("getBaseUrl and hasApiKey", () => {
   it("hasApiKey is false when no key env", async () => {
     const { hasApiKey, getBaseUrl } = await import("./api.js");
     expect(hasApiKey()).toBe(false);
-    expect(getBaseUrl()).toMatch(/localhost:8080/);
+    expect(getBaseUrl()).toBe("https://tymio.app");
   });
 
   it("hasApiKey is true when DRD_API_KEY set", async () => {

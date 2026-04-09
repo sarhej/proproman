@@ -18,7 +18,7 @@
 | Google OAuth — **browser sign-in** callback | `https://tymio.app/api/auth/google/callback` |
 | Google OAuth — **remote MCP** callback | `https://tymio.app/mcp-oauth/google/callback` |
 | Coding-agent playbook (Markdown, **authenticated**) | `GET https://tymio.app/api/agent/coding-guide` — session cookie or `Authorization: Bearer <API_KEY>` (same rules as API) |
-| **Public agent + SEO context (JSON)** | `GET https://tymio.app/api/mcp/agent-context` — includes **`supportedUiLocales`** (en, cs, sk, uk, pl; names + workspace restriction note), **`scopeReference`**, **`feedbackReporting`** |
+| **Public agent + SEO context (JSON)** | `GET https://tymio.app/api/mcp/agent-context` — includes **`supportedUiLocales`**, **`scopeReference`**, **`feedbackReporting`**, **`tymioMcpCliAgentGuidanceMarkdown`** (full CLI/OAuth guide), **`tymioMcpNoUserSettingsApiKey`: true** |
 | **LLM / crawler site summary (Markdown)** | `https://tymio.app/llms.txt` — product overview, supported UI languages, MCP/API pointers |
 | Crawl policy | `https://tymio.app/robots.txt` |
 
@@ -37,6 +37,7 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 
 - Tools such as **`drd_meta`**, **`drd_create_product`**, **`tymio_get_agent_brief`** are available **only** if this chat/agent runtime has a **working Tymio MCP** configuration (remote URL + OAuth, or stdio + `DRD_API_BASE_URL` + `DRD_API_KEY`).
 - If **`user-tymio` / `tymio` tools are missing, not registered, or calls fail with connection/auth errors**, you are **not** connected to Tymio. You **must not** behave as if MCP mutations ran successfully. Tell the user to enable remote MCP (`https://tymio.app/mcp` + Google) or provide **`DRD_API_KEY`** (same value as server **`API_KEY`**) for stdio/scripts.
+- **Do not tell users to copy an MCP API key from Tymio Settings, Profile, or Account** — that path does **not** exist. **`API_KEY` / `DRD_API_KEY`** for automation is a **deployment secret** configured by operators, not a personal user setting. For OAuth stdio, users run **`tymio-mcp login`** (npm package **`@tymio/mcp-server`**). Full wording: repo **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, shell **`tymio-mcp instructions`**, or **`GET /api/mcp/agent-context`** → **`tymioMcpCliAgentGuidanceMarkdown`**.
 
 ### 2.3 “Applications” in everyday language → **Product** in Tymio
 
@@ -82,14 +83,11 @@ Do **not** add repository-only helper scripts unless the user’s repo and workf
 - **Base:** `https://tymio.app/api`
 - **Auth:** Logged-in **session cookie** from the browser, or **`Authorization: Bearer <API_KEY>`** when the deployment has `API_KEY` configured (automation user; role is fixed server-side).
 
-### 3.3 Local stdio MCP package (optional)
+### 3.3 Local stdio MCP package (`@tymio/mcp-server`, optional)
 
-Some teams run a small **stdio** MCP process that proxies to the hub over REST. Point it at production by setting:
+The published CLI is **`tymio-mcp`** (**`@tymio/mcp-server`**). **Default (recommended):** **do not** set `DRD_API_KEY` / `API_KEY` on the MCP process — run **`tymio-mcp login`** once; the binary proxies the **hosted** `/mcp` tool list over OAuth (same as remote URL in the IDE). Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-mcp instructions`**.
 
-- `DRD_API_BASE_URL=https://tymio.app`
-- `DRD_API_KEY=<same value as server API_KEY>`
-
-That process exposes **only a subset** of tools (see section 6). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp`.
+**API-key / REST subset mode (CI, scripts):** set `DRD_API_BASE_URL=https://tymio.app` and `DRD_API_KEY=<same value as server API_KEY>` on the **stdio process**. That value is the **server** automation secret — **not** something users obtain from the Tymio UI. This mode exposes **only a subset** of tools (see section 6). For the **full** tool surface, use **remote** `POST https://tymio.app/mcp` or stdio **without** those env vars after `tymio-mcp login`.
 
 ---
 

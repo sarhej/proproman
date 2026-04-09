@@ -68,8 +68,8 @@ Agents usually **do not** drive the UI; they use API/MCP. UI is the source of tr
 
 ### 3.2 MCP (recommended for agents)
 
-- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure your MCP client (Cursor, Claude Code, OpenClaw, etc.) to add a new MCP server of type `remote` (or SSE) with URL `https://<host>/mcp`. Initiate the connection, log in via the browser, and the agent automatically receives a stable, secure connection. No API keys to copy.
-- **Local stdio:** `mcp/` package + `API_KEY` / `DRD_API_KEY`; see [mcp/README.md](../mcp/README.md). (Legacy/scripting approach).
+- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure your MCP client (Cursor, Claude Code, OpenClaw, etc.) to add a new MCP server of type `remote` (or SSE) with URL `https://<host>/mcp`. Initiate the connection, log in via the browser, and the agent automatically receives a stable, secure connection. **There is no per-user MCP API key in Tymio Settings** — do not instruct users to copy one from the UI.
+- **Local stdio (`@tymio/mcp-server`):** **Default:** OAuth via **`tymio-mcp login`** (full hub tool surface via proxy). **Optional:** set `DRD_API_KEY` / `API_KEY` on the process for the REST subset only — that secret is **server deployment** configuration, not a user-facing Settings field. Canonical guide: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md), [mcp/README.md](../mcp/README.md), and `GET /api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
 
 **First call for a new session:** `tymio_get_coding_agent_guide` (no arguments) returns this document as Markdown from the server so the agent does not rely on a local repo checkout.
 
@@ -185,7 +185,7 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 | Workspace + product scope label | `workspace-slug/product-slug` (documentation; from Tenant.slug + Product.slug). See `GET /api/mcp/agent-context` field `scopeReference`. |
 | Product & MCP overview | [docs/HUB.md](./HUB.md) |
 | Ontology REST & MCP §6.1 | [docs/HUB.md](./HUB.md) |
-| MCP stdio package | [mcp/README.md](../mcp/README.md) |
+| MCP stdio package + agent OAuth guidance | [mcp/README.md](../mcp/README.md), [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md) |
 | Server MCP tool registration | `server/src/mcp/tools.ts` |
 | Prisma schema | `server/prisma/schema.prisma` |
 | UI nav config | `client/src/lib/navSections.ts` |
