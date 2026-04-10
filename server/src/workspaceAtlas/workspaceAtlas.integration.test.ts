@@ -211,11 +211,13 @@ describe.skipIf(!enabled)("workspace atlas: hub change → debounced rebuild (HT
     const idx = atlas.initiativeIndex.find((i) => i.id === initiativeId);
     expect(idx?.title).toBe("Atlas Updated Title");
 
-    const atlasPath = path.join(atlasRoot, tenantId, "workspace-atlas.json");
+    if (atlasRoot === undefined) throw new Error("atlasRoot not initialized");
+    const root = atlasRoot;
+    const atlasPath = path.join(root, tenantId, "workspace-atlas.json");
     expect(fs.existsSync(atlasPath)).toBe(true);
     expect(fs.readFileSync(atlasPath, "utf8")).toContain("Atlas Updated Title");
 
-    const shardPath = path.join(atlasRoot, tenantId, "objects", "INITIATIVE", `${initiativeId}.json`);
+    const shardPath = path.join(root, tenantId, "objects", "INITIATIVE", `${initiativeId}.json`);
     expect(fs.existsSync(shardPath)).toBe(true);
     const shard = JSON.parse(fs.readFileSync(shardPath, "utf8")) as { facts?: { title?: string } };
     expect(shard.facts?.title).toBe("Atlas Updated Title");
