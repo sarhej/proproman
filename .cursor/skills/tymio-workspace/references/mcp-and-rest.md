@@ -57,6 +57,18 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 - `tymio_get_agent_brief` — compiled capability brief.
 - `tymio_list_capabilities`, `tymio_get_capability` — capability map.
 
+## Workspace atlas tools (`tymio_*`, full MCP only)
+
+**Compiled backlog graph** (domains, products, initiatives, features, requirements) as JSON — not RAG, not a substitute for the capability brief. Requires **`workspaceSlug`** = active session workspace.
+
+- `tymio_get_workspace_atlas` — compact indices; **`not_built`** until first compile or **`tymio_rebuild_workspace_atlas`**.
+- `tymio_search_workspace_objects` — keyword substring over titles.
+- `tymio_get_workspace_object` — one shard by type + id.
+- `tymio_explain_workspace_object` — optional LLM narrative when server env enables it.
+- `tymio_rebuild_workspace_atlas` — EDITOR+; full recompile from DB.
+
+**Not** in API-key stdio (`mcp/src/apiKeyStdio.ts`). Wiki: production **`/wiki/workspace-atlas`** or repo **`client/public/wiki/articles/workspace-atlas.md`**.
+
 ## Common `drd_*` tools (remote MCP)
 
 **Meta:** `drd_health`, `drd_meta`
@@ -73,7 +85,7 @@ Exact names may evolve; use `tymio_get_agent_brief` or `drd_meta` on the live se
 
 ## Stdio MCP subset
 
-When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only** a subset (no `drd_create_product` in typical setups). Use **remote MCP** or REST `POST /api/products` to create products from automation.
+When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only** a subset (no `drd_create_product` in typical setups). Use **remote MCP** or REST `POST /api/products` to create products from automation. **Workspace atlas tools are omitted** from this subset — use OAuth stdio or remote MCP for those.
 
 ## Ontology REST (authenticated)
 

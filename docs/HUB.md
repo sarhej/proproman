@@ -169,6 +169,17 @@ The hub stores **product capabilities** (user-language semantics) and **bindings
 - **Repo export:** default path `context/AGENT_BRIEF.md` (see `context/README.md`).
 - **CLI:** `npm run ontology:refresh --workspace server` (requires `DATABASE_URL`).
 
+### 6.2 Workspace atlas (compiled backlog for agents)
+
+The server can **materialize** a per-tenant **workspace atlas**: `workspace-atlas.json` plus **per-object JSON shards** for each domain, product, initiative, feature, and requirement. Compilation is **deterministic** from PostgreSQL (same source as `drd_*`); a **debounced** listener rebuilds after hub change events.
+
+- **MCP (full surface only):** `tymio_get_workspace_atlas`, `tymio_get_workspace_object`, `tymio_search_workspace_objects`, `tymio_explain_workspace_object` (optional OpenAI when enabled), `tymio_rebuild_workspace_atlas` (EDITOR+). All require **`workspaceSlug`** matching the MCP session tenant. **Not** exposed on the `@tymio/mcp-server` API-key REST subset.
+- **Implementation:** `server/src/workspaceAtlas/` (compiler, store, schemas, hub listener), registration in `server/src/mcp/workspaceAtlasTools.ts`.
+- **Env:** `WORKSPACE_ATLAS_DATA_DIR` (optional; default under server data — use a **persistent path** on ephemeral disks if you want to avoid cold `not_built` after restarts), `WORKSPACE_ATLAS_DEBOUNCE_MS`, `WORKSPACE_ATLAS_LLM_ENABLED`, `WORKSPACE_ATLAS_OPENAI_API_KEY`, `WORKSPACE_ATLAS_OPENAI_MODEL`.
+- **Public wiki:** `/wiki/workspace-atlas` (Markdown: `client/public/wiki/articles/workspace-atlas.md`).
+
+**Distinction:** The **capability ontology** (`tymio_get_agent_brief`) describes **what the product exposes** (routes, tools, models). The **workspace atlas** describes **what backlog rows exist** in a workspace (graph + facts). Agents should use both when planning.
+
 ---
 
 ## 7. Security (baseline)
@@ -191,7 +202,8 @@ Run `npm audit` and your SAST pipeline regularly.
 | Tenant admin & provisioning | `server/src/routes/tenants.ts`, `server/src/routes/tenant-requests.ts`, `server/src/tenant/tenantProvisioning.ts` |
 | OAuth / session | `server/src/auth/passport.ts`, `server/src/routes/auth.ts` |
 | REST API | `server/src/routes/` |
-| MCP tools | `server/src/mcp/tools.ts` |
+| MCP tools | `server/src/mcp/tools.ts`, `server/src/mcp/workspaceAtlasTools.ts` |
+| Workspace atlas compiler | `server/src/workspaceAtlas/` |
 | Workspace UI (switcher) | `client/src/components/tenant/` |
 | Ontology / brief compiler | `server/src/routes/ontology.ts`, `server/src/services/ontologyBrief.ts`, `server/src/services/ontologyRefresh.ts` |
 | Permissions (client) | `client/src/hooks/usePermissions.ts` |

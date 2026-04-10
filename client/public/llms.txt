@@ -27,7 +27,7 @@ The SPA ships **five** interface languages (ISO 639-1 codes):
 
 ## Public documentation wiki
 
-- **Human-readable + agent-fetchable guides:** `/wiki` (HTML index and articles). Raw Markdown sources: `/wiki/articles/*.md` on this host (same content). Includes **`tymio-mcp` CLI** install, `login`, and daily use (`/wiki/tymio-mcp-cli` or `/wiki/articles/tymio-mcp-cli.md`).
+- **Human-readable + agent-fetchable guides:** `/wiki` (HTML index and articles). Raw Markdown sources: `/wiki/articles/*.md` on this host (same content). Includes **`tymio-mcp` CLI** install, `login`, and daily use (`/wiki/tymio-mcp-cli` or `/wiki/articles/tymio-mcp-cli.md`). **Workspace atlas** (compiled backlog JSON for MCP: `tymio_get_workspace_atlas`, search, shards, rebuild, optional explain): `/wiki/workspace-atlas` or `/wiki/articles/workspace-atlas.md`.
 
 ## Integrations (agents)
 

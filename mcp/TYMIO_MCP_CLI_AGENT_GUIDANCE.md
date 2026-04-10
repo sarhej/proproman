@@ -98,3 +98,9 @@ Set `DRD_API_KEY` (or `API_KEY`) and optionally `DRD_API_BASE_URL` (default `htt
 - **JSON (public):** `GET https://tymio.app/api/mcp/agent-context` — includes `tymioMcpCliAgentGuidanceMarkdown` (this file’s contents when the server can read it from disk).
 - **Markdown site summary:** `https://tymio.app/llms.txt`
 - **Repository:** `mcp/README.md`, `docs/HUB.md` §6, `docs/CODING_AGENT_HANDOFF_TYMIO_APP.md`
+
+## Workspace atlas (full MCP only)
+
+When using **remote** `…/mcp` or stdio **without** `DRD_API_KEY`/`API_KEY` (OAuth proxy), the hub may expose **`tymio_get_workspace_atlas`**, **`tymio_search_workspace_objects`**, **`tymio_get_workspace_object`**, **`tymio_explain_workspace_object`**, and **`tymio_rebuild_workspace_atlas`**. These read a **compiled JSON** backlog snapshot for the active workspace — complementary to **`tymio_get_agent_brief`** (capabilities). They are **not** part of the API-key REST stdio subset.
+
+**Public article:** `https://tymio.app/wiki/workspace-atlas` (raw: `/wiki/articles/workspace-atlas.md`). Operators: persistent **`WORKSPACE_ATLAS_DATA_DIR`** on ephemeral hosts if you want the atlas to survive process restarts without an explicit rebuild.

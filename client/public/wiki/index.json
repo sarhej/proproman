@@ -19,6 +19,12 @@
       "title": "OpenClaw gateway setup",
       "description": "Register the Tymio MCP stdio server on an OpenClaw gateway host and restart so agents can use the hub tools.",
       "file": "articles/openclaw.md"
+    },
+    {
+      "slug": "workspace-atlas",
+      "title": "Workspace atlas (MCP)",
+      "description": "Compiled JSON atlas and object shards for agents: MCP tools, rebuild, optional LLM explain, env vars, and how this differs from the capability brief.",
+      "file": "articles/workspace-atlas.md"
     }
   ]
 }

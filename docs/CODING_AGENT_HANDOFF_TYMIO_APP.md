@@ -20,7 +20,7 @@
 | Coding-agent playbook (Markdown, **authenticated**) | `GET https://tymio.app/api/agent/coding-guide` — session cookie or `Authorization: Bearer <API_KEY>` (same rules as API) |
 | **Public agent + SEO context (JSON)** | `GET https://tymio.app/api/mcp/agent-context` — includes **`supportedUiLocales`**, **`scopeReference`**, **`feedbackReporting`**, **`tymioMcpCliAgentGuidanceMarkdown`** (full CLI/OAuth guide), **`tymioMcpNoUserSettingsApiKey`: true** |
 | **LLM / crawler site summary (Markdown)** | `https://tymio.app/llms.txt` — product overview, supported UI languages, MCP/API pointers |
-| **Public wiki (Markdown articles, browsable UI)** | `https://tymio.app/wiki` — MCP, OpenClaw, OAuth; raw Markdown URLs under `/wiki/articles/*.md` for agents |
+| **Public wiki (Markdown articles, browsable UI)** | `https://tymio.app/wiki` — MCP, OpenClaw, OAuth, **workspace atlas**; raw Markdown URLs under `/wiki/articles/*.md` for agents (e.g. **`/wiki/articles/workspace-atlas.md`**) |
 | Crawl policy | `https://tymio.app/robots.txt` |
 
 If you are pointed at a **staging or custom host**, replace `https://tymio.app` with that origin everywhere; paths stay the same.
@@ -135,6 +135,18 @@ Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` 
 - `tymio_list_capabilities` — list capabilities.
 - `tymio_get_capability` — one capability by `id` or `slug`.
 
+**Workspace atlas (compiled backlog JSON — not the capability brief)**
+
+These tools materialize a **deterministic snapshot** of the workspace **backlog graph** (domains, products, initiatives, features, requirements) as JSON on the server. They answer “what work exists here?” — not “what routes/tools does the product expose?” (that remains **`tymio_get_agent_brief`** / ontology). **Every call requires `workspaceSlug`** matching the active MCP session workspace.
+
+- `tymio_get_workspace_atlas` — compact atlas + indices. If **`error: "not_built"`**, run **`tymio_rebuild_workspace_atlas`** once (EDITOR+) or wait for debounced rebuild after hub changes.
+- `tymio_search_workspace_objects` — keyword substring search over atlas titles (not semantic RAG).
+- `tymio_get_workspace_object` — one shard by `objectType` + `id` (`DOMAIN` | `PRODUCT` | `INITIATIVE` | `FEATURE` | `REQUIREMENT`).
+- `tymio_explain_workspace_object` — shard plus optional short LLM explanation when the deployment sets **`WORKSPACE_ATLAS_LLM_ENABLED`** and **`WORKSPACE_ATLAS_OPENAI_API_KEY`**; otherwise structured JSON only.
+- `tymio_rebuild_workspace_atlas` — full recompile from DB (EDITOR+). **Not** in the API-key stdio subset.
+
+**Human-readable wiki (same host):** `/wiki/workspace-atlas` or `/wiki/articles/workspace-atlas.md`. Shards may include **PII** (e.g. owner email) present in the hub.
+
 **Health and meta**
 
 - `drd_health`
@@ -231,7 +243,8 @@ Use these when you need a **structured map** of surfaces and tools without parsi
 ### 5.5 How agents should use this
 
 1. **Before** proposing new features or assuming a screen exists, call **`tymio_get_agent_brief`** or **`GET /api/ontology/brief`** (or list capabilities) so your plan matches **existing** routes, models, and MCP tools.
-2. After **shipping** API or MCP changes, a human with admin access should **refresh default bindings** and **recompile** briefs (or update capabilities manually) so the ontology stays truthful — see checklist §12.
+2. For **large workspaces**, prefer **`tymio_get_workspace_atlas`** → **`tymio_search_workspace_objects`** → **`tymio_get_workspace_object`** to navigate backlog structure without hammering list endpoints; still use **`drd_*`** when you need live writes or fields not in shards.
+3. After **shipping** API or MCP changes, a human with admin access should **refresh default bindings** and **recompile** briefs (or update capabilities manually) so the ontology stays truthful — see checklist §12.
 
 ---
 
@@ -242,6 +255,8 @@ If the client uses the **stdio** bridge against `https://tymio.app`, expect **on
 `drd_health`, `drd_meta`, `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`, `drd_list_domains`, `drd_list_products`, `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`, `tymio_get_coding_agent_guide`, `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability`.
 
 **Note:** **`drd_create_product`** is **not** in the stdio subset — use **remote MCP** or **REST** `POST /api/products` with a Bearer token to create products from automation.
+
+**Workspace atlas tools** (`tymio_get_workspace_atlas`, `tymio_get_workspace_object`, `tymio_search_workspace_objects`, `tymio_explain_workspace_object`, `tymio_rebuild_workspace_atlas`) are **also excluded** from this subset — use **remote MCP** or stdio **without** `DRD_API_KEY`/`API_KEY` (OAuth proxy).
 
 ---
 

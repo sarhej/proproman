@@ -15,6 +15,12 @@ Tymio exposes a **Model Context Protocol (MCP)** endpoint on **`/mcp`** on your 
 - **`GET /api/mcp/agent-context`** (JSON, no auth) — includes **`tymioMcpCliAgentGuidanceMarkdown`**, locale metadata, and explicit **`tymioMcpNoUserSettingsApiKey`: true**.
 - **`/llms.txt`** — short Markdown summary for crawlers and agents.
 
+## Workspace atlas (backlog snapshot tools)
+
+On the **full** MCP tool surface (remote `/mcp` or stdio OAuth), Tymio exposes **`tymio_get_workspace_atlas`**, **`tymio_get_workspace_object`**, **`tymio_search_workspace_objects`**, optional **`tymio_explain_workspace_object`**, and **`tymio_rebuild_workspace_atlas`**. These serve a **compiled JSON** view of the workspace backlog graph — complementary to **`tymio_get_agent_brief`** (capability ontology). They are **not** available in the API-key REST stdio subset.
+
+**Guide:** [Workspace atlas (MCP)](/wiki/workspace-atlas) — or raw Markdown **`/wiki/articles/workspace-atlas.md`**.
+
 ## Raw Markdown
 
 This article is also available as static Markdown at **`/wiki/articles/mcp-connection.md`** on the same host (for direct fetches by agents).

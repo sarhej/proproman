@@ -64,9 +64,10 @@ Agents work better when they separate **two** notions:
 
 1. **Ontology graph** — skim or apply [tymio-hub-ontology.md](references/tymio-hub-ontology.md) so drill-down order and entity types match the hub.
 2. `tymio_get_agent_brief` or ontology brief — align plan with real routes/tools (capability layer).
-3. `drd_meta` or `GET /meta` — resolve `domainId`, `productId`, etc., after auth.
-4. List/update work: `drd_list_initiatives`, `drd_get_initiative`, `drd_list_features`, `drd_list_requirements`, and matching `drd_update_*` or REST PATCH.
-5. After shipping product/API changes that affect agents, remind admins to refresh ontology bindings and recompile briefs when applicable.
+3. **Optional (full MCP only):** `tymio_get_workspace_atlas` → `tymio_search_workspace_objects` → `tymio_get_workspace_object` for a token-efficient backlog overview; if `not_built`, use `tymio_rebuild_workspace_atlas` (EDITOR+) or wait for debounced rebuild. See [wiki workspace-atlas](https://tymio.app/wiki/workspace-atlas) or repo `client/public/wiki/articles/workspace-atlas.md`. **Not** available in API-key stdio mode.
+4. `drd_meta` or `GET /meta` — resolve `domainId`, `productId`, etc., after auth.
+5. List/update work: `drd_list_initiatives`, `drd_get_initiative`, `drd_list_features`, `drd_list_requirements`, and matching `drd_update_*` or REST PATCH.
+6. After shipping product/API changes that affect agents, remind admins to refresh ontology bindings and recompile briefs when applicable.
 
 ## Roles
 

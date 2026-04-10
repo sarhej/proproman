@@ -24,6 +24,7 @@ Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKIL
 | IDs and taxonomy (domains, products, users) | `drd_meta`, `drd_list_domains`, `drd_list_products` | P | P | P |
 | Product tree / structure | `drd_get_product_tree` | P | P | S |
 | Agent capability brief (what the hub exposes) | `tymio_get_agent_brief`, ontology `GET /brief` | P | P | P |
+| Workspace atlas (compiled backlog JSON; full MCP only) | `tymio_get_workspace_atlas`, `tymio_search_workspace_objects`, `tymio_get_workspace_object`, `tymio_explain_workspace_object`; rebuild `tymio_rebuild_workspace_atlas` | P | P | S |
 | Coding agent guide (implementation context) | `tymio_get_coding_agent_guide`, `GET /api/agent/coding-guide` | S | S | P |
 | Capabilities map | `tymio_list_capabilities`, `tymio_get_capability` | S | S | P |
 | Initiatives (list, detail, create, update, delete) | `drd_list_initiatives`, `drd_get_initiative`, `drd_create_*`, `drd_update_*`, `drd_delete_*` | P | P | S |

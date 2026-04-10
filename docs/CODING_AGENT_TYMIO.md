@@ -15,7 +15,7 @@
 |--------|----------|
 | **This Markdown doc** | Primary playbook: humans and agents read it from the repo, cite it in prompts (`@docs/CODING_AGENT_TYMIO.md`), or fetch via clone / zip. |
 | **`context/AGENT_BRIEF.md`** | Compact, hub-authored map of **capabilities ↔ routes ↔ MCP tools ↔ models**; use after `ontology:refresh` or Admin export. |
-| **MCP tools** | Live queries and mutations **as the signed-in user** (same RBAC as the browser). Prefer for “current state of initiatives/features/requirements”. |
+| **MCP tools** | Live queries and mutations **as the signed-in user** (same RBAC as the browser). Prefer for “current state of initiatives/features/requirements”. For **large** workspaces, **`tymio_get_workspace_atlas`** + search + **`tymio_get_workspace_object`** complement `drd_*` (compiled JSON shards; **full MCP only** — see wiki `/wiki/workspace-atlas`). |
 | **REST (`/api/...`)** | Same as MCP under the hood; use when MCP is unavailable (curl, scripts with session cookie or API key). |
 
 **Recommendation:** Treat **this file + `AGENT_BRIEF.md` + MCP** as the trio: *playbook*, *semantic map*, *live data*. For a single paste into a chat, prefer **sections 5–7 below** plus a pointer to `AGENT_BRIEF.md`.
@@ -82,7 +82,8 @@ Canonical guide: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGEN
 **Tool families:**
 
 - **Ontology (Tymio-prefixed):** `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability` — **read** compiled brief and capability metadata.
-- **Backlog / data (historical `drd_*` prefix):** health, meta, initiatives, features, requirements, domains, products, accounts, partners, demands, campaigns, timeline, assignments, stakeholders, etc. Full list: `server/src/mcp/tools.ts`; **canonical tool names for ontology** live in `server/src/mcp/registeredMcpToolNames.ts`. Stdio package subset: `mcp/src/index.ts`.
+- **Workspace atlas (Tymio-prefixed, full MCP only):** `tymio_get_workspace_atlas`, `tymio_search_workspace_objects`, `tymio_get_workspace_object`, `tymio_explain_workspace_object`, `tymio_rebuild_workspace_atlas` — compiled **backlog** JSON for the session workspace (not the capability map). **Not** in API-key stdio subset. Wiki: `client/public/wiki/articles/workspace-atlas.md`.
+- **Backlog / data (historical `drd_*` prefix):** health, meta, initiatives, features, requirements, domains, products, accounts, partners, demands, campaigns, timeline, assignments, stakeholders, etc. Full list: `server/src/mcp/tools.ts`; **canonical tool names for ontology** live in `server/src/mcp/registeredMcpToolNames.ts`. Stdio package subset: `mcp/src/apiKeyStdio.ts`.
 
 Permissions match the **signed-in user** (or API-key user). **SUPER_ADMIN** is not implied unless that is the account.
 
@@ -164,10 +165,11 @@ Use this when the org has an existing product or backlog (docs, tickets, spreads
 ### 6.1 Discover “what was asked”
 
 1. Call **`tymio_get_agent_brief`** (or read `context/AGENT_BRIEF.md`) for **which MCP tools and routes** map to which **capabilities**.
-2. **`drd_meta`** (or `GET /api/meta`) for domains, products, users, accounts, partners, personas, revenue streams.
-3. **`drd_list_initiatives`** with filters if available, or search in UI Product Explorer.
-4. Open **`drd_get_initiative`**, **`drd_list_features`** / feature detail, **`drd_list_requirements`** for the initiative you care about.
-5. Read **notes** on initiatives/features (often contain acceptance criteria or “as-is” analysis).
+2. Optionally, on **full MCP**, call **`tymio_get_workspace_atlas`** and use **`tymio_search_workspace_objects`** / **`tymio_get_workspace_object`** to scan a large backlog with fewer round-trips than repeated `drd_list_*` calls. If you see **`not_built`**, an editor can run **`tymio_rebuild_workspace_atlas`**.
+3. **`drd_meta`** (or `GET /api/meta`) for domains, products, users, accounts, partners, personas, revenue streams.
+4. **`drd_list_initiatives`** with filters if available, or search in UI Product Explorer.
+5. Open **`drd_get_initiative`**, **`drd_list_features`** / feature detail, **`drd_list_requirements`** for the initiative you care about.
+6. Read **notes** on initiatives/features (often contain acceptance criteria or “as-is” analysis).
 
 ### 6.2 Implement in code
 

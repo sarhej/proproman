@@ -5,7 +5,7 @@
 Installable **`tymio-mcp`** command: connect editors and agents to **Tymio** in two ways:
 
 1. **OAuth (default)** — stdio MCP server that **proxies** the hosted **Streamable HTTP** MCP endpoint (`…/mcp`) with the same **Google → Tymio** login as the web app. **Full tool surface** matches the hub (`server/src/mcp/tools.ts`).
-2. **API key (optional)** — if `DRD_API_KEY` or `API_KEY` is set, uses a **REST** bridge with a **fixed subset** of tools (see `mcp/src/apiKeyStdio.ts`).
+2. **API key (optional)** — if `DRD_API_KEY` or `API_KEY` is set, uses a **REST** bridge with a **fixed subset** of tools (see `mcp/src/apiKeyStdio.ts`). **Workspace atlas** MCP tools (`tymio_get_workspace_atlas`, etc.) are **hub-only** — use OAuth stdio or remote `/mcp` for those; see `client/public/wiki/articles/workspace-atlas.md`.
 
 ---
 
