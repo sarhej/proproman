@@ -85,10 +85,15 @@ export const REGISTERED_MCP_TOOL_NAMES = [
   "drd_update_stakeholder",
   "drd_upsert_assignment",
   "drd_upsert_requirement",
+  "tymio_explain_workspace_object",
   "tymio_get_agent_brief",
   "tymio_get_capability",
   "tymio_get_coding_agent_guide",
-  "tymio_list_capabilities"
+  "tymio_get_workspace_atlas",
+  "tymio_get_workspace_object",
+  "tymio_list_capabilities",
+  "tymio_rebuild_workspace_atlas",
+  "tymio_search_workspace_objects"
 ] as const;
 
 export type RegisteredMcpToolName = (typeof REGISTERED_MCP_TOOL_NAMES)[number];

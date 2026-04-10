@@ -18,6 +18,16 @@ type Listener = (event: HubChangeEventPayload) => void;
 
 const tenantListeners = new Map<string, Set<Listener>>();
 
+/** Listeners that receive every hub change (all tenants). Used for workspace-wide compilers. */
+const globalListeners = new Set<Listener>();
+
+export function subscribeAllHubChanges(listener: Listener): () => void {
+  globalListeners.add(listener);
+  return () => {
+    globalListeners.delete(listener);
+  };
+}
+
 export function subscribeHubChanges(tenantId: string, listener: Listener): () => void {
   let set = tenantListeners.get(tenantId);
   if (!set) {
@@ -51,6 +61,13 @@ export function notifyHubChange(
       } catch (err) {
         console.error("[hubChangeHub] listener error", err);
       }
+    }
+  }
+  for (const fn of globalListeners) {
+    try {
+      fn(event);
+    } catch (err) {
+      console.error("[hubChangeHub] global listener error", err);
     }
   }
   return event;

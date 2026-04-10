@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { notifyHubChange, subscribeHubChanges } from "./hubChangeHub.js";
+import { notifyHubChange, subscribeAllHubChanges, subscribeHubChanges } from "./hubChangeHub.js";
 
 describe("hubChangeHub", () => {
   it("notifies subscribers for a tenant", () => {
@@ -37,5 +37,28 @@ describe("hubChangeHub", () => {
       initiativeId: "i1"
     });
     expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("notifies global subscribers for any tenant", () => {
+    const fn = vi.fn();
+    const unsub = subscribeAllHubChanges(fn);
+    notifyHubChange({
+      tenantId: "tx",
+      entityType: "REQUIREMENT",
+      operation: "UPDATE",
+      entityId: "r1",
+      initiativeId: "i1"
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn.mock.calls[0][0].tenantId).toBe("tx");
+    unsub();
+    notifyHubChange({
+      tenantId: "tx",
+      entityType: "REQUIREMENT",
+      operation: "UPDATE",
+      entityId: "r2",
+      initiativeId: "i1"
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });

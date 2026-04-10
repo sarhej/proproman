@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tymio.app/schemas/object-shard.json",
+  "title": "TymioObjectShard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "objectType",
+    "id",
+    "tenantId",
+    "workspaceSlug",
+    "facts",
+    "graph",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "objectType": {
+      "type": "string",
+      "enum": ["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"]
+    },
+    "id": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string", "minLength": 1 },
+    "workspaceSlug": { "type": "string", "minLength": 1 },
+    "facts": {
+      "type": "object",
+      "description": "Authoritative fields materialized from the hub (JSON-serializable)."
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["links", "edges"],
+      "properties": {
+        "links": {
+          "type": "object",
+          "description": "Minimal backlog spine anchors for this object.",
+          "additionalProperties": true
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["kind"],
+            "properties": {
+              "kind": { "type": "string" },
+              "targetType": { "type": "string" },
+              "targetId": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": ["string", "null"],
+      "description": "Optional LLM-authored one-liner; never authoritative."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceUpdatedAt", "materializedAt", "derivation"],
+      "properties": {
+        "sourceUpdatedAt": { "type": "string", "format": "date-time" },
+        "materializedAt": { "type": "string", "format": "date-time" },
+        "derivation": {
+          "type": "string",
+          "enum": ["hub-api", "hub-api+llm-summary"]
+        }
+      }
+    }
+  }
+}

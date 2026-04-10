@@ -79,6 +79,20 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true" || v === "1" || v === "yes"),
+  /** Optional: directory for compiled workspace-atlas + object shards (default: server/data/workspace-atlas). */
+  WORKSPACE_ATLAS_DATA_DIR: optionalString,
+  /** Debounce (ms) before rebuilding atlas after hub change events. */
+  WORKSPACE_ATLAS_DEBOUNCE_MS: z.preprocess(
+    (val) => (val === undefined || val === "" ? "2000" : val),
+    z.coerce.number().int().min(200).max(120_000)
+  ),
+  /** When true, optional LLM features (explain) may call OpenAI if WORKSPACE_ATLAS_OPENAI_API_KEY is set. */
+  WORKSPACE_ATLAS_LLM_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1" || v === "yes"),
+  WORKSPACE_ATLAS_OPENAI_API_KEY: optionalString,
+  WORKSPACE_ATLAS_OPENAI_MODEL: z.string().default("gpt-4o-mini")
 });
 
 export const env = envSchema

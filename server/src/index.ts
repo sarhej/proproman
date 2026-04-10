@@ -59,6 +59,7 @@ import {
 import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
 import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
+import { startWorkspaceAtlasHubListener } from "./workspaceAtlas/hubListener.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
 import { isTransactionalEmailEnabled, isTransactionalEmailReady } from "./services/transactionalMail.js";
 
@@ -286,6 +287,7 @@ async function bootstrap(): Promise<void> {
 
 void bootstrap().then(() => {
   app.listen(Number(env.PORT), () => {
+    startWorkspaceAtlasHubListener();
     console.log(`Server running on port ${env.PORT}`);
     if (isTransactionalEmailReady() && env.TRANSACTIONAL_EMAIL_ENABLED === false) {
       console.warn(

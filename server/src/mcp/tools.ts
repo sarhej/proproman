@@ -36,6 +36,7 @@ import {
   workspaceMembershipCanWriteContent
 } from "../lib/workspaceRbac.js";
 import { getTenantContext } from "../tenant/tenantContext.js";
+import { registerWorkspaceAtlasTools } from "./workspaceAtlasTools.js";
 import { notifyHubChange, type HubChangeEventPayload } from "../services/hubChangeHub.js";
 import { allocateUniqueProductSlug } from "../lib/productSlug.js";
 import { canUserEditInitiativeForMcp } from "../lib/initiativeMcpPermission.js";
@@ -215,7 +216,7 @@ function requireMcpTenantCampaignWrite(membershipRole: string, globalRole: strin
   }
 }
 
-/** When adding a tool below, update `REGISTERED_MCP_TOOL_NAMES` in `registeredMcpToolNames.ts` (Vitest enforces parity). */
+/** When adding a tool below (or in `workspaceAtlasTools.ts`), update `REGISTERED_MCP_TOOL_NAMES` in `registeredMcpToolNames.ts` (Vitest enforces parity). */
 export function registerTools(server: McpServer) {
   // --- Health ---
   server.registerTool(
@@ -3202,4 +3203,6 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       return textContent(JSON.stringify({ capability: cap }, null, 2));
     }
   );
+
+  registerWorkspaceAtlasTools(server);
 }

@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tymio.app/schemas/workspace-atlas.json",
+  "title": "TymioWorkspaceAtlas",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "tenantId",
+    "workspaceSlug",
+    "materializedAt",
+    "sourceMaxUpdatedAt",
+    "domains",
+    "products",
+    "initiativeIndex",
+    "featureIndex",
+    "requirementIndex",
+    "objectCounts",
+    "capabilityOntology",
+    "backlogOntology"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "tenantId": { "type": "string", "minLength": 1 },
+    "workspaceSlug": { "type": "string", "minLength": 1 },
+    "materializedAt": { "type": "string", "format": "date-time" },
+    "sourceMaxUpdatedAt": { "type": "string", "format": "date-time" },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "color", "sortOrder"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "color": { "type": "string" },
+          "sortOrder": { "type": "integer" }
+        }
+      }
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "slug", "sortOrder"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "sortOrder": { "type": "integer" }
+        }
+      }
+    },
+    "initiativeIndex": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "domainId", "status", "horizon", "priority"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "domainId": { "type": "string" },
+          "productId": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "horizon": { "type": "string" },
+          "priority": { "type": "string" },
+          "archivedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "featureIndex": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "initiativeId", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "initiativeId": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "requirementIndex": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "featureId", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "featureId": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "objectCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "product", "initiative", "feature", "requirement"],
+      "properties": {
+        "domain": { "type": "integer", "minimum": 0 },
+        "product": { "type": "integer", "minimum": 0 },
+        "initiative": { "type": "integer", "minimum": 0 },
+        "feature": { "type": "integer", "minimum": 0 },
+        "requirement": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "capabilityOntology": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind", "note"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["pointer"] },
+        "note": { "type": "string" },
+        "mcpTools": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "backlogOntology": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind", "spine"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["reference"] },
+        "spine": { "type": "string" },
+        "doc": { "type": "string" }
+      }
+    }
+  }
+}
