@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, Link2, Plus } from "lucide-react";
 import { api } from "../../lib/api";
 import { setWorkspaceTenantSessionForTab } from "../../lib/workspaceTenantHeader";
 import { generateWorkspaceSlugFromTeamName } from "../../lib/workspaceRegistration";
+import { parseWorkspacePath, withWorkspacePrefix } from "../../lib/workspacePath";
 import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 import type { Tenant, TenantMembership, User } from "../../types/models";
 import { Button } from "../ui/Button";
@@ -266,6 +267,11 @@ function RequestWorkspaceModal({
 
 export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }: Props) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const switchPathInner = useMemo(
+    () => parseWorkspacePath(location.pathname)?.innerPath ?? "/",
+    [location.pathname]
+  );
   const [open, setOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
@@ -505,7 +511,7 @@ export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }:
                     className="flex items-center gap-0.5 px-1 py-0.5 hover:bg-slate-50"
                   >
                     <Link
-                      to={`/t/${encodeURIComponent(r.slug)}`}
+                      to={withWorkspacePrefix(r.slug, switchPathInner)}
                       onClick={() => setOpen(false)}
                       className="flex min-w-0 flex-1 items-center justify-between rounded px-2 py-2 text-left text-sm text-slate-700"
                       title={t("tenant.switcherOpenWorkspacePage", { name: r.teamName })}

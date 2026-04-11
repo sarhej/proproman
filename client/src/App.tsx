@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PublicLanguageSwitcher } from "./components/i18n/PublicLanguageSwitcher";
 import { AppShell } from "./components/layout/AppShell";
@@ -64,8 +73,27 @@ import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
 import { resetDocumentSeoDefaults, SeoHead } from "./components/seo/SeoHead";
+import {
+  parseWorkspacePath,
+  stripWorkspacePrefix,
+  withWorkspacePrefix,
+} from "./lib/workspacePath";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
+
+/** Redirect unprefixed hub paths (e.g. `/`, `/features/x`) to `/t/:slug/...`. */
+function LegacyHubNavigate({ workspaceSlug }: { workspaceSlug: string }) {
+  const { pathname, search, hash } = useLocation();
+  if (pathname.startsWith("/wiki") || pathname === "/register-workspace" || pathname.startsWith("/platform")) {
+    return <Navigate to="/" replace />;
+  }
+  return <Navigate to={withWorkspacePrefix(workspaceSlug, pathname) + search + hash} replace />;
+}
+
+function HubUnknownSubpath() {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  return <Navigate to={withWorkspacePrefix(workspaceSlug, "/")} replace />;
+}
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -87,10 +115,11 @@ function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const tenantSlug = useMemo(() => {
-    const m = location.pathname.match(/^\/t\/([^/]+)/);
-    return m ? m[1] : null;
-  }, [location.pathname]);
+  const workspacePathParsed = useMemo(
+    () => parseWorkspacePath(location.pathname),
+    [location.pathname]
+  );
+  const tenantSlug = workspacePathParsed?.slug ?? null;
 
   const blockWorkspaceSlugGate =
     Boolean(tenantSlug) &&
@@ -190,18 +219,19 @@ function App() {
   useEffect(() => { void loadDevTenants(); }, [loadDevTenants]);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const logicalPathname = stripWorkspacePrefix(location.pathname);
   const hideFilters =
-    location.pathname === "/gantt" ||
-    location.pathname.startsWith("/features/") ||
-    location.pathname.startsWith("/requirements/") ||
-    location.pathname.includes("/execution-board") ||
-    location.pathname.includes("/board-settings") ||
-    location.pathname.startsWith("/admin") ||
-    location.pathname === "/workspace-settings" ||
-    location.pathname === "/partners" ||
-    location.pathname === "/buyer-user" ||
-    location.pathname === "/accounts" ||
-    location.pathname === "/demands";
+    logicalPathname === "/gantt" ||
+    logicalPathname.startsWith("/features/") ||
+    logicalPathname.startsWith("/requirements/") ||
+    logicalPathname.includes("/execution-board") ||
+    logicalPathname.includes("/board-settings") ||
+    logicalPathname.startsWith("/admin") ||
+    logicalPathname === "/workspace-settings" ||
+    logicalPathname === "/partners" ||
+    logicalPathname === "/buyer-user" ||
+    logicalPathname === "/accounts" ||
+    logicalPathname === "/demands";
 
   const selectedFresh = useMemo(
     () => board.initiatives.find((i) => i.id === selected?.id) || selected,
@@ -319,6 +349,7 @@ function App() {
     const slugNorm = tenantSlug.trim().toLowerCase();
     const slugForApi = tenantSlug.trim();
     const authenticatedUser = user;
+    const innerPath = workspacePathParsed?.innerPath ?? "/";
 
     async function run() {
       if (authenticatedUser.role !== "PENDING") {
@@ -332,7 +363,10 @@ function App() {
             if (!cancelled) {
               await refreshAuth();
               setWorkspaceSlugGate({ state: "idle" });
-              navigate("/", { replace: true });
+              navigate(
+                withWorkspacePrefix(match.tenant.slug, innerPath) + location.search + location.hash,
+                { replace: true }
+              );
             }
             return;
           }
@@ -384,7 +418,18 @@ function App() {
 
     void run();
     return () => { cancelled = true; };
-  }, [workspaceSlugGate.state, tenantSlug, user?.id, user?.role, authLoading, navigate, refreshAuth]);
+  }, [
+    workspaceSlugGate.state,
+    tenantSlug,
+    workspacePathParsed?.innerPath,
+    user?.id,
+    user?.role,
+    authLoading,
+    navigate,
+    refreshAuth,
+    location.search,
+    location.hash,
+  ]);
 
   const isWikiPath = location.pathname === "/wiki" || location.pathname.startsWith("/wiki/");
 
@@ -675,6 +720,7 @@ function App() {
       permissions={perms}
       hiddenNavPaths={uiSettings.hiddenNavPaths}
       activeTenant={activeTenant}
+      hubWorkspaceSlug={activeTenant?.slug}
       localePickerCodes={shellLocales}
       canManageWorkspaceStructure={canManageWorkspaceStructure}
       onTenantSwitch={() => setNeedsTenantPick(true)}
@@ -732,367 +778,389 @@ function App() {
         <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-600">{t("app.loadingInitiatives")}</div>
       ) : (
         <Routes>
-            <Route
-            path="/"
-            element={
-              <ViewRoute user={user} path="/" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <DomainBoardPage
-                  domains={board.meta.domains}
-                  initiatives={board.initiatives}
-                  onOpen={(i) => setSelected(i)}
-                  onReorder={async (next) => {
-                    board.setInitiatives(next);
-                    await api.reorderInitiatives(next.map((item) => ({ id: item.id, domainId: item.domainId, sortOrder: item.sortOrder })));
-                    await board.refresh();
-                  }}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/priority"
-            element={
-              <ViewRoute user={user} path="/priority" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <PriorityGridPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/raci"
-            element={
-              <ViewRoute user={user} path="/raci" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <RaciMatrixPage
-                  initiatives={board.initiatives}
-                  users={board.meta.users}
-                  readOnly={!perms.canEditStructure}
-                  onOpen={(i) => setSelected(i)}
-                  onChanged={() => board.refresh()}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/status-kanban"
-            element={
-              <ViewRoute user={user} path="/status-kanban" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <StatusKanbanPage
-                  initiatives={board.initiatives}
-                  onOpen={(i) => setSelected(i)}
-                  onMove={async (initiative, nextStatus) => {
-                    await api.updateInitiative(initiative.id, { status: nextStatus });
-                    await board.refresh();
-                  }}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/accountability"
-            element={
-              <ViewRoute user={user} path="/accountability" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <PeopleKanbanPage
-                  initiatives={board.initiatives}
-                  users={board.meta.users}
-                  onOpen={(i) => setSelected(i)}
-                  onReassignAccountable={async (initiative, userId) => {
-                    const oldAccountable = initiative.assignments.find((a) => a.role === "ACCOUNTABLE");
-                    if (oldAccountable) {
-                      await api.removeAssignment({
-                        initiativeId: initiative.id,
-                        userId: oldAccountable.userId,
-                        role: "ACCOUNTABLE"
-                      });
-                    }
-                    if (userId) {
-                      await api.addAssignment({
-                        initiativeId: initiative.id,
-                        userId,
-                        role: "ACCOUNTABLE"
-                      });
-                    }
-                    await board.refresh();
-                  }}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/kpi-dashboard"
-            element={
-              <ViewRoute user={user} path="/kpi-dashboard" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <KpiDashboardPage
-                  domains={board.meta.domains}
-                  users={board.meta.users}
-                  initiatives={board.initiatives}
-                  onOpenInitiative={(i) => setSelected(i)}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/heatmap"
-            element={
-              <ViewRoute user={user} path="/heatmap" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/buyer-user"
-            element={
-              <ViewRoute user={user} path="/buyer-user" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/gaps"
-            element={
-              <ViewRoute user={user} path="/gaps" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/product-explorer"
-            element={
-              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <ProductExplorerPage
-                  isAdmin={perms.canEditStructure}
-                  canCreateInitiative={perms.canEditContent}
-                  currentUserId={user?.id ?? null}
-                  onOpenInitiative={(i) => setSelected(i)}
-                  quickFilter={board.filters.quick}
-                  boardFilters={board.filters}
-                  onExplorerHubLockChange={(locked) => {
-                    hubRefreshSuppressedRef.current = locked;
-                  }}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/workspace-settings"
-            element={
-              <ViewRoute
-                user={user}
-                path="/workspace-settings"
-                hiddenNavPaths={uiSettings.hiddenNavPaths}
-                ignoreHide={canManageWorkspaceStructure}
-              >
-                <WorkspaceSettingsPage
-                  user={user}
-                  activeTenant={activeTenant}
-                  onSaved={() => {
-                    void refreshAuth();
-                    void uiSettings.refresh();
-                  }}
-                  onNavViewsSaved={() => void uiSettings.refresh()}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/accounts"
-            element={
-              <ViewRoute user={user} path="/accounts" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <AccountsPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/demands"
-            element={
-              <ViewRoute user={user} path="/demands" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <DemandsPage
-                  isAdmin={perms.canEditStructure}
-                  accounts={board.meta.accounts}
-                  partners={board.meta.partners}
-                  initiatives={board.initiatives}
-                  onOpenInitiative={(i) => setSelected(i)}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/partners"
-            element={
-              <ViewRoute user={user} path="/partners" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <PartnersPage isAdmin={perms.canEditStructure} onOpenInitiative={(i) => setSelected(i)} initiatives={board.initiatives} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/campaigns"
-            element={
-              <ViewRoute user={user} path="/campaigns" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <CampaignsPage
-                  isAdmin={perms.canEditMarketing}
-                  users={board.meta.users}
-                  accounts={board.meta.accounts}
-                  partners={board.meta.partners}
-                  personas={board.meta.personas}
-                  initiatives={board.initiatives}
-                  onOpenInitiative={(i) => setSelected(i)}
-                  quickFilter={board.filters.quick}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/milestones"
-            element={
-              <ViewRoute user={user} path="/milestones" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <MilestonesTimelinePage
-                  domains={board.meta.domains}
-                  users={board.meta.users}
-                  initiatives={board.initiatives}
-                  onOpenInitiative={(i) => setSelected(i)}
-                  onArchiveInitiative={() => board.refresh()}
-                  readOnly={!perms.canEditStructure}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <ViewRoute user={user} path="/calendar" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <CalendarPage quickFilter={board.filters.quick} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/gantt"
-            element={
-              <ViewRoute user={user} path="/gantt" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/features/:featureId"
-            element={
-              <FeatureDetailPage
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-                onSaved={() => board.refresh()}
-                onFeatureUpdated={(updated) => {
-                  board.setInitiatives((prev) =>
-                    prev.map((i) => {
-                      const idx = i.features?.findIndex((f) => f.id === updated.id) ?? -1;
-                      if (idx < 0) return i;
-                      const next = [...(i.features ?? [])];
-                      next[idx] = { ...updated, requirements: next[idx]?.requirements ?? updated.requirements ?? [] };
-                      return { ...i, features: next };
-                    })
-                  );
-                }}
-                readOnly={!perms.canEditContent}
-              />
-            }
-          />
-          <Route
-            path="/requirements/kanban"
-            element={
-              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <RequirementsKanbanPage
-                  initiatives={board.initiatives}
-                  onMoveRequirement={async (id, isDone) => {
-                    await api.updateRequirement(id, { isDone, status: isDone ? "DONE" : "NOT_STARTED" });
-                    await board.refresh();
-                  }}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/products/:productId/execution-board"
-            element={
-              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <ExecutionBoardPage
-                  onRefreshBoardSilent={() => void board.refreshSilent()}
-                  readOnly={!perms.canEditContent}
-                />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/products/:productId/board-settings"
-            element={
-              <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                <BoardSettingsPage isAdmin={perms.canEditContent} onRefreshBoard={() => board.refresh()} />
-              </ViewRoute>
-            }
-          />
-          <Route
-            path="/requirements/:requirementId"
-            element={
-              <RequirementDetailPage
-                initiatives={board.initiatives}
-                onOpenInitiative={(i) => setSelected(i)}
-                onSaved={() => board.refresh()}
-                readOnly={!perms.canEditContent}
-              />
-            }
-          />
-          {perms.canManageUsers && (
-            <>
-              <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
-              <Route
-                path="/admin/users"
-                element={
-                  <AdminPage
-                    mode="users"
-                    currentUser={user}
-                    quickFilter={board.filters.quick}
-                    onMetaChanged={() => void board.refresh()}
-                    onUiSettingsChanged={() => void uiSettings.refresh()}
-                  />
-                }
-              />
-              <Route
-                path="/admin/settings"
-                element={
-                  <AdminPage
-                    mode="settings"
-                    currentUser={user}
-                    quickFilter={board.filters.quick}
-                    onMetaChanged={() => void board.refresh()}
-                    onUiSettingsChanged={() => void uiSettings.refresh()}
-                  />
-                }
-              />
-              <Route
-                path="/agent-setup"
-                element={
-                  <ViewRoute user={user} path="/agent-setup" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                    <AgentSetupPage />
-                  </ViewRoute>
-                }
-              />
-            </>
-          )}
           <Route
             path="/register-workspace"
             element={
               <RegisterTeamPage
-                onBack={() => navigate("/")}
+                onBack={() =>
+                  navigate(activeTenant ? withWorkspacePrefix(activeTenant.slug, "/") : "/")
+                }
                 prefilledContact={{ email: user.email, name: user.name ?? "" }}
                 onWorkspaceProvisioned={async (slug) => {
                   await refreshAuth();
-                  navigate(`/t/${encodeURIComponent(slug)}`, { replace: true });
+                  navigate(withWorkspacePrefix(slug, "/"), { replace: true });
                 }}
               />
             }
           />
+          <Route path="/t/:workspaceSlug" element={<Outlet />}>
+            <Route
+              index
+              element={
+                <ViewRoute user={user} path="/" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <DomainBoardPage
+                    domains={board.meta.domains}
+                    initiatives={board.initiatives}
+                    onOpen={(i) => setSelected(i)}
+                    onReorder={async (next) => {
+                      board.setInitiatives(next);
+                      await api.reorderInitiatives(
+                        next.map((item) => ({
+                          id: item.id,
+                          domainId: item.domainId,
+                          sortOrder: item.sortOrder
+                        }))
+                      );
+                      await board.refresh();
+                    }}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="priority"
+              element={
+                <ViewRoute user={user} path="/priority" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <PriorityGridPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="raci"
+              element={
+                <ViewRoute user={user} path="/raci" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <RaciMatrixPage
+                    initiatives={board.initiatives}
+                    users={board.meta.users}
+                    readOnly={!perms.canEditStructure}
+                    onOpen={(i) => setSelected(i)}
+                    onChanged={() => board.refresh()}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="status-kanban"
+              element={
+                <ViewRoute user={user} path="/status-kanban" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <StatusKanbanPage
+                    initiatives={board.initiatives}
+                    onOpen={(i) => setSelected(i)}
+                    onMove={async (initiative, nextStatus) => {
+                      await api.updateInitiative(initiative.id, { status: nextStatus });
+                      await board.refresh();
+                    }}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="accountability"
+              element={
+                <ViewRoute user={user} path="/accountability" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <PeopleKanbanPage
+                    initiatives={board.initiatives}
+                    users={board.meta.users}
+                    onOpen={(i) => setSelected(i)}
+                    onReassignAccountable={async (initiative, userId) => {
+                      const oldAccountable = initiative.assignments.find((a) => a.role === "ACCOUNTABLE");
+                      if (oldAccountable) {
+                        await api.removeAssignment({
+                          initiativeId: initiative.id,
+                          userId: oldAccountable.userId,
+                          role: "ACCOUNTABLE"
+                        });
+                      }
+                      if (userId) {
+                        await api.addAssignment({
+                          initiativeId: initiative.id,
+                          userId,
+                          role: "ACCOUNTABLE"
+                        });
+                      }
+                      await board.refresh();
+                    }}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="kpi-dashboard"
+              element={
+                <ViewRoute user={user} path="/kpi-dashboard" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <KpiDashboardPage
+                    domains={board.meta.domains}
+                    users={board.meta.users}
+                    initiatives={board.initiatives}
+                    onOpenInitiative={(i) => setSelected(i)}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="heatmap"
+              element={
+                <ViewRoute user={user} path="/heatmap" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <HeatmapPage initiatives={board.initiatives} personas={board.meta.personas} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="buyer-user"
+              element={
+                <ViewRoute user={user} path="/buyer-user" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <BuyerUserPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="gaps"
+              element={
+                <ViewRoute user={user} path="/gaps" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <GapsPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="product-explorer"
+              element={
+                <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <ProductExplorerPage
+                    isAdmin={perms.canEditStructure}
+                    canCreateInitiative={perms.canEditContent}
+                    currentUserId={user?.id ?? null}
+                    onOpenInitiative={(i) => setSelected(i)}
+                    quickFilter={board.filters.quick}
+                    boardFilters={board.filters}
+                    onExplorerHubLockChange={(locked) => {
+                      hubRefreshSuppressedRef.current = locked;
+                    }}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="workspace-settings"
+              element={
+                <ViewRoute
+                  user={user}
+                  path="/workspace-settings"
+                  hiddenNavPaths={uiSettings.hiddenNavPaths}
+                  ignoreHide={canManageWorkspaceStructure}
+                >
+                  <WorkspaceSettingsPage
+                    user={user}
+                    activeTenant={activeTenant}
+                    onSaved={() => {
+                      void refreshAuth();
+                      void uiSettings.refresh();
+                    }}
+                    onNavViewsSaved={() => void uiSettings.refresh()}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="accounts"
+              element={
+                <ViewRoute user={user} path="/accounts" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <AccountsPage
+                    isAdmin={perms.canEditStructure}
+                    onOpenInitiative={(i) => setSelected(i)}
+                    initiatives={board.initiatives}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="demands"
+              element={
+                <ViewRoute user={user} path="/demands" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <DemandsPage
+                    isAdmin={perms.canEditStructure}
+                    accounts={board.meta.accounts}
+                    partners={board.meta.partners}
+                    initiatives={board.initiatives}
+                    onOpenInitiative={(i) => setSelected(i)}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="partners"
+              element={
+                <ViewRoute user={user} path="/partners" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <PartnersPage
+                    isAdmin={perms.canEditStructure}
+                    onOpenInitiative={(i) => setSelected(i)}
+                    initiatives={board.initiatives}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="campaigns"
+              element={
+                <ViewRoute user={user} path="/campaigns" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <CampaignsPage
+                    isAdmin={perms.canEditMarketing}
+                    users={board.meta.users}
+                    accounts={board.meta.accounts}
+                    partners={board.meta.partners}
+                    personas={board.meta.personas}
+                    initiatives={board.initiatives}
+                    onOpenInitiative={(i) => setSelected(i)}
+                    quickFilter={board.filters.quick}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="milestones"
+              element={
+                <ViewRoute user={user} path="/milestones" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <MilestonesTimelinePage
+                    domains={board.meta.domains}
+                    users={board.meta.users}
+                    initiatives={board.initiatives}
+                    onOpenInitiative={(i) => setSelected(i)}
+                    onArchiveInitiative={() => board.refresh()}
+                    readOnly={!perms.canEditStructure}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="calendar"
+              element={
+                <ViewRoute user={user} path="/calendar" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <CalendarPage quickFilter={board.filters.quick} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="gantt"
+              element={
+                <ViewRoute user={user} path="/gantt" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <GanttPage initiatives={board.initiatives} onOpen={(i) => setSelected(i)} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="features/:featureId"
+              element={
+                <FeatureDetailPage
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  onSaved={() => board.refresh()}
+                  onFeatureUpdated={(updated) => {
+                    board.setInitiatives((prev) =>
+                      prev.map((i) => {
+                        const idx = i.features?.findIndex((f) => f.id === updated.id) ?? -1;
+                        if (idx < 0) return i;
+                        const next = [...(i.features ?? [])];
+                        next[idx] = {
+                          ...updated,
+                          requirements: next[idx]?.requirements ?? updated.requirements ?? []
+                        };
+                        return { ...i, features: next };
+                      })
+                    );
+                  }}
+                  readOnly={!perms.canEditContent}
+                />
+              }
+            />
+            <Route
+              path="requirements/kanban"
+              element={
+                <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <RequirementsKanbanPage
+                    initiatives={board.initiatives}
+                    onMoveRequirement={async (id, isDone) => {
+                      await api.updateRequirement(id, { isDone, status: isDone ? "DONE" : "NOT_STARTED" });
+                      await board.refresh();
+                    }}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="products/:productId/execution-board"
+              element={
+                <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <ExecutionBoardPage
+                    onRefreshBoardSilent={() => void board.refreshSilent()}
+                    readOnly={!perms.canEditContent}
+                  />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="products/:productId/board-settings"
+              element={
+                <ViewRoute user={user} path="/product-explorer" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <BoardSettingsPage isAdmin={perms.canEditContent} onRefreshBoard={() => board.refresh()} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="requirements/:requirementId"
+              element={
+                <RequirementDetailPage
+                  initiatives={board.initiatives}
+                  onOpenInitiative={(i) => setSelected(i)}
+                  onSaved={() => board.refresh()}
+                  readOnly={!perms.canEditContent}
+                />
+              }
+            />
+            {perms.canManageUsers && (
+              <>
+                <Route path="admin" element={<Outlet />}>
+                  <Route index element={<Navigate to="users" replace />} />
+                  <Route
+                    path="users"
+                    element={
+                      <AdminPage
+                        mode="users"
+                        currentUser={user}
+                        quickFilter={board.filters.quick}
+                        onMetaChanged={() => void board.refresh()}
+                        onUiSettingsChanged={() => void uiSettings.refresh()}
+                      />
+                    }
+                  />
+                  <Route
+                    path="settings"
+                    element={
+                      <AdminPage
+                        mode="settings"
+                        currentUser={user}
+                        quickFilter={board.filters.quick}
+                        onMetaChanged={() => void board.refresh()}
+                        onUiSettingsChanged={() => void uiSettings.refresh()}
+                      />
+                    }
+                  />
+                </Route>
+                <Route
+                  path="agent-setup"
+                  element={
+                    <ViewRoute user={user} path="/agent-setup" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                      <AgentSetupPage />
+                    </ViewRoute>
+                  }
+                />
+              </>
+            )}
+            <Route path="*" element={<HubUnknownSubpath />} />
+          </Route>
           <Route
             path="*"
             element={
-              location.pathname.startsWith("/t/") ? (
-                <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-                  <p className="text-sm text-slate-500">{t("app.resolvingWorkspaceLink")}</p>
-                </div>
+              activeTenant ? (
+                <LegacyHubNavigate workspaceSlug={activeTenant.slug} />
               ) : (
                 <Navigate to="/" replace />
               )

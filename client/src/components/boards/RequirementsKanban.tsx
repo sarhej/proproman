@@ -13,6 +13,7 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../../hooks/useWorkspaceHref";
 import type { Initiative, Requirement } from "../../types/models";
 import { formatPriority } from "../../lib/format";
 import { Card } from "../ui/Card";
@@ -39,7 +40,15 @@ type Props = {
   onMoveRequirement: (requirementId: string, isDone: boolean) => Promise<void>;
 };
 
-function RequirementCard({ item, isDragging }: { item: FlatRequirement; isDragging?: boolean }) {
+function RequirementCard({
+  item,
+  isDragging,
+  requirementLink
+}: {
+  item: FlatRequirement;
+  isDragging?: boolean;
+  requirementLink: (id: string) => string;
+}) {
   const done = requirementIsDone(item.requirement);
   return (
     <Card
@@ -47,7 +56,7 @@ function RequirementCard({ item, isDragging }: { item: FlatRequirement; isDraggi
         isDragging ? "opacity-50 shadow-md" : "hover:border-sky-300 hover:shadow"
       }`}
     >
-      <Link to={`/requirements/${item.requirement.id}`} className="block">
+      <Link to={requirementLink(item.requirement.id)} className="block">
         <p className="text-sm font-medium text-slate-900">{item.requirement.title}</p>
         <p className="mt-0.5 text-xs text-slate-500">{item.initiativeTitle}</p>
         <div className="mt-1.5 flex items-center gap-1.5">
@@ -69,14 +78,20 @@ function RequirementCard({ item, isDragging }: { item: FlatRequirement; isDraggi
   );
 }
 
-function DraggableRequirementCard({ item }: { item: FlatRequirement }) {
+function DraggableRequirementCard({
+  item,
+  requirementLink
+}: {
+  item: FlatRequirement;
+  requirementLink: (id: string) => string;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.requirement.id
   });
   const style = transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined;
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <RequirementCard item={item} isDragging={isDragging} />
+      <RequirementCard item={item} isDragging={isDragging} requirementLink={requirementLink} />
     </div>
   );
 }
@@ -112,6 +127,8 @@ function DroppableColumn({
 
 export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
   const { t } = useTranslation();
+  const w = useWorkspaceLinkBuilder();
+  const requirementLink = (id: string) => w(`/requirements/${id}`);
   const [productFilter, setProductFilter] = useState<string>("");
   const [initiativeFilter, setInitiativeFilter] = useState<string>("");
   const [featureFilter, setFeatureFilter] = useState<string>("");
@@ -288,7 +305,7 @@ export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
                       {group.featureTitle}
                     </p>
                     {items.map((item) => (
-                      <DraggableRequirementCard key={item.requirement.id} item={item} />
+                      <DraggableRequirementCard key={item.requirement.id} item={item} requirementLink={requirementLink} />
                     ))}
                   </div>
                 );
@@ -308,7 +325,7 @@ export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
                       {group.featureTitle}
                     </p>
                     {items.map((item) => (
-                      <DraggableRequirementCard key={item.requirement.id} item={item} />
+                      <DraggableRequirementCard key={item.requirement.id} item={item} requirementLink={requirementLink} />
                     ))}
                   </div>
                 );
@@ -321,7 +338,7 @@ export function RequirementsKanban({ initiatives, onMoveRequirement }: Props) {
       <DragOverlay>
         {activeItem ? (
           <div className="rotate-1 opacity-95">
-            <RequirementCard item={activeItem} />
+            <RequirementCard item={activeItem} requirementLink={requirementLink} />
           </div>
         ) : null}
       </DragOverlay>

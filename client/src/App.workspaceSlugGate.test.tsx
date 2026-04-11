@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import type { User } from "./types/models";
 import App from "./App";
 
@@ -161,7 +161,7 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
     expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
   });
 
-  it("switches tenant and leaves /t when user is already a member of that slug", async () => {
+  it("switches tenant and keeps URL under /t/:slug when user is already a member of that slug", async () => {
     mockGetMyTenants.mockResolvedValue({
       tenants: [
         {
@@ -178,16 +178,18 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
       activeTenantId: "t-tymio",
     });
 
-    render(
-      <MemoryRouter initialEntries={["/t/nakamapi"]}>
-        <App />
-      </MemoryRouter>
-    );
+    const router = createMemoryRouter([{ path: "*", element: <App /> }], {
+      initialEntries: ["/t/nakamapi/priority"],
+    });
+    render(<RouterProvider router={router} />);
 
     await waitFor(() => {
       expect(mockSwitchTenant).toHaveBeenCalledWith("t-naka");
     });
     expect(mockRefreshAuth).toHaveBeenCalled();
     expect(screen.queryByTestId("tenant-workspace-no-access")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/t/nakamapi/priority");
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
 import type { Initiative, Priority, Requirement, TaskStatus, TaskType, User } from "../types/models";
 import { formatPriority } from "../lib/format";
@@ -102,11 +103,13 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     void api.getMeta().then((meta) => setLabelSuggestions(meta.labelSuggestions ?? [])).catch(() => {});
   }, []);
 
+  const w = useWorkspaceLinkBuilder();
+
   if (!requirementId) {
     return (
       <div className="p-4">
         <p className="text-slate-600">Missing requirement ID.</p>
-        <Link to="/product-explorer" className="text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sky-600 hover:underline">
           {t("productExplorerPage.backTo")}
         </Link>
       </div>
@@ -117,7 +120,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     return (
       <div className="p-4">
         <p className="text-slate-600">Requirement not found.</p>
-        <Link to="/product-explorer" className="text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sky-600 hover:underline">
           {t("productExplorerPage.backTo")}
         </Link>
       </div>
@@ -175,7 +178,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       {/* Breadcrumb bar – wireframe header */}
       <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
         <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link to="/product-explorer" className="hover:text-slate-700">
+          <Link to={w("/product-explorer")} className="hover:text-slate-700">
             {t("productExplorerPage.breadcrumb")}
           </Link>
           <span aria-hidden>/</span>
@@ -187,7 +190,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
             {initiative.title}
           </button>
           <span aria-hidden>/</span>
-          <Link to={`/features/${feature.id}`} className="hover:text-sky-600 hover:underline">
+          <Link to={w(`/features/${feature.id}`)} className="hover:text-sky-600 hover:underline">
             {feature.title}
           </Link>
           <span aria-hidden>/</span>
@@ -448,7 +451,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
               <div>
                 <Label>Feature</Label>
                 <p className="mt-1 text-sm">
-                  <Link to={`/features/${feature.id}`} className="text-sky-600 hover:underline">
+                  <Link to={w(`/features/${feature.id}`)} className="text-sky-600 hover:underline">
                     {feature.title}
                   </Link>
                 </p>
@@ -476,11 +479,11 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
               <ul className="space-y-2">
                 {siblings.slice(0, 8).map((r) => (
                   <li key={r.id} className="flex items-center justify-between rounded border border-slate-100 bg-slate-50/50 py-1.5 pl-3 pr-2">
-                    <Link to={`/requirements/${r.id}`} className="text-sm font-medium text-sky-600 hover:underline">
+                    <Link to={w(`/requirements/${r.id}`)} className="text-sm font-medium text-sky-600 hover:underline">
                       {r.title}
                     </Link>
                     <Link
-                      to={`/requirements/${r.id}`}
+                      to={w(`/requirements/${r.id}`)}
                       className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                     >
                       Open
@@ -532,7 +535,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
               <div className="flex gap-2">
                 {prevId ? (
                   <Link
-                    to={`/requirements/${prevId}`}
+                    to={w(`/requirements/${prevId}`)}
                     className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                   >
                     ← Previous
@@ -540,7 +543,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 ) : null}
                 {nextId ? (
                   <Link
-                    to={`/requirements/${nextId}`}
+                    to={w(`/requirements/${nextId}`)}
                     className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                   >
                     Next →

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
 import type { Account, Campaign, Demand, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -25,6 +26,7 @@ type Props = {
 
 export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) {
   const { t } = useTranslation();
+  const w = useWorkspaceLinkBuilder();
   const [accounts, setAccounts] = useState<AccountWithDemands[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("");
@@ -205,7 +207,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
                       <div key={c.id} className="flex items-center gap-2 rounded border border-slate-200 p-2 text-sm">
                         <Megaphone size={14} className="text-sky-500" />
                         <div>
-                          <Link to={`/campaigns?highlight=${c.id}`} className="font-medium text-sky-700 hover:text-sky-900 hover:underline">
+                          <Link to={w(`/campaigns?highlight=${c.id}`)} className="font-medium text-sky-700 hover:text-sky-900 hover:underline">
                             {c.name}
                           </Link>
                           <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium ${c.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"}`}>

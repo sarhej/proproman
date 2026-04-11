@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
 import type { ExecutionBoard, ExecutionColumn, ProductWithHierarchy, Requirement } from "../types/models";
 import { Card } from "../components/ui/Card";
@@ -99,7 +100,15 @@ function findColumnKeyForDragId(id: string, columnItemIds: Record<string, string
   return null;
 }
 
-function ReqCard({ item, isDragging }: { item: CardItem; isDragging?: boolean }) {
+function ReqCard({
+  item,
+  isDragging,
+  requirementLink
+}: {
+  item: CardItem;
+  isDragging?: boolean;
+  requirementLink: (id: string) => string;
+}) {
   const r = item.requirement;
   return (
     <Card
@@ -107,7 +116,7 @@ function ReqCard({ item, isDragging }: { item: CardItem; isDragging?: boolean })
         isDragging ? "opacity-50 shadow-md" : "hover:border-sky-300 hover:shadow"
       }`}
     >
-      <Link to={`/requirements/${r.id}`} className="block">
+      <Link to={requirementLink(r.id)} className="block">
         <p className="text-sm font-medium text-slate-900">{r.title}</p>
         <p className="mt-0.5 text-[11px] text-slate-500">{item.initiativeTitle}</p>
         <p className="text-[10px] text-slate-400">{item.featureTitle}</p>
@@ -119,7 +128,15 @@ function ReqCard({ item, isDragging }: { item: CardItem; isDragging?: boolean })
   );
 }
 
-function SortableReqCard({ item, disabled }: { item: CardItem; disabled?: boolean }) {
+function SortableReqCard({
+  item,
+  disabled,
+  requirementLink
+}: {
+  item: CardItem;
+  disabled?: boolean;
+  requirementLink: (id: string) => string;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.requirement.id,
     disabled: !!disabled
@@ -130,7 +147,7 @@ function SortableReqCard({ item, disabled }: { item: CardItem; disabled?: boolea
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <ReqCard item={item} isDragging={isDragging} />
+      <ReqCard item={item} isDragging={isDragging} requirementLink={requirementLink} />
     </div>
   );
 }
@@ -178,6 +195,7 @@ type Props = {
 export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
   const { t } = useTranslation();
   const { productId } = useParams<{ productId: string }>();
+  const w = useWorkspaceLinkBuilder();
   const [searchParams, setSearchParams] = useSearchParams();
   const [product, setProduct] = useState<ProductWithHierarchy | null>(null);
   const [boards, setBoards] = useState<ExecutionBoard[]>([]);
@@ -309,6 +327,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
   }
 
   const activeItem = activeId ? itemByReqId.get(activeId) ?? null : null;
+  const requirementLink = (id: string) => w(`/requirements/${id}`);
 
   if (!productId) {
     return <p className="p-4 text-sm text-slate-500">{t("executionBoard.missingProduct")}</p>;
@@ -322,7 +341,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
     return (
       <div className="space-y-2 p-4">
         <p className="text-sm text-slate-600">{t("executionBoard.productNotFound")}</p>
-        <Link to="/product-explorer" className="text-sm text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sm text-sky-600 hover:underline">
           {t("executionBoard.backToExplorer")}
         </Link>
       </div>
@@ -351,13 +370,15 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              to="/product-explorer"
+              to={w("/product-explorer")}
               className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
             >
               {t("executionBoard.backToExplorer")}
             </Link>
             <Link
-              to={`/products/${productId}/board-settings${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`}
+              to={w(
+                `/products/${productId}/board-settings${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`
+              )}
               className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
             >
               {t("executionBoard.boardSettings")}
@@ -382,7 +403,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
         {!selectedBoard ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <p>{t("executionBoard.noBoard")}</p>
-            <Link to={`/products/${productId}/board-settings`} className="mt-2 inline-block text-sky-700 hover:underline">
+            <Link to={w(`/products/${productId}/board-settings`)} className="mt-2 inline-block text-sky-700 hover:underline">
               {t("executionBoard.createBoardHint")}
             </Link>
           </div>
@@ -399,9 +420,9 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
                   const item = itemByReqId.get(rid);
                   if (!item) return null;
                   return readOnly ? (
-                    <ReqCard key={rid} item={item} />
+                    <ReqCard key={rid} item={item} requirementLink={requirementLink} />
                   ) : (
-                    <SortableReqCard key={rid} item={item} disabled={false} />
+                    <SortableReqCard key={rid} item={item} disabled={false} requirementLink={requirementLink} />
                   );
                 })}
               </SortableContext>
@@ -419,9 +440,9 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
                     const item = itemByReqId.get(rid);
                     if (!item) return null;
                     return readOnly ? (
-                      <ReqCard key={rid} item={item} />
+                      <ReqCard key={rid} item={item} requirementLink={requirementLink} />
                     ) : (
-                      <SortableReqCard key={rid} item={item} disabled={false} />
+                      <SortableReqCard key={rid} item={item} disabled={false} requirementLink={requirementLink} />
                     );
                   })}
                 </SortableContext>
@@ -433,7 +454,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
       <DragOverlay>
         {activeItem ? (
           <div className="rotate-1 opacity-95">
-            <ReqCard item={activeItem} />
+            <ReqCard item={activeItem} requirementLink={requirementLink} />
           </div>
         ) : null}
       </DragOverlay>

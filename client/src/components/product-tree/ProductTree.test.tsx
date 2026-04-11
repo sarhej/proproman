@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import type { ReactElement } from "react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProductTree } from "./ProductTree";
 import { api } from "../../lib/api";
 import type { Domain, ProductWithHierarchy } from "../../types/models";
@@ -20,6 +21,16 @@ const mockCreateBoard = api.createExecutionBoard as ReturnType<typeof vi.fn>;
 
 const domain: Domain = { id: "d1", name: "Pillar", color: "#111", sortOrder: 0 };
 
+function renderWithWorkspaceHub(tree: ReactElement) {
+  return render(
+    <MemoryRouter initialEntries={["/t/e2e/hub"]}>
+      <Routes>
+        <Route path="/t/:workspaceSlug/hub" element={tree} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 function baseProduct(overrides?: Partial<ProductWithHierarchy>): ProductWithHierarchy {
   return {
     id: "p1",
@@ -37,41 +48,39 @@ describe("ProductTree – execution board entry points", () => {
   });
 
   it("shows Open board and Board settings when executionBoards exist", () => {
-    render(
-      <MemoryRouter>
-        <ProductTree
-          products={[
-            baseProduct({
-              executionBoards: [
-                {
-                  id: "b1",
-                  productId: "p1",
-                  name: "Main",
-                  provider: "INTERNAL",
-                  isDefault: true,
-                  syncState: "HEALTHY",
-                  columns: []
-                }
-              ]
-            })
-          ]}
-          users={[]}
-          domains={[domain]}
-          isAdmin={false}
-          canCreateInitiative={true}
-          currentUserId={null}
-          onOpenInitiative={() => {}}
-          onRefresh={async () => {}}
-        />
-      </MemoryRouter>
+    renderWithWorkspaceHub(
+      <ProductTree
+        products={[
+          baseProduct({
+            executionBoards: [
+              {
+                id: "b1",
+                productId: "p1",
+                name: "Main",
+                provider: "INTERNAL",
+                isDefault: true,
+                syncState: "HEALTHY",
+                columns: []
+              }
+            ]
+          })
+        ]}
+        users={[]}
+        domains={[domain]}
+        isAdmin={false}
+        canCreateInitiative={true}
+        currentUserId={null}
+        onOpenInitiative={() => {}}
+        onRefresh={async () => {}}
+      />
     );
     expect(screen.getByRole("link", { name: /open board/i })).toHaveAttribute(
       "href",
-      "/products/p1/execution-board"
+      "/t/e2e/products/p1/execution-board"
     );
     expect(screen.getByRole("link", { name: /board settings/i })).toHaveAttribute(
       "href",
-      "/products/p1/board-settings"
+      "/t/e2e/products/p1/board-settings"
     );
   });
 

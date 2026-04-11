@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
 import type { Feature, Initiative } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -26,6 +27,7 @@ function findFeature(initiatives: Initiative[], featureId: string): { feature: F
 export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFeatureUpdated, readOnly }: Props) {
   const { t } = useTranslation();
   const { featureId } = useParams<{ featureId: string }>();
+  const w = useWorkspaceLinkBuilder();
   const [newReqTitle, setNewReqTitle] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -59,7 +61,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
     return (
       <div className="p-4">
         <p className="text-slate-600">Missing feature ID.</p>
-        <Link to="/product-explorer" className="text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sky-600 hover:underline">
           {t("productExplorerPage.backTo")}
         </Link>
       </div>
@@ -70,7 +72,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
     return (
       <div className="p-4">
         <p className="text-slate-600">Feature not found.</p>
-        <Link to="/product-explorer" className="text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sky-600 hover:underline">
           {t("productExplorerPage.backTo")}
         </Link>
       </div>
@@ -109,7 +111,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
   return (
     <div className="space-y-4 p-4">
       <nav className="flex items-center gap-2 text-sm text-slate-500">
-        <Link to="/product-explorer" className="hover:text-slate-700">
+        <Link to={w("/product-explorer")} className="hover:text-slate-700">
           {t("productExplorerPage.breadcrumb")}
         </Link>
         <span aria-hidden>/</span>
@@ -307,7 +309,7 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
           {(feature.requirements ?? []).map((req) => (
             <li key={req.id} className="flex items-center gap-2 text-sm">
               <Link
-                to={`/requirements/${req.id}`}
+                to={w(`/requirements/${req.id}`)}
                 className="text-sky-600 hover:underline"
               >
                 {req.title}

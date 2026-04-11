@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
 import type { ExecutionBoard, ExecutionColumn, ProductWithHierarchy, TaskStatus } from "../types/models";
 import { Button } from "../components/ui/Button";
@@ -17,6 +18,7 @@ type Props = {
 export function BoardSettingsPage({ isAdmin, onRefreshBoard }: Props) {
   const { t } = useTranslation();
   const { productId } = useParams<{ productId: string }>();
+  const w = useWorkspaceLinkBuilder();
   const [searchParams, setSearchParams] = useSearchParams();
   const [product, setProduct] = useState<ProductWithHierarchy | null>(null);
   const [boards, setBoards] = useState<ExecutionBoard[]>([]);
@@ -124,7 +126,7 @@ export function BoardSettingsPage({ isAdmin, onRefreshBoard }: Props) {
     return (
       <div className="space-y-2 p-4">
         <p className="text-sm text-slate-600">{t("executionBoard.productNotFound")}</p>
-        <Link to="/product-explorer" className="text-sm text-sky-600 hover:underline">
+        <Link to={w("/product-explorer")} className="text-sm text-sky-600 hover:underline">
           {t("executionBoard.backToExplorer")}
         </Link>
       </div>
@@ -142,13 +144,15 @@ export function BoardSettingsPage({ isAdmin, onRefreshBoard }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            to={`/products/${productId}/execution-board${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`}
+            to={w(
+              `/products/${productId}/execution-board${selectedBoard ? `?boardId=${selectedBoard.id}` : ""}`
+            )}
             className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             {t("executionBoard.openBoard")}
           </Link>
           <Link
-            to="/product-explorer"
+            to={w("/product-explorer")}
             className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             {t("executionBoard.backToExplorer")}

@@ -1,8 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import type { User } from "../types/models";
 import { firstAvailableNavPath } from "../lib/navViewPaths";
+import { withWorkspacePrefix } from "../lib/workspacePath";
 
 type Props = {
   user: User;
@@ -16,12 +17,14 @@ type Props = {
 /** Blocks the route for non–super-admins when this path is hidden in ui-settings. */
 export function ViewRoute({ user, path, hiddenNavPaths, ignoreHide, children }: Props) {
   const { t } = useTranslation();
+  const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
   if (user.role === "SUPER_ADMIN" || ignoreHide || !hiddenNavPaths.has(path)) {
     return <>{children}</>;
   }
   const next = firstAvailableNavPath(hiddenNavPaths);
   if (next) {
-    return <Navigate to={next} replace />;
+    const to = workspaceSlug ? withWorkspacePrefix(workspaceSlug, next) : next;
+    return <Navigate to={to} replace />;
   }
   return (
     <div className="rounded border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">

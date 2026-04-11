@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight, ChevronUp, CheckCircle2, Circle, GripVertica
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useWorkspaceLinkBuilder } from "../../hooks/useWorkspaceHref";
 import {
   DndContext, type DragEndEvent, type DragStartEvent,
   PointerSensor, TouchSensor, useSensor, useSensors,
@@ -325,12 +326,14 @@ function RequirementRow({
   requirement,
   orderedSiblingRequirements,
   isAdmin,
+  hubLink,
   onRefresh,
   onRequirementUpdated
 }: {
   requirement: Requirement;
   orderedSiblingRequirements: Requirement[];
   isAdmin: boolean;
+  hubLink: (path: string) => string;
   onRefresh: () => Promise<void>;
   onRequirementUpdated?: (r: Requirement) => void;
 }) {
@@ -383,14 +386,14 @@ function RequirementRow({
                 await refresh(res);
               }}
             />
-            <Link to={`/requirements/${requirement.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
+            <Link to={hubLink(`/requirements/${requirement.id}`)} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
               Open
             </Link>
             <DeleteBtn label={requirement.title} onDelete={async () => { await api.deleteRequirement(requirement.id); await onRefresh(); }} />
           </>
         ) : (
           <Link
-            to={`/requirements/${requirement.id}`}
+            to={hubLink(`/requirements/${requirement.id}`)}
             className={`hover:underline ${requirement.isDone ? "line-through text-slate-400" : "text-slate-800"}`}
           >
             {requirement.title}
@@ -459,6 +462,7 @@ function FeatureRow({
   reorderSiblingFeatures,
   users,
   isAdmin,
+  hubLink,
   onRefresh,
   onFeatureUpdated,
   onRequirementUpdated,
@@ -472,6 +476,7 @@ function FeatureRow({
   reorderSiblingFeatures: Feature[];
   users: User[];
   isAdmin: boolean;
+  hubLink: (path: string) => string;
   onRefresh: () => Promise<void>;
   onFeatureUpdated?: (f: Feature) => void;
   onRequirementUpdated?: (r: Requirement) => void;
@@ -544,13 +549,13 @@ function FeatureRow({
                   await refreshFeature(res);
                 }}
               />
-              <Link to={`/features/${feature.id}`} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
+              <Link to={hubLink(`/features/${feature.id}`)} className="ml-1.5 text-sky-600 hover:underline text-[11px]">
                 Open
               </Link>
               <DeleteBtn label={feature.title} onDelete={async () => { await api.deleteFeature(feature.id); await onRefresh(); }} />
             </>
           ) : (
-            <Link to={`/features/${feature.id}`} className="font-medium hover:underline text-slate-800">
+            <Link to={hubLink(`/features/${feature.id}`)} className="font-medium hover:underline text-slate-800">
               {feature.title}
             </Link>
           )}
@@ -607,6 +612,7 @@ function FeatureRow({
           requirement={r}
           orderedSiblingRequirements={reqs}
           isAdmin={isAdmin}
+          hubLink={hubLink}
           onRefresh={onRefresh}
           onRequirementUpdated={onRequirementUpdated}
         />
@@ -636,6 +642,7 @@ function InitiativeRow({
   reorderSiblingFeatures,
   users,
   isAdmin,
+  hubLink,
   onOpen,
   onRefresh,
   onInitiativeUpdated,
@@ -657,6 +664,7 @@ function InitiativeRow({
   reorderSiblingFeatures: Feature[];
   users: User[];
   isAdmin: boolean;
+  hubLink: (path: string) => string;
   onOpen: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
   onInitiativeUpdated?: (i: Initiative) => void;
@@ -826,6 +834,7 @@ function InitiativeRow({
             reorderSiblingFeatures={reorderSiblingFeatures}
             users={users}
             isAdmin={isAdmin}
+            hubLink={hubLink}
             onRefresh={onRefresh}
             onFeatureUpdated={onFeatureUpdated}
             onRequirementUpdated={onRequirementUpdated}
@@ -955,6 +964,7 @@ function ProductRow({
   canCreateInitiative,
   terminology = "initiative",
   currentUserId,
+  hubLink,
   onOpenInitiative,
   onRefresh,
   onInitiativeUpdated,
@@ -974,6 +984,7 @@ function ProductRow({
   canCreateInitiative: boolean;
   terminology?: "initiative" | "epic";
   currentUserId: string | null;
+  hubLink: (path: string) => string;
   onOpenInitiative: (initiative: Initiative) => void;
   onRefresh: () => Promise<void>;
   onInitiativeUpdated?: (i: Initiative) => void;
@@ -1100,11 +1111,11 @@ function ProductRow({
                   {(product.executionBoards ?? []).find((b) => b.isDefault)?.syncState ??
                     product.executionBoards![0]!.syncState}
                 </span>
-                <Link to={`/products/${product.id}/execution-board`} className="text-sky-600 hover:underline">
+                <Link to={hubLink(`/products/${product.id}/execution-board`)} className="text-sky-600 hover:underline">
                   {t("executionBoard.openBoard")}
                 </Link>
                 {canCreateInitiative ? (
-                  <Link to={`/products/${product.id}/board-settings`} className="text-sky-600 hover:underline">
+                  <Link to={hubLink(`/products/${product.id}/board-settings`)} className="text-sky-600 hover:underline">
                     {t("executionBoard.boardSettings")}
                   </Link>
                 ) : null}
@@ -1142,6 +1153,7 @@ function ProductRow({
               reorderSiblingFeatures={reorderFeatures}
               users={users}
               isAdmin={isAdmin}
+              hubLink={hubLink}
               onOpen={onOpenInitiative}
               onRefresh={onRefresh}
               onInitiativeUpdated={onInitiativeUpdated}
@@ -1196,6 +1208,7 @@ export function ProductTree({
   onAddProduct
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
+  const w = useWorkspaceLinkBuilder();
   const searchActive = Boolean(quickFilter?.trim());
   const hierarchy = hierarchyProducts ?? products;
   const [draggingInitiative, setDraggingInitiative] = useState<Initiative | null>(null);
@@ -1291,6 +1304,7 @@ export function ProductTree({
                 collapseAllSignal={collapseAllSignal}
                 searchActive={searchActive}
                 currentUserId={currentUserId}
+                hubLink={w}
                 onOpenInitiative={onOpenInitiative}
                 onRefresh={onRefresh}
                 onInitiativeUpdated={onInitiativeUpdated}
@@ -1331,6 +1345,7 @@ export function ProductTree({
                 reorderSiblingFeatures={dragOverlayReorder.rFeats}
                 users={users}
                 isAdmin={false}
+                hubLink={w}
                 onOpen={() => {}}
                 onRefresh={async () => {}}
                 isDragOverlay

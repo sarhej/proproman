@@ -93,10 +93,21 @@ test.describe("Workspace entry /t/:slug (signed in, not a member)", () => {
   test("shows no-access screen for ACTIVE slug when user has no membership", async ({ page }) => {
     await page.goto("/t/nakamapi");
 
+    await expect(page).toHaveURL(/\/t\/nakamapi(?:\/|$)/);
+
     const gate = page.getByTestId("tenant-workspace-no-access");
     await expect(gate).toBeVisible({ timeout: 20_000 });
     await expect(gate.getByText(/Nakam API/i)).toBeVisible();
     await expect(gate.getByText(/\/t\/nakamapi/i)).toBeVisible();
     await expect(gate.getByRole("button", { name: /Continue to the app/i })).toBeVisible();
+  });
+
+  test("preserves deep path under /t/:slug when showing no-access gate", async ({ page }) => {
+    await page.goto("/t/nakamapi/priority");
+
+    await expect(page).toHaveURL(/\/t\/nakamapi\/priority$/);
+
+    const gate = page.getByTestId("tenant-workspace-no-access");
+    await expect(gate).toBeVisible({ timeout: 20_000 });
   });
 });

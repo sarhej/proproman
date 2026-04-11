@@ -9,6 +9,7 @@ import type { Permissions } from "../../hooks/usePermissions";
 import { LegalFooterLinks } from "../legal/LegalFooterLinks";
 import { TenantSwitcher } from "../tenant/TenantSwitcher";
 import { APP_LOCALE_CODES, normalizeUiLanguageCode, type AppLocaleCode } from "../../lib/appLocales";
+import { withWorkspacePrefix } from "../../lib/workspacePath";
 
 type Props = {
   user: User;
@@ -17,6 +18,8 @@ type Props = {
   /** Routes hidden for non–super-admins (from /api/ui-settings). */
   hiddenNavPaths: Set<string>;
   activeTenant?: Tenant | null;
+  /** When set, shell nav links use `/t/:slug/...` hub URLs. */
+  hubWorkspaceSlug?: string;
   /** Locales shown in the header picker (workspace policy + app catalog). */
   localePickerCodes?: readonly AppLocaleCode[];
   /** Show workspace-only nav items (e.g. workspace settings). */
@@ -32,6 +35,7 @@ function NavContent({
   permissions,
   hiddenNavPaths,
   canManageWorkspaceStructure,
+  hubWorkspaceSlug,
   onNavigate,
   mobile,
   phone,
@@ -42,6 +46,7 @@ function NavContent({
   permissions: Permissions;
   hiddenNavPaths: Set<string>;
   canManageWorkspaceStructure?: boolean;
+  hubWorkspaceSlug?: string;
   onNavigate?: () => void;
   mobile?: boolean;
   phone?: boolean;
@@ -57,6 +62,9 @@ function NavContent({
     mobile,
     phone
   });
+
+  const navTo = (logical: string) =>
+    hubWorkspaceSlug ? withWorkspacePrefix(hubWorkspaceSlug, logical) : logical;
 
   return (
     <>
@@ -86,7 +94,7 @@ function NavContent({
                 ) : (
                   <NavLink
                     key={item.to}
-                    to={item.to}
+                    to={navTo(item.to)}
                     end
                     onClick={onNavigate}
                     className={({ isActive }) =>
@@ -104,7 +112,7 @@ function NavContent({
       </nav>
       {permissions.canCreate && (
         <Link
-          to="/?new=1"
+          to={`${navTo("/")}?new=1`}
           onClick={onNavigate}
           className="mt-3 flex items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-2 text-center text-sm text-white hover:bg-sky-700"
         >
@@ -222,6 +230,7 @@ export function AppShell({
   permissions,
   hiddenNavPaths,
   activeTenant,
+  hubWorkspaceSlug,
   localePickerCodes,
   canManageWorkspaceStructure,
   onTenantSwitch,
@@ -282,7 +291,16 @@ export function AppShell({
     }
     if (msg.linkUrl) {
       if (msg.linkUrl.startsWith("/")) {
-        navigate(msg.linkUrl);
+        const raw = msg.linkUrl;
+        const prefixed =
+          hubWorkspaceSlug &&
+          !raw.startsWith("/t/") &&
+          !raw.startsWith("/wiki") &&
+          !raw.startsWith("/register-workspace") &&
+          !raw.startsWith("/platform")
+            ? withWorkspacePrefix(hubWorkspaceSlug, raw)
+            : raw;
+        navigate(prefixed);
       } else {
         window.open(msg.linkUrl, "_blank");
       }
@@ -336,6 +354,7 @@ export function AppShell({
               permissions={permissions}
               hiddenNavPaths={hiddenNavPaths}
               canManageWorkspaceStructure={canManageWorkspaceStructure}
+              hubWorkspaceSlug={hubWorkspaceSlug}
               onNavigate={closeDrawer}
               mobile
               phone={phone}
@@ -501,6 +520,7 @@ export function AppShell({
             permissions={permissions}
             hiddenNavPaths={hiddenNavPaths}
             canManageWorkspaceStructure={canManageWorkspaceStructure}
+            hubWorkspaceSlug={hubWorkspaceSlug}
             onExport={onExport}
             onExportPdf={onExportPdf}
             onLogout={onLogout}
