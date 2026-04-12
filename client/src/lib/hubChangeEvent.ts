@@ -1,4 +1,4 @@
-export type HubChangeEntityType = "INITIATIVE" | "FEATURE" | "REQUIREMENT";
+export type HubChangeEntityType = "INITIATIVE" | "FEATURE" | "REQUIREMENT" | "PRODUCT";
 export type HubChangeOperation = "CREATE" | "UPDATE" | "DELETE" | "REORDER";
 
 export type HubChangeEventPayload = {

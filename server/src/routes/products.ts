@@ -6,6 +6,7 @@ import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
 import { TaskStatus, TopLevelItemType } from "@prisma/client";
 import { getTenantContext } from "../tenant/tenantContext.js";
+import { notifyHubChange } from "../services/hubChangeHub.js";
 import { allocateUniqueProductSlug } from "../lib/productSlug.js";
 
 export const productSlugField = z
@@ -113,6 +114,16 @@ productsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
     }
   });
   await logAudit(req.user!.id, "CREATED", "PRODUCT", product.id, { name: product.name, slug: product.slug });
+  const tid = tenantId ?? undefined;
+  if (tid) {
+    notifyHubChange({
+      tenantId: tid,
+      entityType: "PRODUCT",
+      operation: "CREATE",
+      entityId: product.id,
+      initiativeId: null
+    });
+  }
   res.status(201).json({ product });
 });
 
@@ -178,6 +189,16 @@ productsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) =>
         ]
       : [];
   await logAudit(req.user!.id, "UPDATED", "PRODUCT", id, changes.length ? { changes } : { name: product.name });
+  const tidPut = tenantId ?? undefined;
+  if (tidPut) {
+    notifyHubChange({
+      tenantId: tidPut,
+      entityType: "PRODUCT",
+      operation: "UPDATE",
+      entityId: product.id,
+      initiativeId: null
+    });
+  }
   res.json({ product });
 });
 
@@ -186,5 +207,15 @@ productsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res)
   const existing = await prisma.product.findUnique({ where: { id } });
   await prisma.product.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "PRODUCT", id, { name: existing?.name });
+  const tidDel = getTenantContext()?.tenantId ?? undefined;
+  if (tidDel) {
+    notifyHubChange({
+      tenantId: tidDel,
+      entityType: "PRODUCT",
+      operation: "DELETE",
+      entityId: id,
+      initiativeId: null
+    });
+  }
   res.status(204).send();
 });

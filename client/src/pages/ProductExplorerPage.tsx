@@ -17,6 +17,8 @@ type Props = {
   boardFilters?: BoardFilters;
   /** Pause hub-driven board refresh while dragging in the explorer tree */
   onExplorerHubLockChange?: (locked: boolean) => void;
+  /** When this increments (hub PRODUCT events or explicit server reload), refetch product tree + meta. */
+  hubProductReloadTick?: number;
 };
 
 const STATUS_OPTIONS: InitiativeStatus[] = ["IDEA", "PLANNED", "IN_PROGRESS", "DONE", "BLOCKED"];
@@ -62,7 +64,8 @@ export function ProductExplorerPage({
   onOpenInitiative,
   quickFilter,
   boardFilters,
-  onExplorerHubLockChange
+  onExplorerHubLockChange,
+  hubProductReloadTick = 0
 }: Props) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
@@ -74,15 +77,17 @@ export function ProductExplorerPage({
   const [expandAllTick, setExpandAllTick] = useState(0);
   const [collapseAllTick, setCollapseAllTick] = useState(0);
 
-  async function load() {
+  const load = useCallback(async () => {
     const [prodResult, metaResult] = await Promise.all([api.getProducts(), api.getMeta()]);
     setProducts(prodResult.products);
     setUsers(metaResult.users);
     setDomains(metaResult.domains);
-  }
+  }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, [load, hubProductReloadTick]);
 
   const onInitiativeUpdated = useCallback((updated: Initiative) => {
     setProducts((prev) =>

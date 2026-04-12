@@ -625,6 +625,12 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
           itemType: (body.itemType as TopLevelItemType) ?? TopLevelItemType.PRODUCT
         }
       });
+      mcpEmitHub({
+        entityType: "PRODUCT",
+        operation: "CREATE",
+        entityId: product.id,
+        initiativeId: null
+      });
       return textContent(JSON.stringify(product, null, 2));
     }
   );
@@ -674,6 +680,12 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         data.slug = body.slug;
       }
       const product = await prisma.product.update({ where: { id }, data });
+      mcpEmitHub({
+        entityType: "PRODUCT",
+        operation: "UPDATE",
+        entityId: product.id,
+        initiativeId: null
+      });
       return textContent(JSON.stringify(product, null, 2));
     }
   );
@@ -693,6 +705,12 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const existing = await prisma.product.findUnique({ where: { id } });
       if (!existing) throw new Error("Product not found");
       await prisma.product.delete({ where: { id } });
+      mcpEmitHub({
+        entityType: "PRODUCT",
+        operation: "DELETE",
+        entityId: id,
+        initiativeId: null
+      });
       return textContent(JSON.stringify({ ok: true, deletedId: id }, null, 2));
     }
   );

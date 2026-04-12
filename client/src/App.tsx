@@ -160,6 +160,8 @@ function App() {
   const hubRefreshSuppressedRef = useRef(false);
   const initiativeFormDirtyRef = useRef(false);
   const [hubRemoteChangePending, setHubRemoteChangePending] = useState(false);
+  /** Bumps on hub PRODUCT events so Product Explorer refetches `/api/products` (separate from board meta). */
+  const [hubProductReloadTick, setHubProductReloadTick] = useState(0);
   const board = useBoardData(boardDataEnabled, { hubRefreshSuppressedRef });
   const perms = usePermissions(user);
   const uiSettings = useUiSettings(
@@ -263,6 +265,9 @@ function App() {
 
   const handleHubEvent = useCallback(
     (e: HubChangeEventPayload) => {
+      if (e.entityType === "PRODUCT") {
+        setHubProductReloadTick((n) => n + 1);
+      }
       const openId = selected?.id;
       const sameInitiative = (id: string | null | undefined) => id != null && id === openId;
       const affectsOpen =
@@ -982,6 +987,7 @@ function App() {
                     onOpenInitiative={(i) => setSelected(i)}
                     quickFilter={board.filters.quick}
                     boardFilters={board.filters}
+                    hubProductReloadTick={hubProductReloadTick}
                     onExplorerHubLockChange={(locked) => {
                       hubRefreshSuppressedRef.current = locked;
                     }}
@@ -1262,6 +1268,7 @@ function App() {
           const r = await api.getInitiative(id);
           setSelected(r.initiative);
           setHubRemoteChangePending(false);
+          setHubProductReloadTick((n) => n + 1);
           await board.refreshSilent();
         }}
         adminOnlyFields={perms.isAdmin}
