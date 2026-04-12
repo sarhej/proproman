@@ -719,12 +719,7 @@ function App() {
   }
 
   /** Logged-in platform user with no active workspace must still open the public registration form on /register-workspace (not TenantPicker). */
-  if (
-    user &&
-    user.role !== "PENDING" &&
-    !activeTenant &&
-    location.pathname === "/register-workspace"
-  ) {
+  if (!activeTenant && location.pathname === "/register-workspace") {
     return (
       <>
         <PublicLanguageSwitcher />
