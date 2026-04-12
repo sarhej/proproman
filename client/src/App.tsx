@@ -718,6 +718,35 @@ function App() {
     );
   }
 
+  /** Logged-in platform user with no active workspace must still open the public registration form on /register-workspace (not TenantPicker). */
+  if (
+    user &&
+    user.role !== "PENDING" &&
+    !activeTenant &&
+    location.pathname === "/register-workspace"
+  ) {
+    return (
+      <>
+        <PublicLanguageSwitcher />
+        <Routes>
+          <Route
+            path="/register-workspace"
+            element={
+              <RegisterTeamPage
+                onBack={() => navigate("/")}
+                prefilledContact={{ email: user.email, name: user.name ?? "" }}
+                onWorkspaceProvisioned={async (slug) => {
+                  await refreshAuth();
+                  navigate(withWorkspacePrefix(slug, "/"), { replace: true });
+                }}
+              />
+            }
+          />
+        </Routes>
+      </>
+    );
+  }
+
   if (needsTenantPick || (!activeTenant && !authLoading && user)) {
     return (
       <TenantPicker

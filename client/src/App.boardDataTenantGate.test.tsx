@@ -113,4 +113,19 @@ describe("App — board data disabled when no activeTenant (TenantPicker)", () =
     expect(boardEnabledArgs.length).toBeGreaterThan(0);
     expect(boardEnabledArgs.every((e) => e === false)).toBe(true);
   });
+
+  it("on /register-workspace shows registration form instead of TenantPicker when user has no workspace", async () => {
+    render(
+      <MemoryRouter initialEntries={["/register-workspace"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /request a workspace/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/no workspaces available/i)).not.toBeInTheDocument();
+    expect(boardEnabledArgs.every((e) => e === false)).toBe(true);
+  });
 });
