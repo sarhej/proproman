@@ -91,7 +91,10 @@ function LegacyHubNavigate({ workspaceSlug }: { workspaceSlug: string }) {
 }
 
 function HubUnknownSubpath() {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { workspaceSlug } = useParams<{ workspaceSlug: string | undefined }>();
+  if (!workspaceSlug) {
+    return <Navigate to="/" replace />;
+  }
   return <Navigate to={withWorkspacePrefix(workspaceSlug, "/")} replace />;
 }
 
