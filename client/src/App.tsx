@@ -149,9 +149,10 @@ function App() {
     setWorkspaceApiCanonicalSlug(canonicalWorkspaceApiSlug);
   }, [canonicalWorkspaceApiSlug]);
 
-  /** PENDING users are not allowed past requireAuth on tenant-scoped APIs — do not load board/meta/initiatives. */
+  /** No tenant context → tenant-scoped APIs 400. Must match TenantPicker gate (non-PENDING user with null activeTenant). */
   const boardDataEnabled =
     !!user &&
+    !!activeTenant &&
     user.role !== "PENDING" &&
     !needsTenantPick &&
     !blockWorkspaceSlugGate;
@@ -285,7 +286,7 @@ function App() {
   );
 
   useWorkspaceHubEvents({
-    enabled: boardDataEnabled && Boolean(activeTenant?.id),
+    enabled: boardDataEnabled,
     workspaceApiSlug: canonicalWorkspaceApiSlug,
     onEvent: handleHubEvent
   });
