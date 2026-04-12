@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -29,8 +29,20 @@ const mockCopyWorkspaceEntryLink = vi.mocked(copyWorkspaceEntryLink);
 
 const currentUser = { name: "Jane Doe", email: "jane@example.com" };
 
-function renderWithRouter(ui: ReactElement) {
-  return render(<MemoryRouter>{ui}</MemoryRouter>);
+function renderWithRouter(ui: ReactElement, initialEntry = "/") {
+  return render(<MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>);
+}
+
+/** JSDOM `location.replace` is not mockable via `vi.spyOn`; replace the whole object like workspaceUrl tests. */
+function mockLocationReplace(replaceImpl: (url: string) => void) {
+  const prev = window.location;
+  const replace = vi.fn(replaceImpl);
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: { ...prev, replace },
+    writable: true,
+  });
+  return { replace, restore: () => Object.defineProperty(window, "location", { configurable: true, value: prev, writable: true }) };
 }
 
 describe("TenantSwitcher", () => {
@@ -40,6 +52,10 @@ describe("TenantSwitcher", () => {
     vi.clearAllMocks();
     mockCopyWorkspaceEntryLink.mockResolvedValue(true);
     mockGetRegs.mockResolvedValue({ requests: [] });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("loads memberships and shows copy sign-in link for single workspace", async () => {
@@ -112,18 +128,118 @@ describe("TenantSwitcher", () => {
     });
     mockSwitchTenant.mockResolvedValue({ ok: true, activeTenantId: "t2" });
     const onSwitch = vi.fn();
+    const { replace, restore } = mockLocationReplace(() => {});
 
     const user = userEvent.setup();
-    renderWithRouter(<TenantSwitcher activeTenant={tenant} currentUser={currentUser} onSwitch={onSwitch} />);
+    try {
+      renderWithRouter(<TenantSwitcher activeTenant={tenant} currentUser={currentUser} onSwitch={onSwitch} />);
 
-    await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
-    await screen.findByText("Beta");
-    await user.click(screen.getByText("Beta"));
+      await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+      await screen.findByText("Beta");
+      await user.click(screen.getByText("Beta"));
 
-    await waitFor(() => {
-      expect(mockSwitchTenant).toHaveBeenCalledWith("t2");
-      expect(onSwitch).toHaveBeenCalledWith(t2);
+      await waitFor(() => {
+        expect(mockSwitchTenant).toHaveBeenCalledWith("t2");
+        expect(onSwitch).toHaveBeenCalledWith(t2);
+        expect(replace).toHaveBeenCalledWith("/t/beta");
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("replaces the URL with the new workspace slug while preserving the logical hub path", async () => {
+    const t2: Tenant = { id: "t2", name: "Beta", slug: "beta", status: "ACTIVE" };
+    mockGetMyTenants.mockResolvedValue({
+      tenants: [
+        { id: "m1", tenantId: "t1", userId: "u1", role: "MEMBER", tenant },
+        { id: "m2", tenantId: "t2", userId: "u1", role: "MEMBER", tenant: t2 },
+      ],
+      activeTenantId: "t1",
     });
+    mockSwitchTenant.mockResolvedValue({ ok: true, activeTenantId: "t2" });
+    const { replace, restore } = mockLocationReplace(() => {});
+
+    const user = userEvent.setup();
+    try {
+      renderWithRouter(
+        <TenantSwitcher activeTenant={tenant} currentUser={currentUser} onSwitch={vi.fn()} />,
+        "/t/acme/priority"
+      );
+
+      await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+      await screen.findByText("Beta");
+      await user.click(screen.getByText("Beta"));
+
+      await waitFor(() => {
+        expect(replace).toHaveBeenCalledWith("/t/beta/priority");
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("preserves search and hash when replacing URL after workspace switch", async () => {
+    const t2: Tenant = { id: "t2", name: "Beta", slug: "beta", status: "ACTIVE" };
+    mockGetMyTenants.mockResolvedValue({
+      tenants: [
+        { id: "m1", tenantId: "t1", userId: "u1", role: "MEMBER", tenant },
+        { id: "m2", tenantId: "t2", userId: "u1", role: "MEMBER", tenant: t2 },
+      ],
+      activeTenantId: "t1",
+    });
+    mockSwitchTenant.mockResolvedValue({ ok: true, activeTenantId: "t2" });
+    const { replace, restore } = mockLocationReplace(() => {});
+
+    const user = userEvent.setup();
+    try {
+      renderWithRouter(
+        <TenantSwitcher activeTenant={tenant} currentUser={currentUser} onSwitch={vi.fn()} />,
+        "/t/acme/priority?tab=a#section"
+      );
+
+      await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+      await screen.findByText("Beta");
+      await user.click(screen.getByText("Beta"));
+
+      await waitFor(() => {
+        expect(replace).toHaveBeenCalledWith("/t/beta/priority?tab=a#section");
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("does not replace location when switchTenant fails", async () => {
+    const t2: Tenant = { id: "t2", name: "Beta", slug: "beta", status: "ACTIVE" };
+    mockGetMyTenants.mockResolvedValue({
+      tenants: [
+        { id: "m1", tenantId: "t1", userId: "u1", role: "MEMBER", tenant },
+        { id: "m2", tenantId: "t2", userId: "u1", role: "MEMBER", tenant: t2 },
+      ],
+      activeTenantId: "t1",
+    });
+    mockSwitchTenant.mockRejectedValue(new Error("network"));
+    const { replace, restore } = mockLocationReplace(() => {});
+
+    const user = userEvent.setup();
+    try {
+      renderWithRouter(
+        <TenantSwitcher activeTenant={tenant} currentUser={currentUser} onSwitch={vi.fn()} />,
+        "/t/acme/priority"
+      );
+
+      await user.click(screen.getByRole("button", { name: /Acme Corp/i }));
+      await screen.findByText("Beta");
+      await user.click(screen.getByText("Beta"));
+
+      await waitFor(() => {
+        expect(mockSwitchTenant).toHaveBeenCalled();
+      });
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
   });
 
   it("lists workspace applications under a separate heading", async () => {

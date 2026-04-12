@@ -344,7 +344,6 @@ export function AppShell({
                   onSwitch={() => {
                     closeDrawer();
                     onTenantSwitch?.();
-                    window.location.reload();
                   }}
                   compact
                 />
@@ -399,7 +398,6 @@ export function AppShell({
                 currentUser={{ name: user.name, email: user.email }}
                 onSwitch={() => {
                   onTenantSwitch?.();
-                  window.location.reload();
                 }}
               />
             </div>

@@ -52,3 +52,14 @@ export function withWorkspacePrefix(slug: string, logicalPath: string): string {
 export function isWorkspacePrefixedPath(pathname: string): boolean {
   return parseWorkspacePath(pathname) !== null;
 }
+
+/**
+ * Logical hub path to preserve when switching workspace: inner segment under `/t/:slug`,
+ * or the full pathname for legacy unprefixed hub URLs (e.g. `/priority`).
+ */
+export function hubInnerPathForTenantSwitch(pathname: string): string {
+  const p = parseWorkspacePath(pathname);
+  if (p) return p.innerPath;
+  if (!pathname || pathname === "/") return "/";
+  return pathname;
+}

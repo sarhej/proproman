@@ -6,7 +6,7 @@ import { Building2, ChevronDown, Link2, Plus } from "lucide-react";
 import { api } from "../../lib/api";
 import { setWorkspaceTenantSessionForTab } from "../../lib/workspaceTenantHeader";
 import { generateWorkspaceSlugFromTeamName } from "../../lib/workspaceRegistration";
-import { parseWorkspacePath, withWorkspacePrefix } from "../../lib/workspacePath";
+import { hubInnerPathForTenantSwitch, withWorkspacePrefix } from "../../lib/workspacePath";
 import { copyWorkspaceEntryLink } from "../../lib/workspaceUrl";
 import type { Tenant, TenantMembership, User } from "../../types/models";
 import { Button } from "../ui/Button";
@@ -269,7 +269,7 @@ export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }:
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const switchPathInner = useMemo(
-    () => parseWorkspacePath(location.pathname)?.innerPath ?? "/",
+    () => hubInnerPathForTenantSwitch(location.pathname),
     [location.pathname]
   );
   const [open, setOpen] = useState(false);
@@ -360,11 +360,16 @@ export function TenantSwitcher({ activeTenant, currentUser, onSwitch, compact }:
     try {
       setWorkspaceTenantSessionForTab(tenant.id);
       await api.switchTenant(tenant.id);
-      onSwitch(tenant);
     } catch {
-      // ignore — user will see stale tenant
+      return;
     }
-  }, [onSwitch]);
+    const nextPath =
+      withWorkspacePrefix(tenant.slug, hubInnerPathForTenantSwitch(location.pathname)) +
+      location.search +
+      location.hash;
+    onSwitch(tenant);
+    window.location.replace(nextPath);
+  }, [onSwitch, location.pathname, location.search, location.hash]);
 
   if (!activeTenant) return null;
 

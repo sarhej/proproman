@@ -726,7 +726,6 @@ function App() {
       hubWorkspaceSlug={activeTenant?.slug}
       localePickerCodes={shellLocales}
       canManageWorkspaceStructure={canManageWorkspaceStructure}
-      onTenantSwitch={() => setNeedsTenantPick(true)}
       onNewInitiative={perms.canCreate ? () => setShowCreate(true) : undefined}
       onLogout={async () => {
         clearWorkspaceTenantSession();

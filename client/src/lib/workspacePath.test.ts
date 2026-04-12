@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  hubInnerPathForTenantSwitch,
   isWorkspacePrefixedPath,
   parseWorkspacePath,
   stripWorkspacePrefix,
@@ -87,6 +88,23 @@ describe("withWorkspacePrefix", () => {
 
   it("encodes reserved characters in slug for URL safety", () => {
     expect(withWorkspacePrefix("a/b", "/")).toBe("/t/a%2Fb");
+  });
+});
+
+describe("hubInnerPathForTenantSwitch", () => {
+  it("returns inner path for prefixed hub URLs", () => {
+    expect(hubInnerPathForTenantSwitch("/t/acme/priority")).toBe("/priority");
+    expect(hubInnerPathForTenantSwitch("/t/acme")).toBe("/");
+  });
+
+  it("returns pathname for legacy unprefixed paths", () => {
+    expect(hubInnerPathForTenantSwitch("/priority")).toBe("/priority");
+    expect(hubInnerPathForTenantSwitch("/features/x")).toBe("/features/x");
+  });
+
+  it("treats bare / as hub home", () => {
+    expect(hubInnerPathForTenantSwitch("/")).toBe("/");
+    expect(hubInnerPathForTenantSwitch("")).toBe("/");
   });
 });
 
