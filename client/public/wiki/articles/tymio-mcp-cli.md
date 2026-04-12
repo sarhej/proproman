@@ -1,8 +1,10 @@
 # `tymio-mcp` CLI — install and use
 
-The npm package **`@tymio/mcp-server`** installs the **`tymio-mcp`** command. It runs a **stdio** MCP server that **proxies** Tymio’s hosted **`/mcp`** endpoint using **OAuth** (same Google sign-in as the web app). You get the **full hub tool list**, not the smaller REST subset.
+The npm package [**@tymio/mcp-server**](https://www.npmjs.com/package/@tymio/mcp-server) installs the **`tymio-mcp`** command. It runs a **stdio** MCP server that **proxies** Tymio’s hosted **`/mcp`** endpoint using **OAuth** (same Google sign-in as the web app). You get the **full hub tool list**, not the smaller REST subset.
 
 There is **no personal “MCP API key”** in Tymio Settings — use **`tymio-mcp login`** (or a remote MCP URL in clients that support it).
+
+**Current published line:** **2.0.1** on the public npm registry (see the package `CHANGELOG` in the Tymio monorepo for release notes).
 
 ---
 
@@ -20,11 +22,13 @@ Check:
 tymio-mcp help
 ```
 
-If the package is not published yet on your registry, use a path or monorepo install (see the package README). You can also run via **`npx`** without a global install:
+You can also run via **`npx`** without a global install:
 
 ```bash
 npx @tymio/mcp-server help
 ```
+
+For a development checkout instead of the registry, see the package README in the monorepo (`mcp/README.md`).
 
 ---
 

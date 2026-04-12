@@ -65,7 +65,7 @@ Human-readable guides also live on the **public wiki:** `https://tymio.app/wiki`
 
 ### 3.1 Local stdio MCP (`@tymio/mcp-server`) — **recommended for OpenClaw** and other CLI-first hosts
 
-The published CLI is **`tymio-mcp`** (**`@tymio/mcp-server`**). OpenClaw’s gateway typically runs MCP servers as **stdio subprocesses**; this path avoids relying on undocumented remote-OAuth behavior for outbound HTTP MCP.
+The published CLI is **`tymio-mcp`** (**`@tymio/mcp-server`**). Package on npm: [npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server) — current line **2.0.1** (`mcp/CHANGELOG.md` in this repo). OpenClaw’s gateway typically runs MCP servers as **stdio subprocesses**; this path avoids relying on undocumented remote-OAuth behavior for outbound HTTP MCP.
 
 - **Install:** e.g. `npm install -g @tymio/mcp-server` (or use `npx` in your MCP command).
 - **Login once:** `tymio-mcp login` (browser; tokens stored on the host).

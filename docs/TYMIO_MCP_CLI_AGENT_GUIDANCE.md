@@ -6,7 +6,7 @@ The **full Markdown** that autonomous agents should follow lives in the reposito
 
 That file is:
 
-- Shipped with the **`@tymio/mcp-server`** npm package (next to `dist/`)
+- Shipped with the **`@tymio/mcp-server`** npm package ([registry](https://www.npmjs.com/package/@tymio/mcp-server), next to `dist/`)
 - Sent in MCP **`initialize`** as server **`instructions`** when using the published CLI
 - Exposed publicly as **`tymioMcpCliAgentGuidanceMarkdown`** on **`GET /api/mcp/agent-context`**
 - Embedded as visually hidden / screen-reader content on workspace sign-in and **Connecting a coding agent** pages in the web app

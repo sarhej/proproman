@@ -117,13 +117,26 @@ Example:
 
 ## Install globally (npm)
 
-`npm install -g @tymio/mcp-server` works only **after** the package is published. **E404** means it is not on the registry yet. Publish from `mcp/`:
+The package is published on the public registry: **[npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server)**. Current release line: **2.0.1** (see [`CHANGELOG.md`](./CHANGELOG.md) for notes).
 
 ```bash
-cd mcp && npm login && npm publish --access public
+npm install -g @tymio/mcp-server
 ```
 
-Or install from a clone:
+Or run without a global install:
+
+```bash
+npx @tymio/mcp-server help
+```
+
+**Maintainers — publish a new version** (from monorepo root, after bumping `mcp/package.json` and updating `CHANGELOG.md`):
+
+```bash
+npm login
+npm publish -w mcp --access public
+```
+
+Or install from a local clone (development):
 
 ```bash
 npm install -g /absolute/path/to/proproman/mcp

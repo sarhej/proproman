@@ -39,6 +39,8 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 
 **Terminology:** The **`Product`** model is a **product line / pillar** (grouping initiatives) — not a SaaS tenant. **Tenant** = the **customer organization** (workspace).
 
+**Tymio workspace (`tymio`) — internal product lines:** The system hub uses separate **Product** rows so roadmap work can be split by surface: **Tymio Web App** (`tymio-web-app`) for the main UI/API, and **CLI-NPM** (`cli-npm`) for the published npm package **`@tymio/mcp-server`** / **`tymio-mcp`** (stdio MCP, OAuth, optional API-key bridge).
+
 ---
 
 ## 2. Architecture (summary)
@@ -133,7 +135,7 @@ Connection modes:
 | Mode | URL / transport | Auth |
 |------|-----------------|------|
 | **Remote** | `POST https://<host>/mcp` or `POST https://<host>/t/<workspace-slug>/mcp` (Streamable HTTP) | OAuth 2.1 with Google; per-user identity; workspace from path on **`/t/.../mcp`**, else active tenant / header on **`/mcp`** |
-| **CLI stdio** (`@tymio/mcp-server`) | stdio `tymio-mcp` | **Default:** OAuth (PKCE + dynamic client); proxies the hosted MCP URL from **`TYMIO_MCP_URL`** (default `…/mcp`; may be `…/t/<slug>/mcp`). **Optional:** set `DRD_API_KEY` / `API_KEY` to use the REST/API-key tool subset instead (no OAuth). |
+| **CLI stdio** (`@tymio/mcp-server`) | stdio `tymio-mcp` | **Default:** OAuth (PKCE + dynamic client); proxies the hosted MCP URL from **`TYMIO_MCP_URL`** (default `…/mcp`; may be `…/t/<slug>/mcp`). **Optional:** set `DRD_API_KEY` / `API_KEY` to use the REST/API-key tool subset instead (no OAuth). **npm:** [registry package](https://www.npmjs.com/package/@tymio/mcp-server); release **2.0.1** as of this doc update (`mcp/CHANGELOG.md`). |
 
 **Autonomous agents:** There is **no** per-user MCP API key in the web app **Settings**, **Profile**, or **Account**. Do not document or imply that users should copy an “MCP key” from the UI. Canonical guidance (Markdown): **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** (also `tymio-mcp instructions`, MCP `instructions` from the CLI, and **`GET /api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey: true`). All workspace entry gates on **`/t/:slug`** (loading, sign-in, not found, pending registration, rejected, provisioning) and **Connecting a coding agent** include the same Markdown as visually hidden content (`sr-only`) for tools that read the DOM.
 

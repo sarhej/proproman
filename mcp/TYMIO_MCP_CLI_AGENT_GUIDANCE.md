@@ -1,5 +1,7 @@
 # Tymio MCP and `@tymio/mcp-server` — guidance for autonomous agents
 
+**Published package:** [npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server) — install with `npm install -g @tymio/mcp-server` or `npx @tymio/mcp-server`. Release history: `CHANGELOG.md` next to this file in the monorepo.
+
 ## Critical — read before advising the user
 
 1. **There is no per-user MCP API key in Tymio Settings, Profile, Account, or Integrations.** Do **not** instruct users to open the web app settings to “copy an API key for MCP” or “get the MCP key from preferences.” That path does not exist and causes repeated confusion.
