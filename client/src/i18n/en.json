@@ -925,7 +925,10 @@
     "successAutoApprovedTitle": "Your workspace is ready",
     "successAutoApprovedLead": "We created your workspace at /t/{{slug}}. Sign in with the contact email you used to open it.",
     "successAutoApprovedSignIn": "Use the same address ({{email}}) with Google, Microsoft, or email magic link on the home page.",
-    "successAutoApprovedOpenLink": "Open /t/{{slug}} (you may need to sign in first)"
+    "successAutoApprovedOpenLink": "Open /t/{{slug}} (you may need to sign in first)",
+    "successAutoApprovedEmailSent": "We sent the same workspace-approved email as manual review would send to {{email}} (check spam). It includes a link to open your workspace.",
+    "successAutoApprovedEmailSendFailed": "We could not send the confirmation email (delivery error). Use the link above to open your workspace; contact support if you need help.",
+    "autoApproveFailedNotice": "Instant provisioning was enabled but did not complete; your request is pending manual review instead."
   },
   "workspaceSettings": {
     "title": "Workspace settings",

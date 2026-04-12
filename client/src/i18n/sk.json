@@ -924,7 +924,10 @@
     "successAutoApprovedTitle": "Váš workspace je pripravený",
     "successAutoApprovedLead": "Workspace sme vytvorili na /t/{{slug}}. Prihláste sa kontaktným e-mailom, ktorý ste uviedli.",
     "successAutoApprovedSignIn": "Použite rovnakú adresu ({{email}}) cez Google, Microsoft alebo magický odkaz na úvodnej stránke.",
-    "successAutoApprovedOpenLink": "Otvoriť /t/{{slug}} (najprv sa môžete musieť prihlásiť)"
+    "successAutoApprovedOpenLink": "Otvoriť /t/{{slug}} (najprv sa môžete musieť prihlásiť)",
+    "successAutoApprovedEmailSent": "Poslali sme rovnaký e-mail o schválení ako pri ručnom schválení na {{email}} (skontrolujte spam). Obsahuje odkaz do pracovného priestoru.",
+    "successAutoApprovedEmailSendFailed": "Potvrdzovací e-mail sa nepodarilo doručiť. Použite odkaz vyššie; ak potrebujete pomoc, kontaktujte podporu.",
+    "autoApproveFailedNotice": "Okamžité zriadenie bolo zapnuté, ale nedokončilo sa; žiadosť čaká na ručné schválenie."
   },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",

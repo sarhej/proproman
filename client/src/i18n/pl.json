@@ -925,7 +925,10 @@
     "successAutoApprovedTitle": "Twoja przestrzeń jest gotowa",
     "successAutoApprovedLead": "Utworzyliśmy przestrzeń pod adresem /t/{{slug}}. Zaloguj się tym samym adresem e-mail, który podałeś(-aś) w kontakcie.",
     "successAutoApprovedSignIn": "Użyj tego samego adresu ({{email}}) przez Google, Microsoft lub link magiczny na stronie głównej.",
-    "successAutoApprovedOpenLink": "Otwórz /t/{{slug}} (możesz najpierw musieć się zalogować)"
+    "successAutoApprovedOpenLink": "Otwórz /t/{{slug}} (możesz najpierw musieć się zalogować)",
+    "successAutoApprovedEmailSent": "Wysłaliśmy ten sam e-mail o zatwierdzeniu co przy ręcznej akceptacji na {{email}} (sprawdź spam). Zawiera link do przestrzeni roboczej.",
+    "successAutoApprovedEmailSendFailed": "Nie udało się dostarczyć e-maila potwierdzającego. Użyj linku powyżej; w razie potrzeby skontaktuj się z pomocą techniczną.",
+    "autoApproveFailedNotice": "Automatyczne udostępnianie było włączone, ale się nie powiodło; wniosek oczekuje na ręczną akceptację."
   },
   "workspaceSettings": {
     "title": "Ustawienia przestrzeni roboczej",

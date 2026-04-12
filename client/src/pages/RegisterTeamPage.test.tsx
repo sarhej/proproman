@@ -104,6 +104,47 @@ describe("RegisterTeamPage", () => {
     });
     expect(screen.queryByRole("heading", { name: /Registration request submitted/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Open \/t\/team-a/i })).toHaveAttribute("href", expect.stringContaining("/t/team-a"));
+    expect(screen.getByText(/Email notifications may be disabled/i)).toBeInTheDocument();
+  });
+
+  it("shows E2-sent copy on auto-approved success when API reports requester notified", async () => {
+    const user = userEvent.setup();
+    mockSubmit.mockResolvedValue({
+      id: "tr-auto",
+      teamName: "Team A",
+      slug: "team-a",
+      contactEmail: "u@company.com",
+      contactName: "User",
+      status: "APPROVED",
+      tenantId: "t1",
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: null,
+      message: null,
+      preferredLocale: null,
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tenant: { id: "t1", name: "Team A", slug: "team-a", status: "ACTIVE" },
+      emailNotifications: {
+        autoApproved: true,
+        decisionEmailsConfigured: true,
+        requesterNotifiedOnDecision: true,
+      },
+    });
+
+    renderPage({
+      prefilledContact: { email: "u@company.com", name: "User" },
+    });
+
+    await user.type(screen.getByPlaceholderText("Acme Corp"), "My Team");
+    await user.click(screen.getByRole("button", { name: /Submit registration request/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/workspace-approved email/i)).toBeInTheDocument();
+    });
   });
 
   it("shows success state when request stays PENDING (no callback navigation)", async () => {
@@ -141,5 +182,44 @@ describe("RegisterTeamPage", () => {
       expect(screen.getByRole("heading", { name: /Registration request submitted/i })).toBeInTheDocument();
     });
     expect(mockSubmit).toHaveBeenCalled();
+  });
+
+  it("shows notice when auto-approve failed and request stayed PENDING", async () => {
+    const user = userEvent.setup();
+    mockSubmit.mockResolvedValue({
+      id: "tr-fail",
+      teamName: "Team C",
+      slug: "team-c",
+      contactEmail: "u@company.com",
+      contactName: "User",
+      status: "PENDING",
+      tenantId: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: null,
+      message: null,
+      preferredLocale: null,
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      emailNotifications: {
+        adminsNotifiedOnSubmit: false,
+        decisionEmailsConfigured: true,
+        autoApproveFailed: true,
+      },
+    });
+
+    renderPage({
+      prefilledContact: { email: "u@company.com", name: "User" },
+    });
+
+    await user.type(screen.getByPlaceholderText("Acme Corp"), "Team C");
+    await user.click(screen.getByRole("button", { name: /Submit registration request/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Instant provisioning was enabled/i)).toBeInTheDocument();
+    });
   });
 });

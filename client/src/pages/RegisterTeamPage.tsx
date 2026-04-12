@@ -48,7 +48,13 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
   const [submitEmailMeta, setSubmitEmailMeta] = useState<{
     adminsNotifiedOnSubmit: boolean;
     decisionEmailsConfigured: boolean;
+    autoApproveFailed?: boolean;
   }>({ adminsNotifiedOnSubmit: false, decisionEmailsConfigured: false });
+  /** E2 / Resend status for auto-approved flow (success screen only). */
+  const [autoApproveEmailMeta, setAutoApproveEmailMeta] = useState<{
+    requesterNotifiedOnDecision: boolean;
+    decisionEmailsConfigured: boolean;
+  } | null>(null);
 
   const publicOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -98,6 +104,15 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
       });
       const provisionedSlug = res.tenant?.slug;
       if (res.status === "APPROVED" && provisionedSlug) {
+        const n = res.emailNotifications;
+        setAutoApproveEmailMeta(
+          n
+            ? {
+                requesterNotifiedOnDecision: n.requesterNotifiedOnDecision === true,
+                decisionEmailsConfigured: n.decisionEmailsConfigured === true,
+              }
+            : null
+        );
         if (onWorkspaceProvisioned) {
           await onWorkspaceProvisioned(provisionedSlug);
           return;
@@ -108,10 +123,12 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
         return;
       }
       setAutoProvisionedSlug(null);
+      setAutoApproveEmailMeta(null);
       const n = res.emailNotifications;
       setSubmitEmailMeta({
         adminsNotifiedOnSubmit: n?.adminsNotifiedOnSubmit === true,
         decisionEmailsConfigured: n?.decisionEmailsConfigured === true,
+        autoApproveFailed: n?.autoApproveFailed === true,
       });
       setSubmittedRequestId(res.id);
       setSubmitted(true);
@@ -163,10 +180,22 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
                       {t("register.successAutoApprovedOpenLink", { slug: autoProvisionedSlug })}
                     </a>
                   </p>
+                  {autoApproveEmailMeta?.requesterNotifiedOnDecision ? (
+                    <p>{t("register.successAutoApprovedEmailSent", { email: contactEmail })}</p>
+                  ) : autoApproveEmailMeta?.decisionEmailsConfigured ? (
+                    <p>{t("register.successAutoApprovedEmailSendFailed")}</p>
+                  ) : (
+                    <p>{t("register.successNoDecisionEmailPromise")}</p>
+                  )}
                 </>
               ) : (
                 <>
                   <p>{t("register.successLead")}</p>
+                  {submitEmailMeta.autoApproveFailed ? (
+                    <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-950">
+                      {t("register.autoApproveFailedNotice")}
+                    </p>
+                  ) : null}
                   {submitEmailMeta.adminsNotifiedOnSubmit ? <p>{t("register.successAdminsEmailed")}</p> : null}
                   {submitEmailMeta.decisionEmailsConfigured ? (
                     <p>{t("register.successDecisionEmailPromise", { email: contactEmail })}</p>

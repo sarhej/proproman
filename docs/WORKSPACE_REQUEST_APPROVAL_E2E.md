@@ -14,7 +14,7 @@ This document ties together **product behavior**, **APIs**, **admin approval**, 
 | **Public submit** | `POST /api/tenant-requests` creates a `TenantRequest` in **PENDING** (no session required). Optional `AUTO_APPROVE_WORKSPACE_REQUESTS` auto-provisions; **for approval flow, keep that unset/false.** |
 | **Requester visibility** | Signed-in users list their requests via `GET /api/me/workspace-registration-requests` (session). UI: register success, tenant picker empty state, switcher “Applications”. |
 | **Super-admin review** | Admin app: tenant requests list + approve/reject → `POST /api/tenant-requests/:id/review` with `{ action: "approve" \| "reject", reviewNote? }`. Server runs provisioning, OWNER membership, optional trusted domain + invitees. |
-| **Email** | On submit: notify super-admins (E1 family). On approve: requester (E2), invitees (E5) when configured — see transactional plan. |
+| **Email** | On submit: notify super-admins (E1 family) when the request stays **PENDING**. On **approve** (manual or **auto**): requester gets **E2** (same template), invitees **E5** when transactional mail is ready — see transactional plan. |
 | **Tests** | `server/src/routes/tenant-requests.approval.test.ts`, `tenant-requests.integration.test.ts`, `tenant-requests.test.ts`; client/admin covered in unit/integration tests. Playwright under `e2e/` **mocks** APIs and does **not** run this full chain today. |
 
 ## Preconditions (environment)
@@ -25,6 +25,12 @@ This document ties together **product behavior**, **APIs**, **admin approval**, 
    - See [IDENTITY_AUTH_STRATEGY.md](./IDENTITY_AUTH_STRATEGY.md) and [HUB.md](./HUB.md).
 3. **Transactional mail** (optional but realistic): same Resend setup + templates enabled so E1/E2 behave like production.
 4. **Super admin** account to use the **admin** SPA (same auth as hub; role `SUPER_ADMIN`).
+
+## Auto-approve (`AUTO_APPROVE_WORKSPACE_REQUESTS=true`)
+
+- **Default is off.** Set `AUTO_APPROVE_WORKSPACE_REQUESTS=true` in the host env (e.g. Railway) if you want immediate provisioning after `POST /api/tenant-requests`. If the flag is unset or false, every request stays **PENDING** until a super-admin approves.
+- **E2 (approval email):** When auto-approve **succeeds**, the server runs the same `approveTenantRequestRecord` path as manual approval, including **E2** to the requester’s contact email, provided `isTransactionalEmailEnabled()` / Resend are configured (same as manual). **E1** (notify admins of a new pending request) is skipped because the request never stays pending.
+- **Failure:** If provisioning throws after create, the request remains **PENDING** and the API includes `emailNotifications.autoApproveFailed: true`. Admins can still get **E1** on that path. Check server logs for `[tenant-requests] AUTO_APPROVE_WORKSPACE_REQUESTS failed` or success lines with `requesterEmailed`.
 
 ## Flow A — Requester: magic link only (no Google)
 

@@ -286,6 +286,12 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
           reviewedBy: null,
           reviewNote: "auto-approved",
         });
+        console.log("[tenant-requests] AUTO_APPROVE_WORKSPACE_REQUESTS succeeded", {
+          requestId: tenantRequest.id,
+          slug: tenantRequest.slug,
+          tenantId: approved.createdTenant.id,
+          requesterEmailed: approved.emailNotifications.requesterNotifiedOnDecision,
+        });
         res.status(201).json({
           ...approved.updated,
           tenant: approved.provisionedTenant ?? approved.createdTenant,
