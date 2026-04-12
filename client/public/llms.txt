@@ -31,11 +31,12 @@ The SPA ships **five** interface languages (ISO 639-1 codes):
 
 ## Integrations (agents)
 
-- **MCP (Streamable HTTP):** `/mcp` on this origin — OAuth or Bearer per deployment.
+- **MCP (Streamable HTTP):** **`/mcp`** on this origin (tenant from the signed-in user’s active workspace, and valid **`X-Tenant-Id`** when used), **or** **`/t/<workspace-slug>/mcp`** to pin the workspace in the URL (same OAuth flow). **`@tymio/mcp-server`** accepts either shape via **`TYMIO_MCP_URL`** or **`tymio-mcp login <url>`**.
+- **Browser hub REST (workspace plane):** when using the app under **`/t/<workspace-slug>/…`**, the SPA typically calls **`/t/<workspace-slug>/api/…`** so the path selects the workspace. Legacy **`/api/…`** remains for scripts and older clients (session / **`X-Tenant-Id`** as applicable).
 - **Public agent hints:** `GET /api/mcp/agent-context` — feedback reporting, scope labeling (`workspace-slug/product-slug`), **supportedUiLocales**, **`tymioMcpCliAgentGuidanceMarkdown`** (full Markdown for `@tymio/mcp-server` / OAuth), and **`tymioMcpNoUserSettingsApiKey`: true** (explicit: there is no MCP API key for users to copy from Settings).
-- **Critical for autonomous agents:** Do **not** tell users to fetch an “MCP API key” from Tymio Settings, Profile, or Account — that UI path does **not** exist. Default connection is **OAuth**: remote MCP URL `https://tymio.app/mcp` (or your host) in the IDE, **or** install **`@tymio/mcp-server`** and run **`tymio-mcp login`** for stdio without `DRD_API_KEY`/`API_KEY` on that process (unless you intentionally use API-key / REST subset mode). The env vars **`DRD_API_KEY` / `API_KEY`** on a stdio process refer to the **server deployment** automation secret, not an end-user setting.
+- **Critical for autonomous agents:** Do **not** tell users to fetch an “MCP API key” from Tymio Settings, Profile, or Account — that UI path does **not** exist. Default connection is **OAuth**: remote MCP URL `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` (or your host) in the IDE, **or** install **`@tymio/mcp-server`** and run **`tymio-mcp login`** for stdio without `DRD_API_KEY`/`API_KEY` on that process (unless you intentionally use API-key / REST subset mode). The env vars **`DRD_API_KEY` / `API_KEY`** on a stdio process refer to the **server deployment** automation secret, not an end-user setting.
 - **Canonical Markdown file (repo / npm package):** `mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md` — same body as `tymio-mcp instructions` and MCP server `instructions` when using the published CLI.
-- **REST:** `/api/*` — authenticated (session or API key); not a public scrape API.
+- **REST:** **`/api/*`** and **`/t/<workspace-slug>/api/*`** — authenticated (session or API key); not a public scrape API.
 - **Ontology / guides (auth):** e.g. `/api/ontology`, `/api/agent/coding-guide`.
 
 ## Repository documentation (for humans maintaining integrations)

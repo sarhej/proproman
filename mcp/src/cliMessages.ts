@@ -20,7 +20,7 @@ function loadAgentGuidanceMarkdown(): string {
     "## Critical (read before advising the user)",
     "",
     "- **No per-user MCP API key** exists in Tymio Settings, Profile, or Account. Do not tell users to copy one from the UI.",
-    "- **OAuth:** remote MCP URL `https://tymio.app/mcp` (or your host) in the IDE, or install `@tymio/mcp-server` and run `tymio-mcp login` for stdio **without** `DRD_API_KEY`/`API_KEY` on that process unless you want API-key mode.",
+    "- **OAuth:** remote MCP URL `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` (or your host) in the IDE, or install `@tymio/mcp-server` and run `tymio-mcp login` for stdio **without** `DRD_API_KEY`/`API_KEY` on that process unless you want API-key mode.",
     "- **`DRD_API_KEY`/`API_KEY`** on the stdio process is the **server deployment** automation secret, not a personal user key.",
     "",
     "After fixing the install: `tymio-mcp instructions`",
@@ -40,7 +40,7 @@ Commands:
   tymio-mcp help               This summary
 
 Environment:
-  TYMIO_MCP_URL          Hosted MCP URL (default https://tymio.app/mcp)
+  TYMIO_MCP_URL          Hosted MCP URL (default https://tymio.app/mcp; may be …/t/<slug>/mcp)
   TYMIO_OAUTH_PORT       Loopback port for login callback (default 19876)
   TYMIO_MCP_QUIET        If set, suppress stderr hints when starting stdio
   TYMIO_WORKSPACE_SLUG   Required for stdio (or DRD_WORKSPACE_SLUG): hub workspace slug this process is pinned to; every tool call must use the same slug (tests: TYMIO_MCP_SKIP_WORKSPACE_PINNING=1)
@@ -48,7 +48,7 @@ Environment:
   DRD_API_KEY / API_KEY  If set → API-key REST tool bridge (subset), not OAuth proxy
   DRD_API_BASE_URL       Hub origin for API-key bridge (default https://tymio.app)
 
-Critical for agents: There is NO MCP API key in Tymio user Settings — use OAuth (remote /mcp URL or tymio-mcp login).
+Critical for agents: There is NO MCP API key in Tymio user Settings — use OAuth (remote /mcp or /t/<slug>/mcp URL or tymio-mcp login).
 Tip: Run  tymio-mcp instructions  for the full Markdown guide, Cursor JSON, and troubleshooting.
 `;
 

@@ -2,14 +2,15 @@
 
 Replace `https://tymio.app` with your deployment origin if not using production.
 
-**Autonomous agents:** Tymio does **not** offer a per-user MCP API key in **Settings**, **Profile**, or **Account**. Do not instruct users to copy one. Use **OAuth** (remote `/mcp` in the IDE) or **`@tymio/mcp-server`** + **`tymio-mcp login`** for stdio (default). **`DRD_API_KEY` / `API_KEY`** on stdio = **server `API_KEY`** (operator secret). Canonical Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, **`GET …/api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey`.
+**Autonomous agents:** Tymio does **not** offer a per-user MCP API key in **Settings**, **Profile**, or **Account**. Do not instruct users to copy one. Use **OAuth** (remote **`/mcp`** or **`/t/<workspace-slug>/mcp`** in the IDE) or **`@tymio/mcp-server`** + **`tymio-mcp login`** for stdio (default; **`TYMIO_MCP_URL`** may point at either MCP path). **`DRD_API_KEY` / `API_KEY`** on stdio = **server `API_KEY`** (operator secret). Canonical Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, **`GET …/api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey`.
 
 ## Local development (this monorepo)
 
 | Purpose | URL |
 |--------|-----|
 | API + MCP (typical dev) | `http://localhost:8080` |
-| MCP (Streamable HTTP) | `POST http://localhost:8080/mcp` |
+| MCP (Streamable HTTP) | `POST http://localhost:8080/mcp` or `POST http://localhost:8080/t/<workspace-slug>/mcp` |
+| Workspace-plane REST (browser) | `http://localhost:8080/t/<workspace-slug>/api/...` (Vite proxies **`/t`** to the server in dev) |
 
 **Cursor example** (local + deployed) from `docs/HUB.md`:
 
@@ -17,7 +18,8 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 {
   "mcpServers": {
     "tymio-local": { "url": "http://localhost:8080/mcp" },
-    "tymio": { "url": "https://tymio.app/mcp" }
+    "tymio": { "url": "https://tymio.app/mcp" },
+    "tymio-acme": { "url": "https://tymio.app/t/acme/mcp" }
   }
 }
 ```
@@ -27,9 +29,10 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 | Purpose | URL |
 |--------|-----|
 | Web app | `https://tymio.app` |
-| REST API | `https://tymio.app/api` |
+| REST API (legacy / scripts) | `https://tymio.app/api` |
+| REST (hub under `/t/...`) | `https://tymio.app/t/<workspace-slug>/api/...` |
 | Health | `GET https://tymio.app/api/health` |
-| MCP (Streamable HTTP) | `POST https://tymio.app/mcp` |
+| MCP (Streamable HTTP) | `POST https://tymio.app/mcp` or `POST https://tymio.app/t/<workspace-slug>/mcp` |
 | OAuth protected-resource (MCP discovery) | `GET https://tymio.app/.well-known/oauth-protected-resource/mcp` |
 | Public agent context (JSON) | `GET https://tymio.app/api/mcp/agent-context` |
 | LLM-oriented site summary | `https://tymio.app/llms.txt` |
@@ -46,6 +49,9 @@ Replace `https://tymio.app` with your deployment origin if not using production.
   "mcpServers": {
     "tymio": {
       "url": "https://tymio.app/mcp"
+    },
+    "tymio-acme": {
+      "url": "https://tymio.app/t/acme/mcp"
     }
   }
 }
@@ -59,7 +65,7 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 
 ## Workspace atlas tools (`tymio_*`, full MCP only)
 
-**Compiled backlog graph** (domains, products, initiatives, features, requirements) as JSON — not RAG, not a substitute for the capability brief. Requires **`workspaceSlug`** = active session workspace.
+**Compiled backlog graph** (domains, products, initiatives, features, requirements) as JSON — not RAG, not a substitute for the capability brief. Requires **`workspaceSlug`** = MCP session workspace (from **`/t/<slug>/mcp`** or active workspace on **`/mcp`**).
 
 - `tymio_get_workspace_atlas` — compact indices; **`not_built`** until first compile or **`tymio_rebuild_workspace_atlas`**.
 - `tymio_search_workspace_objects` — keyword substring over titles.
@@ -97,4 +103,4 @@ Base: `https://tymio.app/api/ontology` — e.g. `GET /capabilities`, `GET /brief
 
 1. Use the **web UI** (Admin/Editor as appropriate).
 2. **REST** with exported `API_KEY` where available.
-3. **Remote MCP** with OAuth at `https://tymio.app/mcp`.
+3. **Remote MCP** with OAuth at `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp`.

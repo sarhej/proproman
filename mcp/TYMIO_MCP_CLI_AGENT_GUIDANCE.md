@@ -4,8 +4,8 @@
 
 1. **There is no per-user MCP API key in Tymio Settings, Profile, Account, or Integrations.** Do **not** instruct users to open the web app settings to “copy an API key for MCP” or “get the MCP key from preferences.” That path does not exist and causes repeated confusion.
 2. **Normal connection = OAuth**, not a personal secret from the UI:
-   - **Remote MCP in the IDE:** add server URL `https://tymio.app/mcp` (or your deployment origin + `/mcp`). Complete sign-in in the browser when the client prompts. **No API key to paste.**
-   - **Stdio npm package (default):** install `@tymio/mcp-server`, run `tymio-mcp login` once in a terminal (browser OAuth). Configure the MCP client to run `tymio-mcp` **without** setting `DRD_API_KEY` or `API_KEY` on that process unless you intentionally want API-key mode.
+   - **Remote MCP in the IDE:** add server URL `https://tymio.app/mcp` (active workspace from the signed-in user after OAuth) **or** `https://tymio.app/t/<workspace-slug>/mcp` (workspace pinned by URL — same tools, explicit tenant). Use your deployment origin when not on production. Complete sign-in in the browser when the client prompts. **No API key to paste.**
+   - **Stdio npm package (default):** install `@tymio/mcp-server`, run `tymio-mcp login` once in a terminal (browser OAuth). Optional: `tymio-mcp login https://your-host/t/your-slug/mcp` or set **`TYMIO_MCP_URL`** to that URL. Configure the MCP client to run `tymio-mcp` **without** setting `DRD_API_KEY` or `API_KEY` on that process unless you intentionally want API-key mode.
 3. **`DRD_API_KEY` / `API_KEY` on the stdio process** means the **server deployment automation secret** (the same value as the hub’s configured `API_KEY` for `Authorization: Bearer …` on REST). It is **not** something each user generates in the Tymio UI. Only operators with access to deployment secrets use it (CI, scripts, optional stdio “REST bridge” mode).
 4. **Default vs API-key stdio:** If `DRD_API_KEY` or `API_KEY` is set to a non-empty value in the **environment of the `tymio-mcp` process**, the CLI uses a **fixed REST tool subset**, not OAuth to the hosted hub. For the **full** tool surface, use **remote** `…/mcp` or stdio **without** those env vars (after `tymio-mcp login`).
 5. **Full text of this guide:** shell command `tymio-mcp instructions` (or `tymio-mcp guide`). MCP clients that support server `instructions` receive this content at initialize when using the published CLI.
@@ -50,19 +50,22 @@ If `tymio-mcp` is not on `PATH`, use `node` with an absolute path to `dist/index
 
 ## Alternative: remote MCP URL (no npm CLI)
 
-If the host supports **URL** transport, point at the hub (OAuth handled by the IDE):
+If the host supports **URL** transport, point at the hub (OAuth handled by the IDE). Use **`/mcp`** (default active workspace after sign-in) **or** **`/t/<workspace-slug>/mcp`** to pin one workspace:
 
 ```json
 {
   "mcpServers": {
     "tymio": {
       "url": "https://tymio.app/mcp"
+    },
+    "tymio-acme": {
+      "url": "https://tymio.app/t/acme/mcp"
     }
   }
 }
 ```
 
-Replace the host when not using production.
+Replace the host and slug when not using production.
 
 ---
 
@@ -76,7 +79,7 @@ Set `DRD_API_KEY` (or `API_KEY`) and optionally `DRD_API_BASE_URL` (default `htt
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `TYMIO_MCP_URL` | `https://tymio.app/mcp` | Hosted MCP URL for OAuth proxy + `login` |
+| `TYMIO_MCP_URL` | `https://tymio.app/mcp` | Hosted MCP URL for OAuth proxy + `login` (may be `https://host/t/<slug>/mcp`; if the value has no `/mcp` suffix, the CLI appends it) |
 | `TYMIO_OAUTH_PORT` | `19876` | Loopback port for login callback |
 | `TYMIO_MCP_QUIET` | unset | If set, suppress stderr hints when starting stdio |
 | `DRD_API_KEY` / `API_KEY` | unset | If set → API-key REST bridge (subset), not OAuth proxy |
@@ -87,7 +90,7 @@ Set `DRD_API_KEY` (or `API_KEY`) and optionally `DRD_API_BASE_URL` (default `htt
 ## Troubleshooting
 
 - **401 / not signed in (stdio OAuth):** Run `tymio-mcp login` again.
-- **User asks where to copy MCP API key:** Explain there is **no** such key in the UI; use **remote `/mcp` + OAuth** or **`tymio-mcp login`**.
+- **User asks where to copy MCP API key:** Explain there is **no** such key in the UI; use **remote `/mcp` or `/t/<slug>/mcp` + OAuth** or **`tymio-mcp login`**.
 - **Port in use on login:** Change `TYMIO_OAUTH_PORT` and re-run `login` (redirect URI must stay consistent).
 - **Help:** `tymio-mcp help` — **full guide:** `tymio-mcp instructions`
 
@@ -101,6 +104,6 @@ Set `DRD_API_KEY` (or `API_KEY`) and optionally `DRD_API_BASE_URL` (default `htt
 
 ## Workspace atlas (full MCP only)
 
-When using **remote** `…/mcp` or stdio **without** `DRD_API_KEY`/`API_KEY` (OAuth proxy), the hub may expose **`tymio_get_workspace_atlas`**, **`tymio_search_workspace_objects`**, **`tymio_get_workspace_object`**, **`tymio_explain_workspace_object`**, and **`tymio_rebuild_workspace_atlas`**. These read a **compiled JSON** backlog snapshot for the active workspace — complementary to **`tymio_get_agent_brief`** (capabilities). They are **not** part of the API-key REST stdio subset.
+When using **remote** `…/mcp`, remote `…/t/<slug>/mcp`, or stdio **without** `DRD_API_KEY`/`API_KEY` (OAuth proxy), the hub may expose **`tymio_get_workspace_atlas`**, **`tymio_search_workspace_objects`**, **`tymio_get_workspace_object`**, **`tymio_explain_workspace_object`**, and **`tymio_rebuild_workspace_atlas`**. These read a **compiled JSON** backlog snapshot for the active workspace — complementary to **`tymio_get_agent_brief`** (capabilities). They are **not** part of the API-key REST stdio subset.
 
 **Public article:** `https://tymio.app/wiki/workspace-atlas` (raw: `/wiki/articles/workspace-atlas.md`). Operators: persistent **`WORKSPACE_ATLAS_DATA_DIR`** on ephemeral hosts if you want the atlas to survive process restarts without an explicit rebuild.

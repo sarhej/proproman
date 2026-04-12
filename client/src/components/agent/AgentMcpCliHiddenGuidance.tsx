@@ -10,7 +10,7 @@ const FALLBACK_MARKDOWN = [
   "## Critical",
   "",
   "- **No MCP API key** exists in Tymio user Settings, Profile, or Account. Do not instruct users to copy one from the UI.",
-  "- **OAuth:** configure remote MCP URL `.../mcp` on this host in the IDE, or use npm `@tymio/mcp-server` and run `tymio-mcp login` for stdio (without DRD_API_KEY/API_KEY unless you want API-key mode).",
+  "- **OAuth:** configure remote MCP URL `.../mcp` or `.../t/<workspace-slug>/mcp` on this host in the IDE, or use npm `@tymio/mcp-server` and run `tymio-mcp login` for stdio (without DRD_API_KEY/API_KEY unless you want API-key mode).",
   "- **`DRD_API_KEY` / `API_KEY`** on stdio is the **server deployment** secret for REST automation, not a personal user key.",
   "",
   "Prefer: GET /api/mcp/agent-context on this origin for the full Markdown field tymioMcpCliAgentGuidanceMarkdown, or /llms.txt.",

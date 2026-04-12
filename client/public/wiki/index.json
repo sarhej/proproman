@@ -5,7 +5,7 @@
     {
       "slug": "mcp-connection",
       "title": "MCP connection overview",
-      "description": "How to connect Cursor, Claude Code, and other agents to Tymio MCP: OAuth, remote /mcp URL, and what not to tell users about API keys.",
+      "description": "How to connect Cursor, Claude Code, and other agents to Tymio MCP: OAuth, remote /mcp vs workspace /t/slug/mcp, browser /t/slug/api REST, and what not to tell users about API keys.",
       "file": "articles/mcp-connection.md"
     },
     {

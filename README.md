@@ -10,7 +10,7 @@ Full documentation: **[docs/HUB.md](docs/HUB.md)** (scope, architecture, multi-t
 - Backend: Express + TypeScript + Prisma  
 - Database: PostgreSQL  
 - Auth: Google OAuth (sessions)  
-- Agents: MCP at `/mcp` (OAuth) + optional stdio MCP in `mcp/`
+- Agents: MCP at `/mcp` or `/t/<workspace-slug>/mcp` (OAuth) + optional stdio MCP in `mcp/`
 
 ## Quick start
 
@@ -29,7 +29,7 @@ Optional local auth: `ALLOW_DEV_AUTH=true` in `server/.env` and `VITE_ENABLE_DEV
 
 ## MCP (Cursor and agents)
 
-- **Remote (recommended):** point MCP at `https://<your-host>/mcp` — OAuth; **no API key in the Tymio UI** for users to copy.  
+- **Remote (recommended):** point MCP at `https://<your-host>/mcp` (active workspace after sign-in) or `https://<your-host>/t/<workspace-slug>/mcp` (URL-pinned workspace) — OAuth; **no API key in the Tymio UI** for users to copy.  
 - **Stdio npm package:** [`@tymio/mcp-server`](mcp/README.md) — default mode uses OAuth (`tymio-mcp login`); full agent guide in [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).  
 - **Optional API-key stdio:** set `DRD_API_KEY` / `API_KEY` on the **stdio process** only for the REST tool subset — that value is the **server deployment** secret, not something users get from Settings.
 

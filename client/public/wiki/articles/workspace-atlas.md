@@ -1,6 +1,6 @@
 # Workspace atlas (compiled backlog snapshot for agents)
 
-The **workspace atlas** is a **compiled, read-optimized snapshot** of one workspace’s **backlog graph** (domains, products, initiatives, features, requirements) plus pointers into the **capability** ontology. It is **materialized on the server** as JSON files and exposed through **MCP tools** on the **full** hub MCP surface (remote `/mcp` or stdio **`tymio-mcp`** after OAuth — **not** the API-key REST subset).
+The **workspace atlas** is a **compiled, read-optimized snapshot** of one workspace’s **backlog graph** (domains, products, initiatives, features, requirements) plus pointers into the **capability** ontology. It is **materialized on the server** as JSON files and exposed through **MCP tools** on the **full** hub MCP surface (remote **`/mcp`** or **`/t/<workspace-slug>/mcp`**, or stdio **`tymio-mcp`** after OAuth — **not** the API-key REST subset).
 
 ## What it is (and is not)
 
@@ -19,7 +19,7 @@ The **workspace atlas** is a **compiled, read-optimized snapshot** of one worksp
 4. **`tymio_explain_workspace_object`** — Same shard as (3), optionally wrapped in a short natural-language explanation **if** the deployment enables the LLM path (see operators below). If LLM is off, you still get the structured shard.
 5. **`tymio_rebuild_workspace_atlas`** — Forces a full recompile from the database. **EDITOR+** (or platform super-admin). Use after migrations, if you see **`not_built`**, or when you need guaranteed freshness before debounce.
 
-**`workspaceSlug`:** Every atlas tool requires **`workspaceSlug`** and it **must match** the active MCP session workspace (cross-workspace calls are rejected).
+**`workspaceSlug`:** Every atlas tool requires **`workspaceSlug`** and it **must match** the active MCP session workspace (the tenant resolved after OAuth — from the user’s active workspace on **`/mcp`**, or from the path on **`/t/<slug>/mcp`**). Cross-workspace calls are rejected.
 
 ## Operators: environment and hosting
 

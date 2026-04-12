@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Documentation: hosted MCP may be **`/mcp`** or **`/t/<workspace-slug>/mcp`**; **`TYMIO_MCP_URL`** / **`tymio-mcp login`** and wiki/llms/agent guides updated accordingly.
+
 ## 2.0.0
 
 ### Breaking

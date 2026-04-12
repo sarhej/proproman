@@ -36,7 +36,7 @@ npx @tymio/mcp-server help
    tymio-mcp login
    ```
 
-   Optional: `tymio-mcp login https://your-host/mcp` to override the default hub URL.
+   Optional: `tymio-mcp login https://your-host/mcp` or `tymio-mcp login https://your-host/t/your-workspace-slug/mcp` to override the default hub MCP URL (workspace-pinned URL is supported).
 
 2. **Token storage** — OAuth client data and tokens are saved under your user config directory, for example:
 
@@ -95,7 +95,7 @@ When the client shows the server as **connected** (e.g. green), the agent can ca
 
 | Variable | Purpose |
 |----------|---------|
-| **`TYMIO_MCP_URL`** | Hosted MCP URL for OAuth proxy + login (default `https://tymio.app/mcp`). |
+| **`TYMIO_MCP_URL`** | Hosted MCP URL for OAuth proxy + login (default `https://tymio.app/mcp`). May be **`https://<host>/t/<workspace-slug>/mcp`** to pin the session workspace; the CLI normalizes a missing trailing `/mcp` when you pass only the origin + `/t/...` segment. |
 | **`TYMIO_OAUTH_PORT`** | Loopback port for login callback (default `19876`). |
 | **`TYMIO_MCP_PERSONA`** | Set to `pm`, `po`, `dev`, or `workspace` to **append** that persona to MCP **instructions** (steers the model in clients that honor instructions). |
 | **`TYMIO_WORKSPACE_SLUG`** | Pins the CLI to one workspace slug if your setup requires it (see package README). |

@@ -11,9 +11,10 @@
 | Purpose | URL |
 |--------|-----|
 | Web app | `https://tymio.app` |
-| REST API base | `https://tymio.app/api` |
+| REST API base (legacy / scripts) | `https://tymio.app/api` |
+| REST in browser hub (workspace plane) | `https://tymio.app/t/<workspace-slug>/api/...` (same JSON routes as `/api/...`, tenant from path) |
 | Health | `GET https://tymio.app/api/health` |
-| **MCP (Streamable HTTP)** | `POST https://tymio.app/mcp` |
+| **MCP (Streamable HTTP)** | `POST https://tymio.app/mcp` (active workspace after OAuth) **or** `POST https://tymio.app/t/<workspace-slug>/mcp` (workspace pinned by URL) |
 | OAuth protected-resource metadata (MCP discovery) | `GET https://tymio.app/.well-known/oauth-protected-resource/mcp` |
 | Google OAuth — **browser sign-in** callback | `https://tymio.app/api/auth/google/callback` |
 | Google OAuth — **remote MCP** callback | `https://tymio.app/mcp-oauth/google/callback` |
@@ -31,13 +32,13 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 
 ### 2.1 Nothing on the tenant works without authentication
 
-- **`GET https://tymio.app/api/meta` (and almost all `/api/*`) returns 401** unless you send a **valid session cookie** (browser) or **`Authorization: Bearer <API_KEY>`** where the deployment has **`API_KEY`** set. There is **no** public, anonymous meta or write API.
+- **`GET https://tymio.app/api/meta`** (and almost all **`/api/*`**, and the same paths under **`/t/<workspace-slug>/api/*`** when authenticated) **returns 401** unless you send a **valid session cookie** (browser) or **`Authorization: Bearer <API_KEY>`** where the deployment has **`API_KEY`** set. There is **no** public, anonymous meta or write API.
 - If your environment has **no** API key and **no** browser session, you **cannot** create or list products, initiatives, etc. via REST. Say so explicitly to the user; do not imply data was changed on their tenant.
 
 ### 2.2 MCP tools only exist when the client is connected
 
 - Tools such as **`drd_meta`**, **`drd_create_product`**, **`tymio_get_agent_brief`** are available **only** if this chat/agent runtime has a **working Tymio MCP** configuration (remote URL + OAuth, or stdio + `DRD_API_BASE_URL` + `DRD_API_KEY`).
-- If **`user-tymio` / `tymio` tools are missing, not registered, or calls fail with connection/auth errors**, you are **not** connected to Tymio. You **must not** behave as if MCP mutations ran successfully. Tell the user to enable remote MCP (`https://tymio.app/mcp` + Google) or provide **`DRD_API_KEY`** (same value as server **`API_KEY`**) for stdio/scripts.
+- If **`user-tymio` / `tymio` tools are missing, not registered, or calls fail with connection/auth errors**, you are **not** connected to Tymio. You **must not** behave as if MCP mutations ran successfully. Tell the user to enable remote MCP (`https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` + Google) or provide **`DRD_API_KEY`** (same value as server **`API_KEY`**) for stdio/scripts.
 - **Do not tell users to copy an MCP API key from Tymio Settings, Profile, or Account** — that path does **not** exist. **`API_KEY` / `DRD_API_KEY`** for automation is a **deployment secret** configured by operators, not a personal user setting. For OAuth stdio, users run **`tymio-mcp login`** (npm package **`@tymio/mcp-server`**). Full wording: repo **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, shell **`tymio-mcp instructions`**, or **`GET /api/mcp/agent-context`** → **`tymioMcpCliAgentGuidanceMarkdown`**.
 
 ### 2.3 “Applications” in everyday language → **Product** in Tymio
@@ -52,7 +53,7 @@ Give the user **actionable** options:
 
 1. **UI:** As **Admin / Super admin** (or **Editor** where allowed), create products and initiatives in **Product Explorer** (or equivalent admin surfaces).
 2. **REST:** User exports **`API_KEY`** from deployment secrets and runs scripts with **`Authorization: Bearer …`** to `https://tymio.app/api/...`.
-3. **MCP:** User configures Cursor (or another client) with **remote** `https://tymio.app/mcp` and clicks Connect to complete the Zero-Trust OAuth flow in the browser (no API keys to copy), or runs the **stdio** MCP with **`DRD_API_BASE_URL`** + **`DRD_API_KEY`**.
+3. **MCP:** User configures Cursor (or another client) with **remote** `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` and clicks Connect to complete the Zero-Trust OAuth flow in the browser (no API keys to copy), or runs the **stdio** MCP with **`DRD_API_BASE_URL`** + **`DRD_API_KEY`**.
 
 Do **not** add repository-only helper scripts unless the user’s repo and workflow expect them; this handoff does not assume a checkout. Prefer documenting the **API/MCP/UI** paths above.
 
@@ -95,9 +96,9 @@ Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-m
 
 ### 3.2 Remote MCP (recommended for Cursor, Claude Code, and clients with proven Streamable HTTP + OAuth)
 
-- **Endpoint:** `POST https://tymio.app/mcp` (Streamable HTTP; not legacy SSE-only).
+- **Endpoint:** `POST https://tymio.app/mcp` (Streamable HTTP; not legacy SSE-only), **or** `POST https://tymio.app/t/<workspace-slug>/mcp` to pin the workspace in the URL.
 - **Auth:** Zero-Trust OAuth 2.1 with PKCE and Refresh Token Rotation.
-- **Setup:** In your MCP client, add a remote MCP server with URL `https://tymio.app/mcp`, connect, and complete sign-in in the browser. **No API keys to copy or paste.**
+- **Setup:** In your MCP client, add a remote MCP server with URL `https://tymio.app/mcp` (default active workspace after sign-in) **or** `https://tymio.app/t/<workspace-slug>/mcp`, connect, and complete sign-in in the browser. **No API keys to copy or paste.**
 - **Identity:** Requests run as the **signed-in Google user**, with the same role and permissions as in the browser.
 - **OpenClaw note:** Prefer **§3.1** unless your OpenClaw version documents and supports user OAuth for **remote** `mcp.servers` entries; otherwise use stdio.
 
@@ -108,6 +109,9 @@ Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-m
   "mcpServers": {
     "tymio": {
       "url": "https://tymio.app/mcp"
+    },
+    "tymio-acme": {
+      "url": "https://tymio.app/t/acme/mcp"
     }
   }
 }
@@ -115,7 +119,7 @@ Canonical agent Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** / **`tymio-m
 
 ### 3.3 REST API (curl, scripts, or agents without MCP)
 
-- **Base:** `https://tymio.app/api`
+- **Bases:** `https://tymio.app/api` (legacy / automation; often with **`X-Tenant-Id`** when using a Bearer **user** token or session for a specific workspace), **or** `https://tymio.app/t/<workspace-slug>/api` for the same routes with tenant taken from the path (typical browser hub).
 - **Auth:** Logged-in **session cookie** from the browser, or **`Authorization: Bearer <API_KEY>`** when the deployment has `API_KEY` configured (automation user; role is fixed server-side).
 
 ### 3.4 API-key / REST subset mode (stdio only, CI and automation)
@@ -124,7 +128,7 @@ Set `DRD_API_BASE_URL=https://tymio.app` and `DRD_API_KEY=<same value as server 
 
 ---
 
-## 4. MCP tool names (remote server at `/mcp`)
+## 4. MCP tool names (remote server at `/mcp` or `/t/<workspace-slug>/mcp`)
 
 Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook. **What “capabilities” and bindings mean in the product** — and how they map to REST — is spelled out in **§5**.
 

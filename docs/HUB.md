@@ -29,8 +29,8 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 | **When context applies** | `tenantResolver` (`server/src/tenant/tenantResolver.ts`) runs after auth. It resolves tenant from, in order: **`X-Tenant-Id` header**, **`session.activeTenantId`**, **`user.activeTenantId`**, validates **membership** and **ACTIVE** status, then runs the rest of the request inside **`runWithTenant`** (AsyncLocalStorage). If resolution fails, the request continues **without** tenant context → extension does **not** inject `tenantId` (legacy / migration / misconfiguration: queries may see **all rows**). |
 | **Users & roles** | **`User.role`** is a **platform** role (`SUPER_ADMIN`, `ADMIN`, …). **`TenantMembership`** gives **per-tenant** roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`). **`user.activeTenantId`** is the default workspace; **`POST /api/me/tenants/switch`** updates DB + session. |
 | **Provisioning** | **`GET/POST /api/tenants`** (and related) are **`SUPER_ADMIN`** only (`server/src/routes/tenants.ts`). **`POST /api/tenant-requests`** is the public/self-serve request flow (`server/src/routes/tenant-requests.ts`). |
-| **Client** | **`TenantSwitcher` / `TenantPicker`** (`client/src/components/tenant/`). Slug login: **`/t/:slug`**, Google OAuth with **`?tenantSlug=`**, public **`GET /api/tenants/by-slug/:slug/public`**. |
-| **MCP** | **`/mcp`** uses **Bearer OAuth JWT** on the route; it does **not** go through the same path as session cookie auth for **`req.user`**. **`tenantResolver` therefore usually does not set tenant context for remote MCP**, and MCP tool handlers use **`prisma` without** that AsyncLocalStorage context today → **tenant filtering is not enforced for remote MCP** until explicitly wired (e.g. resolve user from JWT, then `runWithTenant`). **API key** sessions that set **`req.user`** *do* pass through **`tenantResolver`** and get scoping if **`activeTenantId`** is set. |
+| **Client** | **`TenantSwitcher` / `TenantPicker`** (`client/src/components/tenant/`). Slug login: **`/t/:slug`**, Google OAuth with **`?tenantSlug=`**, public **`GET /api/tenants/by-slug/:slug/public`**. In the hub UI under **`/t/:workspaceSlug/…`**, the SPA typically calls **`/t/:workspaceSlug/api/…`** so the path pins the workspace ( **`X-Tenant-Id`** omitted for those calls). **Legacy** **`/api/…`** remains for the same routers with session / header resolution. |
+| **MCP** | **`POST /mcp`** and **`POST /t/:workspaceSlug/mcp`** (Streamable HTTP). After **Bearer OAuth**, the server resolves **tenant context** from the JWT user: on **`/mcp`**, from valid **`X-Tenant-Id`** (if present) else **`user.activeTenantId`** + membership; on **`/t/:slug/mcp`**, from the **URL slug** + membership (platform **`SUPER_ADMIN`** may access as **OWNER**). Tool handling runs inside **`runWithTenant`** (`server/src/mcp/setup.ts`, `resolveMcpTenantContext.ts`). |
 | **Optional middleware** | **`requireTenant`** (`server/src/tenant/requireTenant.ts`) returns **400** if `req.tenantContext` is missing; use on routes that must not run without a workspace. Most REST routers rely on the extension + resolver instead of calling **`requireTenant`** globally. |
 
 **Migrating an existing single-tenant database:** idempotent script **`server/scripts/migrate-to-multitenancy.ts`** (run with `npx tsx`, see file header): creates/finds a tenant, memberships, backfills **`tenantId`**, sets **`activeTenantId`**.
@@ -94,7 +94,7 @@ npm run db:seed   # optional demo data; do not use full seed in production
 npm run dev
 ```
 
-Client dev server proxies `/api` to the backend when `VITE_API_BASE_URL` is empty.
+Client dev server proxies **`/api`** and **`/t`** to the backend when `VITE_API_BASE_URL` is empty so workspace URLs and **`/t/.../api/...`** work in local dev.
 
 ---
 
@@ -132,8 +132,8 @@ Connection modes:
 
 | Mode | URL / transport | Auth |
 |------|-----------------|------|
-| **Remote** | `POST https://<host>/mcp` (Streamable HTTP) | OAuth 2.1 with Google; per-user identity |
-| **CLI stdio** (`@tymio/mcp-server`) | stdio `tymio-mcp` | **Default:** OAuth (PKCE + dynamic client); proxies the same hosted `/mcp` tools locally. **Optional:** set `DRD_API_KEY` / `API_KEY` to use the REST/API-key tool subset instead (no OAuth). |
+| **Remote** | `POST https://<host>/mcp` or `POST https://<host>/t/<workspace-slug>/mcp` (Streamable HTTP) | OAuth 2.1 with Google; per-user identity; workspace from path on **`/t/.../mcp`**, else active tenant / header on **`/mcp`** |
+| **CLI stdio** (`@tymio/mcp-server`) | stdio `tymio-mcp` | **Default:** OAuth (PKCE + dynamic client); proxies the hosted MCP URL from **`TYMIO_MCP_URL`** (default `…/mcp`; may be `…/t/<slug>/mcp`). **Optional:** set `DRD_API_KEY` / `API_KEY` to use the REST/API-key tool subset instead (no OAuth). |
 
 **Autonomous agents:** There is **no** per-user MCP API key in the web app **Settings**, **Profile**, or **Account**. Do not document or imply that users should copy an “MCP key” from the UI. Canonical guidance (Markdown): **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`** (also `tymio-mcp instructions`, MCP `instructions` from the CLI, and **`GET /api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey: true`). All workspace entry gates on **`/t/:slug`** (loading, sign-in, not found, pending registration, rejected, provisioning) and **Connecting a coding agent** include the same Markdown as visually hidden content (`sr-only`) for tools that read the DOM.
 
@@ -147,14 +147,15 @@ Connection modes:
 {
   "mcpServers": {
     "tymio-local": { "url": "http://localhost:8080/mcp" },
-    "tymio": { "url": "https://<your-host>/mcp" }
+    "tymio": { "url": "https://<your-host>/mcp" },
+    "tymio-acme": { "url": "https://<your-host>/t/acme/mcp" }
   }
 }
 ```
 
 Tool names currently use the historical prefix `drd_` (e.g. `drd_list_initiatives`); renaming is a backward-compatibility decision for clients.
 
-**Tenant note:** Remote MCP (**OAuth Bearer** on `/mcp`) does not currently establish **`runWithTenant`**; treat tool data as **not tenant-scoped** until the server attaches tenant context from the authenticated MCP user. Prefer **API key + `activeTenantId`** for scripted access when isolation matters.
+**Tenant note:** Authenticated MCP requests run tools under **`runWithTenant`** once tenant context is resolved (see **§1.2**). Use **`/t/<slug>/mcp`** when you want the MCP URL itself to pin the workspace regardless of the user’s current active workspace in the web app.
 
 **Implementation:** `server/src/mcp/setup.ts`, `oauth-provider.ts`, `tools.ts`; local package: `mcp/README.md`.
 

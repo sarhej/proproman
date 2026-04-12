@@ -23,21 +23,21 @@ compatibility: >-
 
 ## This monorepo (local development)
 
-When working **in this repository**, the API/MCP server is usually **`http://localhost:8080`** (see `docs/HUB.md`). Use MCP URL **`http://localhost:8080/mcp`** in Cursor (e.g. server name `tymio-local` alongside production `tymio`).
+When working **in this repository**, the API/MCP server is usually **`http://localhost:8080`** (see `docs/HUB.md`). Use MCP URL **`http://localhost:8080/mcp`** or **`http://localhost:8080/t/<workspace-slug>/mcp`** in Cursor (e.g. server name `tymio-local` alongside production `tymio`).
 
-**Tenant context:** Remote MCP (OAuth on `/mcp`) may not attach the same tenant scoping as API-key flows; prefer **`API_KEY` + `activeTenantId`** for scripted access when strict tenant isolation matters — see `docs/HUB.md` §6.
+**Tenant context:** After OAuth, MCP runs tools under **`runWithTenant`**: on **`/mcp`**, tenant comes from the user’s **active workspace** (and valid **`X-Tenant-Id`** when used); on **`/t/<slug>/mcp`**, tenant is **pinned by the URL**. For **REST** scripts without a session, **`API_KEY`** + **`X-Tenant-Id`** (or workspace-plane **`/t/slug/api/...`** with session) still applies — see `docs/HUB.md` §1.2 and §6.
 
 ## Before any mutation
 
 1. **Confirm you are actually connected.** MCP tools (`drd_*`, `tymio_*`) exist only if the runtime has a working Tymio MCP config. If tools are missing or calls fail with auth/connection errors, **do not** claim data changed — tell the user to fix MCP or use REST with a key.
-2. **Auth:** Almost all `/api/*` returns **401** without a session cookie or `Authorization: Bearer <API_KEY>` (when the deployment has `API_KEY`). There is no anonymous tenant API.
+2. **Auth:** Almost all **`/api/*`** and **`/t/<workspace-slug>/api/*`** return **401** without a session cookie or `Authorization: Bearer <API_KEY>` (when the deployment has `API_KEY`). There is no anonymous tenant API.
 3. **Prefer live briefs over assumptions:** Call `tymio_get_agent_brief` (MCP) or authenticated `GET /api/ontology/brief` before planning work that depends on what the hub already exposes.
 
 ## Connect (typical)
 
-- **Remote MCP (recommended):** `POST https://tymio.app/mcp` (replace host if self-hosted). OAuth in browser; **no** API key for users to copy from the Tymio UI. Same identity and roles as the signed-in user.
-- **REST / scripts:** Base `https://tymio.app/api` with Bearer token (deployment **`API_KEY`**) or browser session — that key is **not** exposed in user Settings.
-- **Stdio npm package (`@tymio/mcp-server`):** Default = OAuth proxy to hosted `/mcp` after **`tymio-mcp login`** (full tools). If `DRD_API_KEY`/`API_KEY` is set on the process, you get the **REST subset** only. **Never** tell users to “get MCP API key from Settings” — it does not exist. Full Markdown: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../../../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md) (repo), `tymio-mcp instructions`, or `GET …/api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
+- **Remote MCP (recommended):** `POST https://tymio.app/mcp` or `POST https://tymio.app/t/<workspace-slug>/mcp` (replace host if self-hosted). OAuth in browser; **no** API key for users to copy from the Tymio UI. Same identity and roles as the signed-in user.
+- **REST / scripts:** Bases `https://tymio.app/api` and `https://tymio.app/t/<workspace-slug>/api` with Bearer token (deployment **`API_KEY`**) or browser session — that key is **not** exposed in user Settings.
+- **Stdio npm package (`@tymio/mcp-server`):** Default = OAuth proxy to hosted MCP (**`TYMIO_MCP_URL`**, default `…/mcp`; may be `…/t/<slug>/mcp`) after **`tymio-mcp login`** (full tools). If `DRD_API_KEY`/`API_KEY` is set on the process, you get the **REST subset** only. **Never** tell users to “get MCP API key from Settings” — it does not exist. Full Markdown: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../../../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md) (repo), `tymio-mcp instructions`, or `GET …/api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
 
 Public, unauthenticated pointers: `https://tymio.app/llms.txt`, `GET https://tymio.app/api/mcp/agent-context` (JSON, includes CLI guide + `tymioMcpNoUserSettingsApiKey: true`).
 

@@ -9,7 +9,7 @@ export function writeStdioStartupHint(mode: "oauth" | "api-key"): void {
   if (!process.stderr.isTTY) return;
   if (mode === "oauth") {
     process.stderr.write(
-      "[tymio-mcp] OAuth proxy to Tymio MCP. No MCP key in Tymio Settings — use login/OAuth. First run: `tymio-mcp login`. Set TYMIO_WORKSPACE_SLUG (or DRD_WORKSPACE_SLUG) to pin this server to one workspace. Guide: `tymio-mcp instructions` | `tymio-mcp help`\n"
+      "[tymio-mcp] OAuth proxy to Tymio MCP. No MCP key in Tymio Settings — use login/OAuth. First run: `tymio-mcp login`. TYMIO_MCP_URL may be …/mcp or …/t/<slug>/mcp. Set TYMIO_WORKSPACE_SLUG (or DRD_WORKSPACE_SLUG) to pin tool args to one workspace. Guide: `tymio-mcp instructions` | `tymio-mcp help`\n"
     );
   } else {
     process.stderr.write(

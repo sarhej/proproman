@@ -66,4 +66,4 @@ Respect tenant RBAC (lowest to highest): `VIEWER`, `EDITOR`, `ADMIN`, `SUPER_ADM
 
 ## 4. Stdio / API-key subset
 
-If the MCP client uses **`DRD_API_KEY` / `API_KEY`** (REST bridge), the **tool list is smaller** than remote OAuth MCP. For full PM/PO coverage of create/update/delete tools, prefer **remote `…/mcp` + OAuth** or **`tymio-mcp login`** without API key on the process — see [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).
+If the MCP client uses **`DRD_API_KEY` / `API_KEY`** (REST bridge), the **tool list is smaller** than remote OAuth MCP. For full PM/PO coverage of create/update/delete tools, prefer **remote `…/mcp` or `…/t/<workspace-slug>/mcp` + OAuth** or **`tymio-mcp login`** without API key on the process — see [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).

@@ -29,8 +29,8 @@ Record at least:
 - **Environments:** production and staging **base URLs** for the Tymio web app and API.
 - **Workspace:** **slug** (and tenant id if you use `X-Tenant-Id` for MCP/API automation).
 - **Product line (optional label):** each Product has a **`slug`** unique within the workspace. In docs and prompts use **`workspace-slug/product-slug`** (e.g. `demo/tymio-app`) so scope is obvious. This is **identification only**: initiatives may have **no** product; agents can still create work across products in the same workspace.
-- **MCP:** remote URL (`https://<host>/mcp`), auth method (OAuth vs API key / stdio), and any required headers.
-- **REST:** prefixes you use (`/api/initiatives`, `/api/ontology`, etc.) and how you authenticate (session, Bearer).
+- **MCP:** remote URL (`https://<host>/mcp` or `https://<host>/t/<slug>/mcp`), auth method (OAuth vs API key / stdio), and any required headers.
+- **REST:** prefixes you use (`/api/initiatives`, `/t/<slug>/api/...`, `/api/ontology`, etc.) and how you authenticate (session, Bearer, **`X-Tenant-Id`** if applicable).
 - **Ontology / guides:** paths such as `/api/ontology`, `/api/agent/coding-guide`, MCP tools `tymio_get_agent_brief`, and where **`context/AGENT_BRIEF.md`** lives if checked in.
 - **Product requirements in Tymio:** pointers to the right **initiatives**, **features**, or **requirements** (titles, ids, or stable links) so future sessions know *where the org’s ask is modeled*.
 - **UI languages:** the web app ships **en, cs, sk, uk, pl** (see `GET /api/mcp/agent-context` → `supportedUiLocales`, and `https://tymio.app/llms.txt` on production). Workspaces may restrict the in-app picker via **`Tenant.settings.enabledLocales`**.
@@ -46,7 +46,7 @@ Treat that file as the **source of truth** for “how this repo talks to Tymio.�
 - **Initiative:** roadmap item (often an **epic**); has priority, horizon, status, domain, owner, assignments, **features**, links to accounts/partners/demands/campaigns.
 - **Feature:** deliverable under an initiative; holds **requirements** (delivery granularity).
 - **Requirement:** checkable work item under a feature (kanban, detail pages).
-- **Tenant (workspace):** customer organization. Data isolation is **`tenantId` on rows** + **`tenantResolver` / Prisma extension** for browser and API-key traffic when an active workspace is set. **Product** is still not a tenant — see **[HUB.md §1.2](./HUB.md#12-multi-tenancy-as-implemented)** for resolution order, memberships, and the **remote MCP tenant gap**.
+- **Tenant (workspace):** customer organization. Data isolation is **`tenantId` on rows** + **`tenantResolver` / Prisma extension** for browser and API-key traffic when an active workspace is set; canonical hub URLs use **`/t/<workspace-slug>/…`**, with matching REST under **`/t/<slug>/api/…`**. **MCP** resolves tenant after OAuth on **`/mcp`** (active workspace / header) or **`/t/<slug>/mcp`** (path). **Product** is still not a tenant — see **[HUB.md §1.2](./HUB.md#12-multi-tenancy-as-implemented)**.
 
 **Typical flow:** *Demand or idea → Initiative → Features → Requirements → status / Gantt / milestones.*
 
@@ -70,8 +70,8 @@ Agents usually **do not** drive the UI; they use API/MCP. UI is the source of tr
 
 Public, browsable guides: **`https://<host>/wiki`** (and raw Markdown under **`/wiki/articles/`** on the same host).
 
-- **Local stdio (`@tymio/mcp-server`):** **Default for OpenClaw and CLI-first agents:** OAuth via **`tymio-mcp login`** (full hub tool surface via proxy to hosted `/mcp`). Register the **`tymio-mcp`** binary in the client’s MCP config (e.g. OpenClaw `mcp.servers` / `openclaw mcp set`). **Optional:** set `DRD_API_KEY` / `API_KEY` on the process for the REST subset only — that secret is **server deployment** configuration, not a user-facing Settings field.
-- **Remote:** `POST https://<host>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure **Cursor, Claude Code**, and other clients that support **remote Streamable HTTP + OAuth** with URL `https://<host>/mcp`. Initiate the connection, log in via the browser, and the agent receives a stable connection. **There is no per-user MCP API key in Tymio Settings** — do not instruct users to copy one from the UI. For **OpenClaw**, prefer stdio (**`tymio-mcp`**) unless your gateway version documents full remote OAuth for outbound MCP.
+- **Local stdio (`@tymio/mcp-server`):** **Default for OpenClaw and CLI-first agents:** OAuth via **`tymio-mcp login`** (full hub tool surface via proxy to hosted **`TYMIO_MCP_URL`**, default **`…/mcp`**; may be **`…/t/<workspace-slug>/mcp`**). Register the **`tymio-mcp`** binary in the client’s MCP config (e.g. OpenClaw `mcp.servers` / `openclaw mcp set`). **Optional:** set `DRD_API_KEY` / `API_KEY` on the process for the REST subset only — that secret is **server deployment** configuration, not a user-facing Settings field.
+- **Remote:** `POST https://<host>/mcp` or `POST https://<host>/t/<workspace-slug>/mcp` with Zero-Trust OAuth (PKCE + Refresh Token Rotation). Configure **Cursor, Claude Code**, and other clients that support **remote Streamable HTTP + OAuth** with the URL you need. Initiate the connection, log in via the browser, and the agent receives a stable connection. **There is no per-user MCP API key in Tymio Settings** — do not instruct users to copy one from the UI. For **OpenClaw**, prefer stdio (**`tymio-mcp`**) unless your gateway version documents full remote OAuth for outbound MCP.
 
 Canonical guide: [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md), [mcp/README.md](../mcp/README.md), and `GET /api/mcp/agent-context` → `tymioMcpCliAgentGuidanceMarkdown`.
 
@@ -89,8 +89,8 @@ Permissions match the **signed-in user** (or API-key user). **SUPER_ADMIN** is n
 
 ### 3.3 REST API
 
-- Base: same origin as app in production; local dev often `http://localhost:8080` with session cookie or `Authorization: Bearer <API_KEY>` for automation.
-- Examples: `GET /api/meta`, `GET/POST /api/initiatives`, `GET/POST /api/features`, requirements, ontology endpoints under `/api/ontology/*`. See `server/src/routes/`.
+- Bases: same origin as app in production; **`/api/...`** (legacy and scripts) and **`/t/<workspace-slug>/api/...`** (browser hub plane). Local dev often `http://localhost:8080` with session cookie or `Authorization: Bearer <API_KEY>` for automation.
+- Examples: `GET /api/meta` or `GET /t/<slug>/api/meta`, `GET/POST /api/initiatives`, ontology under `/api/ontology/*`. See `server/src/routes/` and **`docs/HUB.md` §1.2**.
 
 ### 3.4 Repo files & CLI
 
