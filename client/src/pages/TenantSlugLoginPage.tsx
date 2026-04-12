@@ -12,6 +12,26 @@ import type { UserRole } from "../types/models";
 
 const DEV_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EDITOR", "MARKETING", "VIEWER"];
 
+function MainSignInAlternative() {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50/90 p-4 shadow-sm">
+      <p className="mb-3 text-center text-sm font-medium text-slate-800">{t("tenantSlug.differentWorkspaceHint")}</p>
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full border-slate-300 font-medium"
+        onClick={() => {
+          clearPostAuthWorkspaceSlug();
+          window.location.href = "/";
+        }}
+      >
+        {t("tenantSlug.differentWorkspace")}
+      </Button>
+    </div>
+  );
+}
+
 type Props = {
   onAuthenticated: () => void;
   /** Workspace slug from the URL path `/t/:slug` (must be passed from App — there is no `<Route path="/t/:slug">`, so `useParams()` would always be empty). */
@@ -307,15 +327,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
               {magicErr ? <p className="text-sm text-red-600">{magicErr}</p> : null}
             </form>
           )}
-          <div className="mt-4 text-center">
-            <a
-              href="/"
-              className="text-xs text-slate-400 hover:text-slate-600"
-              onClick={() => clearPostAuthWorkspaceSlug()}
-            >
-              {t("tenantSlug.differentWorkspace")}
-            </a>
-          </div>
+          <MainSignInAlternative />
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
@@ -377,15 +389,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           <Button variant="secondary" onClick={() => window.location.reload()}>
             {t("tenantSlug.provisioningRetry")}
           </Button>
-          <div className="mt-4 text-center">
-            <a
-              href="/"
-              className="text-xs text-slate-400 hover:text-slate-600"
-              onClick={() => clearPostAuthWorkspaceSlug()}
-            >
-              {t("tenantSlug.goHome")}
-            </a>
-          </div>
+          <MainSignInAlternative />
         </Card>
         <AgentMcpCliHiddenGuidance />
       </div>
@@ -473,15 +477,7 @@ export function TenantSlugLoginPage({ onAuthenticated, workspaceSlug }: Props) {
           )}
         </div>
 
-        <div className="mt-4 text-center">
-          <a
-            href="/"
-            className="text-xs text-slate-400 hover:text-slate-600"
-            onClick={() => clearPostAuthWorkspaceSlug()}
-          >
-            {t("tenantSlug.differentWorkspace")}
-          </a>
-        </div>
+        <MainSignInAlternative />
       </Card>
       <LegalFooterLinks className="mt-6 text-center text-xs text-slate-400" />
       <AgentMcpCliHiddenGuidance />

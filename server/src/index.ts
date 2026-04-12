@@ -1,7 +1,7 @@
 // Tymio API server (Express)
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import express from "express";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -51,6 +51,8 @@ import { requireAuth } from "./middleware/auth.js";
 import { mountMcp } from "./mcp/setup.js";
 import { requireTenant } from "./tenant/requireTenant.js";
 import { tenantResolver } from "./tenant/tenantResolver.js";
+import { mountTenantScopedLegacyAndWorkspace } from "./tenant/workspaceApiMount.js";
+import { resolveWorkspacePathTenant } from "./tenant/workspacePathTenant.js";
 import { tenantsRouter } from "./routes/tenants.js";
 import {
   tenantRequestsRouter,
@@ -178,43 +180,7 @@ function mountTenantScoped(path: string, router: express.Router): void {
   app.use(path, requireAuth, requireTenant, router);
 }
 
-app.use("/api/auth", authRouter);
-mountTenantScoped("/api/meta", metaRouter);
-mountTenantScoped("/api/hub-events", hubEventsRouter);
-mountTenantScoped("/api/initiatives", initiativesRouter);
-mountTenantScoped("/api/features", featuresRouter);
-mountTenantScoped("/api/decisions", decisionsRouter);
-mountTenantScoped("/api/risks", risksRouter);
-mountTenantScoped("/api/dependencies", dependenciesRouter);
-mountTenantScoped("/api/products", productsRouter);
-mountTenantScoped("/api", executionBoardsRouter);
-mountTenantScoped("/api/accounts", accountsRouter);
-mountTenantScoped("/api/partners", partnersRouter);
-mountTenantScoped("/api/demands", demandsRouter);
-mountTenantScoped("/api/requirements", requirementsRouter);
-mountTenantScoped("/api/assignments", assignmentsRouter);
-mountTenantScoped("/api/timeline", timelineRouter);
-mountTenantScoped("/api/campaigns", campaignsRouter);
-mountTenantScoped("/api/assets", assetsRouter);
-mountTenantScoped("/api/campaign-links", campaignLinksRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/admin", importExportRouter);
-app.use("/api/tenants", tenantsRouter);
-mountTenantScoped("/api/domains", domainsRouter);
-mountTenantScoped("/api/personas", personasRouter);
-mountTenantScoped("/api/revenue-streams", revenueStreamsRouter);
-mountTenantScoped("/api/milestones", milestonesRouter);
-mountTenantScoped("/api/kpis", kpisRouter);
-mountTenantScoped("/api/stakeholders", stakeholdersRouter);
-mountTenantScoped("/api/messages", messagesRouter);
-mountTenantScoped("/api/notification-subscriptions", notificationSubscriptionsRouter);
-app.use("/api/me", meSessionRouter);
-app.use("/api/me", meRouter);
-app.use("/api/ontology", ontologyRouter);
-app.use("/api/ui-settings", uiSettingsRouter);
-app.use("/api/agent", agentGuideRouter);
-
-app.get("/api/export/initiatives.csv", requireAuth, requireTenant, async (_req, res) => {
+async function exportInitiativesCsvHandler(_req: Request, res: Response): Promise<void> {
   const initiatives = await prisma.initiative.findMany({
     include: {
       domain: true,
@@ -242,7 +208,62 @@ app.get("/api/export/initiatives.csv", requireAuth, requireTenant, async (_req, 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=initiatives.csv");
   res.send(lines.join("\n"));
+}
+
+app.use("/api/auth", authRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/meta", metaRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/hub-events", hubEventsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/initiatives", initiativesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/features", featuresRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/decisions", decisionsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/risks", risksRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/dependencies", dependenciesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/products", productsRouter);
+/**
+ * Session-only and auth-only /api routes must register **before** the catch-all
+ * `mountTenantScoped("/api", executionBoardsRouter)` below. That stack runs
+ * requireTenant on every /api request; users listing workspaces (GET /api/me/tenants)
+ * often have no resolved tenant yet — otherwise TenantPicker fails with 400.
+ */
+app.use("/api/me", meSessionRouter);
+app.use("/api/me", meRouter);
+app.use("/api/ui-settings", uiSettingsRouter);
+app.use("/api/agent", agentGuideRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api", executionBoardsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/accounts", accountsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/partners", partnersRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/demands", demandsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/requirements", requirementsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/assignments", assignmentsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/timeline", timelineRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/campaigns", campaignsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/assets", assetsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/campaign-links", campaignLinksRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/admin", importExportRouter);
+app.use("/api/tenants", tenantsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/domains", domainsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/personas", personasRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/revenue-streams", revenueStreamsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/milestones", milestonesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/kpis", kpisRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/stakeholders", stakeholdersRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/messages", messagesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/notification-subscriptions", notificationSubscriptionsRouter);
+app.use("/api/ontology", ontologyRouter);
+
+app.get("/api/export/initiatives.csv", requireAuth, requireTenant, (req, res, next) => {
+  void exportInitiativesCsvHandler(req, res).catch(next);
 });
+app.get(
+  "/t/:workspaceSlug/api/export/initiatives.csv",
+  requireAuth,
+  resolveWorkspacePathTenant,
+  requireTenant,
+  (req, res, next) => {
+    void exportInitiativesCsvHandler(req, res).catch(next);
+  }
+);
 
 /** Public legal pages (same origin as API in production; Vite proxies /legal in dev). */
 registerLegalRoutes(app);

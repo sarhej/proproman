@@ -51,6 +51,22 @@ describe("tenantResolver middleware", () => {
     expect(req.tenantContext).toBeUndefined();
   });
 
+  it("skips header/session resolution for canonical workspace-plane paths", async () => {
+    const req = createReq({
+      path: "/t/acme/api/meta",
+      user: { id: "u1", activeTenantId: null } as Express.User,
+      headers: { "x-tenant-id": "t-other" },
+    });
+    const res = createRes();
+    const next = vi.fn();
+
+    await tenantResolver(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(req.tenantContext).toBeUndefined();
+    expect(mockPrisma.tenantMembership.findUnique).not.toHaveBeenCalled();
+  });
+
   it("resolves tenant from X-Tenant-Id header", async () => {
     const req = createReq({
       user: { id: "u1", activeTenantId: null } as Express.User,

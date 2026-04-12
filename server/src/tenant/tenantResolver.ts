@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../db.js";
 import { runWithTenant, TenantContext } from "./tenantContext.js";
+import { isCanonicalWorkspacePlanePath } from "./workspacePathTenant.js";
 
 async function tryResolveActiveTenant(
   userId: string,
@@ -96,6 +97,12 @@ async function firstActiveMembershipContext(userId: string): Promise<TenantConte
  * When a tenant is resolved, session.activeTenantId is updated to match so the next request agrees.
  */
 export async function tenantResolver(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /** Workspace-plane URLs resolve tenant only from `/t/:slug/...` (see resolveWorkspacePathTenant). */
+  if (isCanonicalWorkspacePlanePath(req.path)) {
+    next();
+    return;
+  }
+
   const user = req.user;
   if (!user) {
     next();

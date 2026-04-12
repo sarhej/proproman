@@ -7,9 +7,12 @@ import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middlew
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
-import { runWithTenant } from "../tenant/tenantContext.js";
+import { runWithTenant, type TenantContext } from "../tenant/tenantContext.js";
 import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
-import { resolveMcpTenantContext } from "./resolveMcpTenantContext.js";
+import {
+  resolveMcpTenantContext,
+  resolveMcpTenantContextFromWorkspaceSlug,
+} from "./resolveMcpTenantContext.js";
 import { registerTools } from "./tools.js";
 
 const provider = new TymioOAuthProvider();
@@ -86,8 +89,13 @@ export function mountMcp(app: express.Express): void {
     resourceMetadataUrl: `${base}/.well-known/oauth-protected-resource/mcp`
   });
 
-  // MCP Streamable HTTP endpoint
-  app.all("/mcp", bearerAuth, async (req: Request, res: Response) => {
+  const verifyToken = (t: string) => provider.verifyAccessToken(t);
+
+  async function mcpStreamableHttpHandler(
+    req: Request,
+    res: Response,
+    resolveTenant: () => Promise<TenantContext | undefined>
+  ): Promise<void> {
     try {
       const handleTransportRequest = async () => {
         const sessionId = req.headers["mcp-session-id"] as string | undefined;
@@ -103,8 +111,6 @@ export function mountMcp(app: express.Express): void {
           return;
         }
 
-        // New session: create transport, connect server, then handle the request.
-        // The session ID is generated inside handleRequest, so we store after.
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID()
         });
@@ -121,7 +127,7 @@ export function mountMcp(app: express.Express): void {
         }
       };
 
-      const tenantContext = await resolveMcpTenantContext(req, (t) => provider.verifyAccessToken(t), prisma);
+      const tenantContext = await resolveTenant();
       if (!tenantContext) {
         res.status(403).json({
           error: "No active workspace membership. Connect to a workspace before using MCP tools."
@@ -138,11 +144,22 @@ export function mountMcp(app: express.Express): void {
         res.status(500).json({ error: "Internal server error" });
       }
     }
+  }
+
+  app.all("/mcp", bearerAuth, async (req: Request, res: Response) => {
+    await mcpStreamableHttpHandler(req, res, () => resolveMcpTenantContext(req, verifyToken, prisma));
+  });
+
+  app.all("/t/:workspaceSlug/mcp", bearerAuth, async (req: Request, res: Response) => {
+    const slug = String(req.params.workspaceSlug ?? "");
+    await mcpStreamableHttpHandler(req, res, () =>
+      resolveMcpTenantContextFromWorkspaceSlug(req, slug, verifyToken)
+    );
   });
 
   // Hydrate OAuth client store from DB (non-blocking; avoids Invalid client_id after deploy)
   loadMcpOAuthClients().catch((err) => {
     console.error("[MCP] Failed to load OAuth clients from DB (table may be missing). Re-auth after migration.", err);
   });
-  console.log("MCP OAuth endpoint mounted at /mcp");
+  console.log("MCP Streamable HTTP mounted at /mcp and /t/:workspaceSlug/mcp");
 }

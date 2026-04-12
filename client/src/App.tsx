@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   Navigate,
   Outlet,
@@ -73,6 +81,7 @@ import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
 import { resetDocumentSeoDefaults, SeoHead } from "./components/seo/SeoHead";
+import { applyWorkspacePrefixToApiPath, setWorkspaceApiCanonicalSlug } from "./lib/workspaceApiRouting";
 import {
   parseWorkspacePath,
   stripWorkspacePrefix,
@@ -129,6 +138,16 @@ function App() {
     Boolean(user) &&
     !authLoading &&
     (workspaceSlugGate.state === "checking" || workspaceSlugGate.state === "no_membership");
+
+  /** URL-canonical workspace for `/t/:slug/api/...` (set before board fetch effects run). */
+  const canonicalWorkspaceApiSlug = useMemo(() => {
+    if (!user || user.role === "PENDING" || needsTenantPick || blockWorkspaceSlugGate) return null;
+    return tenantSlug ?? null;
+  }, [user, user?.role, needsTenantPick, blockWorkspaceSlugGate, tenantSlug]);
+
+  useLayoutEffect(() => {
+    setWorkspaceApiCanonicalSlug(canonicalWorkspaceApiSlug);
+  }, [canonicalWorkspaceApiSlug]);
 
   /** PENDING users are not allowed past requireAuth on tenant-scoped APIs — do not load board/meta/initiatives. */
   const boardDataEnabled =
@@ -267,6 +286,7 @@ function App() {
 
   useWorkspaceHubEvents({
     enabled: boardDataEnabled && Boolean(activeTenant?.id),
+    workspaceApiSlug: canonicalWorkspaceApiSlug,
     onEvent: handleHubEvent
   });
 
@@ -733,7 +753,10 @@ function App() {
         window.location.reload();
       }}
       onExport={() => {
-        window.open(`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/export/initiatives.csv`, "_blank");
+        window.open(
+          `${import.meta.env.VITE_API_BASE_URL ?? ""}${applyWorkspacePrefixToApiPath("/api/export/initiatives.csv")}`,
+          "_blank"
+        );
       }}
       onExportPdf={() => {
         window.print();

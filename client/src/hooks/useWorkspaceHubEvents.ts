@@ -3,15 +3,16 @@ import type { HubChangeEventPayload } from "../lib/hubChangeEvent";
 
 type Options = {
   enabled: boolean;
+  /** When set, subscribe under `/t/:slug/api/hub-events/stream` (canonical workspace plane). */
+  workspaceApiSlug?: string | null;
   onEvent: (event: HubChangeEventPayload) => void;
 };
 
 /**
- * Subscribes to workspace hub change SSE (`/api/hub-events/stream`).
- * Dedupes by `eventId`. Uses session cookies + `X-Tenant-Id` parity via API client tenant header
- * on other requests; stream follows server-resolved active workspace when the header is absent.
+ * Subscribes to workspace hub change SSE (`/api/hub-events/stream` or `/t/:slug/api/...`).
+ * EventSource cannot send `X-Tenant-Id`; when `workspaceApiSlug` is set, the URL pins the workspace.
  */
-export function useWorkspaceHubEvents({ enabled, onEvent }: Options): void {
+export function useWorkspaceHubEvents({ enabled, workspaceApiSlug, onEvent }: Options): void {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
   const seenRef = useRef<Set<string>>(new Set());
@@ -21,7 +22,10 @@ export function useWorkspaceHubEvents({ enabled, onEvent }: Options): void {
     if (typeof EventSource === "undefined") return;
 
     const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
-    const path = "/api/hub-events/stream";
+    const path =
+      workspaceApiSlug && workspaceApiSlug.trim() !== ""
+        ? `/t/${encodeURIComponent(workspaceApiSlug.trim())}/api/hub-events/stream`
+        : "/api/hub-events/stream";
     const url = base ? `${base}${path}` : path;
 
     const es = new EventSource(url, { withCredentials: true });
@@ -48,5 +52,5 @@ export function useWorkspaceHubEvents({ enabled, onEvent }: Options): void {
     return () => {
       es.close();
     };
-  }, [enabled]);
+  }, [enabled, workspaceApiSlug]);
 }

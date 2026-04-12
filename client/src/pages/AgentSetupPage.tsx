@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AgentMcpCliHiddenGuidance } from "../components/agent/AgentMcpCliHiddenGuidance";
 import { Card } from "../components/ui/Card";
 import { Bot, Copy, Check } from "lucide-react";
@@ -21,8 +21,12 @@ const OPENCLAW_MCP_SET = `openclaw mcp set tymio '{"command":"tymio-mcp","args":
 export function AgentSetupPage() {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-
-  const mcpUrl = `${window.location.origin}/mcp`;
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const slug = workspaceSlug?.trim() ?? "";
+  const mcpUrl =
+    slug !== ""
+      ? `${window.location.origin}/t/${encodeURIComponent(slug)}/mcp`
+      : `${window.location.origin}/mcp`;
 
   const handleCopy = async () => {
     try {

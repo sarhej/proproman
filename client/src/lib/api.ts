@@ -41,17 +41,20 @@ import type {
   ExecutionColumn
 } from "../types/models";
 
+import { applyWorkspacePrefixToApiPath } from "./workspaceApiRouting";
 import { getWorkspaceTenantIdForApi } from "./workspaceTenantHeader";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const resolvedPath = applyWorkspacePrefixToApiPath(path);
   const tenantId = getWorkspaceTenantIdForApi();
-  const response = await fetch(`${baseUrl}${path}`, {
+  const useWorkspacePlane = resolvedPath.startsWith("/t/");
+  const response = await fetch(`${baseUrl}${resolvedPath}`, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
+      ...(!useWorkspacePlane && tenantId ? { "X-Tenant-Id": tenantId } : {}),
       ...(init?.headers || {})
     },
     ...init
