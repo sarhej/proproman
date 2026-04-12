@@ -1,6 +1,6 @@
 {
   "name": "@tymio/mcp-server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Tymio MCP CLI: OAuth stdio proxy to hosted MCP, API-key REST bridge, bundled PM/PO/DEV/workspace agent personas",
   "type": "module",
   "main": "dist/index.js",

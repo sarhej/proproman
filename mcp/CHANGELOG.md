@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.0.1
 
-- Documentation: hosted MCP may be **`/mcp`** or **`/t/<workspace-slug>/mcp`**; **`TYMIO_MCP_URL`** / **`tymio-mcp login`** and wiki/llms/agent guides updated accordingly.
+- **OAuth login** — authorization error responses from the local callback server are **plain text** (simpler than HTML error pages).
+- **Documentation** — agent guidance, README, and CLI hints clarify **`/mcp`** vs **`/t/<workspace-slug>/mcp`** for **`TYMIO_MCP_URL`** / **`tymio-mcp login`**.
+- **npm metadata** — additional **keywords** (`openclaw`, `product-management`, `roadmap`, `backlog`, `planning`) for discoverability.
 
 ## 2.0.0
 
