@@ -20,7 +20,7 @@ export function createWorkspaceAtlasHubRebuildScheduler(options: {
     const t = setTimeout(() => {
       debounceTimers.delete(tenantId);
       void compile(tenantId).catch((err) => {
-        console.error(`[workspace-atlas] debounced rebuild failed tenant=${tenantId}`, err);
+        console.error("[workspace-atlas] debounced rebuild failed for tenant", tenantId, err);
       });
     }, debounceMs);
     debounceTimers.set(tenantId, t);
