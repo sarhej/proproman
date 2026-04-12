@@ -68,6 +68,44 @@ describe("RegisterTeamPage", () => {
     expect(screen.queryByRole("heading", { name: /Registration request submitted/i })).not.toBeInTheDocument();
   });
 
+  it("shows auto-approved success when API returns APPROVED but no onWorkspaceProvisioned (signed-out flow)", async () => {
+    const user = userEvent.setup();
+    mockSubmit.mockResolvedValue({
+      id: "tr-auto",
+      teamName: "Team A",
+      slug: "team-a",
+      contactEmail: "u@company.com",
+      contactName: "User",
+      status: "APPROVED",
+      tenantId: "t1",
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: null,
+      message: null,
+      preferredLocale: null,
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tenant: { id: "t1", name: "Team A", slug: "team-a", status: "ACTIVE" },
+      emailNotifications: { autoApproved: true, decisionEmailsConfigured: false },
+    });
+
+    renderPage({
+      prefilledContact: { email: "u@company.com", name: "User" },
+    });
+
+    await user.type(screen.getByPlaceholderText("Acme Corp"), "My Team");
+    await user.click(screen.getByRole("button", { name: /Submit registration request/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Your workspace is ready/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: /Registration request submitted/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open \/t\/team-a/i })).toHaveAttribute("href", expect.stringContaining("/t/team-a"));
+  });
+
   it("shows success state when request stays PENDING (no callback navigation)", async () => {
     const user = userEvent.setup();
     mockSubmit.mockResolvedValue({

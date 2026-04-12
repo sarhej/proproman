@@ -920,7 +920,11 @@
     "inviteEmailsPlaceholder": "kolega@firma.sk\niny@firma.sk",
     "inviteEmailsHelp": "Jeden e-mail na riadok alebo oddelené čiarkou. Po schválení workspace vytvoríme účty a pošleme pozvánky (max 20).",
     "trustDomain": "Zaregistrovať e-mailovú doménu mojej firmy pre tento workspace (pre budúce pravidlá prístupu).",
-    "successRequestId": "ID žiadosti: {{id}}"
+    "successRequestId": "ID žiadosti: {{id}}",
+    "successAutoApprovedTitle": "Váš workspace je pripravený",
+    "successAutoApprovedLead": "Workspace sme vytvorili na /t/{{slug}}. Prihláste sa kontaktným e-mailom, ktorý ste uviedli.",
+    "successAutoApprovedSignIn": "Použite rovnakú adresu ({{email}}) cez Google, Microsoft alebo magický odkaz na úvodnej stránke.",
+    "successAutoApprovedOpenLink": "Otvoriť /t/{{slug}} (najprv sa môžete musieť prihlásiť)"
   },
   "workspaceSettings": {
     "title": "Nastavenia pracovného priestoru",

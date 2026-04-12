@@ -921,7 +921,11 @@
     "inviteEmailsPlaceholder": "colleague@company.com\nanother@company.com",
     "inviteEmailsHelp": "One email per line or comma-separated. We create accounts and send invitations after your workspace is approved (max 20).",
     "trustDomain": "Register my company email domain for this workspace (for future teammate access policies).",
-    "successRequestId": "Request ID: {{id}}"
+    "successRequestId": "Request ID: {{id}}",
+    "successAutoApprovedTitle": "Your workspace is ready",
+    "successAutoApprovedLead": "We created your workspace at /t/{{slug}}. Sign in with the contact email you used to open it.",
+    "successAutoApprovedSignIn": "Use the same address ({{email}}) with Google, Microsoft, or email magic link on the home page.",
+    "successAutoApprovedOpenLink": "Open /t/{{slug}} (you may need to sign in first)"
   },
   "workspaceSettings": {
     "title": "Workspace settings",

@@ -920,7 +920,11 @@
     "inviteEmailsPlaceholder": "колега@компанія.ua\nінший@компанія.ua",
     "inviteEmailsHelp": "Одна адреса на рядок або через кому. Після схвалення workspace ми створимо облікові записи й надішлемо запрошення (макс. 20).",
     "trustDomain": "Зареєструвати домен корпоративної пошти для цього workspace (для майбутніх правил доступу).",
-    "successRequestId": "ID запиту: {{id}}"
+    "successRequestId": "ID запиту: {{id}}",
+    "successAutoApprovedTitle": "Ваш робочий простір готовий",
+    "successAutoApprovedLead": "Ми створили простір за адресою /t/{{slug}}. Увійдіть з контактною електронною поштою, яку ви вказали.",
+    "successAutoApprovedSignIn": "Використайте ту саму адресу ({{email}}) через Google, Microsoft або чарівне посилання на головній сторінці.",
+    "successAutoApprovedOpenLink": "Відкрити /t/{{slug}} (спочатку може знадобитися вхід)"
   },
   "workspaceSettings": {
     "title": "Налаштування робочого простору",

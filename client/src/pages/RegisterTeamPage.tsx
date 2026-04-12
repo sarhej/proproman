@@ -42,6 +42,8 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  /** When the server auto-provisioned the workspace but the host did not supply onWorkspaceProvisioned (e.g. signed-out /register-workspace). */
+  const [autoProvisionedSlug, setAutoProvisionedSlug] = useState<string | null>(null);
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
   const [submitEmailMeta, setSubmitEmailMeta] = useState<{
     adminsNotifiedOnSubmit: boolean;
@@ -95,10 +97,17 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
         ...(locale ? { locale } : {}),
       });
       const provisionedSlug = res.tenant?.slug;
-      if (res.status === "APPROVED" && provisionedSlug && onWorkspaceProvisioned) {
-        await onWorkspaceProvisioned(provisionedSlug);
+      if (res.status === "APPROVED" && provisionedSlug) {
+        if (onWorkspaceProvisioned) {
+          await onWorkspaceProvisioned(provisionedSlug);
+          return;
+        }
+        setAutoProvisionedSlug(provisionedSlug);
+        setSubmittedRequestId(res.id);
+        setSubmitted(true);
         return;
       }
+      setAutoProvisionedSlug(null);
       const n = res.emailNotifications;
       setSubmitEmailMeta({
         adminsNotifiedOnSubmit: n?.adminsNotifiedOnSubmit === true,
@@ -138,18 +147,37 @@ export function RegisterTeamPage({ onBack, prefilledContact, backLabelKey, onWor
                 </svg>
               </div>
             </div>
-            <h2 className="mb-2 text-lg font-semibold text-slate-800">{t("register.successTitle")}</h2>
+            <h2 className="mb-2 text-lg font-semibold text-slate-800">
+              {autoProvisionedSlug ? t("register.successAutoApprovedTitle") : t("register.successTitle")}
+            </h2>
             <div className="mb-6 space-y-2 text-sm text-slate-600">
-              <p>{t("register.successLead")}</p>
+              {autoProvisionedSlug ? (
+                <>
+                  <p>{t("register.successAutoApprovedLead", { slug: autoProvisionedSlug })}</p>
+                  <p>{t("register.successAutoApprovedSignIn", { email: contactEmail })}</p>
+                  <p>
+                    <a
+                      className="font-medium text-sky-700 underline hover:text-sky-900"
+                      href={`${publicOrigin}/t/${encodeURIComponent(autoProvisionedSlug)}`}
+                    >
+                      {t("register.successAutoApprovedOpenLink", { slug: autoProvisionedSlug })}
+                    </a>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>{t("register.successLead")}</p>
+                  {submitEmailMeta.adminsNotifiedOnSubmit ? <p>{t("register.successAdminsEmailed")}</p> : null}
+                  {submitEmailMeta.decisionEmailsConfigured ? (
+                    <p>{t("register.successDecisionEmailPromise", { email: contactEmail })}</p>
+                  ) : (
+                    <p>{t("register.successNoDecisionEmailPromise")}</p>
+                  )}
+                </>
+              )}
               {submittedRequestId ? (
                 <p className="font-mono text-xs text-slate-500">{t("register.successRequestId", { id: submittedRequestId })}</p>
               ) : null}
-              {submitEmailMeta.adminsNotifiedOnSubmit ? <p>{t("register.successAdminsEmailed")}</p> : null}
-              {submitEmailMeta.decisionEmailsConfigured ? (
-                <p>{t("register.successDecisionEmailPromise", { email: contactEmail })}</p>
-              ) : (
-                <p>{t("register.successNoDecisionEmailPromise")}</p>
-              )}
             </div>
             <Button variant="secondary" onClick={onBack}>
               {backLabel}

@@ -920,7 +920,11 @@
     "inviteEmailsPlaceholder": "kolega@firma.cz\ndalsi@firma.cz",
     "inviteEmailsHelp": "Jeden e-mail na řádek nebo oddělené čárkou. Po schválení workspace vytvoříme účty a pošleme pozvánky (max 20).",
     "trustDomain": "Zaregistrovat e-mailovou doménu mé firmy pro tento workspace (pro budoucí pravidla přístupu).",
-    "successRequestId": "ID žádosti: {{id}}"
+    "successRequestId": "ID žádosti: {{id}}",
+    "successAutoApprovedTitle": "Váš workspace je připraven",
+    "successAutoApprovedLead": "Workspace jsme vytvořili na /t/{{slug}}. Přihlaste se kontaktním e-mailem, který jste uvedli.",
+    "successAutoApprovedSignIn": "Použijte stejnou adresu ({{email}}) přes Google, Microsoft nebo magický odkaz na úvodní stránce.",
+    "successAutoApprovedOpenLink": "Otevřít /t/{{slug}} (nejprve se můžete muset přihlásit)"
   },
   "workspaceSettings": {
     "title": "Nastavení pracovního prostoru",

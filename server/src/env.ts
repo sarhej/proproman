@@ -78,7 +78,11 @@ const envSchema = z.object({
   AUTO_APPROVE_WORKSPACE_REQUESTS: z
     .string()
     .optional()
-    .transform((v) => v === "true" || v === "1" || v === "yes"),
+    .transform((v) => {
+      if (v === undefined || typeof v !== "string") return false;
+      const s = v.trim().toLowerCase();
+      return s === "true" || s === "1" || s === "yes" || s === "on";
+    }),
   /** Optional: directory for compiled workspace-atlas + object shards (default: server/data/workspace-atlas). */
   WORKSPACE_ATLAS_DATA_DIR: optionalString,
   /** Debounce (ms) before rebuilding atlas after hub change events. */

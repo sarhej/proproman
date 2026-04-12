@@ -921,7 +921,11 @@
     "inviteEmailsPlaceholder": "kolega@firma.pl\ninny@firma.pl",
     "inviteEmailsHelp": "Jeden e-mail w linii lub rozdzielone przecinkami. Po zatwierdzeniu workspace utworzymy konta i wyślemy zaproszenia (maks. 20).",
     "trustDomain": "Zarejestruj domenę e-mail mojej firmy dla tego workspace (na przyszłe zasady dostępu).",
-    "successRequestId": "ID wniosku: {{id}}"
+    "successRequestId": "ID wniosku: {{id}}",
+    "successAutoApprovedTitle": "Twoja przestrzeń jest gotowa",
+    "successAutoApprovedLead": "Utworzyliśmy przestrzeń pod adresem /t/{{slug}}. Zaloguj się tym samym adresem e-mail, który podałeś(-aś) w kontakcie.",
+    "successAutoApprovedSignIn": "Użyj tego samego adresu ({{email}}) przez Google, Microsoft lub link magiczny na stronie głównej.",
+    "successAutoApprovedOpenLink": "Otwórz /t/{{slug}} (możesz najpierw musieć się zalogować)"
   },
   "workspaceSettings": {
     "title": "Ustawienia przestrzeni roboczej",
