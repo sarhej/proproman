@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import express, { Request, Response } from "express";
+import express, { type NextFunction, Request, Response } from "express";
+import cors from "cors";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
@@ -11,6 +12,11 @@ import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthCl
 import { resolveMcpTenantContextFromWorkspaceSlug } from "./resolveMcpTenantContext.js";
 import { registerGlobalMcpTools } from "./globalMcpTools.js";
 import { registerTools } from "./tools.js";
+import {
+  buildTenantMcpProtectedResourceMetadata,
+  globalMcpProtectedResourceMetadataUrl,
+  tenantMcpProtectedResourceMetadataUrl
+} from "./mcpProtectedResource.js";
 
 const provider = new TymioOAuthProvider();
 
@@ -46,6 +52,16 @@ export function mountMcp(app: express.Express): void {
       scopesSupported: ["mcp:tools"],
       resourceName: "Tymio MCP"
     })
+  );
+
+  // Workspace MCP: PRM must advertise `resource` = `…/t/<slug>/mcp` (Cursor validates vs Server URL).
+  app.get(
+    "/.well-known/oauth-protected-resource/t/:workspaceSlug/mcp",
+    cors(),
+    (req: Request, res: Response) => {
+      const slug = String(req.params.workspaceSlug ?? "");
+      res.status(200).json(buildTenantMcpProtectedResourceMetadata(base, issuerUrl.href, slug));
+    }
   );
 
   // Google OAuth callback (the intermediate redirect from Google back to us)
@@ -84,11 +100,21 @@ export function mountMcp(app: express.Express): void {
       }
     }
   };
-  const bearerAuth = requireBearerAuth({
+  const bearerAuthGlobal = requireBearerAuth({
     verifier: loggingVerifier,
     requiredScopes: [],
-    resourceMetadataUrl: `${base}/.well-known/oauth-protected-resource/mcp`
+    resourceMetadataUrl: globalMcpProtectedResourceMetadataUrl(base)
   });
+
+  function bearerAuthTenant(req: Request, res: Response, next: NextFunction): void {
+    const slug = String(req.params.workspaceSlug ?? "");
+    const resourceMetadataUrl = tenantMcpProtectedResourceMetadataUrl(base, slug);
+    requireBearerAuth({
+      verifier: loggingVerifier,
+      requiredScopes: [],
+      resourceMetadataUrl
+    })(req, res, next);
+  }
 
   const verifyToken = (t: string) => provider.verifyAccessToken(t);
 
@@ -155,11 +181,11 @@ export function mountMcp(app: express.Express): void {
     }
   }
 
-  app.all("/mcp", bearerAuth, async (req: Request, res: Response) => {
+  app.all("/mcp", bearerAuthGlobal, async (req: Request, res: Response) => {
     await mcpStreamableHttpHandler(req, res, { mode: "global" });
   });
 
-  app.all("/t/:workspaceSlug/mcp", bearerAuth, async (req: Request, res: Response) => {
+  app.all("/t/:workspaceSlug/mcp", bearerAuthTenant, async (req: Request, res: Response) => {
     const slug = String(req.params.workspaceSlug ?? "");
     await mcpStreamableHttpHandler(req, res, {
       mode: "tenant",
