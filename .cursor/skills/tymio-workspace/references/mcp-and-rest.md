@@ -4,7 +4,7 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 
 **Autonomous agents — session gate:** Before any `drd_*` / `tymio_*` call, ensure the MCP client has completed **OAuth** (or **`mcp_auth` with `{}`** if the client exposes it for Tymio). **Verify** with **`drd_health`** or **`tymio_get_agent_brief`**. If that fails, stop and have the user sign in; do not claim hub mutations or replace live work with offline “import specs” unless the user asked for documents only.
 
-**Autonomous agents — routing:** **`POST …/mcp`** is **discovery-only** (two tools: list workspaces + routing guide). **Full** MCP (`drd_*`, workspace `tymio_*`) is **`POST …/t/<slug>/mcp`** only. Same OAuth; **trim** Server URL. Never reuse backlog **IDs** across workspaces.
+**Autonomous agents — routing:** **`POST …/mcp`** is **discovery-only** (two tools: list workspaces + **`tymio_mcp_routing_guide`** with copy-paste **`.cursor/mcp.json`** / **`.mcp.json`** templates). **Full** MCP (`drd_*`, workspace `tymio_*`) is **`POST …/t/<slug>/mcp`** only. Same OAuth; **trim** Server URL. Never reuse backlog **IDs** across workspaces.
 
 **Cursor mismatch:** If **`drd_*`** tools are missing, the MCP URL is almost certainly root **`…/mcp`** — switch to **`…/t/<slug>/mcp`**. See `tymio-workspace` skill.
 

@@ -19,6 +19,15 @@ Both paths use the same OAuth resource metadata. Use **`/t/<slug>/mcp`** in Curs
 | **Cursor**, **Claude Code**, or clients with **remote** MCP + browser OAuth | Add **`https://<host>/t/<workspace-slug>/mcp`** for full tools. Optional second entry **`https://<host>/mcp`** for discovery only. Complete sign-in in the browser. |
 | **CI / automation** | Use **`DRD_API_KEY`** / server **`API_KEY`** on the stdio process only if you accept the **smaller REST tool subset**; this is a deployment secret, not an end-user Settings field. |
 
+## Per-project config (agents and teams)
+
+Coding agents connected only to **`/mcp`** see **discovery tools** (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`) — not **`drd_*`**. To automate backlog work **per repository**, add **project-local** MCP config:
+
+- **Cursor:** **`.cursor/mcp.json`** at the repo root — e.g. `mcpServers.tymio-workspace.url` = **`https://<host>/t/<workspace-slug>/mcp`**.
+- **Claude Code:** **`.mcp.json`** at the repo root with the same **`url`** pattern (merges with user config per Anthropic docs).
+
+After saving, **restart** the IDE / MCP client and **re-authenticate** if prompted. The MCP tool **`tymio_mcp_routing_guide`** (on a discovery connection) returns **copy-paste JSON** for your host, including Cursor and Claude Code shapes.
+
 ## Browser REST and `/t/…/api/…`
 
 When you use the hub in a browser at **`/t/<workspace-slug>/…`**, the SPA typically calls tenant APIs under **`/t/<workspace-slug>/api/…`** so the workspace is determined by the URL (no reliance on **`X-Tenant-Id`** for those calls). **Legacy** JSON under **`/api/…`** remains supported for scripts and older clients, usually with **session** and/or **`X-Tenant-Id`** as documented for your deployment.

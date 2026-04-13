@@ -16,6 +16,8 @@
 
 7. **One user, many workspaces:** Same **Google** user, many **Workspaces**. Use **`tymio_list_my_workspaces`** on root **`…/mcp`** to get each **`…/t/<slug>/mcp`** URL. **Do not** reuse backlog **IDs** across workspaces. **State the workspace** when reporting hub changes.
 
+8. **Discovery-only session → per-project MCP config:** If the client is connected to root **`…/mcp`**, call **`tymio_list_my_workspaces`**, then **`tymio_mcp_routing_guide`** for copy-paste JSON. **Create** (if you have repo write access) **`.cursor/mcp.json`** (Cursor) or **`.mcp.json`** (Claude Code) at the **repository root** with **`mcpServers.*.url`** = **`…/t/<slug>/mcp`**, or **explain** the exact path + JSON to the user. **Restart / reload MCP** after saving. Root **`…/mcp`** alone never exposes **`drd_*`** — the workspace URL is required for backlog tools.
+
 ---
 
 ## What `@tymio/mcp-server` is

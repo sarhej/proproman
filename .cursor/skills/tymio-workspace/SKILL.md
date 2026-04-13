@@ -51,7 +51,7 @@ Treat any of these as **blocked on auth** — stop and fix auth before backlog w
 
 ### 3. Verify after OAuth
 
-- If the tool list has **only** `tymio_list_my_workspaces` / `tymio_mcp_routing_guide`, you are on **root `/mcp`** — call **`tymio_list_my_workspaces`**, then have the user point Cursor (or stdio) at **`…/t/<slug>/mcp`** before **`drd_*`** or **`tymio_get_agent_brief`**.
+- If the tool list has **only** `tymio_list_my_workspaces` / `tymio_mcp_routing_guide`, you are on **root `/mcp`** — call **`tymio_list_my_workspaces`**, then **`tymio_mcp_routing_guide`** for templates; **create or explain** **`.cursor/mcp.json`** / **`.mcp.json`** (or point Cursor / stdio at **`…/t/<slug>/mcp`**) before **`drd_*`** or **`tymio_get_agent_brief`**.
 - On **`…/t/<slug>/mcp`**, verify with **`drd_health`** and/or **`tymio_get_agent_brief`**, then **`drd_meta`**, lists, creates.
 
 ### 4. What to say to the user when blocked
@@ -82,6 +82,17 @@ Be explicit, not vague: e.g. “Tymio MCP is not authenticated in this session. 
 1. **Backlog / PM / PO work:** MCP **Server URL** = **`https://tymio.app/t/<slug>/mcp`** (trimmed).
 2. **Optional discovery entry:** Root **`…/mcp`** for OAuth + **`tymio_list_my_workspaces`** to discover slugs, then configure a second entry with **`…/t/<slug>/mcp`**.
 3. **Stdio:** Set **`TYMIO_MCP_URL`** to **`…/t/<slug>/mcp`** for full tools.
+
+### Per-project MCP file (agents: create or explain)
+
+When the user is on **root `…/mcp`** (only **`tymio_list_my_workspaces`** + **`tymio_mcp_routing_guide`**), **do not** stop at “switch the URL in Settings” — **create or explain** a **repo-local** config so the next session uses the right workspace by default:
+
+1. Call **`tymio_list_my_workspaces`**, pick the **slug** for this repository or org.
+2. **Cursor:** create or update **`.cursor/mcp.json`** at the repo root with an entry whose **`url`** is **`https://<host>/t/<slug>/mcp`** (use the deployment origin, not only `tymio.app` when self-hosted). Optional second entry **`tymio-discovery`** → **`…/mcp`** for listing workspaces.
+3. **Claude Code:** create or update **`.mcp.json`** at the repo root with the same **`mcpServers`** → **`url`** pattern.
+4. Tell the user to **restart Cursor** / restart the CLI session and **re-auth** if prompted; then verify **`drd_health`** on the **workspace** connection.
+
+**Canonical copy-paste templates** are returned by the MCP tool **`tymio_mcp_routing_guide`** (same host as the discovery connection). Prefer that tool’s output over paraphrasing so URLs match the deployment.
 
 ### What agents must do (anti-mixing rules)
 
