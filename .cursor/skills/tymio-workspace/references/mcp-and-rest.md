@@ -2,6 +2,12 @@
 
 Replace `https://tymio.app` with your deployment origin if not using production.
 
+**Autonomous agents — session gate:** Before any `drd_*` / `tymio_*` call, ensure the MCP client has completed **OAuth** (or **`mcp_auth` with `{}`** if the client exposes it for Tymio). **Verify** with **`drd_health`** or **`tymio_get_agent_brief`**. If that fails, stop and have the user sign in; do not claim hub mutations or replace live work with offline “import specs” unless the user asked for documents only.
+
+**Autonomous agents — routing:** **`POST …/mcp`** is **discovery-only** (two tools: list workspaces + routing guide). **Full** MCP (`drd_*`, workspace `tymio_*`) is **`POST …/t/<slug>/mcp`** only. Same OAuth; **trim** Server URL. Never reuse backlog **IDs** across workspaces.
+
+**Cursor mismatch:** If **`drd_*`** tools are missing, the MCP URL is almost certainly root **`…/mcp`** — switch to **`…/t/<slug>/mcp`**. See `tymio-workspace` skill.
+
 **Autonomous agents:** Tymio does **not** offer a per-user MCP API key in **Settings**, **Profile**, or **Account**. Do not instruct users to copy one. Use **OAuth** (remote **`/mcp`** or **`/t/<workspace-slug>/mcp`** in the IDE) or **`@tymio/mcp-server`** + **`tymio-mcp login`** for stdio (default; **`TYMIO_MCP_URL`** may point at either MCP path). **`DRD_API_KEY` / `API_KEY`** on stdio = **server `API_KEY`** (operator secret). Canonical Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, **`GET …/api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey`.
 
 ## Local development (this monorepo)

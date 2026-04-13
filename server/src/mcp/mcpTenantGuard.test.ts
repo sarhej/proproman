@@ -1,18 +1,14 @@
-import express from "express";
-import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { runWithTenant, type TenantContext } from "../tenant/tenantContext.js";
 
 const {
-  mockResolveMcpTenantContext,
   mockInitiativeCreate,
   mockFeatureCreate,
   mockLoadMcpOAuthClients,
   mockHandleGoogleCallback,
   mockTenantMembershipFindMany,
 } = vi.hoisted(() => ({
-  mockResolveMcpTenantContext: vi.fn(),
   mockInitiativeCreate: vi.fn(),
   mockFeatureCreate: vi.fn(),
   mockLoadMcpOAuthClients: vi.fn().mockResolvedValue(undefined),
@@ -21,11 +17,11 @@ const {
 }));
 
 vi.mock("@modelcontextprotocol/sdk/server/auth/router.js", () => ({
-  mcpAuthRouter: () => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
+  mcpAuthRouter: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
 vi.mock("@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js", () => ({
-  requireBearerAuth: () => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
+  requireBearerAuth: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
 vi.mock("./oauth-provider.js", () => ({
@@ -44,10 +40,6 @@ vi.mock("./oauth-provider.js", () => ({
   loadMcpOAuthClients: mockLoadMcpOAuthClients,
 }));
 
-vi.mock("./resolveMcpTenantContext.js", () => ({
-  resolveMcpTenantContext: mockResolveMcpTenantContext,
-}));
-
 vi.mock("../db.js", () => ({
   prisma: {
     tenantMembership: {
@@ -64,7 +56,6 @@ vi.mock("../db.js", () => ({
   },
 }));
 
-import { mountMcp } from "./setup.js";
 import { registerTools } from "./tools.js";
 
 function createToolRegistry() {
@@ -93,21 +84,6 @@ describe("MCP tenant guards", () => {
       async (args: { where: { userId: { in: string[] } } }) =>
         args.where.userId.in.map((userId: string) => ({ userId }))
     );
-  });
-
-  it("returns 403 from /mcp when authenticated user has no active workspace membership", async () => {
-    const app = express();
-    app.use(express.json());
-    mockResolveMcpTenantContext.mockResolvedValue(undefined);
-    mountMcp(app);
-
-    const res = await request(app)
-      .post("/mcp")
-      .set("Authorization", "Bearer token")
-      .send({ jsonrpc: "2.0", id: "1", method: "tools/list" });
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("No active workspace membership");
   });
 
   it("rejects cross-user initiative ownership via MCP", async () => {

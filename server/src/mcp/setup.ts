@@ -5,24 +5,25 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
-import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { runWithTenant, type TenantContext } from "../tenant/tenantContext.js";
 import { TymioOAuthProvider, handleGoogleCallback, getMcpBaseUrl, loadMcpOAuthClients } from "./oauth-provider.js";
-import {
-  resolveMcpTenantContext,
-  resolveMcpTenantContextFromWorkspaceSlug,
-} from "./resolveMcpTenantContext.js";
+import { resolveMcpTenantContextFromWorkspaceSlug } from "./resolveMcpTenantContext.js";
+import { registerGlobalMcpTools } from "./globalMcpTools.js";
 import { registerTools } from "./tools.js";
 
 const provider = new TymioOAuthProvider();
 
-function createMcpServer(): McpServer {
+function createMcpServer(mode: "tenant" | "global"): McpServer {
   const server = new McpServer(
     { name: "tymio-hub", version: "1.0.0" },
     { capabilities: { logging: {} } }
   );
-  registerTools(server);
+  if (mode === "global") {
+    registerGlobalMcpTools(server);
+  } else {
+    registerTools(server);
+  }
   return server;
 }
 
@@ -94,10 +95,12 @@ export function mountMcp(app: express.Express): void {
   async function mcpStreamableHttpHandler(
     req: Request,
     res: Response,
-    resolveTenant: () => Promise<TenantContext | undefined>
+    options:
+      | { mode: "global" }
+      | { mode: "tenant"; resolveTenant: () => Promise<TenantContext | undefined> }
   ): Promise<void> {
     try {
-      const handleTransportRequest = async () => {
+      const handleTransportRequest = async (mcpMode: "tenant" | "global") => {
         const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
         if (sessionId && transports.has(sessionId)) {
@@ -115,7 +118,7 @@ export function mountMcp(app: express.Express): void {
           sessionIdGenerator: () => randomUUID()
         });
 
-        const server = createMcpServer();
+        const server = createMcpServer(mcpMode);
         await server.connect(transport);
         await transport.handleRequest(req, res, req.body);
 
@@ -127,16 +130,22 @@ export function mountMcp(app: express.Express): void {
         }
       };
 
-      const tenantContext = await resolveTenant();
+      if (options.mode === "global") {
+        await handleTransportRequest("global");
+        return;
+      }
+
+      const tenantContext = await options.resolveTenant();
       if (!tenantContext) {
         res.status(403).json({
-          error: "No active workspace membership. Connect to a workspace before using MCP tools."
+          error:
+            "No access to this workspace via MCP, or workspace not found. Use POST /t/<workspace-slug>/mcp with a slug you belong to."
         });
         return;
       }
 
       req.tenantContext = tenantContext;
-      await runWithTenant(tenantContext, handleTransportRequest);
+      await runWithTenant(tenantContext, () => handleTransportRequest("tenant"));
     } catch (err) {
       console.error("MCP request error:", err);
       if (err instanceof Error && err.stack) console.error(err.stack);
@@ -147,14 +156,15 @@ export function mountMcp(app: express.Express): void {
   }
 
   app.all("/mcp", bearerAuth, async (req: Request, res: Response) => {
-    await mcpStreamableHttpHandler(req, res, () => resolveMcpTenantContext(req, verifyToken, prisma));
+    await mcpStreamableHttpHandler(req, res, { mode: "global" });
   });
 
   app.all("/t/:workspaceSlug/mcp", bearerAuth, async (req: Request, res: Response) => {
     const slug = String(req.params.workspaceSlug ?? "");
-    await mcpStreamableHttpHandler(req, res, () =>
-      resolveMcpTenantContextFromWorkspaceSlug(req, slug, verifyToken)
-    );
+    await mcpStreamableHttpHandler(req, res, {
+      mode: "tenant",
+      resolveTenant: () => resolveMcpTenantContextFromWorkspaceSlug(req, slug, verifyToken)
+    });
   });
 
   // Hydrate OAuth client store from DB (non-blocking; avoids Invalid client_id after deploy)

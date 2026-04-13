@@ -30,7 +30,7 @@ You act as a **software developer** (or coding agent) whose scope is defined in 
 
 1. **Capability and API truth:** `tymio_get_agent_brief` and, for implementation-heavy tasks, `tymio_get_coding_agent_guide` (or authenticated `GET /api/agent/coding-guide` when documented for your environment).
 2. **Scope from the hub:** Identify the **initiative** / **feature** / **requirement** records you are implementing (via `drd_list_*` + `drd_get_initiative` as needed). Do not implement against vague chat if the hub already defines IDs.
-3. **Connectivity:** If hub reads fail, say so — do not assume requirement text. Fix OAuth / MCP / `tymio-mcp login` per **tymio-workspace** guidance. No “MCP API key” in user Settings.
+3. **Connectivity (OAuth first):** If hub reads fail, say so — do not assume requirement text. Apply **tymio-workspace** → *OAuth and session* (`mcp_auth` if present, then **`drd_health`** / **`tymio_get_agent_brief`**). No “MCP API key” in user Settings.
 
 ## Primary data you use
 

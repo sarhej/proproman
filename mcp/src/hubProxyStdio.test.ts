@@ -108,6 +108,23 @@ describe("runHubOAuthStdio", () => {
     expect(serverConnectSpy).toHaveBeenCalledOnce();
   });
 
+  it("writes discovery hint to stderr when hub returns no drd_* tools", async () => {
+    delete process.env.TYMIO_MCP_QUIET;
+    listToolsMock.mockResolvedValueOnce({
+      tools: [
+        { name: "tymio_list_my_workspaces", description: "x", title: "x" },
+        { name: "tymio_mcp_routing_guide", description: "y", title: "y" }
+      ]
+    });
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runHubOAuthStdio(new URL("https://hub/mcp"));
+    const stderr = err.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(stderr).toMatch(/discovery/);
+    expect(stderr).toMatch(/workspace-slug/);
+    err.mockRestore();
+    process.env.TYMIO_MCP_QUIET = "1";
+  });
+
   it("proxy tool handler forwards to upstream callTool", async () => {
     await runHubOAuthStdio(new URL("https://hub/mcp"));
     const healthRegistration = registerToolSpy.mock.calls.find((c) => c[0] === "drd_health");

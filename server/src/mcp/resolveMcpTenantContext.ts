@@ -26,6 +26,11 @@ export type McpTenantPrisma = {
   };
 };
 
+/**
+ * Resolves tenant from `X-Tenant-Id` or `user.activeTenantId` + membership.
+ * **Not used** by `POST /mcp` (that route is workspace-agnostic discovery only).
+ * Kept for tests and any future callers; workspace MCP is always `POST /t/:slug/mcp`.
+ */
 export async function resolveMcpTenantContext(
   req: Pick<Request, "headers">,
   verifyAccessToken: McpTokenVerifier,

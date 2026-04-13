@@ -122,7 +122,9 @@ export function AgentSetupPage() {
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-slate-800">{t("agentSetup.remoteTitle")}</h3>
-            <p className="mb-4 text-slate-600">{t("agentSetup.remoteLead")}</p>
+            <p className="mb-4 text-slate-600">
+              {slug !== "" ? t("agentSetup.remoteLeadWorkspace") : t("agentSetup.remoteLeadNoWorkspace")}
+            </p>
             <ol className="ml-4 list-decimal space-y-3">
               <li>
                 <strong>{t("agentSetup.step1")}</strong>

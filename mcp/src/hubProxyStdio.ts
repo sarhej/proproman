@@ -50,6 +50,13 @@ export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<v
   }
 
   const { tools } = await client.listTools();
+  const hasBacklogTools = tools.some((t) => t.name.startsWith("drd_"));
+  if (!hasBacklogTools && !process.env.TYMIO_MCP_QUIET) {
+    const u = mcpUrl.href.replace(/\/$/, "");
+    process.stderr.write(
+      `Tymio MCP: connected to discovery (${u}) — no backlog tools here.\n  For drd_* / full hub tools, use a workspace URL, e.g.:\n  TYMIO_MCP_URL=${mcpUrl.origin}/t/<workspace-slug>/mcp  tymio-mcp\n  Call tymio_list_my_workspaces on this connection to list your slugs.\n`
+    );
+  }
   const server = new McpServer(
     { name: "tymio-hub", version: pkgVersion() },
     { instructions: getMcpServerInstructions() }

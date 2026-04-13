@@ -10,6 +10,10 @@ This document compares **which hub functions and data** each autonomous agent ro
 
 Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKILL.md](../.cursor/skills/tymio-workspace/SKILL.md) and [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).
 
+**Session (all roles):** Complete **OAuth** before any `drd_*` / `tymio_*` work — see *OAuth and session* at the top of `tymio-workspace` (use **`mcp_auth`** with `{}` when the client exposes it; otherwise IDE **Connect / Sign in** or **`tymio-mcp login`**), then verify with **`drd_health`** or **`tymio_get_agent_brief`**.
+
+**Workspace (all roles):** One user can have **many Workspaces**. Root **`…/mcp`** is **discovery-only**; PM/PO backlog work needs **`…/t/<slug>/mcp`**. Do not reuse **IDs** across tenants.
+
 **Ontology (all PM/PO/DEV skills):** Agents should internalize the **backlog work graph** and how it differs from the **capability** brief — see [.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md](../.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md) (Mermaid diagrams, `drd_*` implications).
 
 **Legend:** **P** = primary (use often), **S** = secondary (use when relevant), **—** = usually out of scope (do not default to these calls).
