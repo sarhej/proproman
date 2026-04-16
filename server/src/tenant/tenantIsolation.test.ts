@@ -158,7 +158,16 @@ describe("Tenant-scoped model list", () => {
       const modelName = match[1];
       const body = match[2];
       // Control plane models that use tenantId as a FK
-      if (["TenantDomain", "TenantMembership", "TenantMigrationState", "TenantRequest"].includes(modelName)) continue;
+      if (
+        [
+          "TenantDomain",
+          "TenantMembership",
+          "TenantMigrationState",
+          "TenantRequest",
+          "WorkspaceAccessRequest",
+        ].includes(modelName)
+      )
+        continue;
       if (/tenantId\s+String/.test(body)) {
         modelsWithTenantId.push(modelName);
       }

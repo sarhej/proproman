@@ -7,6 +7,7 @@ import App from "./App";
 const mockGetMyTenants = vi.fn();
 const mockGetTenantBySlug = vi.fn();
 const mockGetMyWorkspaceRegistrationRequests = vi.fn();
+const mockGetMyWorkspaceAccessRequest = vi.fn();
 const mockSwitchTenant = vi.fn();
 const mockRefreshAuth = vi.fn();
 
@@ -19,6 +20,7 @@ vi.mock("./lib/api", async (importOriginal) => {
       getTenantBySlug: (...args: unknown[]) => mockGetTenantBySlug(...args),
       getMyWorkspaceRegistrationRequests: (...args: unknown[]) =>
         mockGetMyWorkspaceRegistrationRequests(...args),
+      getMyWorkspaceAccessRequest: (...args: unknown[]) => mockGetMyWorkspaceAccessRequest(...args),
       switchTenant: (...args: unknown[]) => mockSwitchTenant(...args),
     },
   };
@@ -112,6 +114,7 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
     });
     mockGetTenantBySlug.mockResolvedValue({ name: "Nakam API", slug: "nakamapi" });
     mockGetMyWorkspaceRegistrationRequests.mockResolvedValue({ requests: [] });
+    mockGetMyWorkspaceAccessRequest.mockResolvedValue({ pending: false });
   });
 
   it("shows TenantWorkspaceNoAccessPage when tenant is ACTIVE but user has no membership", async () => {
@@ -127,6 +130,7 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
 
     expect(screen.getByText("Nakam API")).toBeInTheDocument();
     expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
+    expect(mockGetMyWorkspaceAccessRequest).toHaveBeenCalledWith("nakamapi");
     expect(mockSwitchTenant).not.toHaveBeenCalled();
   });
 

@@ -1002,7 +1002,14 @@
     "membershipPendingLead": "You are signed in as <1>{{email}}</1>. That is not the same as being a member of the workspace below.",
     "membershipPendingBody": "This workspace is active, but your account has not been added to it. Ask a workspace admin (or owner) to invite you or add you as a member. Until then you will stay in whatever workspace you already use (for example Tymio hub).",
     "membershipPendingAlsoPlatform": "Your platform account is also waiting for approval. Even after an admin adds you to this workspace, you may need Tymio to activate your role before the app opens fully.",
-    "membershipPendingContinue": "Continue to the app"
+    "membershipPendingContinue": "Continue to the app",
+    "membershipRequestAccess": "Request access",
+    "membershipRequestSubmitting": "Sending request…",
+    "membershipRequestPending": "Your access request is waiting for a workspace admin.",
+    "membershipRequestSuccessNotified": "Request recorded. Workspace admins were emailed (when email delivery is enabled).",
+    "membershipRequestSuccessQuiet": "Request recorded. Ask an admin to add you if you do not hear back.",
+    "membershipRequestAlready": "You already have a pending access request for this workspace.",
+    "membershipRequestError": "Could not send your request. Try again later."
   },
   "seo": {
     "landingTitle": "Tymio — product management and initiative tracking for teams",

@@ -485,3 +485,32 @@ export function buildE5WorkspaceInviteEmail(input: {
     }) + footHtml(input.locale);
   return { subject: sub, text, html };
 }
+
+/** Notify workspace OWNER/ADMIN that a signed-in user requested access (English; admin locale unknown). */
+export function buildWorkspaceAccessRequestAdminEmail(input: {
+  workspaceName: string;
+  workspaceSlug: string;
+  requesterEmail: string;
+  requesterName: string;
+}): { subject: string; text: string; html: string } {
+  const baseUrl = origin();
+  const workspaceUrl = `${baseUrl}/t/${encodeURIComponent(input.workspaceSlug)}`;
+  const memberSettingsUrl = `${workspaceUrl}/workspace-settings`;
+  const sub = `Access request: ${input.workspaceName} (${input.workspaceSlug})`;
+  const name = input.requesterName.trim() || input.requesterEmail;
+  const text = `${name} <${input.requesterEmail}> requested access to the workspace “${input.workspaceName}” (/t/${input.workspaceSlug}).
+
+They do not have a membership yet. Add them under workspace members if appropriate:
+${memberSettingsUrl}
+
+Workspace entry link for reference:
+${workspaceUrl}
+` + footText("en");
+  const html =
+    `<p><strong>${escapeHtml(name)}</strong> &lt;${escapeHtml(input.requesterEmail)}&gt; requested access to the workspace <strong>${escapeHtml(input.workspaceName)}</strong> (<code>/t/${escapeHtml(input.workspaceSlug)}</code>).</p>` +
+    `<p>They do not have a membership yet. Add them under workspace settings if appropriate:</p>` +
+    `<p><a href="${escapeHtml(memberSettingsUrl)}">${escapeHtml(memberSettingsUrl)}</a></p>` +
+    `<p><a href="${escapeHtml(workspaceUrl)}">Open workspace</a></p>` +
+    footHtml("en");
+  return { subject: sub, text, html };
+}

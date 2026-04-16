@@ -1002,7 +1002,14 @@
     "membershipPendingLead": "Jesteś zalogowany jako <1>{{email}}</1>. To nie to samo co członkostwo w przestrzeni poniżej.",
     "membershipPendingBody": "Ta przestrzeń jest aktywna, ale Twoje konto nie zostało do niej dodane. Poproś administratora lub właściciela o zaproszenie albo dodanie jako członka. Do tego czasu pozostaniesz w przestrzeni, z której już korzystasz (np. hub Tymio).",
     "membershipPendingAlsoPlatform": "Twoje konto platformowe również oczekuje na zatwierdzenie. Nawet po dodaniu do tej przestrzeni rola może wymagać aktywacji przez Tymio, zanim aplikacja w pełni się otworzy.",
-    "membershipPendingContinue": "Przejdź do aplikacji"
+    "membershipPendingContinue": "Przejdź do aplikacji",
+    "membershipRequestAccess": "Poproś o dostęp",
+    "membershipRequestSubmitting": "Wysyłanie prośby…",
+    "membershipRequestPending": "Twoja prośba o dostęp oczekuje na administratora przestrzeni.",
+    "membershipRequestSuccessNotified": "Prośba zapisana. Administratorzy dostali e-mail (jeśli wysyłka jest włączona).",
+    "membershipRequestSuccessQuiet": "Prośba zapisana. Jeśli nikt się nie odezwie, skontaktuj się z administratorem.",
+    "membershipRequestAlready": "Masz już oczekującą prośbę o dostęp do tej przestrzeni.",
+    "membershipRequestError": "Nie udało się wysłać prośby. Spróbuj ponownie później."
   },
   "seo": {
     "landingTitle": "Tymio — product management and initiative tracking for teams",

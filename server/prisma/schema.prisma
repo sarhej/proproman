@@ -262,6 +262,11 @@ enum MembershipRole {
   VIEWER
 }
 
+enum WorkspaceAccessRequestStatus {
+  PENDING
+  FULFILLED
+}
+
 model Tenant {
   id         String       @id @default(cuid())
   name       String
@@ -276,13 +281,14 @@ model Tenant {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  memberships         TenantMembership[]
-  domains             TenantDomain[]
-  migrationState      TenantMigrationState?
+  memberships              TenantMembership[]
+  domains                  TenantDomain[]
+  migrationState           TenantMigrationState?
   /**
    * Set when this tenant was created from an approved registration request (1:1 via TenantRequest.tenantId).
    */
-  registrationRequest TenantRequest?
+  registrationRequest      TenantRequest?
+  workspaceAccessRequests  WorkspaceAccessRequest[]
 
   @@index([slug])
 }
@@ -312,6 +318,26 @@ model TenantMembership {
   @@unique([tenantId, userId])
   @@index([tenantId])
   @@index([userId])
+}
+
+/**
+ * Signed-in user asked to join an existing ACTIVE workspace (no membership yet).
+ * One row per (tenant, user); status FULFILLED when they become a member.
+ */
+model WorkspaceAccessRequest {
+  id        String                       @id @default(cuid())
+  tenantId  String
+  userId    String
+  status    WorkspaceAccessRequestStatus @default(PENDING)
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+  tenant    Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
 }
 
 enum TenantRequestStatus {
@@ -375,6 +401,7 @@ model User {
   activeTenantId            String?
   emails                    UserEmail[]
   memberships               TenantMembership[]
+  workspaceAccessRequests   WorkspaceAccessRequest[]
   initiatives               Initiative[]                   @relation("InitiativeOwner")
   features                  Feature[]                      @relation("FeatureOwner")
   risks                     Risk[]                         @relation("RiskOwner")

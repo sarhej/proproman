@@ -60,6 +60,11 @@ vi.mock("../db.js", () => ({
       create: vi.fn(),
     },
   },
+  prismaUnscoped: {
+    workspaceAccessRequest: {
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+  },
 }));
 
 import { prisma } from "../db.js";

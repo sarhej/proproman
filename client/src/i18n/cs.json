@@ -1001,7 +1001,14 @@
     "membershipPendingLead": "Jste přihlášeni jako <1>{{email}}</1>. To není totéž jako být členem níže uvedeného prostoru.",
     "membershipPendingBody": "Prostor je aktivní, ale váš účet do něj ještě nebyl přidán. Požádejte administrátora nebo vlastníka prostoru, aby vás pozval nebo přidal jako člena. Do té doby zůstanete v prostoru, který už používáte (např. Tymio hub).",
     "membershipPendingAlsoPlatform": "Váš platformní účet také čeká na schválení. I když vás administrátor přidá do tohoto prostoru, může být potřeba aktivovat roli od Tymio, než se aplikace plně otevře.",
-    "membershipPendingContinue": "Pokračovat do aplikace"
+    "membershipPendingContinue": "Pokračovat do aplikace",
+    "membershipRequestAccess": "Požádat o přístup",
+    "membershipRequestSubmitting": "Odesílám žádost…",
+    "membershipRequestPending": "Vaše žádost o přístup čeká na administrátora prostoru.",
+    "membershipRequestSuccessNotified": "Žádost byla zaznamenána. Administrátoři prostoru dostali e-mail (pokud je doručování zapnuté).",
+    "membershipRequestSuccessQuiet": "Žádost byla zaznamenána. Pokud se nikdo neozve, kontaktujte administrátora.",
+    "membershipRequestAlready": "Pro tento prostor už máte čekající žádost o přístup.",
+    "membershipRequestError": "Žádost se nepodařilo odeslat. Zkuste to později."
   },
   "seo": {
     "landingTitle": "Tymio — product management and initiative tracking for teams",

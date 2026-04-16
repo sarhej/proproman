@@ -7,6 +7,7 @@ import { provisionTenant, backfillTenantId } from "../tenant/tenantProvisioning.
 import { createTenantSchema, schemaExists, listTenantSchemas } from "../tenant/tenantSchemaManager.js";
 import { slugToSchemaName } from "../tenant/tenantSlug.js";
 import { applyWorkspaceInviteSideEffects } from "../lib/workspaceInviteSideEffects.js";
+import { fulfillWorkspaceAccessRequestsForMembership } from "../lib/workspaceAccessRequest.js";
 import { parseTenantEnabledLocales, normalizeEnabledLocalesPayload } from "../lib/appLocales.js";
 import { logAudit } from "../services/audit.js";
 import {
@@ -298,6 +299,7 @@ tenantsRouter.post("/:id/members", async (req, res, next) => {
       },
     });
     await applyWorkspaceInviteSideEffects(data.userId, tenantId);
+    await fulfillWorkspaceAccessRequestsForMembership(tenantId, data.userId);
     res.status(201).json(membership);
   } catch (err) {
     next(err);

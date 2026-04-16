@@ -616,4 +616,19 @@ export const api = {
         reviewNote: string | null;
       }>;
     }>("/api/me/workspace-registration-requests"),
+
+  /** Logged-in (including platform PENDING): pending join request for an ACTIVE workspace slug. */
+  getMyWorkspaceAccessRequest: async (tenantSlug: string) =>
+    request<{ pending: boolean }>(
+      `/api/me/workspace-access-request?tenantSlug=${encodeURIComponent(tenantSlug)}`
+    ),
+  submitWorkspaceAccessRequest: async (tenantSlug: string) =>
+    request<{
+      pending: boolean;
+      alreadyRequested: boolean;
+      adminsNotified: boolean;
+    }>("/api/me/workspace-access-request", {
+      method: "POST",
+      body: JSON.stringify({ tenantSlug }),
+    }),
 };

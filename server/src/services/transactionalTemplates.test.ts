@@ -4,6 +4,7 @@ import {
   buildE2WorkspaceApprovedEmail,
   buildE3WorkspaceRejectedEmail,
   buildE4PlatformRoleActivatedEmail,
+  buildWorkspaceAccessRequestAdminEmail,
   escapeHtml,
   normalizeTransactionalLocale,
 } from "./transactionalTemplates.js";
@@ -78,5 +79,17 @@ describe("transactionalTemplates", () => {
     const { text } = buildE4PlatformRoleActivatedEmail({ name: "Pat" });
     expect(text).toContain("https://app.example.com/");
     expect(text).toContain("Pat");
+  });
+
+  it("buildWorkspaceAccessRequestAdminEmail includes workspace settings link", () => {
+    const { subject, html } = buildWorkspaceAccessRequestAdminEmail({
+      workspaceName: "Acme",
+      workspaceSlug: "acme",
+      requesterEmail: "u@ex.co",
+      requesterName: "Uma",
+    });
+    expect(subject).toContain("acme");
+    expect(html).toContain("/t/acme/workspace-settings");
+    expect(html).toContain("u@ex.co");
   });
 });

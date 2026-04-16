@@ -78,7 +78,14 @@ describe("TENANT_SCOPED_MODELS consistency", () => {
 
     const modelBlocks = schema.matchAll(/model\s+(\w+)\s*\{([^}]+)\}/g);
     const modelsWithTenantId: string[] = [];
-    const controlPlane = new Set(["TenantDomain", "TenantMembership", "TenantMigrationState", "Tenant", "TenantRequest"]);
+    const controlPlane = new Set([
+      "TenantDomain",
+      "TenantMembership",
+      "TenantMigrationState",
+      "Tenant",
+      "TenantRequest",
+      "WorkspaceAccessRequest",
+    ]);
 
     for (const match of modelBlocks) {
       const modelName = match[1];

@@ -16,6 +16,7 @@
     "start": "npm run start --workspace server",
     "test": "npm run test --workspace server && npm run test --workspace client && vitest run --config admin/vitest.config.ts && vitest run --config mcp/vitest.config.ts",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:workspace-access": "playwright test --config e2e/playwright.config.ts e2e/specs/workspace-access-request.spec.ts e2e/specs/workspace-signed-in-no-member.spec.ts e2e/specs/workspace-entry-auth.spec.ts",
     "test:e2e:install": "playwright install chromium",
     "test:integration": "npm run test:integration --workspace server",
     "lint": "npm run lint --workspace client && npm run lint --workspace server",

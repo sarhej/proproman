@@ -6,6 +6,7 @@ import { env } from "../env.js";
 import { trustedBusinessDomainFromEmail } from "../lib/emailDomainPolicy.js";
 import { normalizePublicTenantSlug } from "../lib/publicTenantSlug.js";
 import { provisionInviteeMemberForTenant } from "../lib/provisionTenantRequestInvitees.js";
+import { fulfillWorkspaceAccessRequestsForMembership } from "../lib/workspaceAccessRequest.js";
 import { applyWorkspaceInviteSideEffects } from "../lib/workspaceInviteSideEffects.js";
 import { requireRole } from "../middleware/auth.js";
 import {
@@ -158,6 +159,10 @@ async function approveTenantRequestRecord(
 
   for (const uid of new Set(inviteeUserIds)) {
     await applyWorkspaceInviteSideEffects(uid, createdTenant.id);
+  }
+
+  for (const uid of new Set([contactUser.id, ...inviteeUserIds])) {
+    await fulfillWorkspaceAccessRequestsForMembership(createdTenant.id, uid);
   }
 
   const updated = await prisma.tenantRequest.update({

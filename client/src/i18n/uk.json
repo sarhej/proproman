@@ -1001,7 +1001,14 @@
     "membershipPendingLead": "Ви увійшли як <1>{{email}}</1>. Це не те саме, що бути учасником простору нижче.",
     "membershipPendingBody": "Простір активний, але ваш обліковий запис ще не додано. Попросіть адміністратора або власника запросити вас або додати учасником. Доти ви залишитеся в просторі, яким уже користуєтеся (наприклад, hub Tymio).",
     "membershipPendingAlsoPlatform": "Ваш обліковий запис на платформі також очікує схвалення. Навіть після додавання до цього простору може знадобитися активація ролі від Tymio, перш ніж застосунок повністю відкриється.",
-    "membershipPendingContinue": "Перейти до застосунку"
+    "membershipPendingContinue": "Перейти до застосунку",
+    "membershipRequestAccess": "Запитати доступ",
+    "membershipRequestSubmitting": "Надсилання запиту…",
+    "membershipRequestPending": "Ваш запит на доступ очікує на адміністратора простору.",
+    "membershipRequestSuccessNotified": "Запит збережено. Адміністраторів повідомлено електронною поштою (якщо надсилання увімкнено).",
+    "membershipRequestSuccessQuiet": "Запит збережено. Якщо відповіді немає, зверніться до адміністратора.",
+    "membershipRequestAlready": "У вас уже є очікуваний запит на доступ до цього простору.",
+    "membershipRequestError": "Не вдалося надіслати запит. Спробуйте пізніше."
   },
   "seo": {
     "landingTitle": "Tymio — product management and initiative tracking for teams",

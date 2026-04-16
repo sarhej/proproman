@@ -1,6 +1,8 @@
+import { useCallback, useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { api } from "../lib/api";
 
 type Props = {
   workspaceName: string;
@@ -22,6 +24,52 @@ export function TenantWorkspaceNoAccessPage({
   onContinue,
 }: Props) {
   const { t } = useTranslation();
+  const [accessPending, setAccessPending] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successHint, setSuccessHint] = useState<"new" | "repeat" | null>(null);
+  const [adminsNotified, setAdminsNotified] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatusLoading(true);
+    setError(null);
+    setSuccessHint(null);
+    setAdminsNotified(null);
+    void api
+      .getMyWorkspaceAccessRequest(workspaceSlug)
+      .then((r) => {
+        if (!cancelled) setAccessPending(r.pending);
+      })
+      .catch(() => {
+        if (!cancelled) setAccessPending(false);
+      })
+      .finally(() => {
+        if (!cancelled) setStatusLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceSlug]);
+
+  const handleRequestAccess = useCallback(async () => {
+    setError(null);
+    setSuccessHint(null);
+    setAdminsNotified(null);
+    setSubmitting(true);
+    try {
+      const res = await api.submitWorkspaceAccessRequest(workspaceSlug);
+      setAccessPending(res.pending);
+      setAdminsNotified(res.adminsNotified);
+      setSuccessHint(res.alreadyRequested ? "repeat" : "new");
+    } catch (e) {
+      const err = e as Error & { body?: { error?: string } };
+      setError(err.body?.error ?? err.message ?? t("tenantSlug.membershipRequestError"));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [workspaceSlug, t]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
@@ -60,6 +108,41 @@ export function TenantWorkspaceNoAccessPage({
             {t("tenantSlug.membershipPendingAlsoPlatform")}
           </p>
         ) : null}
+
+        {error ? (
+          <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {successHint === "new" ? (
+          <p className="mb-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            {adminsNotified
+              ? t("tenantSlug.membershipRequestSuccessNotified")
+              : t("tenantSlug.membershipRequestSuccessQuiet")}
+          </p>
+        ) : null}
+        {successHint === "repeat" ? (
+          <p className="mb-3 rounded border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700">
+            {t("tenantSlug.membershipRequestAlready")}
+          </p>
+        ) : null}
+
+        <div className="mb-3 flex flex-col gap-2">
+          {accessPending && !statusLoading && !successHint ? (
+            <p className="text-sm font-medium text-slate-600">{t("tenantSlug.membershipRequestPending")}</p>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            data-testid="workspace-access-request"
+            disabled={statusLoading || submitting || accessPending}
+            onClick={handleRequestAccess}
+          >
+            {submitting ? t("tenantSlug.membershipRequestSubmitting") : t("tenantSlug.membershipRequestAccess")}
+          </Button>
+        </div>
+
         <Button className="w-full" onClick={onContinue}>
           {t("tenantSlug.membershipPendingContinue")}
         </Button>

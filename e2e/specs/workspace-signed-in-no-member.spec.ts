@@ -77,6 +77,29 @@ async function mockAuthenticatedNoAccessToNakamapi(page: import("@playwright/tes
       return;
     }
 
+    if (url.includes("/api/me/workspace-access-request")) {
+      if (method === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ pending: false }),
+        });
+        return;
+      }
+      if (method === "POST") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            pending: true,
+            alreadyRequested: false,
+            adminsNotified: false,
+          }),
+        });
+        return;
+      }
+    }
+
     await route.fulfill({
       status: 404,
       contentType: "application/json",
