@@ -4,7 +4,7 @@ The npm package [**@tymio/mcp-server**](https://www.npmjs.com/package/@tymio/mcp
 
 There is **no personal “MCP API key”** in Tymio Settings — use **`tymio-mcp login`** (or a remote MCP URL in clients that support it).
 
-**Current published line:** **2.0.1** on the public npm registry (see the package `CHANGELOG` in the Tymio monorepo for release notes).
+**Current published line:** **2.4.1** on the public npm registry (see the package `CHANGELOG` in the Tymio monorepo for release notes).
 
 ---
 
@@ -91,6 +91,9 @@ When the client shows the server as **connected** (e.g. green), the agent can ca
 | `tymio-mcp instructions` | Print long Markdown guide for humans and agents |
 | `tymio-mcp persona list` | List bundled personas (`pm`, `po`, `dev`, `workspace`) |
 | `tymio-mcp persona <id>` | Print one persona Markdown to stdout |
+| `tymio-mcp doctor` | Env, OAuth files, version (stderr diagnostics) |
+| `tymio-mcp bootstrap` | Non-destructive merge of **`tymio-*`** MCP entries for Cursor, Claude Code, OpenCode, Codex (`--dry-run`, `--client`, `--slug`, …; see monorepo `docs/TYMIO_BOOTSTRAP.md`) |
+| `tymio-mcp skill` | `list`, `show`, `install`, `update`, `remove` — hub skills from **`GET /skills/*`**; writes use backup when replacing |
 | `tymio-mcp help` | Short usage summary |
 
 ---
@@ -101,6 +104,7 @@ When the client shows the server as **connected** (e.g. green), the agent can ca
 |----------|---------|
 | **`TYMIO_MCP_URL`** | Hosted MCP URL for OAuth proxy + login (default `https://tymio.app/mcp`). May be **`https://<host>/t/<workspace-slug>/mcp`** to pin the session workspace; the CLI normalizes a missing trailing `/mcp` when you pass only the origin + `/t/...` segment. |
 | **`TYMIO_OAUTH_PORT`** | Loopback port for login callback (default `19876`). |
+| **`TYMIO_OAUTH_LOGIN_TIMEOUT_MS`** | Optional: positive milliseconds — `tymio-mcp login` stops waiting for the browser redirect after this (otherwise the process can wait indefinitely if OAuth is abandoned). |
 | **`TYMIO_MCP_PERSONA`** | Set to `pm`, `po`, `dev`, or `workspace` to **append** that persona to MCP **instructions** (steers the model in clients that honor instructions). |
 | **`TYMIO_WORKSPACE_SLUG`** | Pins the CLI to one workspace slug if your setup requires it (see package README). |
 

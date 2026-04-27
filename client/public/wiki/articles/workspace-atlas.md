@@ -6,7 +6,7 @@ The **workspace atlas** is a **compiled, read-optimized snapshot** of one worksp
 
 | | |
 |--|--|
-| **Is** | Deterministic JSON: a compact **atlas index** (`workspace-atlas.json`) and **per-object shards** (one JSON file per domain, product, initiative, feature, or requirement). Built from the **same PostgreSQL data** as the UI and `drd_*` tools. |
+| **Is** | Deterministic JSON: a compact **atlas index** (`workspace-atlas.json`) and **per-object shards** (one JSON file per domain, product, initiative, feature, or requirement). Built from the **same PostgreSQL data** as the UI and `tymio_*` tools. |
 | **Is not** | Not RAG over arbitrary documents. Not a replacement for **`tymio_get_agent_brief`** (that’s the **capability** map: routes, tools, models). Not the source of truth — the **hub database** is; recompile or wait for debounced rebuild after changes. |
 
 **Relationship to ontology:** Use **`tymio_get_agent_brief`** / **`tymio_list_capabilities`** for “what does the product expose?” Use the **workspace atlas** for “what work exists in *this* workspace?” (titles, links, graph structure, facts on each object).
@@ -15,7 +15,7 @@ The **workspace atlas** is a **compiled, read-optimized snapshot** of one worksp
 
 1. **`tymio_get_workspace_atlas`** — First step for token-efficient orientation: indices, ids, titles, and graph handles. If the response contains **`error: "not_built"`**, run **`tymio_rebuild_workspace_atlas`** once (requires **EDITOR+** in that workspace) or wait for the server’s debounced rebuild after a hub change.
 2. **`tymio_search_workspace_objects`** — Short **keyword** search over atlas title indices (case-insensitive substring). Not semantic search.
-3. **`tymio_get_workspace_object`** — Full **shard** for one `DOMAIN` | `PRODUCT` | `INITIATIVE` | `FEATURE` | `REQUIREMENT` by `id` (ids from atlas or `drd_*` lists).
+3. **`tymio_get_workspace_object`** — Full **shard** for one `DOMAIN` | `PRODUCT` | `INITIATIVE` | `FEATURE` | `REQUIREMENT` by `id` (ids from atlas or `tymio_*` lists).
 4. **`tymio_explain_workspace_object`** — Same shard as (3), optionally wrapped in a short natural-language explanation **if** the deployment enables the LLM path (see operators below). If LLM is off, you still get the structured shard.
 5. **`tymio_rebuild_workspace_atlas`** — Forces a full recompile from the database. **EDITOR+** (or platform super-admin). Use after migrations, if you see **`not_built`**, or when you need guaranteed freshness before debounce.
 

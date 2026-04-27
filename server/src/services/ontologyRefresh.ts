@@ -7,7 +7,7 @@ function allRegisteredMcpToolBindings(): { type: BindingType; key: string; isPri
     ...REGISTERED_MCP_TOOL_NAMES.map((key) => ({
       type: "MCP_TOOL" as BindingType,
       key,
-      isPrimary: key === "drd_meta"
+      isPrimary: key === "tymio_meta"
     })),
     { type: "INFRA" as BindingType, key: "server/src/mcp/tools.ts" }
   ];
@@ -95,7 +95,7 @@ const DEFAULT_CAPABILITIES: {
       { type: "PRISMA_MODEL", key: "Initiative" },
       { type: "PRISMA_MODEL", key: "Feature" },
       { type: "PRISMA_MODEL", key: "Requirement" },
-      { type: "MCP_TOOL", key: "drd_get_product_tree" }
+      { type: "MCP_TOOL", key: "tymio_get_product_tree" }
     ]
   },
   {
@@ -112,9 +112,9 @@ const DEFAULT_CAPABILITIES: {
       { type: "PRISMA_MODEL", key: "Demand" },
       { type: "PRISMA_MODEL", key: "DemandLink" },
       { type: "PRISMA_MODEL", key: "Partner" },
-      { type: "MCP_TOOL", key: "drd_list_demands" },
-      { type: "MCP_TOOL", key: "drd_list_accounts" },
-      { type: "MCP_TOOL", key: "drd_list_partners" }
+      { type: "MCP_TOOL", key: "tymio_list_demands" },
+      { type: "MCP_TOOL", key: "tymio_list_accounts" },
+      { type: "MCP_TOOL", key: "tymio_list_partners" }
     ]
   },
   {
@@ -128,7 +128,7 @@ const DEFAULT_CAPABILITIES: {
       { type: "PRISMA_MODEL", key: "Campaign" },
       { type: "PRISMA_MODEL", key: "Asset" },
       { type: "PRISMA_MODEL", key: "CampaignLink" },
-      { type: "MCP_TOOL", key: "drd_list_campaigns" }
+      { type: "MCP_TOOL", key: "tymio_list_campaigns" }
     ]
   },
   {
@@ -142,9 +142,9 @@ const DEFAULT_CAPABILITIES: {
       { type: "ROUTE", key: "/calendar" },
       { type: "ROUTE", key: "/gantt", isPrimary: true },
       { type: "PRISMA_MODEL", key: "InitiativeMilestone" },
-      { type: "MCP_TOOL", key: "drd_list_milestones" },
-      { type: "MCP_TOOL", key: "drd_timeline_calendar" },
-      { type: "MCP_TOOL", key: "drd_timeline_gantt" }
+      { type: "MCP_TOOL", key: "tymio_list_milestones" },
+      { type: "MCP_TOOL", key: "tymio_timeline_calendar" },
+      { type: "MCP_TOOL", key: "tymio_timeline_gantt" }
     ]
   },
   {
@@ -157,8 +157,8 @@ const DEFAULT_CAPABILITIES: {
       { type: "ROUTE", key: "/features/:featureId" },
       { type: "ROUTE", key: "/requirements/:requirementId" },
       { type: "ROUTE", key: "/product-explorer", isPrimary: true },
-      { type: "MCP_TOOL", key: "drd_list_features" },
-      { type: "MCP_TOOL", key: "drd_list_requirements" }
+      { type: "MCP_TOOL", key: "tymio_list_features" },
+      { type: "MCP_TOOL", key: "tymio_list_requirements" }
     ]
   },
   {
@@ -167,7 +167,7 @@ const DEFAULT_CAPABILITIES: {
     userJob:
       "Learn the work graph (Domain, Product, Initiative, Feature, Requirement, demands, initiative-only dependencies) before choosing MCP tools; aligns PM/PO/DEV agent skills with the hub schema.",
     description:
-      "Repo Markdown skills describe edges and parent/child rules. Call tymio_get_agent_brief for capability bindings; use drd_meta and list tools for live tenant data.",
+      "Repo Markdown skills describe edges and parent/child rules. Call tymio_get_agent_brief for capability bindings; use tymio_meta and list tools for live tenant data.",
     doNotConfuseWith:
       "This capability points at documentation files, not a single UI screen. 'Capability' in Admin Ontology still means affordance + bindings, not a Requirement row.",
     status: "ACTIVE",
@@ -198,7 +198,7 @@ const DEFAULT_CAPABILITIES: {
     title: "MCP agent access",
     userJob: "Agents call the same APIs via MCP tools with user permissions (remote OAuth or stdio API key).",
     description:
-      "Remote MCP: POST …/mcp with OAuth (full tool list). Stdio @tymio/mcp-server without API key env proxies the same list after tymio-mcp login. If DRD_API_KEY/API_KEY is set on the stdio process, the bridge exposes a smaller REST subset only — see mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md.",
+      "Remote MCP: POST …/mcp with OAuth (full tool list). Stdio @tymio/mcp-server without API key env proxies the same list after tymio-mcp login. If TYMIO_API_KEY/API_KEY (legacy DRD_API_KEY) is set on the stdio process, the bridge exposes a smaller REST subset only — see mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md.",
     status: "ACTIVE",
     sortOrder: 130,
     bindings: allRegisteredMcpToolBindings()

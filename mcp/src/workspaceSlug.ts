@@ -11,6 +11,8 @@ export function isValidWorkspaceSlugFormat(slug: string): boolean {
   return WORKSPACE_SLUG_ZOD.safeParse(slug).success;
 }
 
+let warnedLegacyWorkspaceSlug = false;
+
 /**
  * Pinned slug for this stdio process: every proxied MCP tool call must use this workspace.
  * Set `TYMIO_MCP_SKIP_WORKSPACE_PINNING=1` only in tests.
@@ -19,10 +21,18 @@ export function readPinnedWorkspaceSlugForStdio(): string | null {
   if (process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING === "1") {
     return null;
   }
-  const raw = process.env.TYMIO_WORKSPACE_SLUG?.trim() || process.env.DRD_WORKSPACE_SLUG?.trim();
+  const fromTymio = process.env.TYMIO_WORKSPACE_SLUG?.trim();
+  const fromLegacy = process.env.DRD_WORKSPACE_SLUG?.trim();
+  if (fromLegacy && !fromTymio && !warnedLegacyWorkspaceSlug) {
+    warnedLegacyWorkspaceSlug = true;
+    process.stderr.write(
+      "[tymio-mcp] Deprecated: DRD_WORKSPACE_SLUG is set; use TYMIO_WORKSPACE_SLUG instead (same value). Legacy name will be removed in a future major version.\n"
+    );
+  }
+  const raw = fromTymio || fromLegacy;
   if (!raw) {
     process.stderr.write(
-      "[tymio-mcp] Missing TYMIO_WORKSPACE_SLUG or DRD_WORKSPACE_SLUG. Set this to your hub workspace slug (e.g. acme-corp). Required so this MCP server only operates on one workspace; tool args must match.\n"
+      "[tymio-mcp] Missing TYMIO_WORKSPACE_SLUG. Set this to your hub workspace slug (e.g. acme-corp). Required so this MCP server only operates on one workspace; tool args must match.\n"
     );
     process.exit(1);
   }

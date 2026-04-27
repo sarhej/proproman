@@ -64,6 +64,8 @@ import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 import { startWorkspaceAtlasHubListener } from "./workspaceAtlas/hubListener.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
 import { isTransactionalEmailEnabled, isTransactionalEmailReady } from "./services/transactionalMail.js";
+import { skillsPublicRouter } from "./routes/skills.js";
+import { opencodeWellKnownHandler } from "./routes/opencodeWellKnown.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -164,6 +166,12 @@ app.get("/api/tenants/by-slug/:slug/public", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+/** Public: canonical Cursor/agent skills (Markdown) + JSON index for bootstrap CLI. */
+app.use("/skills", skillsPublicRouter);
+
+/** Public: OpenCode organizational default MCP (discovery URL). */
+app.get("/.well-known/opencode", opencodeWellKnownHandler);
 
 /** Public: instructions for coding agents (stdio MCP clients fetch this to append to tool output). */
 app.get("/api/mcp/agent-context", async (_req, res) => {

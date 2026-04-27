@@ -2,7 +2,7 @@
  * Seeds the **tymio** workspace (tenant slug `tymio`) with epics, features, and tasks
  * for recently shipped platform/client work. Idempotent: skips existing rows matched by title.
  *
- * For **Tymio hub roadmap** (product backlog on tymio.app), prefer **MCP** (`drd_*` tools with
+ * For **Tymio hub roadmap** (product backlog on tymio.app), prefer **MCP** (`tymio_*` tools with
  * `workspaceSlug: "tymio"`) or the Tymio CLI — not this script — so work is created through the product API.
  *
  * Run: npm run db:populate-tymio-recent --workspace server

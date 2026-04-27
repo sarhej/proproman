@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { SeoHead } from "../../components/seo/SeoHead";
 import { getPublicSiteOrigin } from "../../lib/publicSiteOrigin";
+import {
+  schemaOrgPublisherOrganization,
+  schemaOrgWebSitePart,
+} from "../../lib/schemaOrgTymio";
 import type { WikiIndex } from "./wikiTypes";
 import { WikiHeader } from "./WikiHeader";
 
@@ -30,13 +34,49 @@ export function WikiIndexPage() {
   const indexJsonLd = useMemo(() => {
     if (!index) return null;
     const origin = getPublicSiteOrigin();
+    const wikiUrl = `${origin}/wiki`;
     return {
       "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: index.title,
-      description: index.description,
-      url: `${origin}/wiki`,
-      isPartOf: { "@type": "WebSite", name: "Tymio", url: origin },
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${wikiUrl}#webpage`,
+          name: index.title,
+          description: index.description,
+          url: wikiUrl,
+          isPartOf: schemaOrgWebSitePart(origin),
+          publisher: schemaOrgPublisherOrganization(origin),
+          mainEntity: {
+            "@type": "ItemList",
+            name: index.title,
+            numberOfItems: index.pages.length,
+            itemListElement: index.pages.map((p, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              name: p.title,
+              item: `${origin}/wiki/${encodeURIComponent(p.slug)}`,
+            })),
+          },
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${wikiUrl}#breadcrumb`,
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Tymio",
+              item: origin,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: index.title,
+              item: wikiUrl,
+            },
+          ],
+        },
+      ],
     };
   }, [index]);
 

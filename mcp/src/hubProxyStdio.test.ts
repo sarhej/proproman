@@ -52,8 +52,8 @@ describe("runHubOAuthStdio", () => {
     connectMock.mockResolvedValue(undefined);
     listToolsMock.mockResolvedValue({
       tools: [
-        { name: "drd_health", description: "Health check", title: "Health" },
-        { name: "drd_meta", description: "Meta" }
+        { name: "tymio_health", description: "Health check", title: "Health" },
+        { name: "tymio_meta", description: "Meta" }
       ]
     });
     callToolMock.mockResolvedValue({
@@ -108,7 +108,42 @@ describe("runHubOAuthStdio", () => {
     expect(serverConnectSpy).toHaveBeenCalledOnce();
   });
 
-  it("writes discovery hint to stderr when hub returns no drd_* tools", async () => {
+  it("does not write discovery hint when a backlog tool is present", async () => {
+    delete process.env.TYMIO_MCP_QUIET;
+    listToolsMock.mockResolvedValueOnce({
+      tools: [
+        { name: "tymio_list_my_workspaces", description: "x", title: "x" },
+        { name: "tymio_list_skills", description: "s", title: "s" },
+        { name: "tymio_meta", description: "m", title: "m" }
+      ]
+    });
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runHubOAuthStdio(new URL("https://hub/mcp"));
+    const stderr = err.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(stderr).not.toMatch(/no backlog tools here/);
+    err.mockRestore();
+    process.env.TYMIO_MCP_QUIET = "1";
+  });
+
+  it("writes discovery hint when hub returns only discovery + skill tools (no backlog)", async () => {
+    delete process.env.TYMIO_MCP_QUIET;
+    listToolsMock.mockResolvedValueOnce({
+      tools: [
+        { name: "tymio_list_my_workspaces", description: "x", title: "x" },
+        { name: "tymio_mcp_routing_guide", description: "y", title: "y" },
+        { name: "tymio_list_skills", description: "s", title: "s" },
+        { name: "tymio_install_skill", description: "i", title: "i" }
+      ]
+    });
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runHubOAuthStdio(new URL("https://hub/mcp"));
+    const stderr = err.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(stderr).toMatch(/discovery/);
+    err.mockRestore();
+    process.env.TYMIO_MCP_QUIET = "1";
+  });
+
+  it("writes discovery hint to stderr when hub returns only legacy discovery pair", async () => {
     delete process.env.TYMIO_MCP_QUIET;
     listToolsMock.mockResolvedValueOnce({
       tools: [
@@ -127,12 +162,12 @@ describe("runHubOAuthStdio", () => {
 
   it("proxy tool handler forwards to upstream callTool", async () => {
     await runHubOAuthStdio(new URL("https://hub/mcp"));
-    const healthRegistration = registerToolSpy.mock.calls.find((c) => c[0] === "drd_health");
+    const healthRegistration = registerToolSpy.mock.calls.find((c) => c[0] === "tymio_health");
     expect(healthRegistration).toBeDefined();
     const handler = healthRegistration![2] as (args: Record<string, unknown>) => Promise<unknown>;
     await handler({ k: "v" });
     expect(callToolMock).toHaveBeenCalledWith({
-      name: "drd_health",
+      name: "tymio_health",
       arguments: { k: "v" }
     });
   });
@@ -142,20 +177,20 @@ describe("runHubOAuthStdio", () => {
       delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
       process.env.TYMIO_WORKSPACE_SLUG = "pinned-ws";
       listToolsMock.mockResolvedValueOnce({
-        tools: [{ name: "drd_meta", description: "m", title: "m" }]
+        tools: [{ name: "tymio_meta", description: "m", title: "m" }]
       });
       callToolMock.mockResolvedValue({
         content: [{ type: "text", text: "{}" }]
       });
       await runHubOAuthStdio(new URL("https://hub/mcp"));
-      const reg = registerToolSpy.mock.calls.find((c) => c[0] === "drd_meta");
+      const reg = registerToolSpy.mock.calls.find((c) => c[0] === "tymio_meta");
       const handler = reg![2] as (args: Record<string, unknown>) => Promise<unknown>;
       await expect(handler({ workspaceSlug: "evil-ws" })).rejects.toThrow(/does not match this MCP server pin/);
       expect(callToolMock).not.toHaveBeenCalled();
       callToolMock.mockClear();
       await handler({ workspaceSlug: "pinned-ws" });
       expect(callToolMock).toHaveBeenCalledWith({
-        name: "drd_meta",
+        name: "tymio_meta",
         arguments: { workspaceSlug: "pinned-ws" }
       });
     } finally {

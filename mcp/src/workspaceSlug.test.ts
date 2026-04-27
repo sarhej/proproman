@@ -35,13 +35,13 @@ describe("WORKSPACE_SLUG_ZOD", () => {
 describe("assertToolArgsMatchPinnedWorkspace", () => {
   it("accepts exact match", () => {
     expect(() =>
-      assertToolArgsMatchPinnedWorkspace({ workspaceSlug: "demo" }, "demo", "drd_meta")
+      assertToolArgsMatchPinnedWorkspace({ workspaceSlug: "demo" }, "demo", "tymio_meta")
     ).not.toThrow();
   });
 
   it("accepts case-insensitive match vs pin", () => {
     expect(() =>
-      assertToolArgsMatchPinnedWorkspace({ workspaceSlug: "Demo" }, "demo", "drd_meta")
+      assertToolArgsMatchPinnedWorkspace({ workspaceSlug: "Demo" }, "demo", "tymio_meta")
     ).not.toThrow();
   });
 
@@ -113,5 +113,17 @@ describe("readPinnedWorkspaceSlugForStdio", () => {
     process.env.TYMIO_WORKSPACE_SLUG = "my-workspace";
     const { readPinnedWorkspaceSlugForStdio } = await import("./workspaceSlug.js");
     expect(readPinnedWorkspaceSlugForStdio()).toBe("my-workspace");
+  });
+
+  it("returns slug from DRD_WORKSPACE_SLUG when TYMIO unset (legacy)", async () => {
+    vi.resetModules();
+    delete process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING;
+    delete process.env.TYMIO_WORKSPACE_SLUG;
+    process.env.DRD_WORKSPACE_SLUG = "legacy-ws";
+    const errSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const { readPinnedWorkspaceSlugForStdio } = await import("./workspaceSlug.js");
+    expect(readPinnedWorkspaceSlugForStdio()).toBe("legacy-ws");
+    expect(errSpy.mock.calls.some((c) => String(c[0]).includes("Deprecated"))).toBe(true);
+    errSpy.mockRestore();
   });
 });

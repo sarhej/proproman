@@ -43,7 +43,7 @@ export async function buildMcpAgentContextJson(): Promise<{
         "Not an access-control boundary: initiatives may omit a product; agents can create cross-product or non-product work inside the same workspace.",
       workspaceUrls: "Humans often open /t/<workspace-slug> on this host.",
       dataSources:
-        "Workspace slug is on the Tenant; product slug is on each Product row (see MCP drd_meta / drd_list_products and REST GET /api/meta, /api/products)."
+        "Workspace slug is on the Tenant; product slug is on each Product row (see MCP tymio_meta / tymio_list_products and REST GET /api/meta, /api/products)."
     },
     tymioMcpCliAgentGuidanceMarkdown,
     tymioMcpCliPackage: "@tymio/mcp-server",

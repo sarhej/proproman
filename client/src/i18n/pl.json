@@ -71,7 +71,7 @@
     "stdioLead": "For gateways that run MCP as a subprocess — including OpenClaw, Gemini CLI, and other CLI-first agents. Install @tymio/mcp-server, run tymio-mcp login once, then register tymio-mcp in your MCP config.",
     "stdioStep1": "Install the CLI from the public npm registry:",
     "stdioStep2": "In a terminal, sign in once (opens your browser for Google):",
-    "stdioStep3": "In your agent’s MCP configuration, add a stdio server that runs tymio-mcp. Leave DRD_API_KEY and API_KEY unset unless you deliberately want the smaller REST-based tool set (deployment secret, not a user setting).",
+    "stdioStep3": "In your agent’s MCP configuration, add a stdio server that runs tymio-mcp. Leave TYMIO_API_KEY and API_KEY unset (legacy DRD_API_KEY) unless you deliberately want the smaller REST-based tool set (deployment secret, not a user setting).",
     "stdioStep4Label": "Example configuration (Cursor-style JSON; OpenClaw uses mcp.servers — see OpenClaw box below):",
     "openclawHeading": "OpenClaw gateway",
     "openclawHint": "On the machine running the OpenClaw gateway, register the stdio server, then restart the gateway:",
@@ -81,7 +81,7 @@
     "securityTitle": "Security & Zero-Trust",
     "securityDesc": "Connections use OAuth with PKCE and refresh-token rotation. Reused or stolen tokens can be revoked; your workspace is not accessed via a shared password pasted into Settings.",
     "oauthNotApiKeyTitle": "Important for assistants and support",
-    "oauthNotApiKeyBody": "There is no personal \"MCP API key\" in Tymio Settings, Profile, or Account. Do not tell people to copy one from the UI. Use OAuth: either the remote URL above or npm install -g @tymio/mcp-server and tymio-mcp login. DRD_API_KEY / API_KEY on a machine refers to a deployment automation secret, not an end-user field."
+    "oauthNotApiKeyBody": "There is no personal \"MCP API key\" in Tymio Settings, Profile, or Account. Do not tell people to copy one from the UI. Use OAuth: either the remote URL above or npm install -g @tymio/mcp-server and tymio-mcp login. TYMIO_API_KEY / API_KEY on a machine (legacy DRD_API_KEY) refers to a deployment automation secret, not an end-user field."
   },
   "nav": {
     "views": "Views",

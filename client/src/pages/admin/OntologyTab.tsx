@@ -367,7 +367,7 @@ export function OntologyTab() {
                       </option>
                     ))}
                   </select>
-                  <input className="min-w-[160px] flex-1 rounded border px-2 py-1 text-sm" value={newBindKey} onChange={(e) => setNewBindKey(e.target.value)} placeholder="/route or drd_*" />
+                  <input className="min-w-[160px] flex-1 rounded border px-2 py-1 text-sm" value={newBindKey} onChange={(e) => setNewBindKey(e.target.value)} placeholder="/route or tymio_*" />
                   <input className="min-w-[120px] flex-1 rounded border px-2 py-1 text-sm" value={newBindNotes} onChange={(e) => setNewBindNotes(e.target.value)} placeholder={t("admin.ontology.notes")} />
                   <Button variant="secondary" disabled={busy === "bind"} onClick={() => void addBinding()}>
                     {t("admin.ontology.addBinding")}

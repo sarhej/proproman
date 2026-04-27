@@ -36,6 +36,7 @@ import {
   workspaceMembershipCanWriteContent
 } from "../lib/workspaceRbac.js";
 import { getTenantContext } from "../tenant/tenantContext.js";
+import { registerSkillDistributionTools } from "./skillDistributionTools.js";
 import { registerWorkspaceAtlasTools } from "./workspaceAtlasTools.js";
 import { notifyHubChange, type HubChangeEventPayload } from "../services/hubChangeHub.js";
 import { allocateUniqueProductSlug } from "../lib/productSlug.js";
@@ -218,9 +219,11 @@ function requireMcpTenantCampaignWrite(membershipRole: string, globalRole: strin
 
 /** When adding a tool below (or in `workspaceAtlasTools.ts`), update `REGISTERED_MCP_TOOL_NAMES` in `registeredMcpToolNames.ts` (Vitest enforces parity). */
 export function registerTools(server: McpServer) {
+  registerSkillDistributionTools(server);
+
   // --- Health ---
   server.registerTool(
-    "drd_health",
+    "tymio_health",
     {
       title: "Tymio API health check",
       description: "Check MCP session is active. Requires workspaceSlug matching the session workspace.",
@@ -235,7 +238,7 @@ export function registerTools(server: McpServer) {
 
   // --- Meta ---
   server.registerTool(
-    "drd_meta",
+    "tymio_meta",
     {
       title: "Get Tymio meta",
       description: "Get meta data: domains, products, accounts, partners, personas, revenue streams, users.",
@@ -260,7 +263,7 @@ export function registerTools(server: McpServer) {
 
   // --- Initiatives ---
   server.registerTool(
-    "drd_list_initiatives",
+    "tymio_list_initiatives",
     {
       title: "List initiatives",
       description: "List initiatives with optional filters: domainId, ownerId, horizon, priority, isGap.",
@@ -291,7 +294,7 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
-    "drd_get_initiative",
+    "tymio_get_initiative",
     {
       title: "Get initiative by ID",
       description: "Get a single initiative by its ID.",
@@ -307,7 +310,7 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
-    "drd_create_initiative",
+    "tymio_create_initiative",
     {
       title: "Create initiative",
       description: "Create a new initiative. Requires admin/editor role.",
@@ -357,7 +360,7 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
-    "drd_update_initiative",
+    "tymio_update_initiative",
     {
       title: "Update initiative",
       description: "Update an existing initiative by ID.",
@@ -420,7 +423,7 @@ export function registerTools(server: McpServer) {
   );
 
   // Set implementation notes on each Tymio demo hub epic (initiative.notes) so they are visible in Product Explorer.
-  const DR_HUB_EPIC_NOTES: Record<string, string> = {
+  const TYMIO_DEMO_HUB_EPIC_NOTES: Record<string, string> = {
     "Epic: Accesses & Roles": `Implementation details (Epic: Accesses & Roles)
 
 Archive visibility and placement: archive/unarchive action restricted to Admin (or by role). Move "Archivovat / de-archivovat" button to top bar (horní list) for visibility. Initiative already has PATCH archive/unarchive; ensure UI shows archive only for users with canEditStructure or ADMIN. Files: InitiativeDetailPanel (archive button placement), InitiativeForm or panel header; permission check for archive action.`,
@@ -470,7 +473,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   };
 
   server.registerTool(
-    "drd_set_dr_hub_epic_implementation_notes",
+    "tymio_set_epic_implementation_notes",
     {
       title: "Set Tymio demo hub epic implementation notes",
       description: "Set the Notes field on each Tymio demo hub epic (initiative) to the canonical implementation details for that epic. Use this so implementation details are tracked in the product (Product Explorer); open an epic and see Notes in the Details tab.",
@@ -486,7 +489,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const initiatives = await prisma.initiative.findMany({ where: { productId: product.id } });
       const updated: string[] = [];
       for (const init of initiatives) {
-        const notes = DR_HUB_EPIC_NOTES[init.title];
+        const notes = TYMIO_DEMO_HUB_EPIC_NOTES[init.title];
         if (!notes) continue;
         await prisma.initiative.update({ where: { id: init.id }, data: { notes } });
         mcpEmitHub({
@@ -502,7 +505,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_initiative",
+    "tymio_delete_initiative",
     {
       title: "Delete initiative",
       description: "Delete an initiative by ID.",
@@ -526,7 +529,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Reference data (read-only) ---
   server.registerTool(
-    "drd_list_domains",
+    "tymio_list_domains",
     {
       title: "List domains",
       description: "List all domains.",
@@ -540,7 +543,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_domain",
+    "tymio_create_domain",
     {
       title: "Create domain",
       description:
@@ -568,7 +571,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_products",
+    "tymio_list_products",
     {
       title: "List products",
       description: "List all products (with hierarchy).",
@@ -588,7 +591,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_product",
+    "tymio_create_product",
     {
       title: "Create product",
       description:
@@ -636,7 +639,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_product",
+    "tymio_update_product",
     {
       title: "Update product",
       description: "Update an existing product by ID.",
@@ -691,7 +694,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_product",
+    "tymio_delete_product",
     {
       title: "Delete product",
       description: "Delete a product by ID (cascades per schema). Requires workspace OWNER or ADMIN.",
@@ -716,7 +719,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_get_product_tree",
+    "tymio_get_product_tree",
     {
       title: "Get product tree",
       description: "Get a product with full hierarchy: initiatives (epics), features (stories), requirements (tasks). Optionally filter by productId; if omitted, returns first product by sortOrder.",
@@ -793,7 +796,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_personas",
+    "tymio_list_personas",
     {
       title: "List personas",
       description: "List all personas.",
@@ -807,7 +810,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_accounts",
+    "tymio_list_accounts",
     {
       title: "List accounts",
       description: "List all accounts.",
@@ -821,7 +824,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_partners",
+    "tymio_list_partners",
     {
       title: "List partners",
       description: "List all partners.",
@@ -835,7 +838,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_kpis",
+    "tymio_list_kpis",
     {
       title: "List KPIs",
       description: "List all initiative KPIs with their initiative context.",
@@ -853,7 +856,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_milestones",
+    "tymio_list_milestones",
     {
       title: "List milestones",
       description: "List all initiative milestones.",
@@ -871,7 +874,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_demands",
+    "tymio_list_demands",
     {
       title: "List demands",
       description: "List all demands (from accounts, partners, internal, compliance).",
@@ -886,7 +889,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_revenue_streams",
+    "tymio_list_revenue_streams",
     {
       title: "List revenue streams",
       description: "List all revenue streams.",
@@ -901,7 +904,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Features ---
   server.registerTool(
-    "drd_list_features",
+    "tymio_list_features",
     {
       title: "List features",
       description: "List all features with initiative context. Optionally filter by initiativeId.",
@@ -920,7 +923,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_feature",
+    "tymio_create_feature",
     {
       title: "Create feature",
       description: "Create a new feature (user story) under an initiative. Requires admin/editor role.",
@@ -967,7 +970,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_feature",
+    "tymio_update_feature",
     {
       title: "Update feature",
       description: "Update an existing feature (user story) by ID.",
@@ -1016,7 +1019,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_move_feature",
+    "tymio_move_feature",
     {
       title: "Move feature to another initiative",
       description:
@@ -1111,7 +1114,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_feature",
+    "tymio_delete_feature",
     {
       title: "Delete feature",
       description: "Delete a feature by ID (cascades requirements per schema). Requires workspace content write.",
@@ -1137,7 +1140,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Decisions ---
   server.registerTool(
-    "drd_list_decisions",
+    "tymio_list_decisions",
     {
       title: "List decisions",
       description: "List all initiative decisions. Optionally filter by initiativeId.",
@@ -1156,7 +1159,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_risks",
+    "tymio_list_risks",
     {
       title: "List risks",
       description: "List all initiative risks with owner. Optionally filter by initiativeId.",
@@ -1176,7 +1179,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Dependencies (Dependency rows are not tenant-scoped in Prisma; filter via initiative.tenantId) ---
   server.registerTool(
-    "drd_list_dependencies",
+    "tymio_list_dependencies",
     {
       title: "List dependencies",
       description: "List initiative dependencies (from/to) for the active workspace only.",
@@ -1201,7 +1204,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_decision",
+    "tymio_create_decision",
     {
       title: "Create decision",
       description: "Add a decision to an initiative in this workspace. Requires workspace content write.",
@@ -1234,7 +1237,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_decision",
+    "tymio_delete_decision",
     {
       title: "Delete decision",
       description: "Delete a decision by ID in this workspace.",
@@ -1253,7 +1256,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_risk",
+    "tymio_create_risk",
     {
       title: "Create risk",
       description: "Add a risk to an initiative. Requires workspace content write.",
@@ -1292,7 +1295,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_risk",
+    "tymio_delete_risk",
     {
       title: "Delete risk",
       description: "Delete a risk by ID in this workspace.",
@@ -1311,7 +1314,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_dependency",
+    "tymio_create_dependency",
     {
       title: "Create dependency",
       description: "Link two initiatives (from blocks until to resolves). Requires workspace OWNER or ADMIN.",
@@ -1341,7 +1344,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_dependency",
+    "tymio_delete_dependency",
     {
       title: "Delete dependency",
       description: "Remove dependency edge between two initiatives. Requires workspace OWNER or ADMIN.",
@@ -1372,7 +1375,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Requirements ---
   server.registerTool(
-    "drd_list_requirements",
+    "tymio_list_requirements",
     {
       title: "List requirements",
       description: "List all feature requirements with feature and initiative context. Optionally filter by featureId.",
@@ -1414,7 +1417,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   };
 
   server.registerTool(
-    "drd_create_requirement",
+    "tymio_create_requirement",
     {
       title: "Create requirement",
       description: "Create a new requirement (task) under a feature. Supports full task fields for Kanban/Notion readiness. Requires admin/editor role.",
@@ -1499,7 +1502,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   });
 
   server.registerTool(
-    "drd_update_requirement",
+    "tymio_update_requirement",
     {
       title: "Update requirement",
       description: "Update an existing requirement (task) by ID. Supports full task payload: status, assigneeId, dueDate, estimate, labels, taskType, blockedReason, externalRef, metadata.",
@@ -1589,7 +1592,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   });
 
   server.registerTool(
-    "drd_upsert_requirement",
+    "tymio_upsert_requirement",
     {
       title: "Upsert requirement",
       description: "Idempotent create-or-update a requirement (task): find by featureId and either externalRef or normalized title; if found, update with payload, else create. Use for imports to avoid duplicates.",
@@ -1668,7 +1671,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_requirement",
+    "tymio_delete_requirement",
     {
       title: "Delete requirement",
       description: "Delete a requirement (task) by ID in this workspace.",
@@ -1697,7 +1700,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Assignments ---
   server.registerTool(
-    "drd_list_assignments",
+    "tymio_list_assignments",
     {
       title: "List assignments",
       description: "List all initiative assignments (user roles). Optionally filter by initiativeId.",
@@ -1716,7 +1719,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_upsert_assignment",
+    "tymio_upsert_assignment",
     {
       title: "Upsert assignment",
       description: "Create or update an initiative assignment (RACI). ACCOUNTABLE replaces prior accountable and syncs initiative owner. Requires workspace content write.",
@@ -1769,7 +1772,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_assignment",
+    "tymio_update_assignment",
     {
       title: "Update assignment",
       description: "Change assignment role and/or allocation (same semantics as PUT /api/assignments).",
@@ -1834,7 +1837,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_assignment",
+    "tymio_delete_assignment",
     {
       title: "Delete assignment",
       description: "Remove an assignment triple. Requires workspace OWNER or ADMIN. Clears initiative owner if role was ACCOUNTABLE.",
@@ -1872,7 +1875,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Stakeholders ---
   server.registerTool(
-    "drd_list_stakeholders",
+    "tymio_list_stakeholders",
     {
       title: "List stakeholders",
       description: "List all initiative stakeholders. Optionally filter by initiativeId.",
@@ -1891,7 +1894,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_stakeholder",
+    "tymio_create_stakeholder",
     {
       title: "Create stakeholder",
       description: "Add a stakeholder to an initiative.",
@@ -1924,7 +1927,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_stakeholder",
+    "tymio_update_stakeholder",
     {
       title: "Update stakeholder",
       description: "Update stakeholder fields by ID.",
@@ -1957,7 +1960,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_stakeholder",
+    "tymio_delete_stakeholder",
     {
       title: "Delete stakeholder",
       description: "Delete a stakeholder by ID.",
@@ -1976,7 +1979,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_milestone",
+    "tymio_create_milestone",
     {
       title: "Create milestone",
       description: "Add a milestone to an initiative.",
@@ -2018,7 +2021,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_milestone",
+    "tymio_update_milestone",
     {
       title: "Update milestone",
       description: "Update milestone by ID.",
@@ -2061,7 +2064,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_milestone",
+    "tymio_delete_milestone",
     {
       title: "Delete milestone",
       description: "Delete a milestone by ID.",
@@ -2080,7 +2083,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_kpi",
+    "tymio_create_kpi",
     {
       title: "Create KPI",
       description: "Add a KPI to an initiative.",
@@ -2115,7 +2118,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_kpi",
+    "tymio_update_kpi",
     {
       title: "Update KPI",
       description: "Update KPI by ID.",
@@ -2150,7 +2153,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_kpi",
+    "tymio_delete_kpi",
     {
       title: "Delete KPI",
       description: "Delete a KPI by ID.",
@@ -2170,7 +2173,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Timeline (read-only) ---
   server.registerTool(
-    "drd_timeline_calendar",
+    "tymio_timeline_calendar",
     {
       title: "Timeline calendar",
       description: "Get initiatives as calendar items (id, title, dates, domain, owner) for timeline/calendar view.",
@@ -2200,7 +2203,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_timeline_gantt",
+    "tymio_timeline_gantt",
     {
       title: "Timeline Gantt",
       description: "Get initiatives as Gantt tasks (id, title, dates, domain, progress, dependency ids). Dependencies only include targets in the same workspace.",
@@ -2259,7 +2262,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   };
 
   server.registerTool(
-    "drd_list_campaigns",
+    "tymio_list_campaigns",
     {
       title: "List campaigns",
       description: "List all campaigns with assets and links to initiatives/features/accounts/partners.",
@@ -2277,7 +2280,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_get_campaign",
+    "tymio_get_campaign",
     {
       title: "Get campaign by ID",
       description: "Get a single campaign by ID with assets and links.",
@@ -2293,7 +2296,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_campaign",
+    "tymio_create_campaign",
     {
       title: "Create campaign",
       description: "Create a campaign. Requires workspace content write, global ADMIN or MARKETING (same as HTTP).",
@@ -2333,7 +2336,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_campaign",
+    "tymio_update_campaign",
     {
       title: "Update campaign",
       description: "Update campaign by ID. Same RBAC as create.",
@@ -2379,7 +2382,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_campaign",
+    "tymio_delete_campaign",
     {
       title: "Delete campaign",
       description: "Delete campaign by ID. Same RBAC as create.",
@@ -2398,7 +2401,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_campaign_link",
+    "tymio_create_campaign_link",
     {
       title: "Create campaign link",
       description: "Link a campaign to initiative, feature, account, and/or partner (at least one target).",
@@ -2457,7 +2460,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_campaign_link",
+    "tymio_delete_campaign_link",
     {
       title: "Delete campaign link",
       description: "Delete a campaign link by ID.",
@@ -2476,7 +2479,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_assets",
+    "tymio_list_assets",
     {
       title: "List assets",
       description: "List all campaign assets. Optionally filter by campaignId.",
@@ -2495,7 +2498,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_campaign_links",
+    "tymio_list_campaign_links",
     {
       title: "List campaign links",
       description: "Links between campaigns and initiatives/features/accounts/partners. Optionally filter by campaignId.",
@@ -2521,7 +2524,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
 
   // --- Structure reorder, execution boards, search (Tier 2) ---
   server.registerTool(
-    "drd_reorder_initiatives",
+    "tymio_reorder_initiatives",
     {
       title: "Reorder initiatives",
       description:
@@ -2550,7 +2553,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_reorder_features",
+    "tymio_reorder_features",
     {
       title: "Reorder features in an initiative",
       description:
@@ -2593,7 +2596,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_reorder_requirements",
+    "tymio_reorder_requirements",
     {
       title: "Reorder requirements in a feature",
       description:
@@ -2636,7 +2639,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_set_execution_layout",
+    "tymio_set_execution_layout",
     {
       title: "Set execution board layout for a product",
       description:
@@ -2702,7 +2705,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_list_execution_boards",
+    "tymio_list_execution_boards",
     {
       title: "List execution boards for a product",
       description: "Returns boards and columns for the given productId (read-only).",
@@ -2723,7 +2726,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_execution_board",
+    "tymio_create_execution_board",
     {
       title: "Create execution board",
       description:
@@ -2797,7 +2800,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_execution_board",
+    "tymio_update_execution_board",
     {
       title: "Update execution board",
       description: "Update board metadata (name, default flag, provider, sync state, config). Requires workspace OWNER or ADMIN.",
@@ -2841,7 +2844,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_execution_board",
+    "tymio_delete_execution_board",
     {
       title: "Delete execution board",
       description: "Deletes a board by id. Requires workspace OWNER or ADMIN.",
@@ -2860,7 +2863,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_create_execution_column",
+    "tymio_create_execution_column",
     {
       title: "Create execution column",
       description: "Add a column to an execution board. Requires workspace OWNER or ADMIN.",
@@ -2897,7 +2900,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_update_execution_column",
+    "tymio_update_execution_column",
     {
       title: "Update execution column",
       description: "Update column fields on an execution column. Requires workspace OWNER or ADMIN.",
@@ -2934,7 +2937,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_delete_execution_column",
+    "tymio_delete_execution_column",
     {
       title: "Delete execution column",
       description: "Delete an execution column by id. Requires workspace OWNER or ADMIN.",
@@ -2953,7 +2956,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_reorder_execution_columns",
+    "tymio_reorder_execution_columns",
     {
       title: "Reorder execution columns",
       description:
@@ -2989,7 +2992,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_search_initiatives",
+    "tymio_search_initiatives",
     {
       title: "Search initiatives",
       description:
@@ -3035,7 +3038,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_search_features",
+    "tymio_search_features",
     {
       title: "Search features",
       description:
@@ -3080,7 +3083,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
   );
 
   server.registerTool(
-    "drd_search_requirements",
+    "tymio_search_requirements",
     {
       title: "Search requirements",
       description:

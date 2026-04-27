@@ -7,7 +7,7 @@ Tymio exposes **Model Context Protocol (MCP)** over **Streamable HTTP** on your 
 | URL | What you get |
 |-----|----------------|
 | **`https://<host>/mcp`** | **Discovery only** after OAuth: **`tymio_list_my_workspaces`** (your slugs + pinned MCP URLs) and **`tymio_mcp_routing_guide`**. No backlog tools — no tenant is selected for this endpoint. |
-| **`https://<host>/t/<workspace-slug>/mcp`** | **Full workspace MCP**: all **`drd_*`** and workspace-scoped **`tymio_*`** tools (brief, atlas, …). Workspace is **pinned by the path** (matches browser hub URLs under **`/t/<workspace-slug>/…`**). |
+| **`https://<host>/t/<workspace-slug>/mcp`** | **Full workspace MCP**: all **`tymio_*`** and workspace-scoped **`tymio_*`** tools (brief, atlas, …). Workspace is **pinned by the path** (matches browser hub URLs under **`/t/<workspace-slug>/…`**). |
 
 Both paths use the same **authorization server** (Google via hub). **Protected resource metadata** is **per URL**: **`GET /.well-known/oauth-protected-resource/mcp`** describes root discovery; **`GET /.well-known/oauth-protected-resource/t/<workspace-slug>/mcp`** advertises **`resource`** = **`https://<host>/t/<workspace-slug>/mcp`** so OAuth clients that require an exact **resource** match (e.g. Cursor) accept workspace MCP connections. Use **`/t/<slug>/mcp`** in Cursor (or stdio **`TYMIO_MCP_URL`**) for day-to-day backlog automation; root **`/mcp`** is optional to discover slugs. The in-app **Connecting a coding agent** page should copy the **workspace** URL when you are inside a workspace.
 
@@ -21,7 +21,7 @@ Both paths use the same **authorization server** (Google via hub). **Protected r
 
 ## Per-project config (agents and teams)
 
-Coding agents connected only to **`/mcp`** see **discovery tools** (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`) — not **`drd_*`**. To automate backlog work **per repository**, add **project-local** MCP config:
+Coding agents connected only to **`/mcp`** see **discovery tools** (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`) — not **`tymio_*`**. To automate backlog work **per repository**, add **project-local** MCP config:
 
 - **Cursor:** **`.cursor/mcp.json`** at the repo root — e.g. `mcpServers.tymio-workspace.url` = **`https://<host>/t/<workspace-slug>/mcp`**.
 - **Claude Code:** **`.mcp.json`** at the repo root with the same **`url`** pattern (merges with user config per Anthropic docs).

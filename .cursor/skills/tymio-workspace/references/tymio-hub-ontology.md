@@ -6,7 +6,7 @@ Use this **before** listing or mutating hub data so you pick the right entity la
 
 ## 1. Backlog ontology (work graph)
 
-**What it is:** The **tenant’s work model** — domains, products, roadmap bets, delivery breakdown, and signals. These are **rows** in the hub (`drd_*` list/get/create/update tools).
+**What it is:** The **tenant’s work model** — domains, products, roadmap bets, delivery breakdown, and signals. These are **rows** in the hub (`tymio_*` list/get/create/update tools).
 
 **Core spine (always walk in this direction when drilling down):**
 
@@ -20,7 +20,7 @@ flowchart LR
 
 | Entity | Role | Typical parent / anchor |
 |--------|------|-------------------------|
-| **Domain** | Strategic bucket / swimlane | Tenant taxonomy (`drd_list_domains`) |
+| **Domain** | Strategic bucket / swimlane | Tenant taxonomy (`tymio_list_domains`) |
 | **Product** | Product line or surface (optional on initiative) | Tenant taxonomy; `productId` nullable on **Initiative** |
 | **Initiative** | Roadmap bet / epic | **Required** `domainId`; optional `productId` |
 | **Feature** | Sized deliverable under one initiative | **Required** `initiativeId` |
@@ -78,7 +78,7 @@ Use the **capability ontology** to answer “what screens/APIs exist?” Use the
 
 ## 3. How smarter tool use follows the graph
 
-1. **Resolve taxonomy first:** `drd_meta` / `drd_list_domains` / `drd_list_products` so **Domain** and **Product** ids are real.  
+1. **Resolve taxonomy first:** `tymio_meta` / `tymio_list_domains` / `tymio_list_products` so **Domain** and **Product** ids are real.  
 2. **Narrow to one Initiative** before creating **Features** (every feature needs `initiativeId`).  
 3. **Narrow to one Feature** before creating **Requirements** (every requirement needs `featureId`).  
 4. **Dependencies between bets** are **Initiative ↔ Initiative**; do not invent cross-feature “dependency” rows if the hub only exposes initiative-level deps.  

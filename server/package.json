@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "generate-skills-catalog": "tsx scripts/generate-skills-catalog.ts",
+    "prebuild": "npm run generate-skills-catalog",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/src/index.js",
     "test": "vitest run",

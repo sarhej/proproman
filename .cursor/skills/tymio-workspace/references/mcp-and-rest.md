@@ -2,11 +2,11 @@
 
 Replace `https://tymio.app` with your deployment origin if not using production.
 
-**Autonomous agents — session gate:** Before any `drd_*` / `tymio_*` call, ensure the MCP client has completed **OAuth** (or **`mcp_auth` with `{}`** if the client exposes it for Tymio). **Verify** with **`drd_health`** or **`tymio_get_agent_brief`**. If that fails, stop and have the user sign in; do not claim hub mutations or replace live work with offline “import specs” unless the user asked for documents only.
+**Autonomous agents — session gate:** Before any hub `tymio_*` tool call, ensure the MCP client has completed **OAuth** (or **`mcp_auth` with `{}`** if the client exposes it for Tymio). **Verify** with **`tymio_health`** or **`tymio_get_agent_brief`**. If that fails, stop and have the user sign in; do not claim hub mutations or replace live work with offline “import specs” unless the user asked for documents only.
 
-**Autonomous agents — routing:** **`POST …/mcp`** is **discovery-only** (two tools: list workspaces + **`tymio_mcp_routing_guide`** with copy-paste **`.cursor/mcp.json`** / **`.mcp.json`** templates). **Full** MCP (`drd_*`, workspace `tymio_*`) is **`POST …/t/<slug>/mcp`** only. Same OAuth; **trim** Server URL. Never reuse backlog **IDs** across workspaces.
+**Autonomous agents — routing:** **`POST …/mcp`** is **discovery-only** (two tools: list workspaces + **`tymio_mcp_routing_guide`** with copy-paste **`.cursor/mcp.json`** / **`.mcp.json`** templates). **Full** workspace MCP (all backlog and capability **`tymio_*`** tools) is **`POST …/t/<slug>/mcp`** only. Same OAuth; **trim** Server URL. Never reuse backlog **IDs** across workspaces.
 
-**Cursor mismatch:** If **`drd_*`** tools are missing, the MCP URL is almost certainly root **`…/mcp`** — switch to **`…/t/<slug>/mcp`**. See `tymio-workspace` skill.
+**Cursor mismatch:** If **`tymio_*`** tools are missing, the MCP URL is almost certainly root **`…/mcp`** — switch to **`…/t/<slug>/mcp`**. See `tymio-workspace` skill.
 
 **Autonomous agents:** Tymio does **not** offer a per-user MCP API key in **Settings**, **Profile**, or **Account**. Do not instruct users to copy one. Use **OAuth** (remote **`/mcp`** or **`/t/<workspace-slug>/mcp`** in the IDE) or **`@tymio/mcp-server`** + **`tymio-mcp login`** for stdio (default; **`TYMIO_MCP_URL`** may point at either MCP path). **`DRD_API_KEY` / `API_KEY`** on stdio = **server `API_KEY`** (operator secret). Canonical Markdown: **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, **`GET …/api/mcp/agent-context`** → `tymioMcpCliAgentGuidanceMarkdown`, `tymioMcpNoUserSettingsApiKey`.
 
@@ -81,23 +81,23 @@ Replace `https://tymio.app` with your deployment origin if not using production.
 
 **Not** in API-key stdio (`mcp/src/apiKeyStdio.ts`). Wiki: production **`/wiki/workspace-atlas`** or repo **`client/public/wiki/articles/workspace-atlas.md`**.
 
-## Common `drd_*` tools (remote MCP)
+## Common `tymio_*` tools (remote MCP)
 
-**Meta:** `drd_health`, `drd_meta`
+**Meta:** `tymio_health`, `tymio_meta`
 
-**Initiatives:** `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`
+**Initiatives:** `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_create_initiative`, `tymio_update_initiative`, `tymio_delete_initiative`
 
-**Taxonomy:** `drd_list_domains`, `drd_list_products`, `drd_create_product`, `drd_update_product`, `drd_get_product_tree`, `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`
+**Taxonomy:** `tymio_list_domains`, `tymio_list_products`, `tymio_create_product`, `tymio_update_product`, `tymio_get_product_tree`, `tymio_list_personas`, `tymio_list_accounts`, `tymio_list_partners`, `tymio_list_kpis`, `tymio_list_milestones`, `tymio_list_demands`, `tymio_list_revenue_streams`
 
-**Work items:** `drd_list_features`, `drd_create_feature`, `drd_update_feature`, `drd_list_requirements`, `drd_create_requirement`, `drd_update_requirement`, `drd_upsert_requirement`
+**Work items:** `tymio_list_features`, `tymio_create_feature`, `tymio_update_feature`, `tymio_list_requirements`, `tymio_create_requirement`, `tymio_update_requirement`, `tymio_upsert_requirement`
 
-**Other:** `drd_list_decisions`, `drd_list_risks`, `drd_list_dependencies`, `drd_list_assignments`, `drd_list_stakeholders`, `drd_timeline_calendar`, `drd_timeline_gantt`, plus campaigns/assets tools if enabled for the role.
+**Other:** `tymio_list_decisions`, `tymio_list_risks`, `tymio_list_dependencies`, `tymio_list_assignments`, `tymio_list_stakeholders`, `tymio_timeline_calendar`, `tymio_timeline_gantt`, plus campaigns/assets tools if enabled for the role.
 
-Exact names may evolve; use `tymio_get_agent_brief` or `drd_meta` on the live server when in doubt.
+Exact names may evolve; use `tymio_get_agent_brief` or `tymio_meta` on the live server when in doubt.
 
 ## Stdio MCP subset
 
-When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only** a subset (no `drd_create_product` in typical setups). Use **remote MCP** or REST `POST /api/products` to create products from automation. **Workspace atlas tools are omitted** from this subset — use OAuth stdio or remote MCP for those.
+When using a stdio bridge with `DRD_API_BASE_URL` + `DRD_API_KEY`, expect **only** a subset (no `tymio_create_product` in typical setups). Use **remote MCP** or REST `POST /api/products` to create products from automation. **Workspace atlas tools are omitted** from this subset — use OAuth stdio or remote MCP for those.
 
 ## Ontology REST (authenticated)
 

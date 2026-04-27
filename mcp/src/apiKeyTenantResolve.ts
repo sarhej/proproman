@@ -1,4 +1,4 @@
-import { drdFetch } from "./api.js";
+import { tymioFetch } from "./api.js";
 import { isValidWorkspaceSlugFormat } from "./workspaceSlug.js";
 
 type MeTenantsResponse = {
@@ -15,7 +15,7 @@ export async function resolveTenantIdForWorkspaceSlug(expectedSlug: string): Pro
     throw new Error(`Invalid workspace slug: ${JSON.stringify(expectedSlug)}`);
   }
   const want = expectedSlug.toLowerCase();
-  const data = await drdFetch<MeTenantsResponse>("/api/me/tenants");
+  const data = await tymioFetch<MeTenantsResponse>("/api/me/tenants");
   const row = data.tenants.find(
     (m) => m.tenant.slug.toLowerCase() === want && m.tenant.status === "ACTIVE"
   );

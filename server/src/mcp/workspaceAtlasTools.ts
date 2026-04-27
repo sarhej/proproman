@@ -100,7 +100,7 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
     {
       title: "Get one materialized object shard (JSON)",
       description:
-        "Fetch a single DOMAIN, PRODUCT, INITIATIVE, FEATURE, or REQUIREMENT shard with facts + graph links. IDs come from drd_* lists or the workspace atlas.",
+        "Fetch a single DOMAIN, PRODUCT, INITIATIVE, FEATURE, or REQUIREMENT shard with facts + graph links. IDs come from tymio_* lists or the workspace atlas.",
       inputSchema: mcpWithWorkspace({
         objectType: z.enum(["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"]),
         id: z.string().min(1)

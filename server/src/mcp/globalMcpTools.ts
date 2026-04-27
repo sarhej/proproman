@@ -3,15 +3,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prismaUnscoped } from "../db.js";
 import { appendMcpFeedbackToToolResult } from "../lib/mcpFeedbackNotice.js";
 import { getMcpBaseUrl } from "./oauth-provider.js";
+import { getMcpOAuthUserId } from "./mcpOAuthContext.js";
+import { registerSkillDistributionTools } from "./skillDistributionTools.js";
 
 function textContent(text: string) {
   return { content: [{ type: "text" as const, text: appendMcpFeedbackToToolResult(text) }] };
-}
-
-function getUserIdFromCtx(ctx: unknown): string {
-  const extra = (ctx as { authInfo?: { extra?: Record<string, unknown> } })?.authInfo?.extra;
-  if (typeof extra?.userId !== "string") throw new Error("Not authenticated");
-  return extra.userId;
 }
 
 const emptyInputSchema = z.object({});
@@ -21,6 +17,8 @@ const emptyInputSchema = z.object({});
  * Backlog and workspace-scoped tools live on `POST /t/:workspaceSlug/mcp`.
  */
 export function registerGlobalMcpTools(server: McpServer): void {
+  registerSkillDistributionTools(server);
+
   server.registerTool(
     "tymio_list_my_workspaces",
     {
@@ -30,7 +28,7 @@ export function registerGlobalMcpTools(server: McpServer): void {
       inputSchema: emptyInputSchema
     },
     async (_args, ctx) => {
-      const userId = getUserIdFromCtx(ctx);
+      const userId = getMcpOAuthUserId(ctx);
       const rows = await prismaUnscoped.tenantMembership.findMany({
         where: { userId },
         include: { tenant: { select: { slug: true, name: true, status: true } } },
@@ -57,20 +55,20 @@ export function registerGlobalMcpTools(server: McpServer): void {
       inputSchema: emptyInputSchema
     },
     async (_args, ctx) => {
-      getUserIdFromCtx(ctx);
+      getMcpOAuthUserId(ctx);
       const base = getMcpBaseUrl().replace(/\/$/, "");
       const workspaceUrlExample = `${base}/t/YOUR_WORKSPACE_SLUG/mcp`;
       const md = [
         "# Tymio MCP routing",
         "",
-        `This endpoint (\`POST ${base}/mcp\`) is **discovery-only**: OAuth + **two** tools. It does **not** select a workspace. **Backlog tools** (\`drd_*\`, workspace \`tymio_*\`) exist only on **\`${base}/t/<slug>/mcp\`**.`,
+        `This endpoint (\`POST ${base}/mcp\`) is **discovery-only**: OAuth + **two** tools. It does **not** select a workspace. **Full hub tools** (backlog CRUD and workspace-scoped \`tymio_*\` tools beyond discovery) exist only on **\`${base}/t/<slug>/mcp\`**.`,
         "",
         "## Agent workflow (do this for the user)",
         "",
         "1. Call **tymio_list_my_workspaces** and pick the **slug** for the org that owns this repo or task.",
         "2. **If you can edit the repo:** create or update **per-project** MCP config using the JSON below (replace `YOUR_WORKSPACE_SLUG`). Prefer a **second** MCP server entry named e.g. `tymio-workspace` so the user can keep root `…/mcp` as optional discovery.",
         "3. **If you cannot edit files:** paste the JSON and path into chat and tell the user to save the file, then **restart Cursor** (or reload MCP) and complete OAuth if prompted.",
-        "4. After reconnecting to the **workspace** URL, verify with **drd_health** or **tymio_get_agent_brief**.",
+        "4. After reconnecting to the **workspace** URL, verify with **tymio_health** or **tymio_get_agent_brief**.",
         "",
         "## Pinned workspace URL",
         "",

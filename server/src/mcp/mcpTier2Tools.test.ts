@@ -108,7 +108,7 @@ describe("MCP Tier 2 — initiative reorder + permission gate", () => {
   it("does not run transaction when canUserEditInitiativeForMcp is false", async () => {
     mocks.canUserEditInitiativeForMcp.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     const tools = createToolRegistry();
-    const reorder = tools.get("drd_reorder_initiatives");
+    const reorder = tools.get("tymio_reorder_initiatives");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         reorder!(
@@ -128,7 +128,7 @@ describe("MCP Tier 2 — initiative reorder + permission gate", () => {
 
   it("runs transaction when all initiatives are editable", async () => {
     const tools = createToolRegistry();
-    const reorder = tools.get("drd_reorder_initiatives");
+    const reorder = tools.get("tymio_reorder_initiatives");
     await runWithTenant(tenant("MEMBER"), () =>
       reorder!(
         { workspaceSlug: "ws", positions: [{ id: "i1", domainId: "d1", sortOrder: 2 }] },
@@ -148,7 +148,7 @@ describe("MCP Tier 2 — search pagination (hasMore)", () => {
     vi.clearAllMocks();
   });
 
-  it("drd_search_initiatives sets hasMore when more than limit rows exist", async () => {
+  it("tymio_search_initiatives sets hasMore when more than limit rows exist", async () => {
     const rows = Array.from({ length: 4 }, (_, i) => ({
       id: `init-${i}`,
       title: `T${i}`,
@@ -159,7 +159,7 @@ describe("MCP Tier 2 — search pagination (hasMore)", () => {
     }));
     mocks.initiativeFindMany.mockResolvedValueOnce(rows);
     const tools = createToolRegistry();
-    const search = tools.get("drd_search_initiatives");
+    const search = tools.get("tymio_search_initiatives");
     const result = await runWithTenant(tenant("MEMBER"), () =>
       search!({ workspaceSlug: "ws", query: "T", limit: 3, offset: 0 }, ctx("u1", UserRole.EDITOR))
     );
@@ -174,7 +174,7 @@ describe("MCP Tier 2 — search pagination (hasMore)", () => {
   });
 });
 
-describe("MCP Tier 2 — drd_move_feature", () => {
+describe("MCP Tier 2 — tymio_move_feature", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.canUserEditInitiativeForMcp.mockResolvedValue(true);
@@ -188,7 +188,7 @@ describe("MCP Tier 2 — drd_move_feature", () => {
     });
     mocks.initiativeFindUnique.mockResolvedValueOnce({ id: "i-tgt", productId: "p-b" });
     const tools = createToolRegistry();
-    const move = tools.get("drd_move_feature");
+    const move = tools.get("tymio_move_feature");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         move!(
@@ -216,7 +216,7 @@ describe("MCP Tier 2 — drd_move_feature", () => {
       initiative: { id: "i-tgt", title: "Target" },
     });
     const tools = createToolRegistry();
-    const move = tools.get("drd_move_feature");
+    const move = tools.get("tymio_move_feature");
     await runWithTenant(tenant("MEMBER"), () =>
       move!(
         { workspaceSlug: "ws", featureId: "f1", targetInitiativeId: "i-tgt" },
@@ -239,7 +239,7 @@ describe("MCP Tier 2 — drd_move_feature", () => {
     mocks.initiativeFindUnique.mockResolvedValueOnce({ id: "i-tgt", productId: null });
     mocks.canUserEditInitiativeForMcp.mockResolvedValueOnce(false);
     const tools = createToolRegistry();
-    const move = tools.get("drd_move_feature");
+    const move = tools.get("tymio_move_feature");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         move!(
@@ -260,7 +260,7 @@ describe("MCP Tier 2 — drd_move_feature", () => {
     mocks.initiativeFindUnique.mockResolvedValueOnce({ id: "i-tgt", productId: null });
     mocks.canUserEditInitiativeForMcp.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     const tools = createToolRegistry();
-    const move = tools.get("drd_move_feature");
+    const move = tools.get("tymio_move_feature");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         move!(
@@ -273,7 +273,7 @@ describe("MCP Tier 2 — drd_move_feature", () => {
   });
 });
 
-describe("MCP Tier 2 — drd_set_execution_layout", () => {
+describe("MCP Tier 2 — tymio_set_execution_layout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.applyExecutionColumn.mockResolvedValue({ executionColumnId: "col1" });
@@ -281,7 +281,7 @@ describe("MCP Tier 2 — drd_set_execution_layout", () => {
 
   it("rejects duplicate requirement ids before touching boards", async () => {
     const tools = createToolRegistry();
-    const layout = tools.get("drd_set_execution_layout");
+    const layout = tools.get("tymio_set_execution_layout");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         layout!(
@@ -300,7 +300,7 @@ describe("MCP Tier 2 — drd_set_execution_layout", () => {
   it("rejects unknown execution column for product", async () => {
     mocks.executionBoardFindMany.mockResolvedValueOnce([{ columns: [{ id: "col1" }] }]);
     const tools = createToolRegistry();
-    const layout = tools.get("drd_set_execution_layout");
+    const layout = tools.get("tymio_set_execution_layout");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         layout!(
@@ -322,7 +322,7 @@ describe("MCP Tier 2 — drd_set_execution_layout", () => {
       { id: "r1", featureId: "f1", executionColumnId: null },
     ]);
     const tools = createToolRegistry();
-    const layout = tools.get("drd_set_execution_layout");
+    const layout = tools.get("tymio_set_execution_layout");
     await runWithTenant(tenant("MEMBER"), () =>
       layout!(
         {
@@ -347,7 +347,7 @@ describe("MCP Tier 2 — drd_set_execution_layout", () => {
       { id: "r1", featureId: "f1", executionColumnId: "col1" },
     ]);
     const tools = createToolRegistry();
-    const layout = tools.get("drd_set_execution_layout");
+    const layout = tools.get("tymio_set_execution_layout");
     await runWithTenant(tenant("MEMBER"), () =>
       layout!(
         {
@@ -366,7 +366,7 @@ describe("MCP Tier 2 — drd_set_execution_layout", () => {
   });
 });
 
-describe("MCP Tier 2 — drd_create_execution_board (OWNER / ADMIN)", () => {
+describe("MCP Tier 2 — tymio_create_execution_board (OWNER / ADMIN)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.productFindUnique.mockResolvedValue({ id: "p1", name: "Prod" });
@@ -404,7 +404,7 @@ describe("MCP Tier 2 — drd_create_execution_board (OWNER / ADMIN)", () => {
       (fn as (tx: typeof txStub) => Promise<unknown>)(txStub)
     );
     const tools = createToolRegistry();
-    const createBoard = tools.get("drd_create_execution_board");
+    const createBoard = tools.get("tymio_create_execution_board");
     const result = await runWithTenant(tenant(membership), () =>
       createBoard!(
         { workspaceSlug: "ws", productId: "p1", name: "Sprint" },

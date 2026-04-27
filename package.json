@@ -26,6 +26,8 @@
     "db:up": "docker compose up -d postgres && echo Waiting for Postgres... && sleep 5 && npm run db:migrate && npm run db:seed",
     "mcp:build": "npm run build --workspace mcp",
     "mcp:start": "npm run start --workspace mcp",
+    "local:agent-clients": "bash scripts/local-agent-clients-smoke.sh",
+    "local:agent-clients-deep": "bash scripts/local-agent-clients-deep.sh",
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
     "security:check": "npm audit --audit-level=high",

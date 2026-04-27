@@ -133,6 +133,16 @@ export class FileOAuthProvider implements OAuthClientProvider {
   }
 }
 
+/** True if saved OAuth access token exists (stdio / login completed at least once). */
+export function hasSavedOAuthTokens(): boolean {
+  try {
+    const t = readJson<OAuthTokens>(path.join(getTymioConfigDir(), TOKENS_FILE));
+    return Boolean(t?.access_token);
+  } catch {
+    return false;
+  }
+}
+
 export function removeAllOAuthFiles(): void {
   const base = getTymioConfigDir();
   for (const f of [CLIENT_FILE, TOKENS_FILE, DISCOVERY_FILE]) {

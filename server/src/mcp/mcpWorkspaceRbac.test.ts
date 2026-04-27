@@ -147,7 +147,7 @@ describe("MCP workspaceSlug guard", () => {
   it("accepts workspaceSlug with different letter case than session tenant slug", async () => {
     setupMembershipMock();
     const tools = createToolRegistry();
-    const drdMeta = tools.get("drd_meta");
+    const drdMeta = tools.get("tymio_meta");
     const r = await runWithTenant(tenant("MEMBER"), () =>
       drdMeta!({ workspaceSlug: "WS" }, ctx("u-a", UserRole.EDITOR))
     );
@@ -157,7 +157,7 @@ describe("MCP workspaceSlug guard", () => {
   it("rejects single-character workspaceSlug (invalid format vs hub rules)", async () => {
     setupMembershipMock();
     const tools = createToolRegistry();
-    const drdMeta = tools.get("drd_meta");
+    const drdMeta = tools.get("tymio_meta");
     await expect(
       runWithTenant(tenant("MEMBER"), () => drdMeta!({ workspaceSlug: "w" }, ctx("u-a", UserRole.EDITOR)))
     ).rejects.toThrow(/does not match the active workspace/);
@@ -166,7 +166,7 @@ describe("MCP workspaceSlug guard", () => {
   it("rejects when workspaceSlug does not match session tenant", async () => {
     setupMembershipMock();
     const tools = createToolRegistry();
-    const listDomains = tools.get("drd_list_domains");
+    const listDomains = tools.get("tymio_list_domains");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         listDomains!({ workspaceSlug: "wrong-workspace" }, ctx("u-a", "EDITOR"))
@@ -175,7 +175,7 @@ describe("MCP workspaceSlug guard", () => {
   });
 });
 
-describe("MCP drd_meta tenant user list", () => {
+describe("MCP tymio_meta tenant user list", () => {
   let listSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -189,7 +189,7 @@ describe("MCP drd_meta tenant user list", () => {
 
   it("loads users only via listTenantMemberUsersPublic for current tenant", async () => {
     const tools = createToolRegistry();
-    const drdMeta = tools.get("drd_meta");
+    const drdMeta = tools.get("tymio_meta");
     const result = await runWithTenant(tenant("MEMBER"), () => drdMeta!({ workspaceSlug: "ws" }, ctx("u-a", "EDITOR")));
     const payload = parseMetaText(result);
     expect(listSpy).toHaveBeenCalledWith("t-ws");
@@ -208,7 +208,7 @@ describe("MCP workspace role matrix (writes)", () => {
 
   it("VIEWER cannot create initiative", async () => {
     const tools = createToolRegistry();
-    const createInitiative = tools.get("drd_create_initiative");
+    const createInitiative = tools.get("tymio_create_initiative");
     await expect(
       runWithTenant(tenant("VIEWER"), () =>
         createInitiative!(
@@ -223,7 +223,7 @@ describe("MCP workspace role matrix (writes)", () => {
   it("VIEWER can list domains (read)", async () => {
     mocks.domainFindMany.mockResolvedValueOnce([{ id: "d1", name: "Dom", sortOrder: 0, color: "#000" }]);
     const tools = createToolRegistry();
-    const listDomains = tools.get("drd_list_domains");
+    const listDomains = tools.get("tymio_list_domains");
     const result = await runWithTenant(tenant("VIEWER"), () => listDomains!({ workspaceSlug: "ws" }, ctx("caller", "VIEWER")));
     const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
     expect(JSON.parse(text!)).toEqual([{ id: "d1", name: "Dom", sortOrder: 0, color: "#000" }]);
@@ -231,7 +231,7 @@ describe("MCP workspace role matrix (writes)", () => {
 
   it("MEMBER cannot delete initiative (structure)", async () => {
     const tools = createToolRegistry();
-    const del = tools.get("drd_delete_initiative");
+    const del = tools.get("tymio_delete_initiative");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         del!({ workspaceSlug: "ws", id: "i1" }, ctx("caller", "EDITOR"))
@@ -242,7 +242,7 @@ describe("MCP workspace role matrix (writes)", () => {
 
   it("MEMBER cannot create product (structure)", async () => {
     const tools = createToolRegistry();
-    const createProduct = tools.get("drd_create_product");
+    const createProduct = tools.get("tymio_create_product");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         createProduct!({ workspaceSlug: "ws", name: "P" }, ctx("caller", "EDITOR"))
@@ -253,7 +253,7 @@ describe("MCP workspace role matrix (writes)", () => {
 
   it("MEMBER cannot create domain (structure)", async () => {
     const tools = createToolRegistry();
-    const createDomain = tools.get("drd_create_domain");
+    const createDomain = tools.get("tymio_create_domain");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         createDomain!({ workspaceSlug: "ws", name: "Growth", color: "#336699" }, ctx("caller", "EDITOR"))
@@ -264,7 +264,7 @@ describe("MCP workspace role matrix (writes)", () => {
 
   it("MEMBER cannot create execution board (structure)", async () => {
     const tools = createToolRegistry();
-    const createBoard = tools.get("drd_create_execution_board");
+    const createBoard = tools.get("tymio_create_execution_board");
     await expect(
       runWithTenant(tenant("MEMBER"), () =>
         createBoard!({ workspaceSlug: "ws", productId: "p1", name: "Sprint" }, ctx("caller", "EDITOR"))
@@ -275,7 +275,7 @@ describe("MCP workspace role matrix (writes)", () => {
   it("MEMBER can create initiative as self owner", async () => {
     mocks.initiativeCreate.mockResolvedValueOnce({ id: "new-i" });
     const tools = createToolRegistry();
-    const createInitiative = tools.get("drd_create_initiative");
+    const createInitiative = tools.get("tymio_create_initiative");
     await runWithTenant(tenant("MEMBER"), () =>
       createInitiative!(
         { workspaceSlug: "ws", title: "Roadmap", domainId: "d1" },
@@ -295,7 +295,7 @@ describe("MCP matrix: global SUPER_ADMIN bypasses workspace VIEWER", () => {
   it("can create initiative despite workspace VIEWER when JWT role is SUPER_ADMIN", async () => {
     mocks.initiativeCreate.mockResolvedValueOnce({ id: "i-sa" });
     const tools = createToolRegistry();
-    const createInitiative = tools.get("drd_create_initiative");
+    const createInitiative = tools.get("tymio_create_initiative");
     await runWithTenant(tenant("VIEWER"), () =>
       createInitiative!(
         { workspaceSlug: "ws", title: "Admin path", domainId: "d1" },
@@ -308,7 +308,7 @@ describe("MCP matrix: global SUPER_ADMIN bypasses workspace VIEWER", () => {
   it("can delete initiative despite workspace MEMBER when JWT role is SUPER_ADMIN", async () => {
     mocks.initiativeDelete.mockResolvedValueOnce({});
     const tools = createToolRegistry();
-    const del = tools.get("drd_delete_initiative");
+    const del = tools.get("tymio_delete_initiative");
     await runWithTenant(tenant("MEMBER"), () =>
       del!({ workspaceSlug: "ws", id: "i1" }, ctx("caller", UserRole.SUPER_ADMIN))
     );
@@ -328,7 +328,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
   ])("%s can delete initiative", async (_label, membership) => {
     mocks.initiativeDelete.mockResolvedValueOnce({});
     const tools = createToolRegistry();
-    const del = tools.get("drd_delete_initiative");
+    const del = tools.get("tymio_delete_initiative");
     await runWithTenant(tenant(membership), () =>
       del!({ workspaceSlug: "ws", id: "i1" }, ctx("u1", UserRole.VIEWER))
     );
@@ -341,7 +341,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
   ])("%s can create product", async (_label, membership) => {
     mocks.productCreate.mockResolvedValueOnce({ id: "p-new", name: "Prod" });
     const tools = createToolRegistry();
-    const createProduct = tools.get("drd_create_product");
+    const createProduct = tools.get("tymio_create_product");
     await runWithTenant(tenant(membership), () =>
       createProduct!({ workspaceSlug: "ws", name: "Prod" }, ctx("u1", UserRole.VIEWER))
     );
@@ -354,7 +354,7 @@ describe("MCP matrix: workspace OWNER / ADMIN structure writes", () => {
   ])("%s can create domain", async (_label, membership) => {
     mocks.domainCreate.mockResolvedValueOnce({ id: "dom-new", name: "Growth", color: "#336699", sortOrder: 0 });
     const tools = createToolRegistry();
-    const createDomain = tools.get("drd_create_domain");
+    const createDomain = tools.get("tymio_create_domain");
     await runWithTenant(tenant(membership), () =>
       createDomain!({ workspaceSlug: "ws", name: "Growth", color: "#336699" }, ctx("u1", UserRole.VIEWER))
     );
@@ -369,23 +369,23 @@ describe("MCP matrix: VIEWER denied on all sampled content-write tools", () => {
   });
 
   it.each([
-    ["drd_create_feature", { workspaceSlug: "ws", initiativeId: "i1", title: "Feat" }],
-    ["drd_update_initiative", { workspaceSlug: "ws", id: "i1", title: "Renamed" }],
-    ["drd_create_requirement", { workspaceSlug: "ws", featureId: "f1", title: "Task" }],
+    ["tymio_create_feature", { workspaceSlug: "ws", initiativeId: "i1", title: "Feat" }],
+    ["tymio_update_initiative", { workspaceSlug: "ws", id: "i1", title: "Renamed" }],
+    ["tymio_create_requirement", { workspaceSlug: "ws", featureId: "f1", title: "Task" }],
     [
-      "drd_reorder_initiatives",
+      "tymio_reorder_initiatives",
       { workspaceSlug: "ws", positions: [{ id: "i1", domainId: "d1", sortOrder: 0 }] },
     ],
     [
-      "drd_reorder_features",
+      "tymio_reorder_features",
       { workspaceSlug: "ws", items: [{ id: "f1", sortOrder: 0 }] },
     ],
     [
-      "drd_reorder_requirements",
+      "tymio_reorder_requirements",
       { workspaceSlug: "ws", items: [{ id: "r1", sortOrder: 0 }] },
     ],
     [
-      "drd_set_execution_layout",
+      "tymio_set_execution_layout",
       {
         workspaceSlug: "ws",
         productId: "p1",
@@ -393,7 +393,7 @@ describe("MCP matrix: VIEWER denied on all sampled content-write tools", () => {
       },
     ],
     [
-      "drd_move_feature",
+      "tymio_move_feature",
       { workspaceSlug: "ws", featureId: "f1", targetInitiativeId: "i2" },
     ],
   ] as const)("VIEWER blocked: %s", async (toolName, args) => {
@@ -406,7 +406,7 @@ describe("MCP matrix: VIEWER denied on all sampled content-write tools", () => {
 
   it("VIEWER cannot create execution board (structure write)", async () => {
     const tools = createToolRegistry();
-    const createBoard = tools.get("drd_create_execution_board");
+    const createBoard = tools.get("tymio_create_execution_board");
     await expect(
       runWithTenant(tenant("VIEWER"), () =>
         createBoard!({ workspaceSlug: "ws", productId: "p1", name: "Board" }, ctx("u1", UserRole.EDITOR))
@@ -422,9 +422,9 @@ describe("MCP matrix: read tools for VIEWER", () => {
     mocks.initiativeFindMany.mockResolvedValueOnce([{ id: "i1", title: "Init", domainId: "d1" }]);
   });
 
-  it("drd_list_initiatives succeeds", async () => {
+  it("tymio_list_initiatives succeeds", async () => {
     const tools = createToolRegistry();
-    const list = tools.get("drd_list_initiatives");
+    const list = tools.get("tymio_list_initiatives");
     const result = await runWithTenant(tenant("VIEWER"), () => list!({ workspaceSlug: "ws" }, ctx("u1", UserRole.VIEWER)));
     const text = (result as { content: Array<{ text?: string }> }).content[0]?.text;
     expect(JSON.parse(text!)).toEqual([{ id: "i1", title: "Init", domainId: "d1" }]);
@@ -445,11 +445,11 @@ describe("MCP matrix: read tools for VIEWER", () => {
     expect(text).toContain("Coding agent guide");
   });
 
-  it("drd_search_initiatives succeeds for VIEWER (read)", async () => {
+  it("tymio_search_initiatives succeeds for VIEWER (read)", async () => {
     mocks.initiativeFindMany.mockReset();
     mocks.initiativeFindMany.mockResolvedValueOnce([]);
     const tools = createToolRegistry();
-    const search = tools.get("drd_search_initiatives");
+    const search = tools.get("tymio_search_initiatives");
     const result = await runWithTenant(tenant("VIEWER"), () =>
       search!({ workspaceSlug: "ws", query: "roadmap", limit: 10, offset: 0 }, ctx("u1", UserRole.VIEWER))
     );
@@ -467,7 +467,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
   it("MEMBER can create feature as self owner", async () => {
     mocks.featureCreate.mockResolvedValueOnce({ id: "f-new" });
     const tools = createToolRegistry();
-    const createFeature = tools.get("drd_create_feature");
+    const createFeature = tools.get("tymio_create_feature");
     await runWithTenant(tenant("MEMBER"), () =>
       createFeature!(
         { workspaceSlug: "ws", initiativeId: "i1", title: "Story" },
@@ -480,7 +480,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
   it("MEMBER can create requirement without assignee", async () => {
     mocks.requirementCreate.mockResolvedValueOnce({ id: "r-new" });
     const tools = createToolRegistry();
-    const createReq = tools.get("drd_create_requirement");
+    const createReq = tools.get("tymio_create_requirement");
     await runWithTenant(tenant("MEMBER"), () =>
       createReq!(
         { workspaceSlug: "ws", featureId: "f1", title: "Do work" },
@@ -492,7 +492,7 @@ describe("MCP matrix: MEMBER content writes (feature + requirement)", () => {
 
   it("MEMBER can update initiative title", async () => {
     const tools = createToolRegistry();
-    const update = tools.get("drd_update_initiative");
+    const update = tools.get("tymio_update_initiative");
     await runWithTenant(tenant("MEMBER"), () =>
       update!({ workspaceSlug: "ws", id: "i1", title: "New title" }, ctx("caller", UserRole.EDITOR))
     );
@@ -508,7 +508,7 @@ describe("MCP matrix: global ADMIN cannot bypass workspace VIEWER on structure",
 
   it("VIEWER still cannot delete initiative even with global ADMIN", async () => {
     const tools = createToolRegistry();
-    const del = tools.get("drd_delete_initiative");
+    const del = tools.get("tymio_delete_initiative");
     await expect(
       runWithTenant(tenant("VIEWER"), () =>
         del!({ workspaceSlug: "ws", id: "i1" }, ctx("u1", UserRole.ADMIN))

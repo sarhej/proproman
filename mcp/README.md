@@ -65,6 +65,8 @@ Example Cursor stdio config with a Product Owner bias:
 
 The CLI listens on **`http://127.0.0.1:19876/callback`** during `login` (override with `TYMIO_OAUTH_PORT`). That URI must be reachable from your browser and should stay stable so it matches the dynamically registered OAuth client.
 
+If **`TYMIO_OAUTH_LOGIN_TIMEOUT_MS`** is set to a positive number (milliseconds), `tymio-mcp login` stops waiting for the browser redirect after that duration instead of hanging indefinitely when the user abandons the flow. Omit it for the legacy unlimited wait.
+
 ### Hub URL
 
 | Variable | Default | Purpose |
@@ -75,12 +77,12 @@ The CLI listens on **`http://127.0.0.1:19876/callback`** during `login` (overrid
 
 ## API-key mode (REST subset, CI / automation)
 
-If **`DRD_API_KEY` or `API_KEY`** is present in the environment, `tymio-mcp` **does not** use OAuth; it exposes the REST-based tool subset only.
+If **`TYMIO_API_KEY`** (legacy **`DRD_API_KEY`**) or **`API_KEY`** is present in the environment, `tymio-mcp` **does not** use OAuth; it exposes the REST-based tool subset only.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DRD_API_BASE_URL` | `https://tymio.app` | Hub **origin** (no `/mcp`) |
-| `DRD_API_KEY` / `API_KEY` | — | Bearer key (server `API_KEY`) |
+| `TYMIO_API_BASE_URL` | `https://tymio.app` | Hub **origin** (no `/mcp`; legacy `DRD_API_BASE_URL`) |
+| `TYMIO_API_KEY` / `API_KEY` | — | Bearer key (server `API_KEY`; legacy `DRD_API_KEY`) |
 
 Example:
 
@@ -91,8 +93,8 @@ Example:
       "command": "tymio-mcp",
       "args": [],
       "env": {
-        "DRD_API_KEY": "your-key",
-        "DRD_API_BASE_URL": "https://tymio.app"
+        "TYMIO_API_KEY": "your-key",
+        "TYMIO_API_BASE_URL": "https://tymio.app"
       }
     }
   }
@@ -111,13 +113,16 @@ Example:
 | `tymio-mcp instructions` / `guide` | Print full agent Markdown (same as MCP `instructions` base) |
 | `tymio-mcp persona list` | Bundled persona ids (`pm`, `po`, `dev`, `workspace`) |
 | `tymio-mcp persona <id>` | Print one persona Markdown to stdout |
+| `tymio-mcp doctor` | Diagnostics: version, Node, OAuth files, masked env hints (stderr) |
+| `tymio-mcp bootstrap [--help]` | Non-destructive MCP config merge for Cursor, Claude Code, OpenCode, Codex (`tymio-*` keys only); see [TYMIO_BOOTSTRAP.md](../docs/TYMIO_BOOTSTRAP.md) |
+| `tymio-mcp skill list` / `show <id>` / `install <id> …` | Fetch hub-published Cursor skills from **`/skills/*`** (see `tymio-mcp skill --help`) |
 | `tymio-mcp help` | Usage |
 
 ---
 
 ## Install globally (npm)
 
-The package is published on the public registry: **[npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server)**. Current release line: **2.0.1** (see [`CHANGELOG.md`](./CHANGELOG.md) for notes).
+The package is published on the public registry: **[npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server)**. See [`CHANGELOG.md`](./CHANGELOG.md) for the current release line.
 
 ```bash
 npm install -g @tymio/mcp-server
@@ -162,6 +167,10 @@ From the **repo root**, use:
 ```bash
 npx vitest run --config mcp/vitest.config.ts
 ```
+
+**Local smoke (vendor CLIs)** — dry-run bootstrap for Cursor / Claude Code / Codex in temp dirs, optional `WRITE=1` + `cursor agent mcp list` / `claude mcp list` / `codex mcp list`: see [LOCAL_AGENT_CLIENTS_SMOKE.md](../docs/LOCAL_AGENT_CLIENTS_SMOKE.md). From repo root: `npm run local:agent-clients`.
+
+**Deep smoke (live hub MCP)** — `npm run smoke:deep` in this package runs `deeperSmoke` (OAuth on disk, `tools/list` on discovery or `…/t/<slug>/mcp`). See [LOCAL_AGENT_CLIENTS_SMOKE.md](../docs/LOCAL_AGENT_CLIENTS_SMOKE.md) § Deep testing.
 
 Stdio processes are meant to be **spawned** by the MCP host, not run interactively.
 

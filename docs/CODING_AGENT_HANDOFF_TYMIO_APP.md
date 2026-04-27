@@ -37,7 +37,7 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 
 ### 2.2 MCP tools only exist when the client is connected
 
-- Tools such as **`drd_meta`**, **`drd_create_product`**, **`tymio_get_agent_brief`** are available **only** if this chat/agent runtime has a **working Tymio MCP** configuration (remote URL + OAuth, or stdio + `DRD_API_BASE_URL` + `DRD_API_KEY`).
+- Tools such as **`tymio_meta`**, **`tymio_create_product`**, **`tymio_get_agent_brief`** are available **only** if this chat/agent runtime has a **working Tymio MCP** configuration (remote URL + OAuth, or stdio + `DRD_API_BASE_URL` + `DRD_API_KEY`).
 - If **`user-tymio` / `tymio` tools are missing, not registered, or calls fail with connection/auth errors**, you are **not** connected to Tymio. You **must not** behave as if MCP mutations ran successfully. Tell the user to enable remote MCP (`https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` + Google) or provide **`DRD_API_KEY`** (same value as server **`API_KEY`**) for stdio/scripts.
 - **Do not tell users to copy an MCP API key from Tymio Settings, Profile, or Account** — that path does **not** exist. **`API_KEY` / `DRD_API_KEY`** for automation is a **deployment secret** configured by operators, not a personal user setting. For OAuth stdio, users run **`tymio-mcp login`** (npm package **`@tymio/mcp-server`**). Full wording: repo **`mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md`**, shell **`tymio-mcp instructions`**, or **`GET /api/mcp/agent-context`** → **`tymioMcpCliAgentGuidanceMarkdown`**.
 
@@ -45,7 +45,7 @@ If you are pointed at a **staging or custom host**, replace `https://tymio.app` 
 
 - Tymio has **no separate “Application” (or “App”) entity** in the hub. The field that groups roadmap work for a **surface** (e.g. landing site, admin UI, internal playground) is **Product** — in the model it is a **product line / asset**, not a SaaS tenant.
 - If someone asks for **three applications** (e.g. Landing, Admin, Playground), the correct mapping is usually **three Products**, each holding its own initiatives/features — unless the organization explicitly uses another convention.
-- After creating products, initiatives belong under a **Domain** (pillar) and a **Product**; use **`drd_meta`** / **`GET /api/meta`** for `domainId` / `productId` when automating.
+- After creating products, initiatives belong under a **Domain** (pillar) and a **Product**; use **`tymio_meta`** / **`GET /api/meta`** for `domainId` / `productId` when automating.
 
 ### 2.4 If you cannot connect
 
@@ -130,7 +130,7 @@ Set `DRD_API_BASE_URL=https://tymio.app` and `DRD_API_KEY=<same value as server 
 
 ## 4. MCP tool names (remote server at `/mcp` or `/t/<workspace-slug>/mcp`)
 
-Tool names use a historical `drd_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook. **What “capabilities” and bindings mean in the product** — and how they map to REST — is spelled out in **§5**.
+Tool names use a historical `tymio_` prefix for backlog/data operations; `tymio_` prefix is used for ontology and this playbook. **What “capabilities” and bindings mean in the product** — and how they map to REST — is spelled out in **§5**.
 
 **Ontology and playbook**
 
@@ -153,33 +153,33 @@ These tools materialize a **deterministic snapshot** of the workspace **backlog 
 
 **Health and meta**
 
-- `drd_health`
-- `drd_meta`
+- `tymio_health`
+- `tymio_meta`
 
 **Initiatives**
 
-- `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`
-- `drd_set_dr_hub_epic_implementation_notes` (specialized; name may reflect legacy demo content)
+- `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_create_initiative`, `tymio_update_initiative`, `tymio_delete_initiative`
+- `tymio_set_epic_implementation_notes` (specialized; name may reflect legacy demo content)
 
 **Taxonomy / catalog**
 
-- `drd_list_domains`, `drd_list_products`, `drd_create_product`, `drd_update_product`, `drd_get_product_tree`
-- `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`
+- `tymio_list_domains`, `tymio_list_products`, `tymio_create_product`, `tymio_update_product`, `tymio_get_product_tree`
+- `tymio_list_personas`, `tymio_list_accounts`, `tymio_list_partners`, `tymio_list_kpis`, `tymio_list_milestones`, `tymio_list_demands`, `tymio_list_revenue_streams`
 
 **Features and requirements**
 
-- `drd_list_features`, `drd_create_feature`, `drd_update_feature`
-- `drd_list_requirements`, `drd_create_requirement`, `drd_update_requirement`, `drd_upsert_requirement`
+- `tymio_list_features`, `tymio_create_feature`, `tymio_update_feature`
+- `tymio_list_requirements`, `tymio_create_requirement`, `tymio_update_requirement`, `tymio_upsert_requirement`
 
 **Other work context**
 
-- `drd_list_decisions`, `drd_list_risks`, `drd_list_dependencies`
-- `drd_list_assignments`, `drd_list_stakeholders`
-- `drd_timeline_calendar`, `drd_timeline_gantt`
+- `tymio_list_decisions`, `tymio_list_risks`, `tymio_list_dependencies`
+- `tymio_list_assignments`, `tymio_list_stakeholders`
+- `tymio_timeline_calendar`, `tymio_timeline_gantt`
 
 **Campaigns / assets (if enabled for the role)**
 
-- `drd_list_campaigns`, `drd_get_campaign`, `drd_list_assets`, `drd_list_campaign_links`
+- `tymio_list_campaigns`, `tymio_get_campaign`, `tymio_list_assets`, `tymio_list_campaign_links`
 
 ---
 
@@ -202,7 +202,7 @@ Tymio’s **ontology** is a **semantic map of product capabilities**: things use
 - **`ROUTE`** — Client route path (e.g. `/product-explorer`, `/admin`).
 - **`PAGE`** — Frontend page component name (e.g. `AdminPage`).
 - **`API_ROUTE`** — REST path pattern where relevant.
-- **`MCP_TOOL`** — MCP tool name (e.g. `drd_list_initiatives`, `tymio_get_agent_brief`).
+- **`MCP_TOOL`** — MCP tool name (e.g. `tymio_list_initiatives`, `tymio_get_agent_brief`).
 - **`PRISMA_MODEL`** — Data model name (e.g. `Initiative`, `Requirement`).
 - **`FILE_GLOB`** — Repository file patterns when documented.
 - **`INFRA`** — Pointer to infra or code modules (e.g. MCP registration file).
@@ -247,7 +247,7 @@ Use these when you need a **structured map** of surfaces and tools without parsi
 ### 5.5 How agents should use this
 
 1. **Before** proposing new features or assuming a screen exists, call **`tymio_get_agent_brief`** or **`GET /api/ontology/brief`** (or list capabilities) so your plan matches **existing** routes, models, and MCP tools.
-2. For **large workspaces**, prefer **`tymio_get_workspace_atlas`** → **`tymio_search_workspace_objects`** → **`tymio_get_workspace_object`** to navigate backlog structure without hammering list endpoints; still use **`drd_*`** when you need live writes or fields not in shards.
+2. For **large workspaces**, prefer **`tymio_get_workspace_atlas`** → **`tymio_search_workspace_objects`** → **`tymio_get_workspace_object`** to navigate backlog structure without hammering list endpoints; still use **`tymio_*`** when you need live writes or fields not in shards.
 3. After **shipping** API or MCP changes, a human with admin access should **refresh default bindings** and **recompile** briefs (or update capabilities manually) so the ontology stays truthful — see checklist §12.
 
 ---
@@ -256,9 +256,9 @@ Use these when you need a **structured map** of surfaces and tools without parsi
 
 If the client uses the **stdio** bridge against `https://tymio.app`, expect **only**:
 
-`drd_health`, `drd_meta`, `drd_list_initiatives`, `drd_get_initiative`, `drd_create_initiative`, `drd_update_initiative`, `drd_delete_initiative`, `drd_list_domains`, `drd_list_products`, `drd_list_personas`, `drd_list_accounts`, `drd_list_partners`, `drd_list_kpis`, `drd_list_milestones`, `drd_list_demands`, `drd_list_revenue_streams`, `tymio_get_coding_agent_guide`, `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability`.
+`tymio_health`, `tymio_meta`, `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_create_initiative`, `tymio_update_initiative`, `tymio_delete_initiative`, `tymio_list_domains`, `tymio_list_products`, `tymio_list_personas`, `tymio_list_accounts`, `tymio_list_partners`, `tymio_list_kpis`, `tymio_list_milestones`, `tymio_list_demands`, `tymio_list_revenue_streams`, `tymio_get_coding_agent_guide`, `tymio_get_agent_brief`, `tymio_list_capabilities`, `tymio_get_capability`.
 
-**Note:** **`drd_create_product`** is **not** in the stdio subset — use **remote MCP** or **REST** `POST /api/products` with a Bearer token to create products from automation.
+**Note:** **`tymio_create_product`** is **not** in the stdio subset — use **remote MCP** or **REST** `POST /api/products` with a Bearer token to create products from automation.
 
 **Workspace atlas tools** (`tymio_get_workspace_atlas`, `tymio_get_workspace_object`, `tymio_search_workspace_objects`, `tymio_explain_workspace_object`, `tymio_rebuild_workspace_atlas`) are **also excluded** from this subset — use **remote MCP** or stdio **without** `DRD_API_KEY`/`API_KEY` (OAuth proxy).
 
@@ -307,10 +307,10 @@ Never assume **SUPER_ADMIN** unless the connected identity is one.
 ## 10. Playbook — read what was asked, implement, update Tymio
 
 1. Use **`tymio_get_agent_brief`** (remote MCP) or **`GET /api/ontology/brief`** (see **§5**) to see how capabilities map to routes, models, and MCP tools.
-2. Use **`drd_meta`** or **`GET /meta`** for IDs and taxonomy (only after you are authenticated).
-3. List and drill into **`drd_list_initiatives`**, **`drd_get_initiative`**, **`drd_list_features`**, **`drd_list_requirements`** (remote MCP or REST equivalents).
+2. Use **`tymio_meta`** or **`GET /meta`** for IDs and taxonomy (only after you are authenticated).
+3. List and drill into **`tymio_list_initiatives`**, **`tymio_get_initiative`**, **`tymio_list_features`**, **`tymio_list_requirements`** (remote MCP or REST equivalents).
 4. Read **notes** on initiatives/features when present (acceptance criteria, analysis).
-5. After shipping, update requirement/initiative state with the appropriate **`drd_update_*`** tools or REST PATCHes.
+5. After shipping, update requirement/initiative state with the appropriate **`tymio_update_*`** tools or REST PATCHes.
 
 ---
 

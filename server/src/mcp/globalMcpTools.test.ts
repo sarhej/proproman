@@ -11,6 +11,13 @@ describe("registerGlobalMcpTools", () => {
       }
     } as unknown as McpServer;
     registerGlobalMcpTools(server);
-    expect(names.sort()).toEqual(["tymio_list_my_workspaces", "tymio_mcp_routing_guide"].sort());
+    expect(names.sort()).toEqual(
+      [
+        "tymio_install_skill",
+        "tymio_list_my_workspaces",
+        "tymio_list_skills",
+        "tymio_mcp_routing_guide"
+      ].sort()
+    );
   });
 });

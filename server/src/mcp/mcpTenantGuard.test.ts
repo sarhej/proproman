@@ -88,7 +88,7 @@ describe("MCP tenant guards", () => {
 
   it("rejects cross-user initiative ownership via MCP", async () => {
     const tools = createToolRegistry();
-    const createInitiative = tools.get("drd_create_initiative");
+    const createInitiative = tools.get("tymio_create_initiative");
 
     expect(createInitiative).toBeDefined();
 
@@ -111,7 +111,7 @@ describe("MCP tenant guards", () => {
 
   it("rejects cross-user feature ownership via MCP", async () => {
     const tools = createToolRegistry();
-    const createFeature = tools.get("drd_create_feature");
+    const createFeature = tools.get("tymio_create_feature");
 
     expect(createFeature).toBeDefined();
 
@@ -135,7 +135,7 @@ describe("MCP tenant guards", () => {
   it("rejects assignee outside workspace on requirement create", async () => {
     mockTenantMembershipFindMany.mockResolvedValueOnce([{ userId: "caller" }]);
     const tools = createToolRegistry();
-    const createReq = tools.get("drd_create_requirement");
+    const createReq = tools.get("tymio_create_requirement");
     await expect(
       runWithTenant(tenantContext, () =>
         createReq!(

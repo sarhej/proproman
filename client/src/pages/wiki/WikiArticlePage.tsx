@@ -4,6 +4,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SeoHead } from "../../components/seo/SeoHead";
 import { getPublicSiteOrigin } from "../../lib/publicSiteOrigin";
+import {
+  schemaOrgPublisherOrganization,
+  schemaOrgTymioWebApplicationAbout,
+  schemaOrgWebSitePart,
+} from "../../lib/schemaOrgTymio";
 import { plainTextExcerptFromMarkdown } from "./markdownExcerpt";
 import type { WikiIndex } from "./wikiTypes";
 import { WikiHeader } from "./WikiHeader";
@@ -16,6 +21,8 @@ export function WikiArticlePage() {
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [pageTitle, setPageTitle] = useState<string | null>(null);
   const [pageDescription, setPageDescription] = useState<string | null>(null);
+  /** Index row for optional JSON-LD dates and slug-stable metadata */
+  const [indexRow, setIndexRow] = useState<WikiIndex["pages"][number] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const safeSlug = useMemo(() => (slug && SLUG_RE.test(slug) ? slug : null), [slug]);
@@ -26,6 +33,7 @@ export function WikiArticlePage() {
     setMarkdown(null);
     setPageTitle(null);
     setPageDescription(null);
+    setIndexRow(null);
     if (!safeSlug) {
       setError("Invalid page.");
       return;
@@ -42,6 +50,7 @@ export function WikiArticlePage() {
           setError("Page not found.");
           return;
         }
+        setIndexRow(page);
         setPageTitle(page.title);
         const path = `/wiki/${page.file}`;
         return fetch(path)
@@ -70,21 +79,41 @@ export function WikiArticlePage() {
     if (!safeSlug || !pageTitle || !pageDescription) return null;
     const origin = getPublicSiteOrigin();
     const url = `${origin}/wiki/${encodeURIComponent(safeSlug)}`;
-    return {
-      "@context": "https://schema.org",
+    const techArticle: Record<string, unknown> = {
       "@type": "TechArticle",
+      "@id": `${url}#article`,
       headline: pageTitle,
       name: pageTitle,
       description: pageDescription,
       url,
-      isPartOf: { "@type": "WebSite", name: "Tymio", url: origin },
-      publisher: {
-        "@type": "Organization",
-        name: "Tymio",
-        logo: { "@type": "ImageObject", url: `${origin}/logo.png` },
-      },
+      image: `${origin}/logo.png`,
+      isPartOf: schemaOrgWebSitePart(origin),
+      publisher: schemaOrgPublisherOrganization(origin),
+      about: schemaOrgTymioWebApplicationAbout(origin),
     };
-  }, [safeSlug, pageTitle, pageDescription]);
+    if (indexRow?.datePublished) techArticle.datePublished = indexRow.datePublished;
+    if (indexRow?.dateModified) techArticle.dateModified = indexRow.dateModified;
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        techArticle,
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${url}#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Tymio", item: origin },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Documentation wiki",
+              item: `${origin}/wiki`,
+            },
+            { "@type": "ListItem", position: 3, name: pageTitle, item: url },
+          ],
+        },
+      ],
+    };
+  }, [safeSlug, pageTitle, pageDescription, indexRow]);
 
   const wikiSeo =
     safeSlug && pageTitle && pageDescription ? (

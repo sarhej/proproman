@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.4.1
+
+- **`tymio-mcp login`** — optional **`TYMIO_OAUTH_LOGIN_TIMEOUT_MS`** (positive milliseconds) caps how long the CLI waits for the OAuth redirect (avoids hanging forever if the user abandons the browser flow).
+- **Tests:** workspace MCP **403** when the tenant slug does not exist; **`tymio_get_product_tree`** rejects unknown **`productId`**.
+
+## 2.4.0
+
+- **`tymio-mcp bootstrap`** — full non-destructive merge for **Cursor** (`mcp.json`), **Claude Code** (`settings.json`), **OpenCode** (`opencode.json`), **Codex** (`config.toml` `[mcp_servers.tymio]`). Flags: `--client`, `--slug`, `--scope`, `--force`, `--dry-run`, `--login`, `--skills`. Auto-detects installed clients; backs up before writes. See repo **`docs/TYMIO_BOOTSTRAP.md`**.
+- **`tymio-mcp skill`** — **`skill update <id>`** / **`skill update --all`** and **`skill remove <id>`** (with backups when replacing), aligned with hub skill distribution.
+
+## 2.3.0
+
+- **`tymio-mcp skill`** — `skill list` / `skill show <id>` / `skill install <id> [--client …] [--scope …] [--dry-run]` against public hub **`GET /skills/*`** (uses `TYMIO_API_BASE_URL` or infers origin from `TYMIO_MCP_URL`). Install writes the file with a **`.tymio-bak-<timestamp>`** backup when replacing.
+- **Hub alignment:** complements server **`tymio_list_skills`** / **`tymio_install_skill`** MCP tools and **`/.well-known/opencode`** (OpenCode remote defaults).
+
+## 2.2.0
+
+- **`tymio-mcp doctor`** — prints CLI version, Node version, OAuth file presence under the Tymio config dir, and masked env hints (`TYMIO_MCP_URL`, workspace slug, API key presence). Writes to stderr (same as `help` / `instructions`).
+- **`tymio-mcp bootstrap`** — preview only: `--help` documents the upcoming non-destructive client merge; full implementation tracked in repo `docs/TYMIO_BOOTSTRAP.md` and phase status in `docs/TYMIO_IMPLEMENTATION_STATUS.md`.
+
+## 2.1.0
+
+### Breaking (hub + CLI must deploy together)
+
+- **MCP tool names:** all former `drd_*` tools are now `tymio_*` (see `docs/TYMIO_MCP_RENAME.md`). Examples: `tymio_health`, `tymio_meta`, `tymio_list_initiatives`, `tymio_create_product`. Special case: `drd_set_dr_hub_epic_implementation_notes` → `tymio_set_epic_implementation_notes`.
+- **Deploy order:** ship the **hub** (server) exposing the new tool names first, then publish this CLI version. Remote MCP and OAuth stdio proxy the hub’s tool list verbatim.
+
+### Non-breaking (migration helpers)
+
+- **Env vars:** prefer `TYMIO_API_KEY`, `TYMIO_API_BASE_URL`, `TYMIO_WORKSPACE_SLUG`. Legacy `DRD_API_KEY`, `DRD_API_BASE_URL`, and `DRD_WORKSPACE_SLUG` still work; the CLI prints a **one-time stderr deprecation** when a legacy name is used without the `TYMIO_*` counterpart.
+- **JS API:** `tymioFetch` / `tymioFetchText` replace `drdFetch` / `drdFetchText`; deprecated aliases remain for one release.
+
 ## 2.0.1
 
 - **OAuth login** — authorization error responses from the local callback server are **plain text** (simpler than HTML error pages).

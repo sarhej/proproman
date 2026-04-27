@@ -86,4 +86,25 @@ describe("runLoginCommand", () => {
 
     await expect(runLoginCommand(new URL("https://hub.example/mcp"))).rejects.toThrow(/Unexpected auth result/);
   });
+
+  it("rejects when OAuth callback wait exceeds TYMIO_OAUTH_LOGIN_TIMEOUT_MS", async () => {
+    const prev = process.env.TYMIO_OAUTH_LOGIN_TIMEOUT_MS;
+    process.env.TYMIO_OAUTH_LOGIN_TIMEOUT_MS = "30";
+    const close = vi.fn();
+    startOAuthCallbackServerMock.mockImplementationOnce(async () => ({
+      waitForCode: new Promise<string>(() => {
+        /* never completes */
+      }),
+      close
+    }));
+    authMock.mockResolvedValueOnce("REDIRECT");
+
+    await expect(runLoginCommand(new URL("https://hub.example/mcp"))).rejects.toThrow(
+      /OAuth login timed out after 30ms/
+    );
+    expect(close).toHaveBeenCalled();
+
+    if (prev === undefined) delete process.env.TYMIO_OAUTH_LOGIN_TIMEOUT_MS;
+    else process.env.TYMIO_OAUTH_LOGIN_TIMEOUT_MS = prev;
+  });
 });

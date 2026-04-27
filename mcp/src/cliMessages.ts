@@ -20,8 +20,8 @@ function loadAgentGuidanceMarkdown(): string {
     "## Critical (read before advising the user)",
     "",
     "- **No per-user MCP API key** exists in Tymio Settings, Profile, or Account. Do not tell users to copy one from the UI.",
-    "- **OAuth:** remote MCP URL `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` (or your host) in the IDE, or install `@tymio/mcp-server` and run `tymio-mcp login` for stdio **without** `DRD_API_KEY`/`API_KEY` on that process unless you want API-key mode.",
-    "- **`DRD_API_KEY`/`API_KEY`** on the stdio process is the **server deployment** automation secret, not a personal user key.",
+    "- **OAuth:** remote MCP URL `https://tymio.app/mcp` or `https://tymio.app/t/<workspace-slug>/mcp` (or your host) in the IDE, or install `@tymio/mcp-server` and run `tymio-mcp login` for stdio **without** `TYMIO_API_KEY`/`API_KEY` on that process unless you want API-key mode.",
+    "- **`TYMIO_API_KEY`/`API_KEY`** (legacy `DRD_API_KEY`) on the stdio process is the **server deployment** automation secret, not a personal user key.",
     "",
     "After fixing the install: `tymio-mcp instructions`",
   ].join("\n");
@@ -37,16 +37,20 @@ Commands:
   tymio-mcp instructions       Full setup text for humans & coding agents (print this)
   tymio-mcp persona list       Bundled PM/PO/DEV/workspace prompts (see also TYMIO_MCP_PERSONA)
   tymio-mcp persona <id>       Print one persona Markdown to stdout (pm | po | dev | workspace)
+  tymio-mcp doctor             Print env, OAuth file presence, and version (diagnostics)
+  tymio-mcp bootstrap [--help]  Non-destructive MCP merge for tymio-* (Cursor, Claude, Codex, OpenCode; see docs/TYMIO_BOOTSTRAP.md)
+  tymio-mcp skill <list|show|install|update|remove>  Hub skills (see: tymio-mcp skill --help)
   tymio-mcp help               This summary
 
 Environment:
   TYMIO_MCP_URL          Hosted MCP URL (default https://tymio.app/mcp; may be …/t/<slug>/mcp)
   TYMIO_OAUTH_PORT       Loopback port for login callback (default 19876)
+  TYMIO_OAUTH_LOGIN_TIMEOUT_MS  Optional: max ms to wait for browser OAuth during tymio-mcp login (unset = no limit)
   TYMIO_MCP_QUIET        If set, suppress stderr hints when starting stdio
-  TYMIO_WORKSPACE_SLUG   Required for stdio (or DRD_WORKSPACE_SLUG): hub workspace slug this process is pinned to; every tool call must use the same slug (tests: TYMIO_MCP_SKIP_WORKSPACE_PINNING=1)
+  TYMIO_WORKSPACE_SLUG   Required for stdio (legacy DRD_WORKSPACE_SLUG): hub workspace slug this process is pinned to; every tool call must use the same slug (tests: TYMIO_MCP_SKIP_WORKSPACE_PINNING=1)
   TYMIO_MCP_PERSONA      Optional: pm | po | dev | workspace (hub aliases workspace) — appended to MCP server instructions
-  DRD_API_KEY / API_KEY  If set → API-key REST tool bridge (subset), not OAuth proxy
-  DRD_API_BASE_URL       Hub origin for API-key bridge (default https://tymio.app)
+  TYMIO_API_KEY / API_KEY  If set → API-key REST tool bridge (subset), not OAuth proxy (legacy DRD_API_KEY)
+  TYMIO_API_BASE_URL     Hub origin for API-key bridge (default https://tymio.app; legacy DRD_API_BASE_URL)
 
 Critical for agents: There is NO MCP API key in Tymio user Settings — use OAuth (remote /mcp or /t/<slug>/mcp URL or tymio-mcp login).
 Tip: Run  tymio-mcp instructions  for the full Markdown guide, Cursor JSON, and troubleshooting.

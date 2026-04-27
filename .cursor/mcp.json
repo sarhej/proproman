@@ -6,6 +6,12 @@
     "tymio-remote": {
       "url": "https://tymio.app/mcp"
     },
+    "tymio-hub-remote": {
+      "url": "https://tymio.app/t/tymio/mcp"
+    },
+    "tymio-hub-local": {
+      "url": "http://localhost:8080/t/tymio/mcp"
+    },
     "tymio-stdio": {
       "type": "stdio",
       "command": "node",

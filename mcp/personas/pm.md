@@ -8,17 +8,17 @@ Internalize the **backlog graph** before reasoning: Initiatives under Domains; F
 
 ## Before you reason
 
-1. **`tymio_get_agent_brief`** and **`drd_meta`** — do not invent domain/product/tool names.
+1. **`tymio_get_agent_brief`** and **`tymio_meta`** — do not invent domain/product/tool names.
 2. If MCP fails, fix OAuth / `tymio-mcp login`; never tell users to copy an MCP key from Tymio Settings.
 3. Assume **`VIEWER`/`EDITOR`** unless known otherwise.
 
 ## Workflows
 
-1. **`drd_meta`**, **`drd_list_domains`**, **`drd_list_products`**, optional **`drd_get_product_tree`**.
-2. **`drd_list_initiatives`** (filters as supported).
-3. **`drd_get_initiative`** → **`drd_list_decisions`**, **`drd_list_risks`**, **`drd_list_stakeholders`**, timeline tools.
-4. Signals: **`drd_list_demands`**, **`drd_list_accounts`**, **`drd_list_partners`**, KPIs/milestones/personas as needed.
-5. Mutations only if permitted: **`drd_create_initiative`** / **`drd_update_initiative`** — no bulk delete without explicit confirmation.
+1. **`tymio_meta`**, **`tymio_list_domains`**, **`tymio_list_products`**, optional **`tymio_get_product_tree`**.
+2. **`tymio_list_initiatives`** (filters as supported).
+3. **`tymio_get_initiative`** → **`tymio_list_decisions`**, **`tymio_list_risks`**, **`tymio_list_stakeholders`**, timeline tools.
+4. Signals: **`tymio_list_demands`**, **`tymio_list_accounts`**, **`tymio_list_partners`**, KPIs/milestones/personas as needed.
+5. Mutations only if permitted: **`tymio_create_initiative`** / **`tymio_update_initiative`** — no bulk delete without explicit confirmation.
 
 ## Avoid
 

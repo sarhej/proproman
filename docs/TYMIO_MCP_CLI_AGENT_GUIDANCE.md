@@ -1,17 +1,117 @@
-# Tymio MCP CLI — canonical agent guidance
+# Tymio MCP and `@tymio/mcp-server` — guidance for autonomous agents
 
-The **full Markdown** that autonomous agents should follow lives in the repository at:
+**Published package:** [npmjs.com/package/@tymio/mcp-server](https://www.npmjs.com/package/@tymio/mcp-server) — install with `npm install -g @tymio/mcp-server` or `npx @tymio/mcp-server`. Release history: `CHANGELOG.md` next to this file in the monorepo.
 
-**[mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md)**
+## Critical — read before advising the user
 
-That file is:
+0. **Autonomous agents — OAuth before tools:** Establish a **signed-in MCP session** first (`mcp_auth` with `{}` if exposed, else IDE **Connect / Sign in**). **`POST …/mcp`** (root) exposes **only** **`tymio_list_my_workspaces`** and **`tymio_mcp_routing_guide`** — not backlog tools. For the **full** workspace-scoped **`tymio_*`** tool surface (backlog CRUD, atlas, briefs), the client must use **`POST …/t/<workspace-slug>/mcp`**. **Verify** with **`tymio_health`** / **`tymio_get_agent_brief`** on a **workspace** URL only.
+1. **There is no per-user MCP API key in Tymio Settings, Profile, Account, or Integrations.** Do **not** instruct users to open the web app settings to “copy an API key for MCP” or “get the MCP key from preferences.” That path does not exist and causes repeated confusion.
+2. **Normal connection = OAuth**, not a personal secret from the UI:
+   - **Remote MCP in the IDE:** **`https://tymio.app/mcp`** = **discovery only** (list workspaces + routing guide). **`https://tymio.app/t/<workspace-slug>/mcp`** = **full** workspace MCP (`tymio_*`, atlas, brief, …). Same **Connect / Sign in** OAuth flow for both; trim **no trailing spaces** in Server URL. Use your deployment origin when not on production. **No API key to paste.**
+   - **Stdio npm package (default):** install `@tymio/mcp-server`, run `tymio-mcp login` with **`TYMIO_MCP_URL`** / URL = **`…/t/<slug>/mcp`** for full tools. Root **`…/mcp`** only proxies two discovery tools. Configure the MCP client to run `tymio-mcp` **without** setting `TYMIO_API_KEY` (legacy `DRD_API_KEY`) or `API_KEY` unless you want API-key mode.
+3. **`TYMIO_API_KEY` / `API_KEY` on the stdio process** (legacy `DRD_API_KEY`) means the **server deployment automation secret** (the same value as the hub’s configured `API_KEY` for `Authorization: Bearer …` on REST). It is **not** something each user generates in the Tymio UI. Only operators with access to deployment secrets use it (CI, scripts, optional stdio “REST bridge” mode).
+4. **Default vs API-key stdio:** If `TYMIO_API_KEY` (legacy `DRD_API_KEY`) or `API_KEY` is set to a non-empty value in the **environment of the `tymio-mcp` process**, the CLI uses a **fixed REST tool subset**, not OAuth to the hosted hub. For the **full** tool surface, use **remote** `…/mcp` or stdio **without** those env vars (after `tymio-mcp login`).
+5. **Full text of this guide:** shell command `tymio-mcp instructions` (or `tymio-mcp guide`). MCP clients that support server `instructions` receive this content at initialize when using the published CLI.
+6. **Bundled agent personas (PM / PO / DEV / workspace):** optional Markdown prompts ship with the package under `personas/`. **Print a prompt:** `tymio-mcp persona pm` (or `po`, `dev`, `workspace`). **Embed in MCP `instructions`:** set `TYMIO_MCP_PERSONA=pm` (same ids; `hub` aliases `workspace`) on the `tymio-mcp` process — the stdio server appends that persona after this guide so clients that honor `instructions` steer the model without Cursor Skills. **List ids:** `tymio-mcp persona list`.
 
-- Shipped with the **`@tymio/mcp-server`** npm package ([registry](https://www.npmjs.com/package/@tymio/mcp-server), next to `dist/`)
-- Sent in MCP **`initialize`** as server **`instructions`** when using the published CLI
-- Exposed publicly as **`tymioMcpCliAgentGuidanceMarkdown`** on **`GET /api/mcp/agent-context`**
-- Embedded as visually hidden / screen-reader content on workspace sign-in and **Connecting a coding agent** pages in the web app
-- Summarized in **`client/index.html`** (static `<pre>` and `<noscript>`) for fetchers without JavaScript
+7. **One user, many workspaces:** Same **Google** user, many **Workspaces**. Use **`tymio_list_my_workspaces`** on root **`…/mcp`** to get each **`…/t/<slug>/mcp`** URL. **Do not** reuse backlog **IDs** across workspaces. **State the workspace** when reporting hub changes.
 
-**Rule for agents:** Do **not** tell users to copy an **MCP API key** from Tymio **Settings** — it does not exist. Use **OAuth** (remote **`/mcp`** or **`/t/<workspace-slug>/mcp`** URL in the IDE, or `tymio-mcp login` for the stdio package).
+8. **Discovery-only session → per-project MCP config:** If the client is connected to root **`…/mcp`**, call **`tymio_list_my_workspaces`**, then **`tymio_mcp_routing_guide`** for copy-paste JSON. **Create** (if you have repo write access) **`.cursor/mcp.json`** (Cursor) or **`.mcp.json`** (Claude Code) at the **repository root** with **`mcpServers.*.url`** = **`…/t/<slug>/mcp`**, or **explain** the exact path + JSON to the user. **Restart / reload MCP** after saving. Root **`…/mcp`** alone does not expose backlog CRUD — the workspace URL is required for the full **`tymio_*`** hub tool surface.
 
-See also: [mcp/README.md](../mcp/README.md), [HUB.md](./HUB.md) §6, [CODING_AGENT_HANDOFF_TYMIO_APP.md](./CODING_AGENT_HANDOFF_TYMIO_APP.md).
+---
+
+## What `@tymio/mcp-server` is
+
+- **Default (no API key env on the process):** A **stdio MCP server** that connects to the **hosted Tymio Streamable HTTP MCP** endpoint with **OAuth** (Google via the hub). It **proxies the full tool list** from the hub (same as using the remote URL in the IDE).
+- **With `TYMIO_API_KEY` (legacy `DRD_API_KEY`) or `API_KEY` set:** A **REST/API-key** stdio server with a **smaller, fixed tool set** (good for CI/scripts).
+
+---
+
+## One-time setup (OAuth, stdio package)
+
+1. Install: `npm install -g @tymio/mcp-server` (or run a built `dist/index.js` via `node`).
+2. Run: `tymio-mcp login` — browser opens; complete Google sign-in for Tymio.
+3. Tokens and OAuth client metadata live under the user config directory (e.g. Linux: `~/.config/tymio-mcp`, macOS: `~/Library/Application Support/tymio-mcp`).
+4. **Callback:** default `http://127.0.0.1:19876/callback` during login — override with `TYMIO_OAUTH_PORT` if needed; keep stable for your registered OAuth client.
+
+---
+
+## Cursor / IDE (stdio, OAuth — recommended for this package)
+
+Add an MCP server that runs the binary **without** `TYMIO_API_KEY` / `API_KEY` (legacy `DRD_API_KEY`):
+
+```json
+{
+  "mcpServers": {
+    "tymio": {
+      "command": "tymio-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+If `tymio-mcp` is not on `PATH`, use `node` with an absolute path to `dist/index.js`.
+
+---
+
+## Alternative: remote MCP URL (no npm CLI)
+
+If the host supports **URL** transport, point at the hub (OAuth handled by the IDE). Use **`/mcp`** (follows the user’s **currently active** workspace — risky if they use **multiple** workspaces) **or** **`/t/<workspace-slug>/mcp`** to **pin** one workspace (recommended when the user names a workspace or juggles several orgs):
+
+```json
+{
+  "mcpServers": {
+    "tymio": {
+      "url": "https://tymio.app/mcp"
+    },
+    "tymio-acme": {
+      "url": "https://tymio.app/t/acme/mcp"
+    }
+  }
+}
+```
+
+Replace the host and slug when not using production. **Pattern:** add **`tymio-<slug>`** per workspace so the agent and user always know which tenant a server targets.
+
+---
+
+## API-key mode (REST subset, intentional)
+
+Set `TYMIO_API_KEY` (or legacy `DRD_API_KEY`, or `API_KEY`) and optionally `TYMIO_API_BASE_URL` (legacy `DRD_API_BASE_URL`, default `https://tymio.app`). Then `tymio-mcp` uses the REST bridge, **not** OAuth to the hosted MCP tool list.
+
+---
+
+## Environment reference
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TYMIO_MCP_URL` | `https://tymio.app/mcp` | Hosted MCP URL for OAuth proxy + `login` (may be `https://host/t/<slug>/mcp`; if the value has no `/mcp` suffix, the CLI appends it) |
+| `TYMIO_OAUTH_PORT` | `19876` | Loopback port for login callback |
+| `TYMIO_MCP_QUIET` | unset | If set, suppress stderr hints when starting stdio |
+| `TYMIO_API_KEY` / `API_KEY` | unset | If set → API-key REST bridge (subset), not OAuth proxy (legacy `DRD_API_KEY`) |
+| `TYMIO_API_BASE_URL` | `https://tymio.app` | Hub origin for API-key bridge (legacy `DRD_API_BASE_URL`) |
+
+---
+
+## Troubleshooting
+
+- **401 / not signed in (stdio OAuth):** Run `tymio-mcp login` again.
+- **User asks where to copy MCP API key:** Explain there is **no** such key in the UI; use **remote `/mcp` or `/t/<slug>/mcp` + OAuth** or **`tymio-mcp login`**.
+- **Port in use on login:** Change `TYMIO_OAUTH_PORT` and re-run `login` (redirect URI must stay consistent).
+- **Cursor: no `tymio_*` tools / `workspaceSlug` rejected:** Server URL is probably root **`…/mcp`**. Set **`…/t/<slug>/mcp`**, trim spaces, **disconnect + re-auth**. Use **`tymio_list_my_workspaces`** on discovery to list slugs.
+- **Help:** `tymio-mcp help` — **full guide:** `tymio-mcp instructions`
+
+---
+
+## Machine-readable pointers
+
+- **JSON (public):** `GET https://tymio.app/api/mcp/agent-context` — includes `tymioMcpCliAgentGuidanceMarkdown` (this file’s contents when the server can read it from disk).
+- **Markdown site summary:** `https://tymio.app/llms.txt`
+- **Repository:** `mcp/README.md`, `docs/HUB.md` §6, `docs/CODING_AGENT_HANDOFF_TYMIO_APP.md`
+
+## Workspace atlas (full MCP only)
+
+When using **remote** `…/mcp`, remote `…/t/<slug>/mcp`, or stdio **without** `TYMIO_API_KEY`/`API_KEY` (OAuth proxy; legacy `DRD_API_KEY`), the hub may expose **`tymio_get_workspace_atlas`**, **`tymio_search_workspace_objects`**, **`tymio_get_workspace_object`**, **`tymio_explain_workspace_object`**, and **`tymio_rebuild_workspace_atlas`**. These read a **compiled JSON** backlog snapshot for the active workspace — complementary to **`tymio_get_agent_brief`** (capabilities). They are **not** part of the API-key REST stdio subset.
+
+**Public article:** `https://tymio.app/wiki/workspace-atlas` (raw: `/wiki/articles/workspace-atlas.md`). Operators: persistent **`WORKSPACE_ATLAS_DATA_DIR`** on ephemeral hosts if you want the atlas to survive process restarts without an explicit rebuild.

@@ -42,7 +42,7 @@ export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<v
   } catch (e) {
     if (e instanceof UnauthorizedError) {
       process.stderr.write(
-        "Tymio MCP: not signed in or session expired.\n  Run: tymio-mcp login  (there is no MCP API key in Tymio user Settings)\n  Or:  tymio-mcp instructions  (full setup for agents)\n  API-key mode: set DRD_API_KEY (server deployment secret), not a UI setting.\n"
+        "Tymio MCP: not signed in or session expired.\n  Run: tymio-mcp login  (there is no MCP API key in Tymio user Settings)\n  Or:  tymio-mcp instructions  (full setup for agents)\n  API-key mode: set TYMIO_API_KEY (or legacy DRD_API_KEY; server deployment secret), not a UI setting.\n"
       );
       process.exit(1);
     }
@@ -50,11 +50,18 @@ export async function runHubOAuthStdio(mcpUrl: URL = defaultMcpUrl()): Promise<v
   }
 
   const { tools } = await client.listTools();
-  const hasBacklogTools = tools.some((t) => t.name.startsWith("drd_"));
+  /** Root `/mcp` exposes only discovery; workspace `.../t/<slug>/mcp` exposes the full tool surface. */
+  const discoveryOnlyToolNames = new Set([
+    "tymio_list_my_workspaces",
+    "tymio_mcp_routing_guide",
+    "tymio_list_skills",
+    "tymio_install_skill"
+  ]);
+  const hasBacklogTools = tools.some((t) => !discoveryOnlyToolNames.has(t.name));
   if (!hasBacklogTools && !process.env.TYMIO_MCP_QUIET) {
     const u = mcpUrl.href.replace(/\/$/, "");
     process.stderr.write(
-      `Tymio MCP: connected to discovery (${u}) — no backlog tools here.\n  For drd_* / full hub tools, use a workspace URL, e.g.:\n  TYMIO_MCP_URL=${mcpUrl.origin}/t/<workspace-slug>/mcp  tymio-mcp\n  Call tymio_list_my_workspaces on this connection to list your slugs.\n`
+      `Tymio MCP: connected to discovery (${u}) — no backlog tools here.\n  For full hub tools (tymio_* backlog CRUD), use a workspace URL, e.g.:\n  TYMIO_MCP_URL=${mcpUrl.origin}/t/<workspace-slug>/mcp  tymio-mcp\n  Call tymio_list_my_workspaces on this connection to list your slugs.\n`
     );
   }
   const server = new McpServer(

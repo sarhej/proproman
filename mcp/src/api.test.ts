@@ -5,14 +5,16 @@ const originalFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = originalFetch;
   vi.resetModules();
+  delete process.env.TYMIO_API_BASE_URL;
+  delete process.env.TYMIO_API_KEY;
   delete process.env.DRD_API_BASE_URL;
   delete process.env.DRD_API_KEY;
   delete process.env.API_KEY;
 });
 
-describe("drdFetch", () => {
+describe("tymioFetch", () => {
   beforeEach(() => {
-    process.env.DRD_API_BASE_URL = "http://hub.test";
+    process.env.TYMIO_API_BASE_URL = "http://hub.test";
     globalThis.fetch = vi.fn(
       async () =>
         new Response(JSON.stringify({ ok: true }), {
@@ -23,8 +25,8 @@ describe("drdFetch", () => {
   });
 
   it("calls correct URL and sends JSON content type", async () => {
-    const { drdFetch } = await import("./api.js");
-    await drdFetch("/api/health");
+    const { tymioFetch } = await import("./api.js");
+    await tymioFetch("/api/health");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://hub.test/api/health",
       expect.objectContaining({
@@ -35,8 +37,8 @@ describe("drdFetch", () => {
     );
   });
 
-  it("adds Bearer Authorization when DRD_API_KEY is set", async () => {
-    process.env.DRD_API_KEY = "secret-key";
+  it("adds Bearer Authorization when TYMIO_API_KEY is set", async () => {
+    process.env.TYMIO_API_KEY = "secret-key";
     vi.resetModules();
     globalThis.fetch = vi.fn(
       async () =>
@@ -46,8 +48,8 @@ describe("drdFetch", () => {
         })
     ) as typeof fetch;
 
-    const { drdFetch } = await import("./api.js");
-    await drdFetch("/api/meta");
+    const { tymioFetch } = await import("./api.js");
+    await tymioFetch("/api/meta");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://hub.test/api/meta",
       expect.objectContaining({
@@ -59,7 +61,7 @@ describe("drdFetch", () => {
   });
 
   it("merges X-Tenant-Id when setApiKeyBridgeTenantId was called", async () => {
-    process.env.DRD_API_KEY = "k";
+    process.env.TYMIO_API_KEY = "k";
     vi.resetModules();
     globalThis.fetch = vi.fn(
       async () =>
@@ -69,9 +71,9 @@ describe("drdFetch", () => {
         })
     ) as typeof fetch;
 
-    const { drdFetch, setApiKeyBridgeTenantId } = await import("./api.js");
+    const { tymioFetch, setApiKeyBridgeTenantId } = await import("./api.js");
     setApiKeyBridgeTenantId("tenant-uuid-99");
-    await drdFetch("/api/meta");
+    await tymioFetch("/api/meta");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://hub.test/api/meta",
       expect.objectContaining({
@@ -83,7 +85,7 @@ describe("drdFetch", () => {
     );
   });
 
-  it("falls back to API_KEY when DRD_API_KEY unset", async () => {
+  it("falls back to API_KEY when TYMIO_API_KEY unset", async () => {
     process.env.API_KEY = "fallback-key";
     vi.resetModules();
     globalThis.fetch = vi.fn(
@@ -94,8 +96,8 @@ describe("drdFetch", () => {
         })
     ) as typeof fetch;
 
-    const { drdFetch } = await import("./api.js");
-    await drdFetch("/api/domains");
+    const { tymioFetch } = await import("./api.js");
+    await tymioFetch("/api/domains");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://hub.test/api/domains",
       expect.objectContaining({
@@ -107,7 +109,7 @@ describe("drdFetch", () => {
   });
 
   it("stringifies object body and merges headers", async () => {
-    process.env.DRD_API_KEY = "k";
+    process.env.TYMIO_API_KEY = "k";
     vi.resetModules();
     globalThis.fetch = vi.fn(
       async () =>
@@ -117,8 +119,8 @@ describe("drdFetch", () => {
         })
     ) as typeof fetch;
 
-    const { drdFetch } = await import("./api.js");
-    await drdFetch("/api/initiatives", {
+    const { tymioFetch } = await import("./api.js");
+    await tymioFetch("/api/initiatives", {
       method: "POST",
       body: { title: "x", domainId: "d1" },
       headers: { "X-Custom": "1" },
@@ -137,40 +139,59 @@ describe("drdFetch", () => {
   });
 
   it("returns undefined for 204 No Content", async () => {
-    const { drdFetch } = await import("./api.js");
+    const { tymioFetch } = await import("./api.js");
     globalThis.fetch = vi.fn(async () => new Response(null, { status: 204 })) as typeof fetch;
 
-    const out = await drdFetch<undefined>("/api/gone");
+    const out = await tymioFetch<undefined>("/api/gone");
     expect(out).toBeUndefined();
   });
 
   it("throws on non-OK with response body in message", async () => {
-    const { drdFetch } = await import("./api.js");
+    const { tymioFetch } = await import("./api.js");
     globalThis.fetch = vi.fn(
       async () => new Response("Tenant context required", { status: 400, statusText: "Bad Request" })
     ) as typeof fetch;
 
-    await expect(drdFetch("/api/meta")).rejects.toThrow(/Tymio API 400/);
-    await expect(drdFetch("/api/meta")).rejects.toThrow(/Tenant context required/);
+    await expect(tymioFetch("/api/meta")).rejects.toThrow(/Tymio API 400/);
+    await expect(tymioFetch("/api/meta")).rejects.toThrow(/Tenant context required/);
+  });
+
+  it("legacy DRD_API_BASE_URL + DRD_API_KEY still resolve (deprecated aliases)", async () => {
+    delete process.env.TYMIO_API_BASE_URL;
+    delete process.env.TYMIO_API_KEY;
+    process.env.DRD_API_BASE_URL = "http://legacy.test";
+    process.env.DRD_API_KEY = "legacy-k";
+    vi.resetModules();
+    globalThis.fetch = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } })
+    ) as typeof fetch;
+    const { tymioFetch, drdFetch, getBaseUrl } = await import("./api.js");
+    expect(getBaseUrl()).toBe("http://legacy.test");
+    await tymioFetch("/api/health");
+    expect(drdFetch).toBe(tymioFetch);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://legacy.test/api/health",
+      expect.anything()
+    );
   });
 });
 
-describe("drdFetchText", () => {
+describe("tymioFetchText", () => {
   beforeEach(() => {
-    process.env.DRD_API_BASE_URL = "http://hub.test";
+    process.env.TYMIO_API_BASE_URL = "http://hub.test";
   });
 
   it("returns text body on success", async () => {
     globalThis.fetch = vi.fn(async () => new Response("# Guide\n", { status: 200 })) as typeof fetch;
-    const { drdFetchText } = await import("./api.js");
-    const text = await drdFetchText("/api/agent/coding-guide");
+    const { tymioFetchText } = await import("./api.js");
+    const text = await tymioFetchText("/api/agent/coding-guide");
     expect(text).toBe("# Guide\n");
   });
 
   it("throws on non-OK", async () => {
     globalThis.fetch = vi.fn(async () => new Response("nope", { status: 403 })) as typeof fetch;
-    const { drdFetchText } = await import("./api.js");
-    await expect(drdFetchText("/api/x")).rejects.toThrow(/Tymio API 403/);
+    const { tymioFetchText } = await import("./api.js");
+    await expect(tymioFetchText("/api/x")).rejects.toThrow(/Tymio API 403/);
   });
 });
 
@@ -181,8 +202,8 @@ describe("getBaseUrl and hasApiKey", () => {
     expect(getBaseUrl()).toBe("https://tymio.app");
   });
 
-  it("hasApiKey is true when DRD_API_KEY set", async () => {
-    process.env.DRD_API_KEY = "x";
+  it("hasApiKey is true when TYMIO_API_KEY set", async () => {
+    process.env.TYMIO_API_KEY = "x";
     vi.resetModules();
     const { hasApiKey } = await import("./api.js");
     expect(hasApiKey()).toBe(true);

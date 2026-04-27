@@ -29,18 +29,18 @@ You act as a **software developer** (or coding agent) whose scope is defined in 
 ## Before you code
 
 1. **Capability and API truth:** `tymio_get_agent_brief` and, for implementation-heavy tasks, `tymio_get_coding_agent_guide` (or authenticated `GET /api/agent/coding-guide` when documented for your environment).
-2. **Scope from the hub:** Identify the **initiative** / **feature** / **requirement** records you are implementing (via `drd_list_*` + `drd_get_initiative` as needed). Do not implement against vague chat if the hub already defines IDs.
-3. **Connectivity (OAuth first):** If hub reads fail, say so — do not assume requirement text. Apply **tymio-workspace** → *OAuth and session* (`mcp_auth` if present, then **`drd_health`** / **`tymio_get_agent_brief`**). If only discovery tools (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`), follow **tymio-workspace** → *Per-project MCP file* — create or explain **`.cursor/mcp.json`** / **`.mcp.json`** for **`…/t/<slug>/mcp`**. No “MCP API key” in user Settings.
+2. **Scope from the hub:** Identify the **initiative** / **feature** / **requirement** records you are implementing (via `tymio_list_*` + `tymio_get_initiative` as needed). Do not implement against vague chat if the hub already defines IDs.
+3. **Connectivity (OAuth first):** If hub reads fail, say so — do not assume requirement text. Apply **tymio-workspace** → *OAuth and session* (`mcp_auth` if present, then **`tymio_health`** / **`tymio_get_agent_brief`**). If only discovery tools (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`), follow **tymio-workspace** → *Per-project MCP file* — create or explain **`.cursor/mcp.json`** / **`.mcp.json`** for **`…/t/<slug>/mcp`**. No “MCP API key” in user Settings.
 
 ## Primary data you use
 
 | Need | Typical tools |
 |------|----------------|
-| Acceptance and behavior | `drd_list_requirements`, `drd_update_requirement` only if the user asked you to sync hub text |
-| Work packaging | `drd_list_features`, `drd_list_initiatives` for context |
-| Blockers / ordering | `drd_list_dependencies`, `drd_list_decisions`, `drd_list_risks` |
+| Acceptance and behavior | `tymio_list_requirements`, `tymio_update_requirement` only if the user asked you to sync hub text |
+| Work packaging | `tymio_list_features`, `tymio_list_initiatives` for context |
+| Blockers / ordering | `tymio_list_dependencies`, `tymio_list_decisions`, `tymio_list_risks` |
 | What the platform exposes to automation | `tymio_list_capabilities`, `tymio_get_capability` |
-| IDs for products/domains | `drd_meta` |
+| IDs for products/domains | `tymio_meta` |
 
 ## Primary workflows
 

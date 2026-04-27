@@ -16,12 +16,14 @@ vi.mock("./fileOAuthProvider.js", () => ({
 import { runCli } from "./cli.js";
 
 const envSnapshot = {
+  TYMIO_API_KEY: process.env.TYMIO_API_KEY,
   DRD_API_KEY: process.env.DRD_API_KEY,
   API_KEY: process.env.API_KEY
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete process.env.TYMIO_API_KEY;
   delete process.env.DRD_API_KEY;
   delete process.env.API_KEY;
   process.env.TYMIO_MCP_SKIP_WORKSPACE_PINNING = "1";
@@ -89,7 +91,14 @@ describe("runCli", () => {
     expect(runLoginCommand).toHaveBeenCalledWith(new URL("https://custom.example/mcp"));
   });
 
-  it("uses API key bridge when DRD_API_KEY is non-empty", async () => {
+  it("uses API key bridge when TYMIO_API_KEY is non-empty", async () => {
+    process.env.TYMIO_API_KEY = "secret";
+    await runCli(["node", "tymio-mcp"]);
+    expect(runApiKeyStdio).toHaveBeenCalledOnce();
+    expect(runHubOAuthStdio).not.toHaveBeenCalled();
+  });
+
+  it("uses API key bridge when DRD_API_KEY is non-empty (legacy)", async () => {
     process.env.DRD_API_KEY = "secret";
     await runCli(["node", "tymio-mcp"]);
     expect(runApiKeyStdio).toHaveBeenCalledOnce();
@@ -102,8 +111,8 @@ describe("runCli", () => {
     expect(runApiKeyStdio).toHaveBeenCalledOnce();
   });
 
-  it("ignores whitespace-only DRD_API_KEY", async () => {
-    process.env.DRD_API_KEY = "  \t  ";
+  it("ignores whitespace-only TYMIO_API_KEY", async () => {
+    process.env.TYMIO_API_KEY = "  \t  ";
     await runCli(["node", "tymio-mcp"]);
     expect(runHubOAuthStdio).toHaveBeenCalledOnce();
     expect(runApiKeyStdio).not.toHaveBeenCalled();
@@ -128,6 +137,47 @@ describe("runCli", () => {
     const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     await runCli(["node", "tymio-mcp", "persona", "nope"]);
     expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+    spy.mockRestore();
+  });
+
+  it("doctor prints diagnostics to stderr", async () => {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "doctor"]);
+    const err = spy.mock.calls.map((c) => String(c[0])).join("");
+    expect(err).toMatch(/tymio-mcp doctor/);
+    expect(err).toMatch(/CLI version/);
+    expect(runHubOAuthStdio).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("bootstrap with unknown arg exits 1", async () => {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "bootstrap", "nope"]);
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+    spy.mockRestore();
+  });
+
+  it("bootstrap --help prints usage to stderr", async () => {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "bootstrap", "--help"]);
+    const err = spy.mock.calls.map((c) => String(c[0])).join("");
+    expect(err).toMatch(/tymio-mcp bootstrap/);
+    expect(err).toMatch(/--client/);
+    expect(runHubOAuthStdio).not.toHaveBeenCalled();
+    process.exitCode = 0;
+    spy.mockRestore();
+  });
+
+  it("skill --help prints usage to stderr", async () => {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    await runCli(["node", "tymio-mcp", "skill", "--help"]);
+    const err = spy.mock.calls.map((c) => String(c[0])).join("");
+    expect(err).toMatch(/tymio-mcp skill/);
+    expect(err).toMatch(/skill list/);
+    expect(process.exitCode ?? 0).toBe(0);
+    expect(runHubOAuthStdio).not.toHaveBeenCalled();
     process.exitCode = 0;
     spy.mockRestore();
   });

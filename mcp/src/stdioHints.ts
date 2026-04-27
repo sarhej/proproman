@@ -13,7 +13,7 @@ export function writeStdioStartupHint(mode: "oauth" | "api-key"): void {
     );
   } else {
     process.stderr.write(
-      "[tymio-mcp] API-key REST bridge. Set DRD_API_BASE_URL + DRD_API_KEY + TYMIO_WORKSPACE_SLUG (tenant resolved to X-Tenant-Id). Agent guide: `tymio-mcp instructions`\n"
+      "[tymio-mcp] API-key REST bridge. Set TYMIO_API_BASE_URL + TYMIO_API_KEY + TYMIO_WORKSPACE_SLUG (legacy DRD_* names still work; tenant resolved to X-Tenant-Id). Agent guide: `tymio-mcp instructions`\n"
     );
   }
   const persona = activePersonaForHint();

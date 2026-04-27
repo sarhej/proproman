@@ -92,7 +92,20 @@ describe("MCP product tools (slug + structure write)", () => {
     mocks.productFindFirst.mockResolvedValue(null);
   });
 
-  it("drd_create_product allocates slug and persists name", async () => {
+  it("tymio_get_product_tree throws when productId does not exist", async () => {
+    mocks.productFindUnique.mockResolvedValue(null);
+    const tools = toolMap();
+    const fn = tools.get("tymio_get_product_tree");
+    expect(fn).toBeDefined();
+
+    await expect(
+      runWithTenant(tenantCtx, () =>
+        fn!({ workspaceSlug: "ws", productId: "missing-product-id" }, ctx("u1", UserRole.ADMIN))
+      )
+    ).rejects.toThrow(/Product not found/);
+  });
+
+  it("tymio_create_product allocates slug and persists name", async () => {
     mocks.productCreate.mockResolvedValue({
       id: "p-new",
       name: "Line A",
@@ -103,7 +116,7 @@ describe("MCP product tools (slug + structure write)", () => {
     });
 
     const tools = toolMap();
-    const fn = tools.get("drd_create_product")!;
+    const fn = tools.get("tymio_create_product")!;
 
     await runWithTenant(tenantCtx, () =>
       fn({ workspaceSlug: "ws", name: "Line A" }, ctx("u1", UserRole.ADMIN))
@@ -117,7 +130,7 @@ describe("MCP product tools (slug + structure write)", () => {
     });
   });
 
-  it("drd_create_product uses explicit slug when free", async () => {
+  it("tymio_create_product uses explicit slug when free", async () => {
     mocks.productCreate.mockResolvedValue({
       id: "p2",
       name: "B",
@@ -128,7 +141,7 @@ describe("MCP product tools (slug + structure write)", () => {
     });
 
     const tools = toolMap();
-    const fn = tools.get("drd_create_product")!;
+    const fn = tools.get("tymio_create_product")!;
 
     await runWithTenant(tenantCtx, () =>
       fn({ workspaceSlug: "ws", name: "B", slug: "custom-slug" }, ctx("u1", UserRole.ADMIN))
@@ -139,7 +152,7 @@ describe("MCP product tools (slug + structure write)", () => {
     });
   });
 
-  it("drd_update_product rejects duplicate slug in workspace", async () => {
+  it("tymio_update_product rejects duplicate slug in workspace", async () => {
     mocks.productFindUnique.mockResolvedValue({
       id: "p1",
       name: "A",
@@ -149,7 +162,7 @@ describe("MCP product tools (slug + structure write)", () => {
     mocks.productFindFirst.mockResolvedValueOnce({ id: "p-other" });
 
     const tools = toolMap();
-    const fn = tools.get("drd_update_product")!;
+    const fn = tools.get("tymio_update_product")!;
 
     await expect(
       runWithTenant(tenantCtx, () =>
@@ -160,7 +173,7 @@ describe("MCP product tools (slug + structure write)", () => {
     expect(mocks.productUpdate).not.toHaveBeenCalled();
   });
 
-  it("drd_update_product applies slug when unique", async () => {
+  it("tymio_update_product applies slug when unique", async () => {
     mocks.productFindUnique.mockResolvedValue({
       id: "p1",
       name: "A",
@@ -176,7 +189,7 @@ describe("MCP product tools (slug + structure write)", () => {
     });
 
     const tools = toolMap();
-    const fn = tools.get("drd_update_product")!;
+    const fn = tools.get("tymio_update_product")!;
 
     const out = await runWithTenant(tenantCtx, () =>
       fn({ workspaceSlug: "ws", id: "p1", slug: "a2" }, ctx("u1", UserRole.ADMIN))

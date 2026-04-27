@@ -1,6 +1,6 @@
 {
   "name": "@tymio/mcp-server",
-  "version": "2.0.1",
+  "version": "2.4.1",
   "description": "Tymio MCP CLI: OAuth stdio proxy to hosted MCP, API-key REST bridge, bundled PM/PO/DEV/workspace agent personas",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,7 @@
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke:deep": "npm run build && node dist/deeperSmoke.js",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {

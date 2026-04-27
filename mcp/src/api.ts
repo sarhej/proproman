@@ -1,10 +1,41 @@
 /**
- * Minimal Tymio hub API client for the stdio MCP server. Uses DRD_API_BASE_URL and DRD_API_KEY from env.
+ * Minimal Tymio hub API client for the stdio MCP server.
+ * Prefers TYMIO_API_BASE_URL / TYMIO_API_KEY; DRD_* names remain as a temporary fallback (deprecated).
  */
 
+let warnedLegacyEnv = false;
+function warnLegacyDrdEnvOnce(used: "base" | "key"): void {
+  if (warnedLegacyEnv) return;
+  warnedLegacyEnv = true;
+  process.stderr.write(
+    `[tymio-mcp] Deprecated: ${used === "base" ? "DRD_API_BASE_URL" : "DRD_API_KEY"} is set; use TYMIO_${used === "base" ? "API_BASE_URL" : "API_KEY"} instead (same value). Legacy names will be removed in a future major version.\n`
+  );
+}
+
 /** Hub origin (no `/mcp` path). Stdio bridge calls REST under `/api/...`. */
-const baseUrl = process.env.DRD_API_BASE_URL ?? "https://tymio.app";
-const apiKey = process.env.DRD_API_KEY ?? process.env.API_KEY ?? "";
+function resolveBaseUrl(): string {
+  const v =
+    process.env.TYMIO_API_BASE_URL?.trim() || process.env.DRD_API_BASE_URL?.trim();
+  if (process.env.DRD_API_BASE_URL?.trim() && !process.env.TYMIO_API_BASE_URL?.trim()) {
+    warnLegacyDrdEnvOnce("base");
+  }
+  return v || "https://tymio.app";
+}
+
+function resolveApiKey(): string {
+  const v =
+    process.env.TYMIO_API_KEY?.trim() ||
+    process.env.DRD_API_KEY?.trim() ||
+    process.env.API_KEY?.trim() ||
+    "";
+  if (process.env.DRD_API_KEY?.trim() && !process.env.TYMIO_API_KEY?.trim()) {
+    warnLegacyDrdEnvOnce("key");
+  }
+  return v;
+}
+
+const baseUrl = resolveBaseUrl();
+const apiKey = resolveApiKey();
 
 /** Set by API-key stdio after resolving slug → tenant id (never send cross-tenant requests). */
 let bridgeTenantHeaders: Record<string, string> = {};
@@ -27,11 +58,14 @@ function headers(): HeadersInit {
 }
 
 /** JSON-friendly body; plain objects are stringified. */
-export type DrdFetchInit = Omit<RequestInit, "body"> & {
+export type TymioFetchInit = Omit<RequestInit, "body"> & {
   body?: string | Record<string, unknown>;
 };
 
-export async function drdFetch<T>(path: string, init?: DrdFetchInit): Promise<T> {
+/** @deprecated Use `tymioFetch` (same function). */
+export type DrdFetchInit = TymioFetchInit;
+
+export async function tymioFetch<T>(path: string, init?: TymioFetchInit): Promise<T> {
   const { body, ...rest } = init ?? {};
   const bodyInit: BodyInit | undefined =
     body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body);
@@ -48,8 +82,11 @@ export async function drdFetch<T>(path: string, init?: DrdFetchInit): Promise<T>
   return (await res.json()) as T;
 }
 
+/** @deprecated Use `tymioFetch` */
+export const drdFetch = tymioFetch;
+
 /** Plain text body (e.g. Markdown agent brief). */
-export async function drdFetchText(path: string, init?: RequestInit): Promise<string> {
+export async function tymioFetchText(path: string, init?: RequestInit): Promise<string> {
   const res = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: { ...headers(), ...(init?.headers ?? ({} as HeadersInit)) }
@@ -60,6 +97,9 @@ export async function drdFetchText(path: string, init?: RequestInit): Promise<st
   }
   return res.text();
 }
+
+/** @deprecated Use `tymioFetchText` */
+export const drdFetchText = tymioFetchText;
 
 export function getBaseUrl(): string {
   return baseUrl;

@@ -71,7 +71,7 @@
     "stdioLead": "Pro brány, které spouští MCP jako podproces — OpenClaw, Gemini CLI a další CLI agenti. Nainstalujte @tymio/mcp-server, jednou spusťte tymio-mcp login a zaregistrujte tymio-mcp v konfiguraci MCP.",
     "stdioStep1": "Nainstalujte CLI z veřejného npm registru:",
     "stdioStep2": "V terminálu se jednou přihlaste (otevře se prohlížeč pro Google):",
-    "stdioStep3": "V konfiguraci MCP přidejte stdio server spouštějící tymio-mcp. Nenastavujte DRD_API_KEY ani API_KEY, pokud záměrně nechcete menší sadu nástrojů přes REST (tajemství nasazení, ne uživatelské pole).",
+    "stdioStep3": "V konfiguraci MCP přidejte stdio server spouštějící tymio-mcp. Nenastavujte TYMIO_API_KEY ani API_KEY (legacy DRD_API_KEY), pokud záměrně nechcete menší sadu nástrojů přes REST (tajemství nasazení, ne uživatelské pole).",
     "stdioStep4Label": "Příklad (JSON ve stylu Cursor; OpenClaw používá mcp.servers — viz rámeček níže):",
     "openclawHeading": "Brána OpenClaw",
     "openclawHint": "Na počítači s OpenClaw zaregistrujte stdio server a restartujte bránu:",
@@ -81,7 +81,7 @@
     "securityTitle": "Zabezpečení & Zero-Trust",
     "securityDesc": "Připojení používají OAuth s PKCE a rotací obnovovacích tokenů. Zneužité tokeny lze zrušit; k pracovnímu prostoru se nepřistupuje sdíleným heslem vloženým do Nastavení.",
     "oauthNotApiKeyTitle": "Důležité pro asistenty a podporu",
-    "oauthNotApiKeyBody": "V Tymio v Nastavení, profilu ani účtu neexistuje osobní „MCP API klíč“. Neříkejte lidem, ať si něco takového z UI kopírují. Použijte OAuth: buď vzdálenou URL výše, nebo npm install -g @tymio/mcp-server a tymio-mcp login. DRD_API_KEY / API_KEY na počítači označuje tajemství automatizace nasazení, ne pole pro koncového uživatele."
+    "oauthNotApiKeyBody": "V Tymio v Nastavení, profilu ani účtu neexistuje osobní „MCP API klíč“. Neříkejte lidem, ať si něco takového z UI kopírují. Použijte OAuth: buď vzdálenou URL výše, nebo npm install -g @tymio/mcp-server a tymio-mcp login. TYMIO_API_KEY / API_KEY na počítači (legacy DRD_API_KEY) označuje tajemství automatizace nasazení, ne pole pro koncového uživatele."
   },
   "nav": {
     "views": "Pohledy",

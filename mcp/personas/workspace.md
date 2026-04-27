@@ -30,7 +30,7 @@ When working **in the Tymio monorepo**, the API is often `http://localhost:8080`
 1. **Backlog graph:** Domain → Initiative → Feature → Requirement; demands link to initiatives/features; **dependencies** are initiative→initiative in the default model.
 2. **Capability brief:** `tymio_get_agent_brief`, `tymio_list_capabilities` — what the product exposes.
 
-Use **`drd_meta`** then list/get tools for live tenant data. Full Mermaid + tables live in the monorepo: `.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md`.
+Use **`tymio_meta`** then list/get tools for live tenant data. Full Mermaid + tables live in the monorepo: `.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md`.
 
 ## Roles
 

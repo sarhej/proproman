@@ -71,7 +71,7 @@
     "stdioLead": "Pre brány, ktoré spúšťajú MCP ako podproces — OpenClaw, Gemini CLI a ďalší CLI agenti. Nainštalujte @tymio/mcp-server, raz spustite tymio-mcp login a zaregistrujte tymio-mcp v MCP konfigurácii.",
     "stdioStep1": "Nainštalujte CLI z verejného npm registra:",
     "stdioStep2": "V termináli sa raz prihláste (otvorí sa prehliadač pre Google):",
-    "stdioStep3": "V MCP konfigurácii pridajte stdio server spúšťajúci tymio-mcp. Nenastavujte DRD_API_KEY ani API_KEY, ak zámerne nechcete menšiu sadu nástrojov cez REST (tajomstvo nasadenia, nie používateľské pole).",
+    "stdioStep3": "V MCP konfigurácii pridajte stdio server spúšťajúci tymio-mcp. Nenastavujte TYMIO_API_KEY ani API_KEY (legacy DRD_API_KEY), ak zámerne nechcete menšiu sadu nástrojov cez REST (tajomstvo nasadenia, nie používateľské pole).",
     "stdioStep4Label": "Príklad (JSON v štýle Cursor; OpenClaw používa mcp.servers — pozri rámček nižšie):",
     "openclawHeading": "Brána OpenClaw",
     "openclawHint": "Na počítači s OpenClaw zaregistrujte stdio server a reštartujte bránu:",
@@ -81,7 +81,7 @@
     "securityTitle": "Zabezpečenie & Zero-Trust",
     "securityDesc": "Pripojenia používajú OAuth s PKCE a rotáciou obnovovacích tokenov. Zneužité tokeny možno zrušiť; k pracovnému priestoru sa nepristupuje zdieľaným heslom vloženým do Nastavení.",
     "oauthNotApiKeyTitle": "Dôležité pre asistentov a podporu",
-    "oauthNotApiKeyBody": "V Tymio v Nastaveniach, profile ani účte neexistuje osobný „MCP API kľúč“. Nehovorte ľuďom, aby si niečo také z UI kopírovali. Použite OAuth: buď vzdialenú URL vyššie, alebo npm install -g @tymio/mcp-server a tymio-mcp login. DRD_API_KEY / API_KEY na počítači označuje tajomstvo automatizácie nasadenia, nie pole pre koncového používateľa."
+    "oauthNotApiKeyBody": "V Tymio v Nastaveniach, profile ani účte neexistuje osobný „MCP API kľúč“. Nehovorte ľuďom, aby si niečo také z UI kopírovali. Použite OAuth: buď vzdialenú URL vyššie, alebo npm install -g @tymio/mcp-server a tymio-mcp login. TYMIO_API_KEY / API_KEY na počítači (legacy DRD_API_KEY) označuje tajomstvo automatizácie nasadenia, nie pole pre koncového používateľa."
   },
   "nav": {
     "views": "Pohľady",

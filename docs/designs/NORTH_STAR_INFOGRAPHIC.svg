@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040">
+  <title>Tymio North Star: The Living Mind of a Product Organization</title>
+  <desc>Strategic infographic. The Mind is a continuously compiled semantic graph (intent, scope, work, code, integrations, decisions) that serves any AI agent. Stage 1 sells the Mind; Stage 2 sells the managed Workforce on top of the Mind; Stage 3 sells outcomes powered by a proprietary decision ledger.</desc>
+
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #0b1220; }
+      .panel { fill: #111a2e; stroke: #27324d; stroke-width: 1.5; rx: 12; ry: 12; }
+      .panel-alt { fill: #0f1a33; stroke: #2c3a5c; stroke-width: 1.5; rx: 12; ry: 12; }
+      .panel-mind { fill: #0f233b; stroke: #38bdf8; stroke-width: 2; rx: 16; ry: 16; }
+      .panel-stage1 { fill: #0e2235; stroke: #38bdf8; stroke-width: 1.5; rx: 12; ry: 12; }
+      .panel-stage2 { fill: #15203a; stroke: #a78bfa; stroke-width: 1.5; rx: 12; ry: 12; }
+      .panel-stage3 { fill: #1a1a36; stroke: #f472b6; stroke-width: 1.5; rx: 12; ry: 12; }
+      .chip { fill: #172038; stroke: #3b4a70; stroke-width: 1; rx: 8; ry: 8; }
+      .chip-src { fill: #10233a; stroke: #38bdf8; stroke-width: 1.2; rx: 8; ry: 8; }
+      .chip-out { fill: #1a1f3a; stroke: #a78bfa; stroke-width: 1.2; rx: 8; ry: 8; }
+      .chip-moat { fill: #281532; stroke: #f472b6; stroke-width: 1.2; rx: 8; ry: 8; }
+      .h-title { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 32px; font-weight: 800; fill: #f8fafc; }
+      .h-sub { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 16px; font-weight: 500; fill: #94a3b8; }
+      .h-section { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; fill: #cbd5e1; letter-spacing: 1.5px; }
+      .title { font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; fill: #e2e8f0; }
+      .title-lg { font-family: system-ui, sans-serif; font-size: 22px; font-weight: 800; fill: #f1f5f9; }
+      .body { font-family: system-ui, sans-serif; font-size: 13px; fill: #cbd5e1; }
+      .small { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; fill: #94a3b8; }
+      .mind-label { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; fill: #cfe8ff; }
+      .stage-num { font-family: system-ui, sans-serif; font-size: 48px; font-weight: 900; fill: #0b1220; }
+      .stage-ring-1 { fill: #38bdf8; }
+      .stage-ring-2 { fill: #a78bfa; }
+      .stage-ring-3 { fill: #f472b6; }
+      .arrow-in { stroke: #38bdf8; stroke-width: 1.6; fill: none; marker-end: url(#a1); opacity: 0.85; }
+      .arrow-out { stroke: #a78bfa; stroke-width: 1.6; fill: none; marker-end: url(#a2); opacity: 0.85; }
+      .arrow-evo { stroke: #f472b6; stroke-width: 2; fill: none; marker-end: url(#a3); }
+      .tag-kill { font-family: ui-monospace, monospace; font-size: 11px; fill: #fca5a5; }
+      .tag-keep { font-family: ui-monospace, monospace; font-size: 11px; fill: #86efac; }
+      .money { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #fbbf24; }
+      .footer { font-family: system-ui, sans-serif; font-size: 12px; fill: #64748b; }
+    ]]></style>
+
+    <marker id="a1" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <polygon points="0 0, 10 5, 0 10" fill="#38bdf8"/>
+    </marker>
+    <marker id="a2" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <polygon points="0 0, 10 5, 0 10" fill="#a78bfa"/>
+    </marker>
+    <marker id="a3" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto">
+      <polygon points="0 0, 12 6, 0 12" fill="#f472b6"/>
+    </marker>
+
+    <radialGradient id="mindGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#1e3a8a" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0b1220" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1040"/>
+
+  <text x="60" y="70" class="h-title">Tymio &#8212; the living mind of a product organization</text>
+  <text x="60" y="100" class="h-sub">A continuously compiled, code-bound semantic graph of what you&#8217;re building, why, for whom, how it integrates, and what you&#8217;ve learned &#8212; served to any AI agent via MCP.</text>
+
+  <!-- ============ INGEST (LEFT) ============ -->
+  <text x="60" y="160" class="h-section">INGEST &#8212; always-on signals</text>
+
+  <rect class="chip-src" x="60" y="180" width="260" height="56"/>
+  <text x="80" y="206" class="title">Code &amp; delivery</text>
+  <text x="80" y="224" class="small">Git, PRs, commits, builds, tests, deploys</text>
+
+  <rect class="chip-src" x="60" y="252" width="260" height="56"/>
+  <text x="80" y="278" class="title">Backlog source of truth</text>
+  <text x="80" y="296" class="small">Initiatives &#8226; Features &#8226; Requirements (in Tymio)</text>
+
+  <rect class="chip-src" x="60" y="324" width="260" height="56"/>
+  <text x="80" y="350" class="title">Integrations catalog</text>
+  <text x="80" y="368" class="small">3rd-party APIs, webhooks, partners, data in/out</text>
+
+  <rect class="chip-src" x="60" y="396" width="260" height="56"/>
+  <text x="80" y="422" class="title">Design refs</text>
+  <text x="80" y="440" class="small">Figma nodes &#8226; wireframes &#8226; UX specs</text>
+
+  <rect class="chip-src" x="60" y="468" width="260" height="56"/>
+  <text x="80" y="494" class="title">Demands &amp; signals</text>
+  <text x="80" y="512" class="small">Customer input, support, sales, KPI deltas</text>
+
+  <rect class="chip-src" x="60" y="540" width="260" height="56"/>
+  <text x="80" y="566" class="title">Decisions &amp; outcomes</text>
+  <text x="80" y="584" class="small">Decision ledger &#8212; judgement training data</text>
+
+  <!-- ============ MIND (CENTER) ============ -->
+  <circle cx="800" cy="420" r="320" fill="url(#mindGlow)"/>
+  <rect class="panel-mind" x="430" y="180" width="740" height="480"/>
+
+  <text x="800" y="220" text-anchor="middle" class="title-lg">THE MIND</text>
+  <text x="800" y="244" text-anchor="middle" class="h-sub">Compiled semantic graph &#8226; workspace atlas &#8226; capability ontology</text>
+
+  <!-- graph nodes -->
+  <g transform="translate(800,440)">
+    <circle r="210" fill="none" stroke="#1e3a8a" stroke-width="1" opacity="0.5"/>
+    <circle r="140" fill="none" stroke="#1e3a8a" stroke-width="1" opacity="0.5"/>
+
+    <line x1="-160" y1="-60" x2="0" y2="0" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="0" y1="0" x2="170" y2="-70" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="0" y1="0" x2="150" y2="60" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="0" y1="0" x2="-140" y2="80" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="0" y1="0" x2="0" y2="-150" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="0" y1="0" x2="-60" y2="150" stroke="#38bdf8" stroke-width="1.2" opacity="0.6"/>
+    <line x1="-160" y1="-60" x2="0" y2="-150" stroke="#1e3a8a" stroke-width="1" opacity="0.5"/>
+    <line x1="170" y1="-70" x2="150" y2="60" stroke="#1e3a8a" stroke-width="1" opacity="0.5"/>
+
+    <circle cx="0" cy="0" r="34" fill="#0b2847" stroke="#38bdf8" stroke-width="2"/>
+    <text x="0" y="-2" text-anchor="middle" class="mind-label">Initiative</text>
+    <text x="0" y="14" text-anchor="middle" class="small" fill="#94a3b8">why</text>
+
+    <circle cx="0" cy="-150" r="26" fill="#0b2847" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="0" y="-146" text-anchor="middle" class="small" fill="#cfe8ff">Feature</text>
+
+    <circle cx="170" cy="-70" r="24" fill="#0b2847" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="170" y="-66" text-anchor="middle" class="small" fill="#cfe8ff">Requirement</text>
+
+    <circle cx="150" cy="60" r="24" fill="#0b2847" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="150" y="64" text-anchor="middle" class="small" fill="#cfe8ff">Code binding</text>
+
+    <circle cx="-160" cy="-60" r="24" fill="#0b2847" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="-160" y="-56" text-anchor="middle" class="small" fill="#cfe8ff">Integration</text>
+
+    <circle cx="-140" cy="80" r="24" fill="#0b2847" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="-140" y="84" text-anchor="middle" class="small" fill="#cfe8ff">Demand</text>
+
+    <circle cx="-60" cy="150" r="26" fill="#281532" stroke="#f472b6" stroke-width="1.8"/>
+    <text x="-60" y="146" text-anchor="middle" class="small" fill="#fbcfe8">Decision</text>
+    <text x="-60" y="162" text-anchor="middle" class="small" fill="#fbcfe8">&amp; outcome</text>
+  </g>
+
+  <!-- mind sub-labels -->
+  <text x="470" y="635" class="small">Deterministic compiler &#8594; atlas JSON shards</text>
+  <text x="980" y="635" class="small" text-anchor="end">Dynamic Markdown &#8594; agents (AGENTS.md on demand)</text>
+
+  <!-- ============ SERVE (RIGHT) ============ -->
+  <text x="1280" y="160" class="h-section">SERVE &#8212; zero-friction to any agent</text>
+
+  <rect class="chip-out" x="1280" y="180" width="260" height="56"/>
+  <text x="1300" y="206" class="title">MCP (Streamable HTTP)</text>
+  <text x="1300" y="224" class="small">/t/&lt;slug&gt;/mcp &#8226; OAuth &#8226; drd_* + tymio_*</text>
+
+  <rect class="chip-out" x="1280" y="252" width="260" height="56"/>
+  <text x="1300" y="278" class="title">Dynamic MD briefs</text>
+  <text x="1300" y="296" class="small">Coding guide &#8226; capability brief &#8226; object brief</text>
+
+  <rect class="chip-out" x="1280" y="324" width="260" height="56"/>
+  <text x="1300" y="350" class="title">REST / stdio CLI</text>
+  <text x="1300" y="368" class="small">@tymio/mcp-server &#8226; Bearer token &#8226; CI/CD</text>
+
+  <rect class="chip-out" x="1280" y="396" width="260" height="56"/>
+  <text x="1300" y="422" class="title">Human review UI</text>
+  <text x="1300" y="440" class="small">Minimal &#8212; verify, correct, record decisions</text>
+
+  <rect class="chip-out" x="1280" y="468" width="260" height="56"/>
+  <text x="1300" y="494" class="title">Dynamic AGENTS.md</text>
+  <text x="1300" y="512" class="small">PM context rendered per repo, never stale</text>
+
+  <rect class="chip-out" x="1280" y="540" width="260" height="56"/>
+  <text x="1300" y="566" class="title">Localized UI (en, cs, sk, uk, pl)</text>
+  <text x="1300" y="584" class="small">Non-technical CEE/EU buyer lands on mother tongue</text>
+
+  <!-- connectors ingest -> mind -->
+  <path class="arrow-in" d="M 320 208 C 380 208, 390 260, 430 260"/>
+  <path class="arrow-in" d="M 320 280 C 380 280, 390 320, 430 330"/>
+  <path class="arrow-in" d="M 320 352 C 380 352, 390 380, 430 400"/>
+  <path class="arrow-in" d="M 320 424 C 380 424, 390 440, 430 470"/>
+  <path class="arrow-in" d="M 320 496 C 380 496, 390 510, 430 540"/>
+  <path class="arrow-in" d="M 320 568 C 380 568, 390 590, 430 610"/>
+
+  <!-- connectors mind -> serve -->
+  <path class="arrow-out" d="M 1170 260 C 1220 260, 1230 208, 1280 208"/>
+  <path class="arrow-out" d="M 1170 330 C 1220 330, 1230 280, 1280 280"/>
+  <path class="arrow-out" d="M 1170 400 C 1220 400, 1230 352, 1280 352"/>
+  <path class="arrow-out" d="M 1170 470 C 1220 470, 1230 424, 1280 424"/>
+  <path class="arrow-out" d="M 1170 540 C 1220 540, 1230 496, 1280 496"/>
+  <path class="arrow-out" d="M 1170 610 C 1220 610, 1230 568, 1280 568"/>
+
+  <!-- ============ THREE-STAGE EVOLUTION (BOTTOM) ============ -->
+  <text x="60" y="740" class="h-section">MONETIZATION EVOLUTION &#8212; same Mind, three stages</text>
+
+  <!-- stage 1 -->
+  <rect class="panel-stage1" x="60" y="760" width="470" height="220"/>
+  <circle cx="105" cy="805" r="26" class="stage-ring-1"/>
+  <text x="105" y="815" text-anchor="middle" class="stage-num">1</text>
+  <text x="150" y="800" class="title-lg" fill="#7dd3fc">The Mind</text>
+  <text x="150" y="822" class="body">Live semantic graph + MCP access</text>
+
+  <text x="80" y="862" class="body">&#8226; Sell: per-company subscription</text>
+  <text x="80" y="882" class="body">&#8226; Buyer: CTO / founder using AI agents</text>
+  <text x="80" y="902" class="body">&#8226; Pain killed: agent hallucination, stale context</text>
+  <text x="80" y="922" class="body">&#8226; SLA: freshness &amp; graph integrity</text>
+  <text x="80" y="946" class="money">&#8227; Enter here. Brain-as-a-service.</text>
+  <text x="80" y="966" class="small">drd_* + tymio_* + dynamic AGENTS.md per repo</text>
+
+  <!-- stage 2 -->
+  <rect class="panel-stage2" x="560" y="760" width="470" height="220"/>
+  <circle cx="605" cy="805" r="26" class="stage-ring-2"/>
+  <text x="605" y="815" text-anchor="middle" class="stage-num">2</text>
+  <text x="650" y="800" class="title-lg" fill="#c4b5fd">The Workforce</text>
+  <text x="650" y="822" class="body">AI-run project &amp; product management</text>
+
+  <text x="580" y="862" class="body">&#8226; Sell: managed PM/PO agents running on the Mind</text>
+  <text x="580" y="882" class="body">&#8226; Addresses what Bek misses: AI project management</text>
+  <text x="580" y="902" class="body">&#8226; Eats the biggest time-loss in SW delivery</text>
+  <text x="580" y="922" class="body">&#8226; SLA: refinement DoR, sprint health, risk cadence</text>
+  <text x="580" y="946" class="money">&#8227; Services revenue at Bek&#8217;s work budget.</text>
+  <text x="580" y="966" class="small">per managed initiative &#8226; per SLA-month</text>
+
+  <!-- stage 3 -->
+  <rect class="panel-stage3" x="1060" y="760" width="470" height="220"/>
+  <circle cx="1105" cy="805" r="26" class="stage-ring-3"/>
+  <text x="1105" y="815" text-anchor="middle" class="stage-num">3</text>
+  <text x="1150" y="800" class="title-lg" fill="#f9a8d4">The Ledger</text>
+  <text x="1150" y="822" class="body">Proprietary judgement data &#8594; autopilot</text>
+
+  <text x="1080" y="862" class="body">&#8226; Moat: (context, decision, outcome) triples compound</text>
+  <text x="1080" y="882" class="body">&#8226; Cross-tenant patterns inform defaults, never leak</text>
+  <text x="1080" y="902" class="body">&#8226; Dev agents earn trust to merge &#38; ship</text>
+  <text x="1080" y="922" class="body">&#8226; SLA: features shipped, bug rate, time-to-value</text>
+  <text x="1080" y="946" class="money">&#8227; Outcome pricing. The $1T seat.</text>
+  <text x="1080" y="966" class="small">trained context injection &#8226; per-vertical defaults</text>
+
+  <!-- evolution arrows between stages -->
+  <path class="arrow-evo" d="M 530 870 L 558 870"/>
+  <path class="arrow-evo" d="M 1030 870 L 1058 870"/>
+
+  <!-- footer tags -->
+  <text x="60" y="1008" class="tag-keep">KEEP: multi-tenant, ontology + atlas, MCP OAuth, integrations catalog, localization (cs/sk/uk/pl), Google+MS auth</text>
+  <text x="60" y="1026" class="tag-kill">FREEZE (until Mind works): campaigns/assets, persona module, gantt UI, notifications rules, marketing artifacts, /platform SPA split</text>
+  <text x="1540" y="1026" text-anchor="end" class="footer">tymio.app &#8226; solo founder / 30% time / decisive phases, not deadlines</text>
+</svg>

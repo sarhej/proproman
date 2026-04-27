@@ -26,6 +26,11 @@
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>https://tymio.app/wiki/workspace-atlas</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>https://tymio.app/llms.txt</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

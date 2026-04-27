@@ -9,18 +9,18 @@ Default **leaf** is **Requirement** → parent **Feature** → **Initiative**. U
 ## Before you code
 
 1. **`tymio_get_agent_brief`**; heavy implementation: **`tymio_get_coding_agent_guide`**.
-2. Map work to initiative/feature/requirement IDs via **`drd_list_*`** / **`drd_get_initiative`**.
+2. Map work to initiative/feature/requirement IDs via **`tymio_list_*`** / **`tymio_get_initiative`**.
 3. If hub reads fail, report it; fix MCP/OAuth.
 
 ## Data
 
 | Need | Tools |
 |------|--------|
-| Acceptance | **`drd_list_requirements`** (update only if user asked) |
-| Packaging | **`drd_list_features`**, **`drd_list_initiatives`** |
-| Blockers | **`drd_list_dependencies`**, decisions, risks |
+| Acceptance | **`tymio_list_requirements`** (update only if user asked) |
+| Packaging | **`tymio_list_features`**, **`tymio_list_initiatives`** |
+| Blockers | **`tymio_list_dependencies`**, decisions, risks |
 | Surfaces | **`tymio_list_capabilities`**, **`tymio_get_capability`** |
-| Taxonomy | **`drd_meta`** |
+| Taxonomy | **`tymio_meta`** |
 
 ## Avoid
 

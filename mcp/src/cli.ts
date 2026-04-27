@@ -5,9 +5,16 @@ import { runHubOAuthStdio } from "./hubProxyStdio.js";
 import { runLoginCommand } from "./loginCommand.js";
 import { removeAllOAuthFiles } from "./fileOAuthProvider.js";
 import { runPersonaCli } from "./persona.js";
+import { runBootstrapCommand } from "./bootstrapCommand.js";
+import { runDoctorCommand } from "./doctorCommand.js";
+import { runSkillCommand } from "./skillCommand.js";
 
 function useApiKeyBridge(): boolean {
-  return Boolean(process.env.DRD_API_KEY?.trim() || process.env.API_KEY?.trim());
+  return Boolean(
+    process.env.TYMIO_API_KEY?.trim() ||
+    process.env.DRD_API_KEY?.trim() ||
+    process.env.API_KEY?.trim()
+  );
 }
 
 export async function runCli(argv: string[]): Promise<void> {
@@ -37,6 +44,21 @@ export async function runCli(argv: string[]): Promise<void> {
 
   if (args[0] === "persona") {
     process.exitCode = runPersonaCli(args.slice(1));
+    return;
+  }
+
+  if (args[0] === "doctor") {
+    runDoctorCommand();
+    return;
+  }
+
+  if (args[0] === "bootstrap") {
+    process.exitCode = await runBootstrapCommand(args.slice(1));
+    return;
+  }
+
+  if (args[0] === "skill") {
+    process.exitCode = await runSkillCommand(args.slice(1));
     return;
   }
 

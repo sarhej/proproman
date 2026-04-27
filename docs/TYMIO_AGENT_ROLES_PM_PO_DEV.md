@@ -10,11 +10,11 @@ This document compares **which hub functions and data** each autonomous agent ro
 
 Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKILL.md](../.cursor/skills/tymio-workspace/SKILL.md) and [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).
 
-**Session (all roles):** Complete **OAuth** before any `drd_*` / `tymio_*` work — see *OAuth and session* at the top of `tymio-workspace` (use **`mcp_auth`** with `{}` when the client exposes it; otherwise IDE **Connect / Sign in** or **`tymio-mcp login`**), then verify with **`drd_health`** or **`tymio_get_agent_brief`**.
+**Session (all roles):** Complete **OAuth** before any `tymio_*` / `tymio_*` work — see *OAuth and session* at the top of `tymio-workspace` (use **`mcp_auth`** with `{}` when the client exposes it; otherwise IDE **Connect / Sign in** or **`tymio-mcp login`**), then verify with **`tymio_health`** or **`tymio_get_agent_brief`**.
 
 **Workspace (all roles):** One user can have **many Workspaces**. Root **`…/mcp`** is **discovery-only**; PM/PO backlog work needs **`…/t/<slug>/mcp`**. Do not reuse **IDs** across tenants.
 
-**Ontology (all PM/PO/DEV skills):** Agents should internalize the **backlog work graph** and how it differs from the **capability** brief — see [.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md](../.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md) (Mermaid diagrams, `drd_*` implications).
+**Ontology (all PM/PO/DEV skills):** Agents should internalize the **backlog work graph** and how it differs from the **capability** brief — see [.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md](../.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md) (Mermaid diagrams, `tymio_*` implications).
 
 **Legend:** **P** = primary (use often), **S** = secondary (use when relevant), **—** = usually out of scope (do not default to these calls).
 
@@ -24,31 +24,31 @@ Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKIL
 
 | Function / data area | Typical MCP tools / REST | PM | PO | DEV |
 |----------------------|--------------------------|----|----|-----|
-| Hub health | `drd_health` | S | S | S |
-| IDs and taxonomy (domains, products, users) | `drd_meta`, `drd_list_domains`, `drd_list_products` | P | P | P |
-| Product tree / structure | `drd_get_product_tree` | P | P | S |
+| Hub health | `tymio_health` | S | S | S |
+| IDs and taxonomy (domains, products, users) | `tymio_meta`, `tymio_list_domains`, `tymio_list_products` | P | P | P |
+| Product tree / structure | `tymio_get_product_tree` | P | P | S |
 | Agent capability brief (what the hub exposes) | `tymio_get_agent_brief`, ontology `GET /brief` | P | P | P |
 | Workspace atlas (compiled backlog JSON; full MCP only) | `tymio_get_workspace_atlas`, `tymio_search_workspace_objects`, `tymio_get_workspace_object`, `tymio_explain_workspace_object`; rebuild `tymio_rebuild_workspace_atlas` | P | P | S |
 | Coding agent guide (implementation context) | `tymio_get_coding_agent_guide`, `GET /api/agent/coding-guide` | S | S | P |
 | Capabilities map | `tymio_list_capabilities`, `tymio_get_capability` | S | S | P |
-| Initiatives (list, detail, create, update, delete) | `drd_list_initiatives`, `drd_get_initiative`, `drd_create_*`, `drd_update_*`, `drd_delete_*` | P | P | S |
-| Features | `drd_list_features`, `drd_create_feature`, `drd_update_feature` | S | P | P |
-| Requirements / acceptance | `drd_list_requirements`, `drd_create_requirement`, `drd_update_requirement`, `drd_upsert_requirement` | S | P | P |
-| Demands / input signals | `drd_list_demands` | P | S | — |
-| Accounts / partners (B2B context) | `drd_list_accounts`, `drd_list_partners` | P | S | — |
-| KPIs / milestones | `drd_list_kpis`, `drd_list_milestones` | P | S | — |
-| Revenue streams | `drd_list_revenue_streams` | P | — | — |
-| Personas | `drd_list_personas` | P | S | — |
-| Decisions | `drd_list_decisions` | P | P | S |
-| Risks | `drd_list_risks` | P | P | S |
-| Dependencies | `drd_list_dependencies` | S | P | P |
-| Assignments / ownership | `drd_list_assignments` | S | P | P |
-| Stakeholders | `drd_list_stakeholders` | P | S | — |
-| Timeline (calendar / Gantt) | `drd_timeline_calendar`, `drd_timeline_gantt` | P | P | S |
+| Initiatives (list, detail, create, update, delete) | `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_create_*`, `tymio_update_*`, `tymio_delete_*` | P | P | S |
+| Features | `tymio_list_features`, `tymio_create_feature`, `tymio_update_feature` | S | P | P |
+| Requirements / acceptance | `tymio_list_requirements`, `tymio_create_requirement`, `tymio_update_requirement`, `tymio_upsert_requirement` | S | P | P |
+| Demands / input signals | `tymio_list_demands` | P | S | — |
+| Accounts / partners (B2B context) | `tymio_list_accounts`, `tymio_list_partners` | P | S | — |
+| KPIs / milestones | `tymio_list_kpis`, `tymio_list_milestones` | P | S | — |
+| Revenue streams | `tymio_list_revenue_streams` | P | — | — |
+| Personas | `tymio_list_personas` | P | S | — |
+| Decisions | `tymio_list_decisions` | P | P | S |
+| Risks | `tymio_list_risks` | P | P | S |
+| Dependencies | `tymio_list_dependencies` | S | P | P |
+| Assignments / ownership | `tymio_list_assignments` | S | P | P |
+| Stakeholders | `tymio_list_stakeholders` | P | S | — |
+| Timeline (calendar / Gantt) | `tymio_timeline_calendar`, `tymio_timeline_gantt` | P | P | S |
 | Campaigns / assets | campaign/asset tools when enabled | P | — | — |
-| Product CRUD | `drd_create_product`, `drd_update_product` | S (with care) | S | — |
+| Product CRUD | `tymio_create_product`, `tymio_update_product` | S (with care) | S | — |
 
-Tool names may evolve; always confirm with `tymio_get_agent_brief` or `drd_meta` on the live hub.
+Tool names may evolve; always confirm with `tymio_get_agent_brief` or `tymio_meta` on the live hub.
 
 ---
 

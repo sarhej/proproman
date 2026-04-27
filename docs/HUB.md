@@ -30,7 +30,7 @@ Tymio is a **multi-workspace** app: each **tenant** is a customer organization. 
 | **Users & roles** | **`User.role`** is a **platform** role (`SUPER_ADMIN`, `ADMIN`, …). **`TenantMembership`** gives **per-tenant** roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`). **`user.activeTenantId`** is the default workspace; **`POST /api/me/tenants/switch`** updates DB + session. |
 | **Provisioning** | **`GET/POST /api/tenants`** (and related) are **`SUPER_ADMIN`** only (`server/src/routes/tenants.ts`). **`POST /api/tenant-requests`** is the public/self-serve request flow (`server/src/routes/tenant-requests.ts`). |
 | **Client** | **`TenantSwitcher` / `TenantPicker`** (`client/src/components/tenant/`). Slug login: **`/t/:slug`**, Google OAuth with **`?tenantSlug=`**, public **`GET /api/tenants/by-slug/:slug/public`**. In the hub UI under **`/t/:workspaceSlug/…`**, the SPA typically calls **`/t/:workspaceSlug/api/…`** so the path pins the workspace ( **`X-Tenant-Id`** omitted for those calls). **Legacy** **`/api/…`** remains for the same routers with session / header resolution. |
-| **MCP** | **`POST /mcp`** (Streamable HTTP) is **workspace-agnostic**: OAuth + **discovery tools** only (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`) — **no** `runWithTenant`, **no** backlog rows. **`tymio_mcp_routing_guide`** returns copy-paste **per-repo** MCP JSON (Cursor **`.cursor/mcp.json`**, Claude Code **`.mcp.json`**) pointing at **`/t/<slug>/mcp`**. **`POST /t/:workspaceSlug/mcp`** pins the tenant from the **URL slug** + membership (platform **`SUPER_ADMIN`** may access as **OWNER**); all **`drd_*`** and workspace-scoped **`tymio_*`** tools run there inside **`runWithTenant`** (`server/src/mcp/setup.ts`, `resolveMcpTenantContextFromWorkspaceSlug`). **OAuth:** `GET /.well-known/oauth-protected-resource/t/<slug>/mcp` advertises **`resource`** = that workspace MCP URL so strict clients (e.g. Cursor) match **`…/mcp`** vs **`…/t/<slug>/mcp`** (`mcpProtectedResource.ts`). |
+| **MCP** | **`POST /mcp`** (Streamable HTTP) is **workspace-agnostic**: OAuth + **discovery tools** only (`tymio_list_my_workspaces`, `tymio_mcp_routing_guide`) — **no** `runWithTenant`, **no** backlog rows. **`tymio_mcp_routing_guide`** returns copy-paste **per-repo** MCP JSON (Cursor **`.cursor/mcp.json`**, Claude Code **`.mcp.json`**) pointing at **`/t/<slug>/mcp`**. **`POST /t/:workspaceSlug/mcp`** pins the tenant from the **URL slug** + membership (platform **`SUPER_ADMIN`** may access as **OWNER**); all **`tymio_*`** and workspace-scoped **`tymio_*`** tools run there inside **`runWithTenant`** (`server/src/mcp/setup.ts`, `resolveMcpTenantContextFromWorkspaceSlug`). **OAuth:** `GET /.well-known/oauth-protected-resource/t/<slug>/mcp` advertises **`resource`** = that workspace MCP URL so strict clients (e.g. Cursor) match **`…/mcp`** vs **`…/t/<slug>/mcp`** (`mcpProtectedResource.ts`). |
 | **Optional middleware** | **`requireTenant`** (`server/src/tenant/requireTenant.ts`) returns **400** if `req.tenantContext` is missing; use on routes that must not run without a workspace. Most REST routers rely on the extension + resolver instead of calling **`requireTenant`** globally. |
 
 **Migrating an existing single-tenant database:** idempotent script **`server/scripts/migrate-to-multitenancy.ts`** (run with `npx tsx`, see file header): creates/finds a tenant, memberships, backfills **`tenantId`**, sets **`activeTenantId`**.
@@ -154,7 +154,7 @@ Connection modes:
 }
 ```
 
-Tool names currently use the historical prefix `drd_` (e.g. `drd_list_initiatives`); renaming is a backward-compatibility decision for clients.
+Tool names currently use the historical prefix `tymio_` (e.g. `tymio_list_initiatives`); renaming is a backward-compatibility decision for clients.
 
 **Tenant note:** **`POST /mcp`** never runs **`runWithTenant`**. **`POST /t/<slug>/mcp`** resolves tenant from the path (see **§1.2**).
 
@@ -173,7 +173,7 @@ The hub stores **product capabilities** (user-language semantics) and **bindings
 
 ### 6.2 Workspace atlas (compiled backlog for agents)
 
-The server can **materialize** a per-tenant **workspace atlas**: `workspace-atlas.json` plus **per-object JSON shards** for each domain, product, initiative, feature, and requirement. Compilation is **deterministic** from PostgreSQL (same source as `drd_*`); a **debounced** listener rebuilds after hub change events.
+The server can **materialize** a per-tenant **workspace atlas**: `workspace-atlas.json` plus **per-object JSON shards** for each domain, product, initiative, feature, and requirement. Compilation is **deterministic** from PostgreSQL (same source as `tymio_*`); a **debounced** listener rebuilds after hub change events.
 
 - **MCP (full surface only):** `tymio_get_workspace_atlas`, `tymio_get_workspace_object`, `tymio_search_workspace_objects`, `tymio_explain_workspace_object` (optional OpenAI when enabled), `tymio_rebuild_workspace_atlas` (EDITOR+). All require **`workspaceSlug`** matching the MCP session tenant. **Not** exposed on the `@tymio/mcp-server` API-key REST subset.
 - **Implementation:** `server/src/workspaceAtlas/` (compiler, store, schemas, hub listener), registration in `server/src/mcp/workspaceAtlasTools.ts`.

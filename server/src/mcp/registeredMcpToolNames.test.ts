@@ -16,7 +16,8 @@ describe("REGISTERED_MCP_TOOL_NAMES", () => {
   it("matches every registerTool name in MCP tool modules (no drift)", () => {
     const fromSource = toolNamesFromRegisterToolFiles([
       new URL("./tools.ts", import.meta.url),
-      new URL("./workspaceAtlasTools.ts", import.meta.url)
+      new URL("./workspaceAtlasTools.ts", import.meta.url),
+      new URL("./skillDistributionTools.ts", import.meta.url)
     ]);
     const fromRegistry = [...REGISTERED_MCP_TOOL_NAMES].sort((a, b) => a.localeCompare(b));
     expect(fromRegistry).toEqual(fromSource);
