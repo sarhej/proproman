@@ -22,12 +22,12 @@ export async function warmMissingWorkspaceAtlases(): Promise<void> {
       if (existing) continue;
       await compileWorkspaceAtlasForTenant(id);
       warmed += 1;
-      console.log(`[workspace-atlas] startup warm: compiled atlas for tenant slug=${slug}`);
+      console.log("[workspace-atlas] startup warm: compiled atlas for tenant", { slug });
     } catch (err) {
-      console.error(`[workspace-atlas] startup warm failed tenant=${slug} (${id}):`, err);
+      console.error("[workspace-atlas] startup warm failed", { slug, tenantId: id }, err);
     }
   }
   if (warmed > 0) {
-    console.log(`[workspace-atlas] startup warm: ${warmed} tenant(s) materialized`);
+    console.log("[workspace-atlas] startup warm: materialized tenant count", { warmed });
   }
 }
