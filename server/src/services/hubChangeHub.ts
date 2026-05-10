@@ -5,7 +5,7 @@ import { z } from "zod";
 export const hubChangeEventSchema = z.object({
   eventId: z.string().uuid(),
   tenantId: z.string(),
-  entityType: z.enum(["INITIATIVE", "FEATURE", "REQUIREMENT", "PRODUCT"]),
+  entityType: z.enum(["INITIATIVE", "FEATURE", "REQUIREMENT", "PRODUCT", "DOMAIN"]),
   operation: z.enum(["CREATE", "UPDATE", "DELETE", "REORDER"]),
   changedAt: z.string().datetime(),
   entityId: z.string().nullable().optional(),

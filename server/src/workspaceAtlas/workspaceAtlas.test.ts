@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { objectShardFile } from "./paths.js";
 import { parseWorkspaceAtlas } from "./zodSchemas.js";
 import { searchWorkspaceAtlas } from "./search.js";
 
@@ -53,5 +54,28 @@ describe("searchWorkspaceAtlas", () => {
     const atlas = parseWorkspaceAtlas(minimalAtlas);
     const hits = searchWorkspaceAtlas(atlas, "atlas", 10);
     expect(hits.some((h) => h.objectType === "INITIATIVE" && h.id === "i1")).toBe(true);
+  });
+});
+
+describe("objectShardFile path safety", () => {
+  const tenantId = "cmnq2w46y0000pxu7l5w0rnem";
+
+  it("rejects traversal-like object ids", () => {
+    expect(() =>
+      objectShardFile(tenantId, "INITIATIVE", "../../../cmevil/workspace-atlas")
+    ).toThrow(/invalid id format/);
+  });
+
+  it("accepts Prisma cuid object ids", () => {
+    const initiativeId = "cmnq2wnth0001pxhk5mthpaar";
+    const file = objectShardFile(tenantId, "INITIATIVE", initiativeId);
+    expect(file).toContain(initiativeId);
+    expect(file).not.toContain("..");
+  });
+
+  it("rejects invalid object type directories", () => {
+    expect(() => objectShardFile(tenantId, "INITIATIVE/../../../etc", "cmnq2wnth0001pxhk5mthpaar")).toThrow(
+      /Invalid atlas object type/
+    );
   });
 });

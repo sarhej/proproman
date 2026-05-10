@@ -62,6 +62,7 @@ import { refreshMcpFeedbackNoticeCache } from "./lib/mcpFeedbackNotice.js";
 import { buildMcpAgentContextJson } from "./lib/mcpAgentContextPayload.js";
 import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 import { startWorkspaceAtlasHubListener } from "./workspaceAtlas/hubListener.js";
+import { warmMissingWorkspaceAtlases } from "./workspaceAtlas/startupWarm.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
 import { isTransactionalEmailEnabled, isTransactionalEmailReady } from "./services/transactionalMail.js";
 import { skillsPublicRouter } from "./routes/skills.js";
@@ -317,6 +318,9 @@ async function bootstrap(): Promise<void> {
 void bootstrap().then(() => {
   app.listen(Number(env.PORT), () => {
     startWorkspaceAtlasHubListener();
+    void warmMissingWorkspaceAtlases().catch((err) => {
+      console.error("[workspace-atlas] startup warm crashed:", err);
+    });
     console.log(`Server running on port ${env.PORT}`);
     if (isTransactionalEmailReady() && env.TRANSACTIONAL_EMAIL_ENABLED === false) {
       console.warn(

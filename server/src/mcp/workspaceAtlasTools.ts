@@ -83,7 +83,7 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
             {
               error: "not_built",
               message:
-                "Workspace atlas has not been compiled yet. Ask an editor to run tymio_rebuild_workspace_atlas once, or wait for the next hub change debounced rebuild.",
+                "Workspace atlas has not been compiled yet (no workspace-atlas.json on disk — common after deploy if the data directory is ephemeral). The server warms missing atlases on startup and rebuilds after hub changes; ask an editor to run tymio_rebuild_workspace_atlas once if this persists.",
               metrics: workspaceAtlasMetrics
             },
             null,

@@ -4,6 +4,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { logAudit } from "../services/audit.js";
+import { notifyHubChange } from "../services/hubChangeHub.js";
 
 const domainSchema = z.object({
   name: z.string().min(1),
@@ -27,6 +28,15 @@ domainsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
   }
   const domain = await prisma.domain.create({ data: parsed.data });
   await logAudit(req.user!.id, "CREATED", "DOMAIN", domain.id, { name: domain.name });
+  if (domain.tenantId) {
+    notifyHubChange({
+      tenantId: domain.tenantId,
+      entityType: "DOMAIN",
+      operation: "CREATE",
+      entityId: domain.id,
+      initiativeId: null
+    });
+  }
   res.status(201).json({ domain });
 });
 
@@ -48,6 +58,15 @@ domainsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => 
         ]
       : [];
   await logAudit(req.user!.id, "UPDATED", "DOMAIN", id, changes.length ? { changes } : { name: domain.name });
+  if (domain.tenantId) {
+    notifyHubChange({
+      tenantId: domain.tenantId,
+      entityType: "DOMAIN",
+      operation: "UPDATE",
+      entityId: domain.id,
+      initiativeId: null
+    });
+  }
   res.json({ domain });
 });
 
@@ -56,5 +75,14 @@ domainsRouter.delete("/:id", requireWorkspaceStructureWrite(), async (req, res) 
   const existing = await prisma.domain.findUnique({ where: { id } });
   await prisma.domain.delete({ where: { id } });
   await logAudit(req.user!.id, "DELETED", "DOMAIN", id, { name: existing?.name });
+  if (existing?.tenantId) {
+    notifyHubChange({
+      tenantId: existing.tenantId,
+      entityType: "DOMAIN",
+      operation: "DELETE",
+      entityId: id,
+      initiativeId: null
+    });
+  }
   res.status(204).send();
 });

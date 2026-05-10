@@ -5,6 +5,17 @@ import { env } from "../env.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/** Prisma `@default(cuid())` — one filesystem path segment only (blocks `..` / separators in IDs). */
+const PRISMA_CUID_SEGMENT = /^c[a-z0-9]{24}$/;
+
+const ATLAS_OBJECT_DIR_TYPES = ["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"] as const;
+
+export function assertSafeAtlasPathSegment(segment: string, label: string): void {
+  if (!PRISMA_CUID_SEGMENT.test(segment)) {
+    throw new Error(`${label}: invalid id format`);
+  }
+}
+
 /** Default: `<server package>/data/workspace-atlas` (cwd is usually `server/` when running `npm run dev`). */
 export function defaultWorkspaceAtlasDataDir(): string {
   const serverPackageRoot = path.resolve(__dirname, "../..");
@@ -16,6 +27,7 @@ export function getWorkspaceAtlasRootDir(): string {
 }
 
 export function tenantAtlasDir(tenantId: string): string {
+  assertSafeAtlasPathSegment(tenantId, "tenantId");
   return path.join(getWorkspaceAtlasRootDir(), tenantId);
 }
 
@@ -24,6 +36,10 @@ export function workspaceAtlasFile(tenantId: string): string {
 }
 
 export function objectShardFile(tenantId: string, objectType: string, id: string): string {
+  assertSafeAtlasPathSegment(id, "object id");
+  if (!(ATLAS_OBJECT_DIR_TYPES as readonly string[]).includes(objectType)) {
+    throw new Error("Invalid atlas object type");
+  }
   return path.join(tenantAtlasDir(tenantId), "objects", objectType, `${id}.json`);
 }
 
