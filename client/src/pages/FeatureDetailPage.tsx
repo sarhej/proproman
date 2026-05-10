@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
-import type { Feature, Initiative } from "../types/models";
+import type { DeployedToStage, Feature, Initiative, RepositoryConnection, WorkArtifactLink, WorkArtifactType } from "../types/models";
 import { Button } from "../components/ui/Button";
-import { Input, Label, Textarea } from "../components/ui/Field";
+import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { LabelEditor } from "../components/ui/LabelEditor";
 
 type Props = {
@@ -15,6 +15,23 @@ type Props = {
   onFeatureUpdated?: (feature: Feature) => void;
   readOnly?: boolean;
 };
+
+const DEPLOY_STAGES: DeployedToStage[] = ["NOT_DEPLOYED", "STAGING", "PRODUCTION"];
+const WORK_TYPES: WorkArtifactType[] = ["PR", "BRANCH", "COMMIT", "TAG", "RELEASE", "ISSUE"];
+
+function toDateOnly(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return iso.slice(0, 10);
+  } catch {
+    return "";
+  }
+}
+
+function fromDateOnly(dateStr: string): string | null {
+  if (!dateStr.trim()) return null;
+  return `${dateStr}T12:00:00.000Z`;
+}
 
 function findFeature(initiatives: Initiative[], featureId: string): { feature: Feature; initiative: Initiative } | null {
   for (const init of initiatives) {
@@ -39,12 +56,39 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
   const [savingDetails, setSavingDetails] = useState(false);
   const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
   const [savingLabels, setSavingLabels] = useState(false);
+  const [savingDeploy, setSavingDeploy] = useState(false);
+  const [deployStage, setDeployStage] = useState<DeployedToStage | "">("");
+  const [deployDate, setDeployDate] = useState("");
+  const [workLinks, setWorkLinks] = useState<WorkArtifactLink[]>([]);
+  const [repos, setRepos] = useState<RepositoryConnection[]>([]);
+  const [workUrl, setWorkUrl] = useState("");
+  const [workType, setWorkType] = useState<WorkArtifactType>("PR");
+  const [workRepoId, setWorkRepoId] = useState("");
+  const [loadingArtifacts, setLoadingArtifacts] = useState(false);
   const found = featureId ? findFeature(initiatives, featureId) : null;
   const featureForSync = found?.feature ?? null;
 
   useEffect(() => {
     void api.getMeta().then((meta) => setLabelSuggestions(meta.labelSuggestions ?? [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!featureForSync?.id) return;
+    setDeployStage(featureForSync.deployedToStage ?? "");
+    setDeployDate(toDateOnly(featureForSync.deployedAt));
+  }, [featureForSync?.id, featureForSync?.deployedToStage, featureForSync?.deployedAt]);
+
+  useEffect(() => {
+    if (!featureForSync?.id) return;
+    setLoadingArtifacts(true);
+    Promise.all([api.getWorkArtifactLinks({ featureId: featureForSync.id }), api.getRepositoryConnections()])
+      .then(([wl, rc]) => {
+        setWorkLinks(wl.workArtifactLinks);
+        setRepos(rc.repositoryConnections);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingArtifacts(false));
+  }, [featureForSync?.id]);
 
   useEffect(() => {
     if (!featureForSync || editingDetails) return;
@@ -299,6 +343,147 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
             }
           }}
         />
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-1 text-sm font-semibold text-slate-700">{t("featureDetail.deploymentTitle")}</h2>
+        <div className="grid gap-2 md:grid-cols-3 md:items-end">
+          <div>
+            <Label>{t("featureDetail.deployStage")}</Label>
+            <Select
+              className="mt-1"
+              disabled={readOnly}
+              value={deployStage}
+              onChange={(e) => setDeployStage(e.target.value as DeployedToStage | "")}
+            >
+              <option value="">—</option>
+              {DEPLOY_STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label>{t("featureDetail.deployedAt")}</Label>
+            <Input
+              type="date"
+              className="mt-1"
+              disabled={readOnly}
+              value={deployDate}
+              onChange={(e) => setDeployDate(e.target.value)}
+            />
+          </div>
+          {!readOnly ? (
+            <Button
+              type="button"
+              disabled={savingDeploy}
+              onClick={async () => {
+                setSavingDeploy(true);
+                try {
+                  const res = await api.updateFeature(feature.id, {
+                    deployedToStage: deployStage || null,
+                    deployedAt: fromDateOnly(deployDate)
+                  });
+                  onFeatureUpdated?.({
+                    ...res.feature,
+                    requirements: feature.requirements ?? res.feature.requirements ?? []
+                  });
+                  await onSaved?.();
+                } finally {
+                  setSavingDeploy(false);
+                }
+              }}
+            >
+              {t("featureDetail.saveDeployment")}
+            </Button>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-1 text-sm font-semibold text-slate-700">{t("featureDetail.codeLinksTitle")}</h2>
+        <p className="mb-2 text-xs text-slate-500">{t("featureDetail.codeLinksHint")}</p>
+        {loadingArtifacts ? <p className="text-xs text-slate-500">{t("common.loading")}</p> : null}
+        <ul className="mb-3 space-y-1 text-sm">
+          {workLinks.map((l) => (
+            <li key={l.id} className="flex flex-wrap items-center gap-2">
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{l.artifactType}</span>
+              <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline break-all">
+                {l.url}
+              </a>
+              {!readOnly ? (
+                <Button
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-red-600"
+                  type="button"
+                  onClick={async () => {
+                    await api.deleteWorkArtifactLink(l.id);
+                    const wl = await api.getWorkArtifactLinks({ featureId: feature.id });
+                    setWorkLinks(wl.workArtifactLinks);
+                    await onSaved?.();
+                  }}
+                >
+                  {t("common.delete")}
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {!readOnly ? (
+          <div className="grid gap-2 border-t border-slate-100 pt-3 md:grid-cols-5 md:items-end">
+            <div>
+              <Label>{t("featureDetail.artifactType")}</Label>
+              <Select className="mt-1" value={workType} onChange={(e) => setWorkType(e.target.value as WorkArtifactType)}>
+                {WORK_TYPES.map((wt) => (
+                  <option key={wt} value={wt}>
+                    {wt}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label>{t("featureDetail.artifactUrl")}</Label>
+              <Input className="mt-1 font-mono text-xs" value={workUrl} onChange={(e) => setWorkUrl(e.target.value)} placeholder="https://..." />
+            </div>
+            <div>
+              <Label>{t("featureDetail.repositoryOptional")}</Label>
+              <Select className="mt-1" value={workRepoId} onChange={(e) => setWorkRepoId(e.target.value)}>
+                <option value="">{t("featureDetail.noneRepo")}</option>
+                {repos.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.owner}/{r.repo}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button
+              type="button"
+              disabled={!workUrl.trim()}
+              onClick={async () => {
+                try {
+                   
+                  new URL(workUrl.trim());
+                } catch {
+                  return;
+                }
+                await api.createWorkArtifactLink({
+                  featureId: feature.id,
+                  requirementId: null,
+                  repositoryConnectionId: workRepoId || null,
+                  artifactType: workType,
+                  url: workUrl.trim()
+                });
+                setWorkUrl("");
+                const wl = await api.getWorkArtifactLinks({ featureId: feature.id });
+                setWorkLinks(wl.workArtifactLinks);
+                await onSaved?.();
+              }}
+            >
+              {t("featureDetail.addArtifactLink")}
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       <section>

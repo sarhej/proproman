@@ -39,8 +39,15 @@ flowchart TB
 
 | Entity | Role |
 |--------|------|
-| **Demand** | Incoming idea / request; **DemandLink** attaches to an **Initiative** and/or **Feature** |
-| **Account** / **Partner** | B2B context; **Demand** may reference them |
+| **Demand** | **Stakeholder / integration intake signal** — why work was requested; **DemandLink** attaches to an **Initiative** and/or **Feature**. **Not** the same entity as a backlog **Requirement** (delivery row). Demands are triaged into Features/Requirements. |
+| **Account** | B2B customer context; **Demand** may reference an account |
+| **Partner** | **Integration catalog** (SDLC): external system or party the product depends on (APIs, OAuth providers, email, etc.). The hub UI calls these **Integrations**; the DB model name remains **`Partner`**. **Not** authoritative infra config (zones, Terraform); use engineering sources of truth for that. **Demand** may reference a partner when the ask comes *via* that integration. |
+
+### Integration catalog (`Partner` / “Integrations”)
+
+- **Role:** Track **named external dependencies** and attach **integration-sourced requests** (`Demand` with `sourceType` partner/account/internal/compliance).
+- **API/MCP:** `tymio_list_partners`, partner CRUD via REST under `/api/partners` (workspace-scoped).
+- **Distinction:** **Demand** = upstream request/intake; **Requirement** = fine-grained delivery task under a **Feature**.
 
 **Hung off Initiative (portfolio / PO view):**
 
@@ -82,7 +89,7 @@ Use the **capability ontology** to answer “what screens/APIs exist?” Use the
 2. **Narrow to one Initiative** before creating **Features** (every feature needs `initiativeId`).  
 3. **Narrow to one Feature** before creating **Requirements** (every requirement needs `featureId`).  
 4. **Dependencies between bets** are **Initiative ↔ Initiative**; do not invent cross-feature “dependency” rows if the hub only exposes initiative-level deps.  
-5. **Demands** explain *why* something exists; follow **DemandLink** to the initiative/feature you should update.  
+5. **Demands** explain *why* something exists (intake); follow **DemandLink** to the initiative/feature. Do **not** confuse **Demand** with **Requirement** — requirements are what engineers ship under a feature.  
 6. When the user asks about **“the ontology”** ambiguously, clarify: **work graph** (above) vs **capability brief** (`tymio_*`).
 
 ---

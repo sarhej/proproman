@@ -30,7 +30,7 @@ describe("registerSkillDistributionTools", () => {
     const tools = createRegistry();
     const raw = await tools.get("tymio_list_skills")!({}, authedCtx);
     const text = (raw as { content: { text: string }[] }).content[0].text;
-    const parsed = JSON.parse(text) as { id: string }[];
+    const parsed = JSON.parse(text) as { id: string; body?: unknown }[];
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.some((r) => r.id === "tymio-workspace")).toBe(true);
     expect(parsed[0].body).toBeUndefined();

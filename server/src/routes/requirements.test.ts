@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { Priority, TaskStatus, TaskType } from "@prisma/client";
+import {
+  AffectedEnvironment,
+  DeployedToStage,
+  Priority,
+  TaskStatus,
+  TaskType
+} from "@prisma/client";
 import { executionBoardLayoutSchema } from "./schemas.js";
 import { requirementSchema } from "./requirements.js";
 
@@ -186,6 +192,59 @@ describe("requirements API – validation edge cases", () => {
         sortOrder: 1.5
       });
       expect(result.success).toBe(false);
+    });
+
+    it("accepts affectedEnvironment, deployedToStage, deployedAt", () => {
+      const result = requirementSchema.safeParse({
+        featureId: "feat-1",
+        title: "Prod bug",
+        affectedEnvironment: AffectedEnvironment.PRODUCTION,
+        deployedToStage: DeployedToStage.STAGING,
+        deployedAt: "2026-05-10T08:30:00.000Z"
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts null affectedEnvironment / deploy fields", () => {
+      expect(
+        requirementSchema.safeParse({
+          featureId: "feat-1",
+          title: "X",
+          affectedEnvironment: null,
+          deployedToStage: null,
+          deployedAt: null
+        }).success
+      ).toBe(true);
+    });
+
+    it("rejects invalid affectedEnvironment", () => {
+      expect(
+        requirementSchema.safeParse({
+          featureId: "feat-1",
+          title: "X",
+          affectedEnvironment: "DEV"
+        }).success
+      ).toBe(false);
+    });
+
+    it("rejects invalid deployedToStage", () => {
+      expect(
+        requirementSchema.safeParse({
+          featureId: "feat-1",
+          title: "X",
+          deployedToStage: "BLUE_GREEN"
+        }).success
+      ).toBe(false);
+    });
+
+    it("rejects invalid deployedAt string", () => {
+      expect(
+        requirementSchema.safeParse({
+          featureId: "feat-1",
+          title: "X",
+          deployedAt: "May 10"
+        }).success
+      ).toBe(false);
     });
   });
 

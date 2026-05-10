@@ -6,7 +6,8 @@ describe("registerGlobalMcpTools", () => {
   it("registers only workspace-agnostic discovery tools", () => {
     const names: string[] = [];
     const server = {
-      registerTool(name: string, _meta: unknown, _handler: unknown) {
+      registerTool(name: string, ..._rest: unknown[]) {
+        void _rest;
         names.push(name);
       }
     } as unknown as McpServer;

@@ -5,7 +5,15 @@ import { z } from "zod";
 export const hubChangeEventSchema = z.object({
   eventId: z.string().uuid(),
   tenantId: z.string(),
-  entityType: z.enum(["INITIATIVE", "FEATURE", "REQUIREMENT", "PRODUCT", "DOMAIN"]),
+  entityType: z.enum([
+    "INITIATIVE",
+    "FEATURE",
+    "REQUIREMENT",
+    "PRODUCT",
+    "DOMAIN",
+    /** Sidecar data included in workspace atlas (use cases, security, releases, repo/design links). */
+    "ATLAS_AUXILIARY"
+  ]),
   operation: z.enum(["CREATE", "UPDATE", "DELETE", "REORDER"]),
   changedAt: z.string().datetime(),
   entityId: z.string().nullable().optional(),
@@ -71,4 +79,15 @@ export function notifyHubChange(
     }
   }
   return event;
+}
+
+/** Rebuild workspace atlas after writes to sidecar entities (use cases, releases, repo links, …). */
+export function notifyAtlasAuxiliaryChange(tenantId: string): void {
+  notifyHubChange({
+    tenantId,
+    entityType: "ATLAS_AUXILIARY",
+    operation: "UPDATE",
+    entityId: null,
+    initiativeId: null
+  });
 }

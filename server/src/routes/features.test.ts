@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FeatureStatus, StoryType } from "@prisma/client";
+import { DeployedToStage, FeatureStatus, StoryType } from "@prisma/client";
 import { featureSchema } from "./features.js";
 import { featureReorderSchema } from "./schemas.js";
 
@@ -98,6 +98,43 @@ describe("features API – validation edge cases", () => {
       });
       expect(result.success).toBe(true);
       if (result.success) expect(result.data.sortOrder).toBe(-1);
+    });
+
+    it("accepts deployedToStage and ISO deployedAt", () => {
+      const result = featureSchema.safeParse({
+        title: "Shipped item",
+        deployedToStage: DeployedToStage.PRODUCTION,
+        deployedAt: "2026-05-10T12:00:00.000Z"
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts null deploy fields", () => {
+      expect(
+        featureSchema.safeParse({
+          title: "X",
+          deployedToStage: null,
+          deployedAt: null
+        }).success
+      ).toBe(true);
+    });
+
+    it("rejects invalid deployedToStage", () => {
+      expect(
+        featureSchema.safeParse({
+          title: "X",
+          deployedToStage: "CANARY"
+        }).success
+      ).toBe(false);
+    });
+
+    it("rejects non-ISO deployedAt", () => {
+      expect(
+        featureSchema.safeParse({
+          title: "X",
+          deployedAt: "not-a-date"
+        }).success
+      ).toBe(false);
     });
   });
 

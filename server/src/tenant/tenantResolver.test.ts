@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { tenantResolver } from "./tenantResolver.js";
-import { getTenantContext } from "./tenantContext.js";
 import { prisma } from "../db.js";
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 
 vi.mock("../db.js", () => ({
   prisma: {

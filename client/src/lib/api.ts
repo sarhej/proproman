@@ -38,7 +38,13 @@ import type {
   CapabilityBinding,
   CapabilityStatus,
   ExecutionBoard,
-  ExecutionColumn
+  ExecutionColumn,
+  RepositoryConnection,
+  WorkArtifactLink,
+  DesignArtifactLink,
+  UseCase,
+  SecurityTopic,
+  Release
 } from "../types/models";
 
 import { applyWorkspacePrefixToApiPath } from "./workspaceApiRouting";
@@ -194,6 +200,11 @@ export const api = {
     request<void>(`/api/risks/${id}`, {
       method: "DELETE"
     }),
+  patchRisk: async (id: string, body: unknown) =>
+    request<{ risk: Risk }>(`/api/risks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    }),
   createDependency: async (body: unknown) =>
     request<{ dependency: { fromInitiativeId: string; toInitiativeId: string } }>("/api/dependencies", {
       method: "POST",
@@ -259,6 +270,56 @@ export const api = {
   updateDemand: async (id: string, body: unknown) =>
     request<{ demand: Demand }>(`/api/demands/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteDemand: async (id: string) => request<void>(`/api/demands/${id}`, { method: "DELETE" }),
+  getRepositoryConnections: async () =>
+    request<{ repositoryConnections: RepositoryConnection[] }>("/api/repository-connections"),
+  upsertRepositoryConnection: async (body: unknown) =>
+    request<{ repositoryConnection: RepositoryConnection }>("/api/repository-connections", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  deleteRepositoryConnection: async (id: string) =>
+    request<void>(`/api/repository-connections/${id}`, { method: "DELETE" }),
+  getWorkArtifactLinks: async (params?: { featureId?: string; requirementId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.featureId) q.set("featureId", params.featureId);
+    if (params?.requirementId) q.set("requirementId", params.requirementId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return request<{ workArtifactLinks: WorkArtifactLink[] }>(`/api/work-artifact-links${suffix}`);
+  },
+  createWorkArtifactLink: async (body: unknown) =>
+    request<{ workArtifactLink: WorkArtifactLink }>("/api/work-artifact-links", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  deleteWorkArtifactLink: async (id: string) =>
+    request<void>(`/api/work-artifact-links/${id}`, { method: "DELETE" }),
+  getDesignArtifactLinks: async (params?: { featureId?: string; requirementId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.featureId) q.set("featureId", params.featureId);
+    if (params?.requirementId) q.set("requirementId", params.requirementId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return request<{ designArtifactLinks: DesignArtifactLink[] }>(`/api/design-artifact-links${suffix}`);
+  },
+  createDesignArtifactLink: async (body: unknown) =>
+    request<{ designArtifactLink: DesignArtifactLink }>("/api/design-artifact-links", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  deleteDesignArtifactLink: async (id: string) =>
+    request<void>(`/api/design-artifact-links/${id}`, { method: "DELETE" }),
+  getUseCases: async () => request<{ useCases: UseCase[] }>("/api/use-cases"),
+  createUseCase: async (body: unknown) =>
+    request<{ useCase: UseCase }>("/api/use-cases", { method: "POST", body: JSON.stringify(body) }),
+  getSecurityTopics: async () =>
+    request<{ securityTopics: SecurityTopic[] }>("/api/security-topics"),
+  createSecurityTopic: async (body: unknown) =>
+    request<{ securityTopic: SecurityTopic }>("/api/security-topics", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  getReleases: async () => request<{ releases: Release[] }>("/api/releases"),
+  createRelease: async (body: unknown) =>
+    request<{ release: Release }>("/api/releases", { method: "POST", body: JSON.stringify(body) }),
   getRequirements: async (featureId?: string) =>
     request<{ requirements: Requirement[] }>(`/api/requirements${featureId ? `?featureId=${featureId}` : ""}`),
   createRequirement: async (body: unknown) =>

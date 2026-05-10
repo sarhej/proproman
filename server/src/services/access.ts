@@ -7,9 +7,11 @@ import { prisma } from "../db.js";
  */
 export async function canRead(
   userId: string,
-  _entityType: string,
-  _entityId: string | null | undefined
+  entityType: string,
+  entityId: string | null | undefined
 ): Promise<boolean> {
+  void entityType;
+  void entityId;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { isActive: true, role: true }

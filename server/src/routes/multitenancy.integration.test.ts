@@ -1,13 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import express, { type NextFunction, type Request, type Response } from "express";
 import request from "supertest";
-import {
-  CommercialType,
-  Horizon,
-  InitiativeStatus,
-  Priority,
-  UserRole,
-} from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { prisma } from "../db.js";
 import { tenantResolver } from "../tenant/tenantResolver.js";
 import { requireTenant } from "../tenant/requireTenant.js";

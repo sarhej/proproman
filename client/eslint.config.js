@@ -19,5 +19,10 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Recommended preset flags many valid patterns (fetch-on-mount, resetting local form state).
+      // Prefer review in PR over blanket errors across the app.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

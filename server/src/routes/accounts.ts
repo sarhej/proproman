@@ -79,7 +79,6 @@ accountsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) =>
       return;
     }
   }
-  const existing = await prisma.account.findUnique({ where: { id } });
   const account = await prisma.account.update({
     where: { id },
     data: {

@@ -78,7 +78,19 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
       throw new Error(`Tenant not found: ${tenantId}`);
     }
 
-    const [domains, products, initiatives, features, requirements] = await Promise.all([
+    const [
+      domains,
+      products,
+      initiatives,
+      features,
+      requirements,
+      useCases,
+      securityTopics,
+      releases,
+      repositoryConnections,
+      workArtifactLinks,
+      designArtifactLinks
+    ] = await Promise.all([
       prisma.domain.findMany({
         where: { tenantId },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
@@ -126,6 +138,38 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
           }
         },
         orderBy: [{ featureId: "asc" }, { sortOrder: "asc" }, { title: "asc" }]
+      }),
+      prisma.useCase.findMany({
+        where: { tenantId },
+        select: { id: true, title: true, primaryActor: true, updatedAt: true },
+        orderBy: [{ sortOrder: "asc" }, { title: "asc" }]
+      }),
+      prisma.securityTopic.findMany({
+        where: { tenantId },
+        select: { id: true, title: true, category: true, status: true, updatedAt: true },
+        orderBy: [{ sortOrder: "asc" }, { title: "asc" }]
+      }),
+      prisma.release.findMany({
+        where: { tenantId },
+        select: { id: true, tag: true, name: true, releasedAt: true, updatedAt: true },
+        orderBy: [{ releasedAt: "desc" }, { createdAt: "desc" }]
+      }),
+      prisma.repositoryConnection.findMany({
+        where: { tenantId },
+        select: { id: true, provider: true, owner: true, repo: true, displayName: true, updatedAt: true },
+        orderBy: [{ owner: "asc" }, { repo: "asc" }]
+      }),
+      prisma.workArtifactLink.findMany({
+        where: { tenantId },
+        select: { id: true, artifactType: true, url: true, featureId: true, requirementId: true, updatedAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 400
+      }),
+      prisma.designArtifactLink.findMany({
+        where: { tenantId },
+        select: { id: true, provider: true, url: true, featureId: true, requirementId: true, updatedAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 400
       })
     ]);
 
@@ -135,7 +179,13 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
       ...products.map((p) => p.updatedAt),
       ...initiatives.map((i) => i.updatedAt),
       ...features.map((f) => f.updatedAt),
-      ...requirements.map((r) => r.updatedAt)
+      ...requirements.map((r) => r.updatedAt),
+      ...useCases.map((u) => u.updatedAt),
+      ...securityTopics.map((s) => s.updatedAt),
+      ...releases.map((r) => r.updatedAt),
+      ...repositoryConnections.map((c) => c.updatedAt),
+      ...workArtifactLinks.map((l) => l.updatedAt),
+      ...designArtifactLinks.map((l) => l.updatedAt)
     ]);
 
     await ensureTenantAtlasDirs(tenantId);
@@ -316,6 +366,44 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
         kind: "reference",
         spine: "Domain -> Initiative <- Product; Initiative -> Feature -> Requirement",
         doc: ".cursor/skills/tymio-workspace/references/tymio-hub-ontology.md"
+      },
+      auxiliaryIndex: {
+        useCases: useCases.map((u) => ({
+          id: u.id,
+          title: u.title,
+          primaryActor: u.primaryActor ?? null
+        })),
+        securityTopics: securityTopics.map((s) => ({
+          id: s.id,
+          title: s.title,
+          category: s.category,
+          status: s.status
+        })),
+        releases: releases.map((r) => ({
+          id: r.id,
+          tag: r.tag,
+          name: r.name,
+          releasedAt: r.releasedAt ? r.releasedAt.toISOString() : null
+        })),
+        repositoryConnections: repositoryConnections.map((c) => ({
+          id: c.id,
+          provider: c.provider,
+          label: c.displayName?.trim() ? c.displayName.trim() : `${c.owner}/${c.repo}`
+        })),
+        workArtifactLinks: workArtifactLinks.map((l) => ({
+          id: l.id,
+          artifactType: l.artifactType,
+          url: l.url,
+          featureId: l.featureId,
+          requirementId: l.requirementId
+        })),
+        designArtifactLinks: designArtifactLinks.map((l) => ({
+          id: l.id,
+          provider: l.provider,
+          url: l.url,
+          featureId: l.featureId,
+          requirementId: l.requirementId
+        }))
       }
     };
 

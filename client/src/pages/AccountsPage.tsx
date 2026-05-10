@@ -42,7 +42,7 @@ export function AccountsPage({ isAdmin, onOpenInitiative, initiatives }: Props) 
     setCampaigns(campResult.campaigns);
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => { void load(); }, []);
 
   const detail = selected ? accounts.find((a) => a.id === selected) : undefined;

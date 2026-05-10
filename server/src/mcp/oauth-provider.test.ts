@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TymioOAuthProvider } from "./oauth-provider.js";
 import { prisma } from "../db.js";
-import crypto from "node:crypto";
 
 vi.mock("../db.js", () => ({
   prisma: {

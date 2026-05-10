@@ -1,4 +1,4 @@
-import { FeatureStatus, Prisma, StoryType } from "@prisma/client";
+import { DeployedToStage, FeatureStatus, Prisma, StoryType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -22,7 +22,9 @@ export const featureSchema = z.object({
   storyType: z.nativeEnum(StoryType).nullable().optional(),
   ownerId: z.string().nullable().optional(),
   status: featureStatusSchema.default("IDEA"),
-  sortOrder: z.number().int().default(0)
+  sortOrder: z.number().int().default(0),
+  deployedToStage: z.nativeEnum(DeployedToStage).nullable().optional(),
+  deployedAt: z.string().datetime().nullable().optional()
 });
 
 export const featuresRouter = Router();
@@ -100,7 +102,9 @@ featuresRouter.post("/:initiativeId", requireWorkspaceContentWrite(), async (req
       labels: parsed.data.labels === null ? Prisma.JsonNull : ((parsed.data.labels ?? undefined) as Prisma.InputJsonValue),
       storyPoints: parsed.data.storyPoints ?? null,
       storyType: parsed.data.storyType ?? null,
-      ownerId: parsed.data.ownerId ?? null
+      ownerId: parsed.data.ownerId ?? null,
+      deployedToStage: parsed.data.deployedToStage ?? null,
+      deployedAt: parsed.data.deployedAt ? new Date(parsed.data.deployedAt) : null
     },
     include: { owner: true }
   });
@@ -140,6 +144,8 @@ featuresRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) => {
   if (parsed.data.ownerId !== undefined) data.ownerId = parsed.data.ownerId ?? null;
   if (parsed.data.status !== undefined) data.status = parsed.data.status as FeatureStatus;
   if (parsed.data.sortOrder !== undefined) data.sortOrder = parsed.data.sortOrder;
+  if (parsed.data.deployedToStage !== undefined) data.deployedToStage = parsed.data.deployedToStage ?? null;
+  if (parsed.data.deployedAt !== undefined) data.deployedAt = parsed.data.deployedAt ? new Date(parsed.data.deployedAt) : null;
   const feature = await prisma.feature.update({
     where: { id },
     data,

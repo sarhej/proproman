@@ -244,6 +244,68 @@ enum StakeholderType {
   EXTERNAL
 }
 
+enum AffectedEnvironment {
+  PRODUCTION
+  STAGING
+  LOCAL
+  UNKNOWN
+}
+
+enum DeployedToStage {
+  NOT_DEPLOYED
+  STAGING
+  PRODUCTION
+}
+
+enum WorkArtifactType {
+  COMMIT
+  BRANCH
+  PR
+  TAG
+  RELEASE
+  ISSUE
+}
+
+enum DesignArtifactProvider {
+  FIGMA
+  GENERIC_URL
+  CLAUDE_DESIGN
+}
+
+enum VcsProvider {
+  GITHUB
+  GITLAB
+}
+
+enum ReleaseSource {
+  MANUAL
+  GITHUB
+  GITLAB
+}
+
+enum SecurityTopicCategory {
+  AUTHN
+  AUTHZ
+  DATA
+  SUPPLY_CHAIN
+  OPS
+}
+
+enum SecurityTopicStatus {
+  PLANNED
+  IN_PROGRESS
+  MITIGATED
+  ACCEPTED_RISK
+}
+
+enum DemandSignalHint {
+  NONE
+  CUSTOMER_REPORT
+  MONITORING
+  PARTNER_SIGNAL
+  INTERNAL
+}
+
 // ---------------------------------------------------------------------------
 // Multitenancy – control-plane models
 // ---------------------------------------------------------------------------
@@ -489,6 +551,7 @@ model Product {
   itemType        TopLevelItemType @default(PRODUCT)
   initiatives     Initiative[]
   executionBoards ExecutionBoard[]
+  useCases          UseCase[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -624,6 +687,8 @@ model Initiative {
   incomingDeps         Dependency[]              @relation("ToInitiative")
   comments             InitiativeComment[]
   successCriteriaItems SuccessCriterion[]
+  useCaseLinks         UseCaseInitiative[]
+  securityTopicLinks   SecurityTopicInitiative[]
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
 
@@ -681,7 +746,7 @@ model InitiativeRevenueStream {
 }
 
 model Feature {
-  id                 String          @id @default(cuid())
+  id                 String             @id @default(cuid())
   tenantId           String?
   title              String
   description        String?
@@ -691,48 +756,59 @@ model Feature {
   storyType          StoryType?
   initiativeId       String
   ownerId            String?
-  status             FeatureStatus   @default(IDEA)
+  status             FeatureStatus      @default(IDEA)
   startDate          DateTime?
   targetDate         DateTime?
   milestoneDate      DateTime?
   dateConfidence     DateConfidence?
-  sortOrder          Int             @default(0)
-  initiative         Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  owner              User?           @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  sortOrder          Int                @default(0)
+  deployedToStage    DeployedToStage?
+  deployedAt         DateTime?
+  initiative         Initiative         @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  owner              User?              @relation("FeatureOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   requirements       Requirement[]
   demandLinks        DemandLink[]
   campaignLinks      CampaignLink[]
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  useCaseLinks       UseCaseFeature[]
+  workArtifactLinks  WorkArtifactLink[]
+  designArtifactLinks DesignArtifactLink[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@index([tenantId])
 }
 
 model Requirement {
-  id                 String           @id @default(cuid())
-  tenantId           String?
-  featureId          String
-  title              String
-  description        String?
-  status             TaskStatus       @default(NOT_STARTED)
-  isDone             Boolean          @default(false)
-  priority           Priority         @default(P2)
-  assigneeId         String?
-  dueDate            DateTime?
-  estimate           String?
-  labels             Json?
-  taskType           TaskType?
-  blockedReason      String?
-  externalRef        String?
-  metadata           Json?
-  sortOrder          Int              @default(0)
-  executionSortOrder Int              @default(0)
-  executionColumnId  String?
-  feature            Feature          @relation(fields: [featureId], references: [id], onDelete: Cascade)
-  assignee           User?            @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  executionColumn    ExecutionColumn? @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                   String             @id @default(cuid())
+  tenantId             String?
+  featureId            String
+  title                String
+  description          String?
+  status               TaskStatus         @default(NOT_STARTED)
+  isDone               Boolean            @default(false)
+  priority             Priority           @default(P2)
+  assigneeId           String?
+  dueDate              DateTime?
+  estimate             String?
+  labels               Json?
+  taskType             TaskType?
+  blockedReason        String?
+  externalRef          String?
+  metadata             Json?
+  sortOrder            Int                @default(0)
+  executionSortOrder   Int                @default(0)
+  executionColumnId    String?
+  affectedEnvironment  AffectedEnvironment?
+  deployedToStage      DeployedToStage?
+  deployedAt           DateTime?
+  feature              Feature            @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  assignee             User?              @relation("RequirementAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  executionColumn      ExecutionColumn?   @relation(fields: [executionColumnId], references: [id], onDelete: SetNull)
+  releaseLinks         ReleaseRequirement[]
+  workArtifactLinks    WorkArtifactLink[]
+  designArtifactLinks  DesignArtifactLink[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   @@index([tenantId])
   @@index([assigneeId])
@@ -755,7 +831,7 @@ model Decision {
 }
 
 model Risk {
-  id           String     @id @default(cuid())
+  id           String            @id @default(cuid())
   tenantId     String?
   title        String
   probability  RiskLevel
@@ -763,9 +839,11 @@ model Risk {
   mitigation   String?
   ownerId      String?
   initiativeId String
-  owner        User?      @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
+  signalHint   DemandSignalHint  @default(NONE)
+  owner        User?             @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  initiative   Initiative        @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  securityTopicLinks SecurityTopicRisk[]
+  createdAt    DateTime          @default(now())
 
   @@index([tenantId])
 }
@@ -809,6 +887,7 @@ model Partner {
   owner         User?          @relation("PartnerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   demands       Demand[]
   campaignLinks CampaignLink[]
+  securityTopicLinks SecurityTopicPartner[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -823,6 +902,7 @@ model Demand {
   sourceType  DemandSourceType
   status      DemandStatus     @default(NEW)
   urgency     Int              @default(3)
+  signalHint  DemandSignalHint @default(NONE)
   accountId   String?
   partnerId   String?
   ownerId     String?
@@ -976,6 +1056,190 @@ model Stakeholder {
 
   @@index([tenantId])
   @@index([initiativeId])
+}
+
+/// Business-analysis use case (SDLC); links to Product and optionally Initiatives/Features.
+model UseCase {
+  id              String               @id @default(cuid())
+  tenantId        String?
+  productId       String?
+  title           String
+  primaryActor    String?
+  goal            String?
+  preconditions   String?              @db.Text
+  mainFlow        String?              @db.Text
+  priority        Priority             @default(P2)
+  sortOrder       Int                  @default(0)
+  product         Product?             @relation(fields: [productId], references: [id], onDelete: SetNull)
+  initiativeLinks UseCaseInitiative[]
+  featureLinks    UseCaseFeature[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([tenantId])
+  @@index([productId])
+}
+
+model UseCaseInitiative {
+  useCaseId    String
+  initiativeId String
+  useCase      UseCase    @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@id([useCaseId, initiativeId])
+  @@index([initiativeId])
+}
+
+model UseCaseFeature {
+  useCaseId String
+  featureId String
+  useCase   UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([useCaseId, featureId])
+  @@index([featureId])
+}
+
+model SecurityTopic {
+  id              String                   @id @default(cuid())
+  tenantId        String?
+  title           String
+  category        SecurityTopicCategory
+  status          SecurityTopicStatus      @default(PLANNED)
+  description     String?                  @db.Text
+  frameworkRef    String?
+  sortOrder       Int                      @default(0)
+  initiativeLinks SecurityTopicInitiative[]
+  riskLinks       SecurityTopicRisk[]
+  partnerLinks    SecurityTopicPartner[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([tenantId])
+}
+
+model SecurityTopicInitiative {
+  securityTopicId String
+  initiativeId    String
+  securityTopic   SecurityTopic @relation(fields: [securityTopicId], references: [id], onDelete: Cascade)
+  initiative      Initiative    @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@id([securityTopicId, initiativeId])
+  @@index([initiativeId])
+}
+
+model SecurityTopicRisk {
+  securityTopicId String
+  riskId          String
+  securityTopic   SecurityTopic @relation(fields: [securityTopicId], references: [id], onDelete: Cascade)
+  risk            Risk          @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  @@id([securityTopicId, riskId])
+  @@index([riskId])
+}
+
+model SecurityTopicPartner {
+  securityTopicId String
+  partnerId       String
+  securityTopic   SecurityTopic @relation(fields: [securityTopicId], references: [id], onDelete: Cascade)
+  partner         Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@id([securityTopicId, partnerId])
+  @@index([partnerId])
+}
+
+/// Registered GitHub/GitLab repo for artifact links and optional OAuth (see env-driven callbacks).
+model RepositoryConnection {
+  id                     String             @id @default(cuid())
+  tenantId               String?
+  provider               VcsProvider
+  baseUrl                String             @default("")
+  owner                  String
+  repo                   String
+  displayName            String?
+  oauthAccessToken       String?            @db.Text
+  oauthRefreshToken      String?            @db.Text
+  oauthExpiresAt         DateTime?
+  webhookSecret          String?
+  externalInstallationId String?
+  workArtifactLinks      WorkArtifactLink[]
+  releases               Release[]
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@unique([tenantId, provider, owner, repo])
+  @@index([tenantId])
+}
+
+model WorkArtifactLink {
+  id                     String                @id @default(cuid())
+  tenantId               String?
+  repositoryConnectionId String?
+  featureId              String?
+  requirementId          String?
+  artifactType           WorkArtifactType
+  url                    String
+  externalId             String?
+  pinnedRevision         String?
+  title                  String?
+  repositoryConnection   RepositoryConnection? @relation(fields: [repositoryConnectionId], references: [id], onDelete: SetNull)
+  feature                Feature?              @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  requirement            Requirement?          @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@index([tenantId])
+  @@index([repositoryConnectionId])
+  @@index([featureId])
+  @@index([requirementId])
+}
+
+model DesignArtifactLink {
+  id            String                 @id @default(cuid())
+  tenantId      String?
+  featureId     String?
+  requirementId String?
+  provider      DesignArtifactProvider
+  url           String
+  nodeRef       String?
+  title         String?
+  feature       Feature?               @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  requirement   Requirement?           @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([tenantId])
+  @@index([featureId])
+  @@index([requirementId])
+}
+
+model Release {
+  id                     String                 @id @default(cuid())
+  tenantId               String?
+  repositoryConnectionId String?
+  tag                    String
+  name                   String
+  releasedAt             DateTime?
+  notes                  String?                @db.Text
+  source                 ReleaseSource          @default(MANUAL)
+  externalUrl            String?
+  repositoryConnection   RepositoryConnection?  @relation(fields: [repositoryConnectionId], references: [id], onDelete: SetNull)
+  requirementLinks       ReleaseRequirement[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@index([tenantId])
+  @@index([repositoryConnectionId])
+}
+
+model ReleaseRequirement {
+  releaseId      String
+  requirementId  String
+  release        Release      @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  requirement    Requirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@id([releaseId, requirementId])
+  @@index([requirementId])
 }
 
 model AuditEntry {

@@ -1,7 +1,7 @@
 // Tymio API server (Express)
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import express, { type Request, type Response } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -64,9 +64,18 @@ import { ensureSystemTenant } from "./tenant/ensureSystemTenant.js";
 import { startWorkspaceAtlasHubListener } from "./workspaceAtlas/hubListener.js";
 import { warmMissingWorkspaceAtlases } from "./workspaceAtlas/startupWarm.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
-import { isTransactionalEmailEnabled, isTransactionalEmailReady } from "./services/transactionalMail.js";
+import { isTransactionalEmailReady } from "./services/transactionalMail.js";
 import { skillsPublicRouter } from "./routes/skills.js";
 import { opencodeWellKnownHandler } from "./routes/opencodeWellKnown.js";
+import { githubVcsWebhookHandler, gitlabVcsWebhookHandler } from "./routes/vcs-webhooks.js";
+import { vcsOauthGithubRouter } from "./routes/vcs-oauth-github.js";
+import { vcsOauthGitlabRouter } from "./routes/vcs-oauth-gitlab.js";
+import { useCasesRouter } from "./routes/use-cases.js";
+import { securityTopicsRouter } from "./routes/security-topics.js";
+import { releasesRouter } from "./routes/releases.js";
+import { repositoryConnectionsRouter } from "./routes/repository-connections.js";
+import { workArtifactLinksRouter } from "./routes/work-artifact-links.js";
+import { designArtifactLinksRouter } from "./routes/design-artifact-links.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -106,6 +115,20 @@ app.use(
     allowedHeaders: ["Content-Type", "X-Tenant-Id"]
   })
 );
+app.post(
+  "/api/vcs/webhooks/github/:connectionId",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void githubVcsWebhookHandler(req, res).catch(next);
+  }
+);
+app.post(
+  "/api/vcs/webhooks/gitlab/:connectionId",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void gitlabVcsWebhookHandler(req, res).catch(next);
+  }
+);
 app.use(express.json({ limit: "10mb" }));
 
 app.set("trust proxy", 1);
@@ -133,6 +156,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(apiKeyAuth);
 app.use(tenantResolver);
+
+app.use("/api/vcs/oauth/github", vcsOauthGithubRouter);
+app.use("/api/vcs/oauth/gitlab", vcsOauthGitlabRouter);
 
 // Public routes (no auth required) — mounted before MCP OAuth middleware
 app.get("/api/health", (_req, res) => {
@@ -242,6 +268,12 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api", executionBoa
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/accounts", accountsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/partners", partnersRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/demands", demandsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/use-cases", useCasesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/security-topics", securityTopicsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/releases", releasesRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/repository-connections", repositoryConnectionsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/work-artifact-links", workArtifactLinksRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/design-artifact-links", designArtifactLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/requirements", requirementsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/assignments", assignmentsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/timeline", timelineRouter);

@@ -168,10 +168,13 @@ export class TymioOAuthProvider implements OAuthServerProvider {
   async exchangeAuthorizationCode(
     client: OAuthClientInformationFull,
     authorizationCode: string,
-    _codeVerifier?: string,
-    _redirectUri?: string,
-    _resource?: URL
+    codeVerifier?: string,
+    redirectUri?: string,
+    resource?: URL
   ): Promise<OAuthTokens> {
+    void codeVerifier;
+    void redirectUri;
+    void resource;
     const entry = authCodes.get(authorizationCode);
     if (!entry) throw new Error("Invalid authorization code");
     if (Date.now() - entry.createdAt > 5 * 60 * 1000) {
@@ -200,8 +203,9 @@ export class TymioOAuthProvider implements OAuthServerProvider {
     client: OAuthClientInformationFull,
     refreshToken: string,
     scopes?: string[],
-    _resource?: URL
+    resource?: URL
   ): Promise<OAuthTokens> {
+    void resource;
     const entry = await prisma.mcpRefreshToken.findUnique({ where: { token: refreshToken } });
     
     if (!entry) {

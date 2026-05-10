@@ -212,7 +212,7 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives = [] }: Pr
     setCampaigns(campResult.campaigns);
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => {
     void load();
   }, [load]);
@@ -264,7 +264,8 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives = [] }: Pr
     <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
       <Card className="p-4">
         <h2 className="mb-1 text-lg font-semibold">{t("partners.title")}</h2>
-        <p className="mb-3 text-xs text-gray-500">{t("partners.description")}</p>
+        <p className="mb-2 text-xs text-gray-500">{t("partners.description")}</p>
+        <p className="mb-3 rounded border border-slate-200 bg-slate-50 p-2 text-[11px] leading-snug text-slate-600">{t("partners.demandGlossary")}</p>
         {isAdmin ? (
           <div className="mb-3 grid grid-cols-1 gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("partners.namePlaceholder")} />
@@ -294,7 +295,8 @@ export function PartnersPage({ isAdmin, onOpenInitiative, initiatives = [] }: Pr
             >
               <div className="font-medium">{p.name}</div>
               <div className="text-xs text-slate-500">
-                {p.kind} {p.demands.length > 0 ? `- ${p.demands.length} demand${p.demands.length > 1 ? "s" : ""}` : ""}
+                {p.kind}{" "}
+                {p.demands.length > 0 ? `- ${t("partners.demands", { count: p.demands.length })}` : ""}
               </div>
             </button>
           ))}

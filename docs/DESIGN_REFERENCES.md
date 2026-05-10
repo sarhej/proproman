@@ -35,6 +35,10 @@ How tenants store **design links and context** so they stay **durable, searchabl
 
 If more links are needed: keep the **main** one in the primary field; add **Related:** lines in `notes` (initiative), body of `description` (feature), or `description` (requirement).
 
+### Structured design links on backlog rows (`DesignArtifactLink`)
+
+In addition to text fields above, the hub supports **`DesignArtifactLink`** rows on **Feature** and **Requirement** with `provider` (`FIGMA`, `GENERIC_URL`, `CLAUDE_DESIGN`), `url`, and optional `nodeRef` (e.g. Figma `fileKey:nodeId`). Use these when you want **multiple** durable anchors or clearer separation from narrative text; capability-level **`FIGMA_NODE` / `DESIGN_REF`** ontology bindings remain the right place for **named hub capabilities** and compiled briefs. **Tier 2 (Figma OAuth)** can validate nodes and optionally sync status later; until then, pasted URLs behave like generic links with a typed provider.
+
 ---
 
 ## 2. Optional ontology bindings: `FIGMA_NODE` and `DESIGN_REF`

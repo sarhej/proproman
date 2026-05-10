@@ -14,8 +14,11 @@ type Options = {
  */
 export function useWorkspaceHubEvents({ enabled, workspaceApiSlug, onEvent }: Options): void {
   const onEventRef = useRef(onEvent);
-  onEventRef.current = onEvent;
   const seenRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -1,4 +1,10 @@
-export type HubChangeEntityType = "INITIATIVE" | "FEATURE" | "REQUIREMENT" | "PRODUCT" | "DOMAIN";
+export type HubChangeEntityType =
+  | "INITIATIVE"
+  | "FEATURE"
+  | "REQUIREMENT"
+  | "PRODUCT"
+  | "DOMAIN"
+  | "ATLAS_AUXILIARY";
 export type HubChangeOperation = "CREATE" | "UPDATE" | "DELETE" | "REORDER";
 
 export type HubChangeEventPayload = {

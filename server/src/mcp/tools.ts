@@ -1,21 +1,29 @@
 import { z } from "zod";
 import {
+  AffectedEnvironment,
   AssignmentRole,
   CampaignStatus,
   CampaignType,
+  DeployedToStage,
+  DesignArtifactProvider,
   FeatureStatus,
   Horizon,
   MilestoneStatus,
   Prisma,
   Priority,
+  ReleaseSource,
   RiskLevel,
+  SecurityTopicCategory,
+  SecurityTopicStatus,
   StoryType,
   StakeholderRole,
   StakeholderType,
   TaskStatus,
   TaskType,
   TopLevelItemType,
-  UserRole
+  UserRole,
+  VcsProvider,
+  WorkArtifactType
 } from "@prisma/client";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { prisma } from "../db.js";
@@ -38,7 +46,7 @@ import {
 import { getTenantContext } from "../tenant/tenantContext.js";
 import { registerSkillDistributionTools } from "./skillDistributionTools.js";
 import { registerWorkspaceAtlasTools } from "./workspaceAtlasTools.js";
-import { notifyHubChange, type HubChangeEventPayload } from "../services/hubChangeHub.js";
+import { notifyAtlasAuxiliaryChange, notifyHubChange, type HubChangeEventPayload } from "../services/hubChangeHub.js";
 import { allocateUniqueProductSlug } from "../lib/productSlug.js";
 import { canUserEditInitiativeForMcp } from "../lib/initiativeMcpPermission.js";
 import {
@@ -888,6 +896,411 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     }
   );
 
+
+  server.registerTool(
+    "tymio_list_use_cases",
+    {
+      title: "List use cases",
+      description: "List tenant use cases (BA layer) with initiative/feature links.",
+      inputSchema: mcpWithWorkspace({})
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const rows = await prisma.useCase.findMany({
+        include: {
+          product: true,
+          initiativeLinks: { include: { initiative: true } },
+          featureLinks: { include: { feature: true } }
+        },
+        orderBy: [{ sortOrder: "asc" }, { title: "asc" }]
+      });
+      return textContent(JSON.stringify(rows, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_create_use_case",
+    {
+      title: "Create use case",
+      description: "Create a use case and optional initiative/feature links. Requires workspace OWNER/ADMIN.",
+      inputSchema: mcpWithWorkspace({
+        title: z.string().min(1),
+        productId: z.string().nullable().optional(),
+        primaryActor: z.string().nullable().optional(),
+        goal: z.string().nullable().optional(),
+        preconditions: z.string().nullable().optional(),
+        mainFlow: z.string().nullable().optional(),
+        priority: z.enum(["P0", "P1", "P2", "P3"]).optional(),
+        initiativeIds: z.array(z.string()).optional(),
+        featureIds: z.array(z.string()).optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const { initiativeIds, featureIds, ...rest } = body;
+      const uc = await prisma.useCase.create({
+        data: {
+          title: rest.title,
+          productId: rest.productId ?? null,
+          primaryActor: rest.primaryActor ?? null,
+          goal: rest.goal ?? null,
+          preconditions: rest.preconditions ?? null,
+          mainFlow: rest.mainFlow ?? null,
+          priority: (rest.priority as Priority) ?? Priority.P2,
+          initiativeLinks:
+            initiativeIds && initiativeIds.length
+              ? { createMany: { data: initiativeIds.map((initiativeId) => ({ initiativeId })) } }
+              : undefined,
+          featureLinks:
+            featureIds && featureIds.length
+              ? { createMany: { data: featureIds.map((featureId) => ({ featureId })) } }
+              : undefined
+        },
+        include: { product: true, initiativeLinks: true, featureLinks: true }
+      });
+      notifyAtlasAuxiliaryChange(getTenantContext()!.tenantId);
+      return textContent(JSON.stringify(uc, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_security_topics",
+    {
+      title: "List security topics",
+      description: "List security framework topics with initiative/risk/partner links.",
+      inputSchema: mcpWithWorkspace({})
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const rows = await prisma.securityTopic.findMany({
+        include: {
+          initiativeLinks: { include: { initiative: true } },
+          riskLinks: { include: { risk: true } },
+          partnerLinks: { include: { partner: true } }
+        },
+        orderBy: [{ sortOrder: "asc" }, { title: "asc" }]
+      });
+      return textContent(JSON.stringify(rows, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_create_security_topic",
+    {
+      title: "Create security topic",
+      description: "Create a security topic row. Requires workspace OWNER/ADMIN.",
+      inputSchema: mcpWithWorkspace({
+        title: z.string().min(1),
+        category: z.enum(["AUTHN", "AUTHZ", "DATA", "SUPPLY_CHAIN", "OPS"]),
+        status: z.enum(["PLANNED", "IN_PROGRESS", "MITIGATED", "ACCEPTED_RISK"]).optional(),
+        description: z.string().nullable().optional(),
+        frameworkRef: z.string().nullable().optional(),
+        initiativeIds: z.array(z.string()).optional(),
+        riskIds: z.array(z.string()).optional(),
+        partnerIds: z.array(z.string()).optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const { initiativeIds, riskIds, partnerIds, ...rest } = body;
+      const st = await prisma.securityTopic.create({
+        data: {
+          title: rest.title,
+          category: rest.category as SecurityTopicCategory,
+          status: (rest.status as SecurityTopicStatus) ?? SecurityTopicStatus.PLANNED,
+          description: rest.description ?? null,
+          frameworkRef: rest.frameworkRef ?? null,
+          initiativeLinks:
+            initiativeIds && initiativeIds.length
+              ? { createMany: { data: initiativeIds.map((initiativeId) => ({ initiativeId })) } }
+              : undefined,
+          riskLinks:
+            riskIds && riskIds.length ? { createMany: { data: riskIds.map((riskId) => ({ riskId })) } } : undefined,
+          partnerLinks:
+            partnerIds && partnerIds.length
+              ? { createMany: { data: partnerIds.map((partnerId) => ({ partnerId })) } }
+              : undefined
+        },
+        include: { initiativeLinks: true, riskLinks: true, partnerLinks: true }
+      });
+      notifyAtlasAuxiliaryChange(getTenantContext()!.tenantId);
+      return textContent(JSON.stringify(st, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_releases",
+    {
+      title: "List releases",
+      description: "List releases (manual or synced from GitHub/GitLab) with requirement links.",
+      inputSchema: mcpWithWorkspace({})
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const rows = await prisma.release.findMany({
+        include: { repositoryConnection: true, requirementLinks: { include: { requirement: true } } },
+        orderBy: [{ releasedAt: "desc" }, { createdAt: "desc" }]
+      });
+      return textContent(JSON.stringify(rows, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_create_release",
+    {
+      title: "Create release",
+      description: "Create a release row and optional requirement links. Requires workspace OWNER/ADMIN.",
+      inputSchema: mcpWithWorkspace({
+        tag: z.string().min(1),
+        name: z.string().min(1),
+        repositoryConnectionId: z.string().nullable().optional(),
+        releasedAt: z.string().datetime().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        source: z.enum(["MANUAL", "GITHUB", "GITLAB"]).optional(),
+        externalUrl: z.string().nullable().optional(),
+        requirementIds: z.array(z.string()).optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const { requirementIds, releasedAt, ...rest } = body;
+      const rel = await prisma.release.create({
+        data: {
+          repositoryConnectionId: rest.repositoryConnectionId ?? null,
+          tag: rest.tag,
+          name: rest.name,
+          releasedAt: releasedAt ? new Date(releasedAt) : null,
+          notes: rest.notes ?? null,
+          source: (rest.source as ReleaseSource) ?? ReleaseSource.MANUAL,
+          externalUrl: rest.externalUrl ?? null,
+          requirementLinks:
+            requirementIds && requirementIds.length
+              ? { createMany: { data: requirementIds.map((requirementId) => ({ requirementId })) } }
+              : undefined
+        },
+        include: { repositoryConnection: true, requirementLinks: true }
+      });
+      notifyAtlasAuxiliaryChange(getTenantContext()!.tenantId);
+      return textContent(JSON.stringify(rel, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_repository_connections",
+    {
+      title: "List repository connections",
+      description: "List GitHub/GitLab repository connections for the workspace (OAuth tokens redacted in REST; MCP returns DB shape).",
+      inputSchema: mcpWithWorkspace({})
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const rows = await prisma.repositoryConnection.findMany({
+        orderBy: [{ owner: "asc" }, { repo: "asc" }]
+      });
+      const sanitized = rows.map((r) => ({
+        ...r,
+        oauthAccessToken: r.oauthAccessToken ? "[set]" : null,
+        oauthRefreshToken: r.oauthRefreshToken ? "[set]" : null
+      }));
+      return textContent(JSON.stringify(sanitized, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_upsert_repository_connection",
+    {
+      title: "Upsert repository connection",
+      description:
+        "Register a GitHub or GitLab repository (owner/repo) for webhooks and artifact linking. Requires workspace OWNER/ADMIN.",
+      inputSchema: mcpWithWorkspace({
+        provider: z.enum(["GITHUB", "GITLAB"]),
+        owner: z.string().min(1),
+        repo: z.string().min(1),
+        baseUrl: z.string().optional(),
+        displayName: z.string().nullable().optional(),
+        webhookSecret: z.string().nullable().optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const row = await prisma.repositoryConnection.upsert({
+        where: {
+          tenantId_provider_owner_repo: {
+            tenantId,
+            provider: body.provider as VcsProvider,
+            owner: body.owner,
+            repo: body.repo
+          }
+        },
+        create: {
+          provider: body.provider as VcsProvider,
+          baseUrl: body.baseUrl ?? "",
+          owner: body.owner,
+          repo: body.repo,
+          displayName: body.displayName ?? null,
+          webhookSecret: body.webhookSecret ?? null
+        },
+        update: {
+          baseUrl: body.baseUrl ?? "",
+          displayName: body.displayName !== undefined ? body.displayName : undefined,
+          webhookSecret: body.webhookSecret !== undefined ? body.webhookSecret : undefined
+        }
+      });
+      notifyAtlasAuxiliaryChange(tenantId);
+      return textContent(
+        JSON.stringify(
+          {
+            ...row,
+            oauthAccessToken: row.oauthAccessToken ? "[set]" : null,
+            oauthRefreshToken: row.oauthRefreshToken ? "[set]" : null
+          },
+          null,
+          2
+        )
+      );
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_work_artifact_links",
+    {
+      title: "List work artifact links",
+      description: "List pasted PR/commit/issue links attached to features or requirements.",
+      inputSchema: mcpWithWorkspace({
+        featureId: z.string().optional(),
+        requirementId: z.string().optional()
+      })
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const where: Prisma.WorkArtifactLinkWhereInput = {};
+      if (args.featureId) where.featureId = args.featureId;
+      if (args.requirementId) where.requirementId = args.requirementId;
+      const rows = await prisma.workArtifactLink.findMany({
+        where,
+        include: { repositoryConnection: true },
+        orderBy: { createdAt: "desc" }
+      });
+      return textContent(JSON.stringify(rows, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_create_work_artifact_link",
+    {
+      title: "Create work artifact link",
+      description: "Attach a Git artifact URL to a feature or requirement.",
+      inputSchema: mcpWithWorkspace({
+        featureId: z.string().nullable().optional(),
+        requirementId: z.string().nullable().optional(),
+        repositoryConnectionId: z.string().nullable().optional(),
+        artifactType: z.enum(["COMMIT", "BRANCH", "PR", "TAG", "RELEASE", "ISSUE"]),
+        url: z.string().url(),
+        externalId: z.string().nullable().optional(),
+        pinnedRevision: z.string().nullable().optional(),
+        title: z.string().nullable().optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      if (!body.featureId && !body.requirementId) throw new Error("featureId or requirementId required");
+      const row = await prisma.workArtifactLink.create({
+        data: {
+          repositoryConnectionId: body.repositoryConnectionId ?? null,
+          featureId: body.featureId ?? null,
+          requirementId: body.requirementId ?? null,
+          artifactType: body.artifactType as WorkArtifactType,
+          url: body.url,
+          externalId: body.externalId ?? null,
+          pinnedRevision: body.pinnedRevision ?? null,
+          title: body.title ?? null
+        },
+        include: { repositoryConnection: true }
+      });
+      notifyAtlasAuxiliaryChange(tenantId);
+      return textContent(JSON.stringify(row, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_list_design_artifact_links",
+    {
+      title: "List design artifact links",
+      description: "List design URLs (Figma, generic, Claude Design placeholder) on features or requirements.",
+      inputSchema: mcpWithWorkspace({
+        featureId: z.string().optional(),
+        requirementId: z.string().optional()
+      })
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      getUserFromCtx(ctx);
+      const where: Prisma.DesignArtifactLinkWhereInput = {};
+      if (args.featureId) where.featureId = args.featureId;
+      if (args.requirementId) where.requirementId = args.requirementId;
+      const rows = await prisma.designArtifactLink.findMany({
+        where,
+        orderBy: { createdAt: "desc" }
+      });
+      return textContent(JSON.stringify(rows, null, 2));
+    }
+  );
+
+  server.registerTool(
+    "tymio_create_design_artifact_link",
+    {
+      title: "Create design artifact link",
+      description: "Attach a structured design URL to a feature or requirement.",
+      inputSchema: mcpWithWorkspace({
+        featureId: z.string().nullable().optional(),
+        requirementId: z.string().nullable().optional(),
+        provider: z.enum(["FIGMA", "GENERIC_URL", "CLAUDE_DESIGN"]),
+        url: z.string().url(),
+        nodeRef: z.string().nullable().optional(),
+        title: z.string().nullable().optional()
+      })
+    },
+    async (body, ctx) => {
+      assertMcpWorkspaceSlug(body.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceContentWrite(membershipRole, role);
+      if (!body.featureId && !body.requirementId) throw new Error("featureId or requirementId required");
+      const row = await prisma.designArtifactLink.create({
+        data: {
+          featureId: body.featureId ?? null,
+          requirementId: body.requirementId ?? null,
+          provider: body.provider as DesignArtifactProvider,
+          url: body.url,
+          nodeRef: body.nodeRef ?? null,
+          title: body.title ?? null
+        }
+      });
+      notifyAtlasAuxiliaryChange(tenantId);
+      return textContent(JSON.stringify(row, null, 2));
+    }
+  );
+
   server.registerTool(
     "tymio_list_revenue_streams",
     {
@@ -983,7 +1396,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
         storyType: z.enum(["FUNCTIONAL", "BUG", "TECH_DEBT", "RESEARCH"]).nullable().optional(),
         ownerId: z.string().nullable().optional(),
         status: z.enum(["IDEA", "PLANNED", "IN_PROGRESS", "BUSINESS_APPROVAL", "DONE"]).optional(),
-        sortOrder: z.number().int().optional()
+        sortOrder: z.number().int().optional(),
+        deployedToStage: z.enum(["NOT_DEPLOYED", "STAGING", "PRODUCTION"]).nullable().optional(),
+        deployedAt: z.string().datetime().nullable().optional()
       })
     },
     async ({ id, workspaceSlug, ...body }, ctx) => {
@@ -991,7 +1406,7 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { userId, role } = getUserFromCtx(ctx);
       const { membershipRole, tenantId } = getTenantContext()!;
       requireMcpWorkspaceContentWrite(membershipRole, role);
-      const data: Record<string, unknown> = {};
+      const data: Prisma.FeatureUncheckedUpdateInput = {};
       if (body.title !== undefined) data.title = body.title;
       if (body.description !== undefined) data.description = body.description;
       if (body.acceptanceCriteria !== undefined) data.acceptanceCriteria = body.acceptanceCriteria;
@@ -1003,6 +1418,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       }
       if (body.status !== undefined) data.status = body.status;
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      if (body.deployedToStage !== undefined) data.deployedToStage = body.deployedToStage as DeployedToStage | null;
+      if (body.deployedAt !== undefined) data.deployedAt = body.deployedAt ? new Date(body.deployedAt) : null;
       const feature = await prisma.feature.update({
         where: { id },
         data,
@@ -1413,7 +1830,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     externalRef: z.string().nullable().optional(),
     metadata: z.record(z.unknown()).nullable().optional(),
     sortOrder: z.number().int().optional(),
-    executionColumnId: z.string().nullable().optional()
+    executionColumnId: z.string().nullable().optional(),
+    affectedEnvironment: z.enum(["PRODUCTION", "STAGING", "LOCAL", "UNKNOWN"]).nullable().optional(),
+    deployedToStage: z.enum(["NOT_DEPLOYED", "STAGING", "PRODUCTION"]).nullable().optional(),
+    deployedAt: z.string().datetime().nullable().optional()
   };
 
   server.registerTool(
@@ -1459,6 +1879,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
           externalRef: body.externalRef ?? null,
           metadata: body.metadata === null ? Prisma.JsonNull : ((body.metadata ?? undefined) as Prisma.InputJsonValue),
           sortOrder: body.sortOrder ?? 0,
+          affectedEnvironment: body.affectedEnvironment ?? null,
+          deployedToStage: body.deployedToStage ?? null,
+          deployedAt: body.deployedAt ? new Date(body.deployedAt) : null,
           ...(executionColumnId !== undefined ? { executionColumnId } : {})
         },
         include: {
@@ -1494,7 +1917,10 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
     externalRef: z.string().nullable().optional(),
     metadata: z.record(z.unknown()).nullable().optional(),
     sortOrder: z.number().int().optional(),
-    executionColumnId: z.string().nullable().optional()
+    executionColumnId: z.string().nullable().optional(),
+    affectedEnvironment: z.enum(["PRODUCTION", "STAGING", "LOCAL", "UNKNOWN"]).nullable().optional(),
+    deployedToStage: z.enum(["NOT_DEPLOYED", "STAGING", "PRODUCTION"]).nullable().optional(),
+    deployedAt: z.string().datetime().nullable().optional()
   });
 
   const updateRequirementSchemaWithWorkspace = updateRequirementSchema.extend({
@@ -1540,6 +1966,9 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       if (body.externalRef !== undefined) data.externalRef = body.externalRef;
       if (body.metadata !== undefined) data.metadata = body.metadata === null ? Prisma.JsonNull : (body.metadata as Prisma.InputJsonValue);
       if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+      if (body.affectedEnvironment !== undefined) data.affectedEnvironment = body.affectedEnvironment as AffectedEnvironment | null;
+      if (body.deployedToStage !== undefined) data.deployedToStage = body.deployedToStage as DeployedToStage | null;
+      if (body.deployedAt !== undefined) data.deployedAt = body.deployedAt ? new Date(body.deployedAt) : null;
       if (body.executionColumnId !== undefined) {
         if (body.executionColumnId === null) {
           data.executionColumnId = null;
@@ -2738,7 +3167,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { role } = getUserFromCtx(ctx);
       const { membershipRole } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
-      const { productId, workspaceSlug: _, ...rest } = args;
+      const { productId, workspaceSlug, ...rest } = args;
+      void workspaceSlug;
       const parsed = createBoardSchema.safeParse(rest);
       if (!parsed.success) throw new Error(parsed.error.message);
       const product = await prisma.product.findUnique({ where: { id: productId } });
@@ -2811,7 +3241,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { role } = getUserFromCtx(ctx);
       const { membershipRole } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
-      const { boardId, workspaceSlug: _, ...rest } = args;
+      const { boardId, workspaceSlug, ...rest } = args;
+      void workspaceSlug;
       const parsed = updateBoardSchema.safeParse(rest);
       if (!parsed.success) throw new Error(parsed.error.message);
       const existing = await prisma.executionBoard.findUnique({ where: { id: boardId } });
@@ -2874,7 +3305,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { role } = getUserFromCtx(ctx);
       const { membershipRole } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
-      const { boardId, workspaceSlug: _, ...rest } = args;
+      const { boardId, workspaceSlug, ...rest } = args;
+      void workspaceSlug;
       const parsed = columnInputSchema.safeParse(rest);
       if (!parsed.success) throw new Error(parsed.error.message);
       const board = await prisma.executionBoard.findUnique({ where: { id: boardId } });
@@ -2911,7 +3343,8 @@ Product/decision items. After each decision, implement dependent Epic 3 work.
       const { role } = getUserFromCtx(ctx);
       const { membershipRole } = getTenantContext()!;
       requireMcpWorkspaceStructureWrite(membershipRole, role);
-      const { columnId, workspaceSlug: _, ...rest } = args;
+      const { columnId, workspaceSlug, ...rest } = args;
+      void workspaceSlug;
       const parsed = updateColumnSchema.safeParse(rest);
       if (!parsed.success) throw new Error(parsed.error.message);
       const existing = await prisma.executionColumn.findUnique({ where: { id: columnId } });

@@ -1,4 +1,4 @@
-import { Prisma, Priority, TaskStatus, TaskType } from "@prisma/client";
+import { AffectedEnvironment, DeployedToStage, Prisma, Priority, TaskStatus, TaskType } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -33,7 +33,10 @@ export const requirementSchema = z.object({
   externalRef: z.string().nullable().optional(),
   metadata: metadataSchema,
   sortOrder: z.number().int().default(0),
-  executionColumnId: z.union([z.string().min(1), z.null()]).optional()
+  executionColumnId: z.union([z.string().min(1), z.null()]).optional(),
+  affectedEnvironment: z.nativeEnum(AffectedEnvironment).nullable().optional(),
+  deployedToStage: z.nativeEnum(DeployedToStage).nullable().optional(),
+  deployedAt: z.string().datetime().nullable().optional()
 });
 
 export const requirementsRouter = Router();
@@ -235,7 +238,10 @@ requirementsRouter.post("/", requireWorkspaceContentWrite(), async (req, res) =>
       metadata: parsed.data.metadata === null ? Prisma.JsonNull : ((parsed.data.metadata ?? undefined) as Prisma.InputJsonValue),
       sortOrder: parsed.data.sortOrder,
       executionSortOrder,
-      executionColumnId: newColId
+      executionColumnId: newColId,
+      affectedEnvironment: parsed.data.affectedEnvironment ?? null,
+      deployedToStage: parsed.data.deployedToStage ?? null,
+      deployedAt: parsed.data.deployedAt ? new Date(parsed.data.deployedAt) : null
     },
     include: { assignee: true, executionColumn: true }
   });
@@ -296,6 +302,9 @@ requirementsRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) 
   if (parsed.data.externalRef !== undefined) updateData.externalRef = parsed.data.externalRef;
   if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata === null ? Prisma.JsonNull : (parsed.data.metadata as Prisma.InputJsonValue);
   if (parsed.data.sortOrder !== undefined) updateData.sortOrder = parsed.data.sortOrder;
+  if (parsed.data.affectedEnvironment !== undefined) updateData.affectedEnvironment = parsed.data.affectedEnvironment ?? null;
+  if (parsed.data.deployedToStage !== undefined) updateData.deployedToStage = parsed.data.deployedToStage ?? null;
+  if (parsed.data.deployedAt !== undefined) updateData.deployedAt = parsed.data.deployedAt ? new Date(parsed.data.deployedAt) : null;
 
   let nextExecCol: string | null | undefined;
   if (parsed.data.executionColumnId !== undefined) {

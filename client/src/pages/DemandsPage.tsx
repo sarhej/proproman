@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import type { Account, Demand, Initiative, Partner } from "../types/models";
+import type { Account, Demand, DemandSignalHint, Initiative, Partner } from "../types/models";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input, Select } from "../components/ui/Field";
@@ -22,13 +22,14 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
   const [accountId, setAccountId] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [initiativeId, setInitiativeId] = useState(initiatives[0]?.id ?? "");
+  const [signalHint, setSignalHint] = useState<DemandSignalHint>("NONE");
 
   async function load() {
     const result = await api.getDemands();
     setDemands(result.demands);
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => { void load(); }, []);
 
   const sourceSelector = useMemo(() => {
@@ -66,13 +67,20 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
         {t("demands.description")}
       </p>
       {isAdmin ? (
-        <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-5">
+        <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-6">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("demands.placeholder")} />
           <Select value={sourceType} onChange={(e) => setSourceType(e.target.value as Demand["sourceType"])}>
             <option value="ACCOUNT">{t("demandSource.ACCOUNT")}</option>
             <option value="PARTNER">{t("demandSource.PARTNER")}</option>
             <option value="INTERNAL">{t("demandSource.INTERNAL")}</option>
             <option value="COMPLIANCE">{t("demandSource.COMPLIANCE")}</option>
+          </Select>
+          <Select value={signalHint} onChange={(e) => setSignalHint(e.target.value as DemandSignalHint)}>
+            <option value="NONE">signal: NONE</option>
+            <option value="CUSTOMER_REPORT">CUSTOMER_REPORT</option>
+            <option value="MONITORING">MONITORING</option>
+            <option value="PARTNER_SIGNAL">PARTNER_SIGNAL</option>
+            <option value="INTERNAL">INTERNAL</option>
           </Select>
           {sourceSelector}
           <Select value={initiativeId} onChange={(e) => setInitiativeId(e.target.value)}>
@@ -90,6 +98,7 @@ export function DemandsPage({ isAdmin, accounts, partners, initiatives, onOpenIn
                 sourceType,
                 status: "NEW",
                 urgency: 3,
+                signalHint,
                 accountId: sourceType === "ACCOUNT" ? accountId || null : null,
                 partnerId: sourceType === "PARTNER" ? partnerId || null : null,
                 links: initiativeId ? [{ initiativeId }] : []

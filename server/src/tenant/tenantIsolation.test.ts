@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { runWithTenant, getTenantContext, requireTenantContext, TenantContext } from "./tenantContext.js";
+import { TENANT_SCOPED_MODELS } from "./tenantPrisma.js";
 
 const tenantA: TenantContext = {
   tenantId: "tenant-a-id",
@@ -175,25 +176,19 @@ describe("Tenant-scoped model list", () => {
 
     expect(modelsWithTenantId.length).toBeGreaterThan(0);
 
-    // Import the set from tenantPrisma to verify coverage
-    // (accessing the module's internal constant indirectly via its behavior)
-    // Here we just verify that the schema models we found are all present
-    // in the expected list
-    const expectedModels = new Set([
-      "Product", "ExecutionBoard", "ExecutionColumn", "Domain", "Persona",
-      "RevenueStream", "Initiative", "SuccessCriterion", "InitiativeComment",
-      "Feature", "Requirement", "Decision", "Risk", "Account", "Partner",
-      "Demand", "DemandLink", "InitiativeAssignment", "Campaign", "Asset",
-      "CampaignLink", "InitiativeMilestone", "InitiativeKPI", "Stakeholder",
-      "AuditEntry", "UserMessage", "NotificationRule",
-      "UserNotificationSubscription", "UserNotificationPreference",
-      "NotificationDelivery", "User",
-    ]);
+    const fromSchema = new Set(modelsWithTenantId);
 
     for (const model of modelsWithTenantId) {
       expect(
-        expectedModels.has(model),
-        `Model ${model} has tenantId in schema but is not in the expected models list. Update TENANT_SCOPED_MODELS in tenantPrisma.ts.`
+        TENANT_SCOPED_MODELS.has(model),
+        `Model ${model} has tenantId in schema but is missing from TENANT_SCOPED_MODELS in tenantPrisma.ts.`
+      ).toBe(true);
+    }
+
+    for (const model of TENANT_SCOPED_MODELS) {
+      expect(
+        fromSchema.has(model),
+        `Model ${model} is listed in TENANT_SCOPED_MODELS but no tenantId field was detected in schema.prisma (update schema or remove from TENANT_SCOPED_MODELS).`
       ).toBe(true);
     }
   });

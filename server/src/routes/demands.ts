@@ -1,4 +1,4 @@
-import { DemandSourceType, DemandStatus } from "@prisma/client";
+import { DemandSignalHint, DemandSourceType, DemandStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -8,12 +8,13 @@ import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 
-const demandSchema = z.object({
+export const demandSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   sourceType: z.nativeEnum(DemandSourceType),
   status: z.nativeEnum(DemandStatus),
   urgency: z.number().int().min(1).max(5).default(3),
+  signalHint: z.nativeEnum(DemandSignalHint).optional(),
   accountId: z.string().nullable().optional(),
   partnerId: z.string().nullable().optional(),
   ownerId: z.string().nullable().optional(),
@@ -64,6 +65,7 @@ demandsRouter.post("/", requireWorkspaceStructureWrite(), async (req, res) => {
       sourceType: payload.sourceType,
       status: payload.status,
       urgency: payload.urgency,
+      signalHint: payload.signalHint ?? DemandSignalHint.NONE,
       accountId: payload.accountId ?? null,
       partnerId: payload.partnerId ?? null,
       ownerId: payload.ownerId ?? null,
@@ -124,6 +126,7 @@ demandsRouter.put("/:id", requireWorkspaceStructureWrite(), async (req, res) => 
         sourceType: payload.sourceType,
         status: payload.status,
         urgency: payload.urgency,
+        signalHint: payload.signalHint,
         accountId: payload.accountId ?? undefined,
         partnerId: payload.partnerId ?? undefined,
         ownerId: payload.ownerId ?? undefined

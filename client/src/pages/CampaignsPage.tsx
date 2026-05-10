@@ -39,18 +39,15 @@ function statusColor(s: string): string {
   }
 }
 
-function assetIcon(type: AssetType) {
-  switch (type) {
-    case "LANDING_PAGE": return Globe;
-    case "LEAFLET": return FileText;
-    case "EMAIL_TEMPLATE": return Mail;
-    case "BANNER": return Image;
-    case "VIDEO": return Video;
-    case "PRESENTATION": return Presentation;
-    case "SOCIAL_POST": return Share2;
-    default: return FileText;
-  }
-}
+const ASSET_TYPE_ICONS: Record<AssetType, typeof Globe> = {
+  LANDING_PAGE: Globe,
+  LEAFLET: FileText,
+  EMAIL_TEMPLATE: Mail,
+  BANNER: Image,
+  VIDEO: Video,
+  PRESENTATION: Presentation,
+  SOCIAL_POST: Share2,
+};
 
 function formatDate(d?: string | null) {
   if (!d) return "-";
@@ -123,7 +120,7 @@ function LinkBadge({ link, onOpenInitiative, onRemove, isAdmin }: { link: Campai
 
 function AssetRow({ asset, isAdmin, onRefresh }: { asset: Asset; isAdmin: boolean; onRefresh: () => Promise<void> }) {
   const { t } = useTranslation();
-  const Icon = assetIcon(asset.type);
+  const Icon = ASSET_TYPE_ICONS[asset.type];
   return (
     <tr className="group/row border-t border-slate-100 text-xs hover:bg-slate-50">
       <td className="py-1.5 pl-12 pr-2">
@@ -305,7 +302,7 @@ export function CampaignsPage({ isAdmin, users, accounts, partners, personas, in
     setCampaigns(result.campaigns);
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => { void load(); }, []);
 
   const filtered = campaigns.filter((c) => {

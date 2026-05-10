@@ -4,6 +4,7 @@ import {
   CalendarClock,
   Columns3,
   Filter,
+  GitBranch,
   Grid2x2,
   KanbanSquare,
   Megaphone,
@@ -73,7 +74,8 @@ export const navSections: NavSection[] = [
     items: [
       { to: "/accounts", labelKey: "nav.accounts", icon: Building2 },
       { to: "/demands", labelKey: "nav.demands", icon: Filter },
-      { to: "/partners", labelKey: "nav.partners", icon: Users2 }
+      { to: "/partners", labelKey: "nav.partners", icon: Users2 },
+      { to: "/sdlc", labelKey: "nav.sdlcHub", icon: GitBranch }
     ]
   },
   {

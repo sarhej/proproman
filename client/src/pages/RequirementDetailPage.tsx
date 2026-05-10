@@ -3,7 +3,21 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { useWorkspaceLinkBuilder } from "../hooks/useWorkspaceHref";
 import { api } from "../lib/api";
-import type { Initiative, Priority, Requirement, TaskStatus, TaskType, User } from "../types/models";
+import type {
+  AffectedEnvironment,
+  DeployedToStage,
+  DesignArtifactLink,
+  DesignArtifactProvider,
+  Initiative,
+  Priority,
+  Requirement,
+  TaskStatus,
+  TaskType,
+  User,
+  WorkArtifactLink,
+  WorkArtifactType,
+  RepositoryConnection
+} from "../types/models";
 import { formatPriority } from "../lib/format";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
@@ -11,6 +25,10 @@ import { LabelEditor } from "../components/ui/LabelEditor";
 
 const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
 const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"];
+const DEPLOY_STAGES: DeployedToStage[] = ["NOT_DEPLOYED", "STAGING", "PRODUCTION"];
+const AFFECTED_ENVS: AffectedEnvironment[] = ["PRODUCTION", "STAGING", "LOCAL", "UNKNOWN"];
+const WORK_TYPES: WorkArtifactType[] = ["PR", "BRANCH", "COMMIT", "TAG", "RELEASE", "ISSUE"];
+const DESIGN_PROVIDERS: DesignArtifactProvider[] = ["FIGMA", "GENERIC_URL", "CLAUDE_DESIGN"];
 
 type Props = {
   initiatives: Initiative[];
@@ -74,6 +92,18 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
   const [editDueDate, setEditDueDate] = useState("");
   const [editTaskType, setEditTaskType] = useState<TaskType | null>(null);
   const [editExternalRef, setEditExternalRef] = useState("");
+  const [editAffectedEnv, setEditAffectedEnv] = useState<AffectedEnvironment | "">("");
+  const [editDeployStage, setEditDeployStage] = useState<DeployedToStage | "">("");
+  const [editDeployDate, setEditDeployDate] = useState("");
+  const [workLinks, setWorkLinks] = useState<WorkArtifactLink[]>([]);
+  const [designLinks, setDesignLinks] = useState<DesignArtifactLink[]>([]);
+  const [repos, setRepos] = useState<RepositoryConnection[]>([]);
+  const [workUrl, setWorkUrl] = useState("");
+  const [workType, setWorkType] = useState<WorkArtifactType>("PR");
+  const [workRepoId, setWorkRepoId] = useState("");
+  const [designUrl, setDesignUrl] = useState("");
+  const [designProvider, setDesignProvider] = useState<DesignArtifactProvider>("FIGMA");
+  const [loadingArtifacts, setLoadingArtifacts] = useState(false);
 
   const found = requirementId ? findRequirement(initiatives, requirementId) : null;
 
@@ -88,7 +118,41 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     setEditAssigneeId(r.assigneeId ?? null);
     setEditDueDate(toDateOnly(r.dueDate));
     setEditTaskType(r.taskType ?? null);
-  }, [found?.requirement.id, editing, found?.requirement.title, found?.requirement.description, found?.requirement.externalRef, found?.requirement.priority, found?.requirement.status, found?.requirement.assigneeId, found?.requirement.dueDate, found?.requirement.taskType]);
+    setEditAffectedEnv(r.affectedEnvironment ?? "");
+    setEditDeployStage(r.deployedToStage ?? "");
+    setEditDeployDate(toDateOnly(r.deployedAt));
+  }, [
+    found?.requirement.id,
+    editing,
+    found?.requirement.title,
+    found?.requirement.description,
+    found?.requirement.externalRef,
+    found?.requirement.priority,
+    found?.requirement.status,
+    found?.requirement.assigneeId,
+    found?.requirement.dueDate,
+    found?.requirement.taskType,
+    found?.requirement.affectedEnvironment,
+    found?.requirement.deployedToStage,
+    found?.requirement.deployedAt
+  ]);
+
+  useEffect(() => {
+    if (!found?.requirement.id) return;
+    setLoadingArtifacts(true);
+    Promise.all([
+      api.getWorkArtifactLinks({ requirementId: found.requirement.id }),
+      api.getDesignArtifactLinks({ requirementId: found.requirement.id }),
+      api.getRepositoryConnections()
+    ])
+      .then(([wl, dl, rc]) => {
+        setWorkLinks(wl.workArtifactLinks);
+        setDesignLinks(dl.designArtifactLinks);
+        setRepos(rc.repositoryConnections);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingArtifacts(false));
+  }, [found?.requirement.id]);
 
   useEffect(() => {
     if (editing && users.length === 0) {
@@ -152,7 +216,10 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         isDone: editStatus === "DONE",
         assigneeId: editAssigneeId || null,
         dueDate: fromDateOnly(editDueDate),
-        taskType: editTaskType
+        taskType: editTaskType,
+        affectedEnvironment: editAffectedEnv || null,
+        deployedToStage: editDeployStage || null,
+        deployedAt: fromDateOnly(editDeployDate)
       });
       await onSaved?.();
       setEditing(false);
@@ -170,6 +237,9 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     setEditAssigneeId(requirement.assigneeId ?? null);
     setEditDueDate(toDateOnly(requirement.dueDate));
     setEditTaskType(requirement.taskType ?? null);
+    setEditAffectedEnv(requirement.affectedEnvironment ?? "");
+    setEditDeployStage(requirement.deployedToStage ?? "");
+    setEditDeployDate(toDateOnly(requirement.deployedAt));
     setEditing(false);
   };
 
@@ -468,7 +538,214 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                   </button>
                 </p>
               </div>
+              <div>
+                <Label>{t("requirementDetail.affectedEnv")}</Label>
+                {editing ? (
+                  <Select
+                    value={editAffectedEnv}
+                    onChange={(e) => setEditAffectedEnv(e.target.value as AffectedEnvironment | "")}
+                    className="mt-1"
+                  >
+                    <option value="">—</option>
+                    {AFFECTED_ENVS.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">{requirement.affectedEnvironment ?? "—"}</p>
+                )}
+              </div>
+              <div>
+                <Label>{t("requirementDetail.deployStage")}</Label>
+                {editing ? (
+                  <Select
+                    value={editDeployStage}
+                    onChange={(e) => setEditDeployStage(e.target.value as DeployedToStage | "")}
+                    className="mt-1"
+                  >
+                    <option value="">—</option>
+                    {DEPLOY_STAGES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">{requirement.deployedToStage ?? "—"}</p>
+                )}
+              </div>
+              <div>
+                <Label>{t("requirementDetail.deployedAt")}</Label>
+                {editing ? (
+                  <Input type="date" value={editDeployDate} onChange={(e) => setEditDeployDate(e.target.value)} className="mt-1" />
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">
+                    {requirement.deployedAt ? toDateOnly(requirement.deployedAt) : "—"}
+                  </p>
+                )}
+              </div>
             </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h2 className="mb-1 text-sm font-semibold text-slate-700">{t("requirementDetail.designLinksTitle")}</h2>
+            {loadingArtifacts ? <p className="text-xs text-slate-500">{t("common.loading")}</p> : null}
+            <ul className="mb-2 space-y-1 text-sm">
+              {designLinks.map((l) => (
+                <li key={l.id} className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-slate-500">{l.provider}</span>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline break-all">
+                    {l.url}
+                  </a>
+                  {!readOnly ? (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="h-7 px-2 text-xs text-red-600"
+                      onClick={async () => {
+                        await api.deleteDesignArtifactLink(l.id);
+                        const dl = await api.getDesignArtifactLinks({ requirementId: requirement.id });
+                        setDesignLinks(dl.designArtifactLinks);
+                        await onSaved?.();
+                      }}
+                    >
+                      {t("common.delete")}
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {!readOnly ? (
+              <div className="grid gap-2 border-t border-slate-100 pt-3 md:grid-cols-4 md:items-end">
+                <div>
+                  <Label>{t("requirementDetail.provider")}</Label>
+                  <Select
+                    className="mt-1"
+                    value={designProvider}
+                    onChange={(e) => setDesignProvider(e.target.value as DesignArtifactProvider)}
+                  >
+                    {DESIGN_PROVIDERS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label>URL</Label>
+                  <Input className="mt-1 font-mono text-xs" value={designUrl} onChange={(e) => setDesignUrl(e.target.value)} placeholder="https://..." />
+                </div>
+                <Button
+                  type="button"
+                  disabled={!designUrl.trim()}
+                  onClick={async () => {
+                    try {
+                       
+                      new URL(designUrl.trim());
+                    } catch {
+                      return;
+                    }
+                    await api.createDesignArtifactLink({
+                      requirementId: requirement.id,
+                      featureId: null,
+                      provider: designProvider,
+                      url: designUrl.trim()
+                    });
+                    setDesignUrl("");
+                    const dl = await api.getDesignArtifactLinks({ requirementId: requirement.id });
+                    setDesignLinks(dl.designArtifactLinks);
+                    await onSaved?.();
+                  }}
+                >
+                  {t("common.add")}
+                </Button>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h2 className="mb-1 text-sm font-semibold text-slate-700">{t("requirementDetail.codeLinksTitle")}</h2>
+            <ul className="mb-2 space-y-1 text-sm">
+              {workLinks.map((l) => (
+                <li key={l.id} className="flex flex-wrap items-center gap-2">
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{l.artifactType}</span>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline break-all">
+                    {l.url}
+                  </a>
+                  {!readOnly ? (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="h-7 px-2 text-xs text-red-600"
+                      onClick={async () => {
+                        await api.deleteWorkArtifactLink(l.id);
+                        const wl = await api.getWorkArtifactLinks({ requirementId: requirement.id });
+                        setWorkLinks(wl.workArtifactLinks);
+                        await onSaved?.();
+                      }}
+                    >
+                      {t("common.delete")}
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {!readOnly ? (
+              <div className="grid gap-2 border-t border-slate-100 pt-3 md:grid-cols-5 md:items-end">
+                <div>
+                  <Label>{t("featureDetail.artifactType")}</Label>
+                  <Select className="mt-1" value={workType} onChange={(e) => setWorkType(e.target.value as WorkArtifactType)}>
+                    {WORK_TYPES.map((wt) => (
+                      <option key={wt} value={wt}>
+                        {wt}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label>{t("featureDetail.artifactUrl")}</Label>
+                  <Input className="mt-1 font-mono text-xs" value={workUrl} onChange={(e) => setWorkUrl(e.target.value)} placeholder="https://..." />
+                </div>
+                <div>
+                  <Label>{t("featureDetail.repositoryOptional")}</Label>
+                  <Select className="mt-1" value={workRepoId} onChange={(e) => setWorkRepoId(e.target.value)}>
+                    <option value="">{t("featureDetail.noneRepo")}</option>
+                    {repos.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.owner}/{r.repo}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  disabled={!workUrl.trim()}
+                  onClick={async () => {
+                    try {
+                       
+                      new URL(workUrl.trim());
+                    } catch {
+                      return;
+                    }
+                    await api.createWorkArtifactLink({
+                      requirementId: requirement.id,
+                      featureId: null,
+                      repositoryConnectionId: workRepoId || null,
+                      artifactType: workType,
+                      url: workUrl.trim()
+                    });
+                    setWorkUrl("");
+                    const wl = await api.getWorkArtifactLinks({ requirementId: requirement.id });
+                    setWorkLinks(wl.workArtifactLinks);
+                    await onSaved?.();
+                  }}
+                >
+                  {t("featureDetail.addArtifactLink")}
+                </Button>
+              </div>
+            ) : null}
           </section>
 
           {siblings.length > 0 && (

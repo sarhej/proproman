@@ -58,7 +58,7 @@ function doneColumnIdForBoard(boardColumns: ExecutionColumn[]): string | null {
 }
 
 /** Column keys: UNASSIGNED + each execution column id for the selected board. */
-export function buildColumnItemIds(
+function buildColumnItemIds(
   product: ProductWithHierarchy,
   boardColumns: ExecutionColumn[]
 ): Record<string, string[]> {
@@ -290,7 +290,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
 
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
-    let activeContainer = findColumnKeyForDragId(activeIdStr, columnItemIds);
+    const activeContainer = findColumnKeyForDragId(activeIdStr, columnItemIds);
     let overContainer = findColumnKeyForDragId(overIdStr, columnItemIds);
     if (!overContainer && overIdStr.startsWith("column-")) {
       overContainer = overIdStr.slice("column-".length);

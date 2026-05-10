@@ -1,5 +1,4 @@
 import { prisma } from "../db.js";
-import { Prisma } from "@prisma/client";
 
 /**
  * Provision a new tenant's database schema and seed required data.

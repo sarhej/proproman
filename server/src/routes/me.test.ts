@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import express, { type NextFunction, type Request, type Response } from "express";
 import request from "supertest";
-import { UserRole, DeliveryChannel } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 
 const switchTenantSchema = z.object({
   tenantId: z.string().min(1),

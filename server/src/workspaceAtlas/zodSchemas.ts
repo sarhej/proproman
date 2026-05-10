@@ -3,6 +3,60 @@ import { WORKSPACE_ATLAS_SCHEMA_VERSION } from "./constants.js";
 
 const isoDateTime = z.string().min(1);
 
+/** Compact SDLC indices (token-controlled); optional for backward compatibility when reading older atlas files. */
+export const workspaceAtlasAuxiliaryIndexSchema = z
+  .object({
+    useCases: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        primaryActor: z.string().nullable().optional()
+      })
+    ),
+    securityTopics: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        category: z.string(),
+        status: z.string()
+      })
+    ),
+    releases: z.array(
+      z.object({
+        id: z.string(),
+        tag: z.string(),
+        name: z.string(),
+        releasedAt: isoDateTime.nullable().optional()
+      })
+    ),
+    repositoryConnections: z.array(
+      z.object({
+        id: z.string(),
+        provider: z.string(),
+        label: z.string()
+      })
+    ),
+    workArtifactLinks: z.array(
+      z.object({
+        id: z.string(),
+        artifactType: z.string(),
+        url: z.string(),
+        featureId: z.string().nullable().optional(),
+        requirementId: z.string().nullable().optional()
+      })
+    ),
+    designArtifactLinks: z.array(
+      z.object({
+        id: z.string(),
+        provider: z.string(),
+        url: z.string(),
+        featureId: z.string().nullable().optional(),
+        requirementId: z.string().nullable().optional()
+      })
+    )
+  })
+  .strict();
+
 export const workspaceAtlasSchema = z
   .object({
     schemaVersion: z.literal(WORKSPACE_ATLAS_SCHEMA_VERSION),
@@ -70,7 +124,8 @@ export const workspaceAtlasSchema = z
       kind: z.literal("reference"),
       spine: z.string(),
       doc: z.string().optional()
-    })
+    }),
+    auxiliaryIndex: workspaceAtlasAuxiliaryIndexSchema.optional()
   })
   .strict();
 

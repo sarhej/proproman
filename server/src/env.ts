@@ -96,7 +96,15 @@ const envSchema = z.object({
     .optional()
     .transform((v) => v === "true" || v === "1" || v === "yes"),
   WORKSPACE_ATLAS_OPENAI_API_KEY: optionalString,
-  WORKSPACE_ATLAS_OPENAI_MODEL: z.string().default("gpt-4o-mini")
+  WORKSPACE_ATLAS_OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  /** Optional: GitHub OAuth for VCS repo connections (`/api/vcs/oauth/github`). */
+  VCS_GITHUB_CLIENT_ID: optionalString,
+  VCS_GITHUB_CLIENT_SECRET: optionalString,
+  /** Optional: GitLab OAuth for VCS repo connections (`/api/vcs/oauth/gitlab`). */
+  VCS_GITLAB_CLIENT_ID: optionalString,
+  VCS_GITLAB_CLIENT_SECRET: optionalString,
+  /** Optional: GitLab instance origin for OAuth/token (default https://gitlab.com). */
+  VCS_GITLAB_BASE_URL: optionalString
 });
 
 export const env = envSchema

@@ -36,6 +36,12 @@ export const TENANT_SCOPED_MODELS = new Set([
   "UserNotificationSubscription",
   "UserNotificationPreference",
   "NotificationDelivery",
+  "UseCase",
+  "SecurityTopic",
+  "RepositoryConnection",
+  "WorkArtifactLink",
+  "DesignArtifactLink",
+  "Release"
 ]);
 
 function isTenantScoped(model: string): boolean {
@@ -186,7 +192,8 @@ export function createTenantExtension(base: PrismaClient) {
  * @deprecated Use createTenantExtension instead.
  * Kept as a no-op for backward compatibility during migration.
  */
-export function registerTenantMiddleware(_prisma: PrismaClient): void {
+export function registerTenantMiddleware(prismaClient: PrismaClient): void {
+  void prismaClient;
   // No-op: tenant scoping is now done via client extensions.
   // The extended client is created in db.ts
 }

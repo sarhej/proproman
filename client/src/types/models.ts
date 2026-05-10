@@ -164,7 +164,75 @@ export type StrategicTier = "TIER_1" | "TIER_2" | "TIER_3";
 export type AccountType = "B2B2C" | "B2G2C" | "INSURER" | "EMPLOYER" | "PUBLIC";
 export type DemandSourceType = "ACCOUNT" | "PARTNER" | "INTERNAL" | "COMPLIANCE";
 export type DemandStatus = "NEW" | "VALIDATING" | "APPROVED" | "PLANNED" | "SHIPPED" | "REJECTED";
+export type DemandSignalHint = "NONE" | "CUSTOMER_REPORT" | "MONITORING" | "PARTNER_SIGNAL" | "INTERNAL";
+export type DeployedToStage = "NOT_DEPLOYED" | "STAGING" | "PRODUCTION";
+export type AffectedEnvironment = "PRODUCTION" | "STAGING" | "LOCAL" | "UNKNOWN";
+export type WorkArtifactType = "COMMIT" | "BRANCH" | "PR" | "TAG" | "RELEASE" | "ISSUE";
+export type DesignArtifactProvider = "FIGMA" | "GENERIC_URL" | "CLAUDE_DESIGN";
+export type VcsProvider = "GITHUB" | "GITLAB";
+export type ReleaseSource = "MANUAL" | "GITHUB" | "GITLAB";
+export type SecurityTopicCategory = "AUTHN" | "AUTHZ" | "DATA" | "SUPPLY_CHAIN" | "OPS";
+export type SecurityTopicStatus = "PLANNED" | "IN_PROGRESS" | "MITIGATED" | "ACCEPTED_RISK";
 export type AssignmentRole = "ACCOUNTABLE" | "IMPLEMENTER" | "CONSULTED" | "INFORMED";
+
+export type RepositoryConnection = {
+  id: string;
+  provider: VcsProvider;
+  baseUrl: string;
+  owner: string;
+  repo: string;
+  displayName?: string | null;
+  webhookSecret?: string | null;
+  oauthAccessToken?: string | null;
+  oauthRefreshToken?: string | null;
+};
+
+export type WorkArtifactLink = {
+  id: string;
+  repositoryConnectionId?: string | null;
+  featureId?: string | null;
+  requirementId?: string | null;
+  artifactType: WorkArtifactType;
+  url: string;
+  externalId?: string | null;
+  pinnedRevision?: string | null;
+  title?: string | null;
+  repositoryConnection?: RepositoryConnection | null;
+};
+
+export type DesignArtifactLink = {
+  id: string;
+  featureId?: string | null;
+  requirementId?: string | null;
+  provider: DesignArtifactProvider;
+  url: string;
+  nodeRef?: string | null;
+  title?: string | null;
+};
+
+export type UseCase = {
+  id: string;
+  title: string;
+  primaryActor?: string | null;
+  productId?: string | null;
+};
+
+export type SecurityTopic = {
+  id: string;
+  title: string;
+  category: SecurityTopicCategory;
+  status: SecurityTopicStatus;
+};
+
+export type Release = {
+  id: string;
+  tag: string;
+  name: string;
+  releasedAt?: string | null;
+  source?: ReleaseSource;
+  externalUrl?: string | null;
+  repositoryConnection?: RepositoryConnection | null;
+};
 
 export type CampaignStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED" | "ARCHIVED";
 export type CampaignType = "PARTNER_COBRANDING" | "PRODUCT_LAUNCH" | "SEASONAL" | "EVENT" | "WEBINAR" | "REFERRAL";
@@ -251,6 +319,8 @@ export type Feature = {
   milestoneDate?: string | null;
   dateConfidence?: DateConfidence | null;
   sortOrder: number;
+  deployedToStage?: DeployedToStage | null;
+  deployedAt?: string | null;
   requirements?: Requirement[];
   demandLinks?: DemandLink[];
   initiative?: Initiative | null;
@@ -278,6 +348,9 @@ export type Requirement = {
   executionSortOrder?: number;
   executionColumnId?: string | null;
   executionColumn?: ExecutionColumn | null;
+  affectedEnvironment?: AffectedEnvironment | null;
+  deployedToStage?: DeployedToStage | null;
+  deployedAt?: string | null;
   feature?: Feature | null;
 };
 
@@ -299,6 +372,7 @@ export type Risk = {
   mitigation?: string | null;
   ownerId?: string | null;
   owner?: User | null;
+  signalHint?: DemandSignalHint;
 };
 
 export type Dependency = {
@@ -345,6 +419,7 @@ export type Demand = {
   sourceType: DemandSourceType;
   status: DemandStatus;
   urgency: number;
+  signalHint?: DemandSignalHint;
   accountId?: string | null;
   partnerId?: string | null;
   ownerId?: string | null;

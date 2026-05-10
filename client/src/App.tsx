@@ -45,6 +45,7 @@ import { ProductExplorerPage } from "./pages/ProductExplorerPage";
 import { AccountsPage } from "./pages/AccountsPage";
 import { DemandsPage } from "./pages/DemandsPage";
 import { PartnersPage } from "./pages/PartnersPage";
+import { SdlcPage } from "./pages/SdlcPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
@@ -80,7 +81,8 @@ import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode 
 import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
-import { resetDocumentSeoDefaults, SeoHead } from "./components/seo/SeoHead";
+import { SeoHead } from "./components/seo/SeoHead";
+import { resetDocumentSeoDefaults } from "./components/seo/seoHeadDocument";
 import { applyWorkspacePrefixToApiPath, setWorkspaceApiCanonicalSlug } from "./lib/workspaceApiRouting";
 import {
   parseWorkspacePath,
@@ -1051,6 +1053,14 @@ function App() {
                     onOpenInitiative={(i) => setSelected(i)}
                     initiatives={board.initiatives}
                   />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="sdlc"
+              element={
+                <ViewRoute user={user} path="/sdlc" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <SdlcPage isAdmin={perms.canEditStructure} initiatives={board.initiatives} />
                 </ViewRoute>
               }
             />
