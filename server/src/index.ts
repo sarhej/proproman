@@ -1,4 +1,5 @@
 // Tymio API server (Express)
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { type Request, type Response, type NextFunction } from "express";
@@ -66,6 +67,7 @@ import { warmMissingWorkspaceAtlases } from "./workspaceAtlas/startupWarm.js";
 import { registerLegalRoutes } from "./legal/serveLegalPages.js";
 import { isTransactionalEmailReady } from "./services/transactionalMail.js";
 import { skillsPublicRouter } from "./routes/skills.js";
+import { wellKnownRouter } from "./routes/wellKnown.js";
 import { opencodeWellKnownHandler } from "./routes/opencodeWellKnown.js";
 import { githubVcsWebhookHandler, gitlabVcsWebhookHandler } from "./routes/vcs-webhooks.js";
 import { vcsOauthGithubRouter } from "./routes/vcs-oauth-github.js";
@@ -130,6 +132,31 @@ app.post(
   }
 );
 app.use(express.json({ limit: "10mb" }));
+
+// Agent-ready middleware: Link headers and Markdown negotiation
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Goal: Include Link response headers for agent discovery (RFC 8288)
+  // Advertise API catalog and documentation on the homepage
+  if (req.path === "/" || req.path === "/index.html") {
+    res.append("Link", '</.well-known/api-catalog>; rel="api-catalog"');
+    res.append("Link", '</wiki>; rel="service-doc"');
+    res.append("Link", '</.well-known/mcp/server-card.json>; rel="mcp-server-card"');
+  }
+
+  // Goal: Return HTML responses as markdown when agents request it (Markdown for Agents)
+  // If the request specifically asks for markdown via Accept header
+  if (req.accepts("text/markdown") && !req.accepts("text/html") && (req.path === "/" || req.path === "/index.html")) {
+    const llmsTxtPath = path.join(clientDist, "llms.txt");
+    if (!fs.existsSync(llmsTxtPath)) {
+      next();
+      return;
+    }
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.sendFile(llmsTxtPath);
+    return;
+  }
+  next();
+});
 
 app.set("trust proxy", 1);
 app.use(
@@ -199,6 +226,9 @@ app.use("/skills", skillsPublicRouter);
 
 /** Public: OpenCode organizational default MCP (discovery URL). */
 app.get("/.well-known/opencode", opencodeWellKnownHandler);
+
+/** Public: Agent-ready discovery endpoints (RFC 9727, RFC 9728, SEP-1649). */
+app.use("/.well-known", wellKnownRouter);
 
 /** Public: instructions for coding agents (stdio MCP clients fetch this to append to tool output). */
 app.get("/api/mcp/agent-context", async (_req, res) => {

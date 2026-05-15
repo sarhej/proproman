@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Tymio",
+    "description": "High-level API surface for discovery. Tenant-scoped REST lives under /api and /t/{workspaceSlug}/api after authentication.",
+    "version": "1.0.0"
+  },
+  "servers": [{ "url": "/", "description": "Same origin as the web app" }],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "ok": { "type": "boolean" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
