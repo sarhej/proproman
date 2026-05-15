@@ -82,7 +82,7 @@ import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
 import { SeoHead } from "./components/seo/SeoHead";
-import { setupWebMcp } from "./webmcp";
+import { registerHubWebMcpTools } from "./webmcp";
 import { resetDocumentSeoDefaults } from "./components/seo/seoHeadDocument";
 import { applyWorkspacePrefixToApiPath, setWorkspaceApiCanonicalSlug } from "./lib/workspaceApiRouting";
 import {
@@ -474,28 +474,32 @@ function App() {
 
   useEffect(() => {
     if (!boardDataEnabled || !board.initiatives.length) return;
-
-    setupWebMcp({
-      onSearchInitiatives: async (query: string) => {
-        const q = query.toLowerCase();
-        return board.initiatives
-          .filter(
-            (i) =>
-              i.title.toLowerCase().includes(q) ||
-              i.description?.toLowerCase().includes(q) ||
-              i.domain.name.toLowerCase().includes(q)
-          )
-          .slice(0, 10)
-          .map((i) => ({ id: i.id, title: i.title, status: i.status }));
+    const ac = new AbortController();
+    registerHubWebMcpTools(
+      {
+        onSearchInitiatives: async (query: string) => {
+          const q = query.toLowerCase();
+          return board.initiatives
+            .filter(
+              (i) =>
+                i.title.toLowerCase().includes(q) ||
+                i.description?.toLowerCase().includes(q) ||
+                i.domain.name.toLowerCase().includes(q)
+            )
+            .slice(0, 10)
+            .map((i) => ({ id: i.id, title: i.title, status: i.status }));
+        },
+        onOpenInitiative: (id: string) => {
+          const found = board.initiatives.find((i) => i.id === id);
+          if (found) setSelected(found);
+        },
+        onCreateInitiative: () => {
+          if (perms.canCreate) setShowCreate(true);
+        }
       },
-      onOpenInitiative: (id: string) => {
-        const found = board.initiatives.find((i) => i.id === id);
-        if (found) setSelected(found);
-      },
-      onCreateInitiative: () => {
-        if (perms.canCreate) setShowCreate(true);
-      }
-    });
+      ac.signal
+    );
+    return () => ac.abort();
   }, [boardDataEnabled, board.initiatives, perms.canCreate]);
 
   if (isWikiPath) {

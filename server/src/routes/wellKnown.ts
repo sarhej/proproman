@@ -8,6 +8,28 @@ export const wellKnownRouter = Router();
 // Enable CORS for all .well-known routes as they are intended for discovery by agents
 wellKnownRouter.use(cors());
 
+const MCP_SCOPES = ["mcp:tools"] as const;
+const MCP_RESOURCE_NAME = "Tymio MCP";
+
+/**
+ * isitagentready (and some clients) probe `GET /.well-known/oauth-protected-resource` exactly.
+ * RFC 9728 path-specific metadata for `…/mcp` remains on `/.well-known/oauth-protected-resource/mcp` (MCP SDK).
+ * This document reuses the same issuer and scopes as the hosted MCP resource.
+ */
+wellKnownRouter.get("/oauth-protected-resource", (_req: Request, res: Response) => {
+  const base = getMcpBaseUrl().replace(/\/+$/, "");
+  const issuerUrl = new URL(base).href;
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.json({
+    resource: `${base}/mcp`,
+    authorization_servers: [issuerUrl],
+    scopes_supported: [...MCP_SCOPES],
+    resource_name: MCP_RESOURCE_NAME
+  });
+});
+
 /**
  * Goal: Include Link response headers for agent discovery (RFC 8288)
  * This is handled in the main index.ts for the homepage, but we can also

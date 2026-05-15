@@ -1,7 +1,6 @@
 /**
- * WebMCP Support (navigator.modelContext.provideContext)
- * Exposes site tools to AI agents via the browser.
- * @see https://webmachinelearning.github.io/webmcp/
+ * WebMCP — https://webmachinelearning.github.io/webmcp/
+ * Use navigator.modelContext.registerTool() (not provideContext); optional AbortSignal unregisters.
  */
 
 export interface WebMcpInitiativeSummary {
@@ -10,70 +9,122 @@ export interface WebMcpInitiativeSummary {
   status: string;
 }
 
-export interface WebMcpOptions {
+export interface WebMcpHubToolOptions {
   onSearchInitiatives: (query: string) => Promise<WebMcpInitiativeSummary[]>;
   onOpenInitiative: (id: string) => void;
   onCreateInitiative: () => void;
 }
 
-export function setupWebMcp(options: WebMcpOptions) {
-  if (typeof navigator === "undefined" || !("modelContext" in (navigator as any))) {
-    // console.log("[WebMCP] Not supported in this browser");
-    return;
-  }
+type RegisterToolFn = (
+  tool: {
+    name: string;
+    description: string;
+    inputSchema?: object;
+    execute: (args: Record<string, unknown>) => Promise<unknown> | unknown;
+  },
+  options?: { signal?: AbortSignal }
+) => void;
 
-  try {
-    const modelContext = (navigator as any).modelContext;
+function getRegisterTool(): RegisterToolFn | undefined {
+  if (typeof navigator === "undefined" || !("modelContext" in navigator)) return undefined;
+  const mc = (navigator as Navigator & { modelContext?: { registerTool?: RegisterToolFn } }).modelContext;
+  return typeof mc?.registerTool === "function" ? mc.registerTool.bind(mc) : undefined;
+}
 
-    modelContext.provideContext({
-      tools: [
-        {
-          name: "search_initiatives",
-          description: "Search for product initiatives in the current workspace",
-          inputSchema: {
-            type: "object",
-            properties: {
-              query: { type: "string", description: "Search query" }
-            },
-            required: ["query"]
-          },
-          execute: async ({ query }: { query: string }) => {
-            const results = await options.onSearchInitiatives(query);
-            return { results };
-          }
+/**
+ * Public-site tools (run on every page load, including signed-out homepage) for agent discovery scans.
+ */
+export function registerPublicWebMcpTools(
+  navigate: (to: string) => void,
+  signal: AbortSignal
+): void {
+  const registerTool = getRegisterTool();
+  if (!registerTool) return;
+
+  registerTool(
+    {
+      name: "tymio.open_wiki",
+      description: "Navigate to the Tymio public documentation wiki (MCP, workspace atlas, guides).",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute: async () => {
+        navigate("/wiki");
+        return { ok: true as const, path: "/wiki" };
+      }
+    },
+    { signal }
+  );
+
+  registerTool(
+    {
+      name: "tymio.open_register_workspace",
+      description: "Navigate to the workspace registration flow for a new team hub.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute: async () => {
+        navigate("/register-workspace");
+        return { ok: true as const, path: "/register-workspace" };
+      }
+    },
+    { signal }
+  );
+}
+
+/**
+ * Hub tools when the user is in a workspace with loaded initiatives.
+ */
+export function registerHubWebMcpTools(options: WebMcpHubToolOptions, signal: AbortSignal): void {
+  const registerTool = getRegisterTool();
+  if (!registerTool) return;
+
+  registerTool(
+    {
+      name: "tymio.search_initiatives",
+      description: "Search initiatives in the current workspace by title, description, or domain name.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Case-insensitive substring to match" }
         },
-        {
-          name: "open_initiative",
-          description: "Open the detail panel for a specific initiative",
-          inputSchema: {
-            type: "object",
-            properties: {
-              id: { type: "string", description: "Initiative ID" }
-            },
-            required: ["id"]
-          },
-          execute: async ({ id }: { id: string }) => {
-            options.onOpenInitiative(id);
-            return { success: true, message: `Opened initiative ${id}` };
-          }
-        },
-        {
-          name: "create_initiative",
-          description: "Open the form to create a new initiative",
-          inputSchema: {
-            type: "object",
-            properties: {},
-            required: []
-          },
-          execute: async () => {
-            options.onCreateInitiative();
-            return { success: true, message: "Opened creation form" };
-          }
-        }
-      ]
-    });
-    // console.log("[WebMCP] Context provided successfully");
-  } catch (err) {
-    console.error("[WebMCP] Failed to provide context:", err);
-  }
+        required: ["query"],
+        additionalProperties: false
+      },
+      execute: async (args) => {
+        const query = String(args.query ?? "");
+        const results = await options.onSearchInitiatives(query);
+        return { results };
+      }
+    },
+    { signal }
+  );
+
+  registerTool(
+    {
+      name: "tymio.open_initiative",
+      description: "Open the initiative detail panel for a given initiative id.",
+      inputSchema: {
+        type: "object",
+        properties: { id: { type: "string", description: "Initiative id" } },
+        required: ["id"],
+        additionalProperties: false
+      },
+      execute: async (args) => {
+        const id = String(args.id ?? "");
+        options.onOpenInitiative(id);
+        return { ok: true as const, id };
+      }
+    },
+    { signal }
+  );
+
+  registerTool(
+    {
+      name: "tymio.open_create_initiative",
+      description: "Open the create-initiative form when the user has permission to create.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute: async () => {
+        options.onCreateInitiative();
+        return { ok: true as const };
+      }
+    },
+    { signal }
+  );
 }
