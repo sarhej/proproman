@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1280" viewBox="0 0 960 1280">
+  <title>Living Project Atlas hub wireframes</title>
+  <desc>Route /atlas with tabs Overview, Topics, Graph, Review, Connections. Read-only compiled viewer + topic editor (Topics). Graph lists backlog spine + architecture topics. Review inbox placeholder until Curator. Connections links SDLC/repos. Redirect /architecture-topics to /atlas?tab=topics.</desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; }
+      .tabOn { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; }
+      .tabOff { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+      .hdr { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .sub { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 11px; font-weight: 600; fill: #334155; }
+      .txt { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 10px; fill: #475569; }
+      .mono { font-family: ui-monospace, monospace; font-size: 9px; fill: #64748b; }
+      .card { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+      .note { fill: #fffbeb; stroke: #d97706; stroke-width: 1; }
+    ]]></style>
+  </defs>
+
+  <text x="480" y="26" text-anchor="middle" class="hdr" font-size="16">Living Project Atlas hub</text>
+  <text x="480" y="44" text-anchor="middle" class="txt">Nav: Project atlas &#183; Route: /atlas &#183; P0 feature: Atlas hub GUI and graph explorer</text>
+
+  <!-- Shell -->
+  <rect class="frame" x="24" y="64" width="912" height="520" rx="8"/>
+  <text x="40" y="92" class="hdr">Project atlas</text>
+  <text x="40" y="110" class="txt">Compiled workspace truth for humans and agents (deterministic rebuild on hub changes).</text>
+  <rect class="tabOn" x="40" y="122" width="72" height="24" rx="4"/>
+  <text x="76" y="138" text-anchor="middle" class="sub" fill="#1d4ed8">Overview</text>
+  <rect class="tabOff" x="118" y="122" width="56" height="24" rx="4"/>
+  <text x="146" y="138" text-anchor="middle" class="txt">Topics</text>
+  <rect class="tabOff" x="180" y="122" width="52" height="24" rx="4"/>
+  <text x="206" y="138" text-anchor="middle" class="txt">Graph</text>
+  <rect class="tabOff" x="238" y="122" width="56" height="24" rx="4"/>
+  <text x="266" y="138" text-anchor="middle" class="txt">Review</text>
+  <rect class="tabOff" x="300" y="122" width="88" height="24" rx="4"/>
+  <text x="344" y="138" text-anchor="middle" class="txt">Connections</text>
+
+  <!-- Overview tab content -->
+  <rect class="card" x="40" y="160" width="160" height="72" rx="6"/>
+  <text x="52" y="182" class="sub">Freshness</text>
+  <text x="52" y="200" class="mono">materializedAt</text>
+  <text x="52" y="216" class="mono">sourceMaxUpdatedAt</text>
+  <rect class="card" x="216" y="160" width="420" height="72" rx="6"/>
+  <text x="228" y="182" class="sub">Object counts</text>
+  <text x="228" y="200" class="txt">domains &#183; products &#183; initiatives &#183; features &#183; requirements &#183; architecture topics</text>
+  <rect class="card" x="648" y="160" width="272" height="72" rx="6"/>
+  <text x="660" y="182" class="sub">Ontology pointers</text>
+  <text x="660" y="200" class="txt">Capability brief (MCP) &#183; Backlog spine doc ref</text>
+
+  <text x="40" y="260" class="sub">Compiled architecture topics (read-only preview)</text>
+  <rect class="frame" x="40" y="268" width="280" height="140" rx="4"/>
+  <text x="52" y="290" class="txt">multitenancy (slug)</text>
+  <text x="52" y="308" class="mono">As-is layer excerpt&#x2026;</text>
+  <text x="52" y="324" class="mono">To-be layer excerpt&#x2026;</text>
+  <text x="52" y="340" class="mono">provenance.materializedAt</text>
+  <rect class="frame" x="336" y="268" width="584" height="300" rx="4"/>
+  <text x="348" y="292" class="sub">Shard detail (selected topic)</text>
+  <text x="348" y="312" class="txt">facts.layers.asIs: capabilities, doc excerpts, matched affordances</text>
+  <text x="348" y="328" class="txt">facts.layers.toBe: linked initiatives/features/requirements + gaps[]</text>
+  <text x="348" y="348" class="mono">GET /api/workspace-atlas/objects/ARCHITECTURE_TOPIC/:id</text>
+
+  <!-- Topics tab -->
+  <rect class="frame" x="24" y="600" width="440" height="280" rx="8"/>
+  <text x="40" y="628" class="sub">Topics tab (embed existing editor)</text>
+  <text x="40" y="648" class="txt">Left: topic list + New (EDITOR+) &#183; Right: human as-is/to-be fields, links</text>
+  <text x="40" y="668" class="txt">Same as today ArchitectureTopicsPage without duplicate page title when embedded.</text>
+  <text x="40" y="688" class="mono">Save triggers debounced atlas rebuild</text>
+
+  <!-- Graph tab -->
+  <rect class="frame" x="480" y="600" width="456" height="280" rx="8"/>
+  <text x="496" y="628" class="sub">Graph tab (v1 list explorer)</text>
+  <text x="496" y="648" class="txt">Grouped: Initiative &#8594; Features &#8594; Requirements (from workspace-atlas.json indices)</text>
+  <text x="496" y="668" class="txt">Section: Architecture topics with edges to initiatives (from shard graph.edges)</text>
+  <text x="496" y="688" class="txt">v2: force-directed canvas; v1: searchable nested lists + side panel</text>
+
+  <!-- Review + Connections -->
+  <rect class="frame" x="24" y="900" width="440" height="160" rx="8"/>
+  <text x="40" y="928" class="sub">Review tab (placeholder)</text>
+  <text x="40" y="948" class="txt">Empty state: Curator proposals will appear here for human approve/reject.</text>
+  <text x="40" y="968" class="mono">Phase B: proposal inbox API + structured diff UI</text>
+
+  <rect class="frame" x="480" y="900" width="456" height="160" rx="8"/>
+  <text x="496" y="928" class="sub">Connections tab</text>
+  <text x="496" y="948" class="txt">Repository connections, releases index from auxiliaryIndex; link to /sdlc</text>
+  <text x="496" y="968" class="txt">Git observe (PR/push) lands here in Phase A tasks; v1 read-only health list</text>
+
+  <rect class="note" x="24" y="1080" width="912" height="120" rx="8"/>
+  <text x="40" y="1104" class="sub">Implementation notes</text>
+  <text x="40" y="1124" class="txt">1. GET /api/workspace-atlas returns compiled JSON or { atlas: null }; GET .../objects/:type/:id for shards.</text>
+  <text x="40" y="1144" class="txt">2. Nav label Project atlas; redirect /architecture-topics &#8594; /atlas?tab=topics. i18n: en, cs, sk, pl, uk.</text>
+  <text x="40" y="1164" class="txt">3. Out of scope this slice: Projectopedia chat, Curator agent, signal intake, graph canvas, Git ingest UI.</text>
+
+  <text x="480" y="1268" text-anchor="middle" class="mono">ATLAS_HUB_WIREFRAMES.svg &#8212; validate with xmllint --noout</text>
+</svg>

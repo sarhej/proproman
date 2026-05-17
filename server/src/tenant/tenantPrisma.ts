@@ -40,6 +40,7 @@ export const TENANT_SCOPED_MODELS = new Set([
   "SecurityTopic",
   "ArchitectureTopic",
   "RepositoryConnection",
+  "GitActivity",
   "WorkArtifactLink",
   "DesignArtifactLink",
   "Release"

@@ -75,6 +75,8 @@ import { vcsOauthGitlabRouter } from "./routes/vcs-oauth-gitlab.js";
 import { useCasesRouter } from "./routes/use-cases.js";
 import { securityTopicsRouter } from "./routes/security-topics.js";
 import { architectureTopicsRouter } from "./routes/architecture-topics.js";
+import { workspaceAtlasRouter } from "./routes/workspace-atlas.js";
+import { gitObserveRouter } from "./routes/git-observe.js";
 import { releasesRouter } from "./routes/releases.js";
 import { repositoryConnectionsRouter } from "./routes/repository-connections.js";
 import { workArtifactLinksRouter } from "./routes/work-artifact-links.js";
@@ -305,6 +307,8 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/demands", dema
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/use-cases", useCasesRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/security-topics", securityTopicsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/architecture-topics", architectureTopicsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/workspace-atlas", workspaceAtlasRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/git-observe", gitObserveRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/releases", releasesRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/repository-connections", repositoryConnectionsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/work-artifact-links", workArtifactLinksRouter);

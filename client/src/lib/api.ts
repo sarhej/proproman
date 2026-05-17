@@ -334,6 +334,61 @@ export const api = {
     }),
   deleteArchitectureTopic: async (id: string) =>
     request<void>(`/api/architecture-topics/${id}`, { method: "DELETE" }),
+  getWorkspaceAtlas: async () =>
+    request<{
+      atlas: Record<string, unknown> | null;
+      compiled: boolean;
+      freshness: {
+        materializedAt: string;
+        sourceMaxUpdatedAt: string;
+        workspaceSlug: string;
+        isStale: boolean;
+        ageMinutes: number;
+      } | null;
+    }>("/api/workspace-atlas"),
+  getWorkspaceAtlasObject: async (objectType: string, id: string) =>
+    request<{ shard: Record<string, unknown> }>(
+      `/api/workspace-atlas/objects/${encodeURIComponent(objectType)}/${encodeURIComponent(id)}`
+    ),
+  getGitObserveHealth: async () =>
+    request<{
+      connections: Array<{
+        id: string;
+        provider: string;
+        owner: string;
+        repo: string;
+        displayName: string | null;
+        webhookUrl: string;
+        webhookSecretConfigured: boolean;
+        oauthConfigured: boolean;
+        lastWebhookReceivedAt: string | null;
+        lastWebhookEventType: string | null;
+        lastWebhookError: string | null;
+        activityCount: number;
+        releaseCount: number;
+      }>;
+    }>("/api/git-observe/health"),
+  getGitObserveActivity: async (params?: { limit?: number; connectionId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.connectionId) q.set("connectionId", params.connectionId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return request<{
+      activities: Array<{
+        id: string;
+        kind: string;
+        action: string | null;
+        branch: string | null;
+        title: string | null;
+        authorLogin: string | null;
+        externalUrl: string | null;
+        commitSha: string | null;
+        prNumber: number | null;
+        occurredAt: string;
+        repository: { owner: string; repo: string; displayName: string | null };
+      }>;
+    }>(`/api/git-observe/activity${suffix}`);
+  },
   getReleases: async () => request<{ releases: Release[] }>("/api/releases"),
   createRelease: async (body: unknown) =>
     request<{ release: Release }>("/api/releases", { method: "POST", body: JSON.stringify(body) }),

@@ -46,7 +46,7 @@ import { AccountsPage } from "./pages/AccountsPage";
 import { DemandsPage } from "./pages/DemandsPage";
 import { PartnersPage } from "./pages/PartnersPage";
 import { SdlcPage } from "./pages/SdlcPage";
-import { ArchitectureTopicsPage } from "./pages/ArchitectureTopicsPage";
+import { AtlasHubPage } from "./pages/AtlasHubPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
@@ -1097,16 +1097,17 @@ function App() {
               }
             />
             <Route
-              path="architecture-topics"
+              path="atlas"
               element={
-                <ViewRoute user={user} path="/architecture-topics" hiddenNavPaths={uiSettings.hiddenNavPaths}>
-                  <ArchitectureTopicsPage
+                <ViewRoute user={user} path="/atlas" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <AtlasHubPage
                     isAdmin={perms.canEditStructure}
                     initiatives={board.initiatives}
                   />
                 </ViewRoute>
               }
             />
+            <Route path="architecture-topics" element={<Navigate to="/atlas?tab=topics" replace />} />
             <Route
               path="campaigns"
               element={

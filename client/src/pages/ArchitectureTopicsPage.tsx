@@ -9,6 +9,8 @@ import { Input, Textarea } from "../components/ui/Field";
 type Props = {
   isAdmin: boolean;
   initiatives: Initiative[];
+  /** When rendered inside Atlas hub Topics tab, hide duplicate page header. */
+  embedded?: boolean;
 };
 
 function parseLines(s: string): string[] {
@@ -36,7 +38,7 @@ const emptyDraft = {
   capabilityIds: [] as string[]
 };
 
-export function ArchitectureTopicsPage({ isAdmin, initiatives }: Props) {
+export function ArchitectureTopicsPage({ isAdmin, initiatives, embedded = false }: Props) {
   const { t } = useTranslation();
   const [topics, setTopics] = useState<ArchitectureTopic[]>([]);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
@@ -119,11 +121,13 @@ export function ArchitectureTopicsPage({ isAdmin, initiatives }: Props) {
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-900">{t("architectureTopicsPage.title")}</h1>
-        <p className="mt-1 text-sm text-slate-600">{t("architectureTopicsPage.intro")}</p>
-      </div>
+    <div className={embedded ? "space-y-4" : "space-y-4 p-4"}>
+      {embedded ? null : (
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">{t("architectureTopicsPage.title")}</h1>
+          <p className="mt-1 text-sm text-slate-600">{t("architectureTopicsPage.intro")}</p>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(200px,280px)_1fr]">
         <Card className="p-3">

@@ -283,6 +283,12 @@ enum ReleaseSource {
   GITLAB
 }
 
+enum GitActivityKind {
+  PUSH
+  PULL_REQUEST
+  RELEASE
+}
+
 enum SecurityTopicCategory {
   AUTHN
   AUTHZ
@@ -1204,8 +1210,12 @@ model RepositoryConnection {
   oauthExpiresAt         DateTime?
   webhookSecret          String?
   externalInstallationId String?
+  lastWebhookReceivedAt  DateTime?
+  lastWebhookEventType   String?
+  lastWebhookError       String?
   workArtifactLinks      WorkArtifactLink[]
   releases               Release[]
+  gitActivities          GitActivity[]
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
@@ -1272,6 +1282,28 @@ model Release {
 
   @@index([tenantId])
   @@index([repositoryConnectionId])
+}
+
+model GitActivity {
+  id                     String               @id @default(cuid())
+  tenantId               String?
+  repositoryConnectionId String
+  kind                   GitActivityKind
+  action                 String?
+  deliveryId             String?
+  branch                 String?
+  title                  String?
+  authorLogin            String?
+  externalUrl            String?
+  commitSha              String?
+  prNumber               Int?
+  occurredAt             DateTime
+  repositoryConnection   RepositoryConnection @relation(fields: [repositoryConnectionId], references: [id], onDelete: Cascade)
+  createdAt              DateTime             @default(now())
+
+  @@unique([repositoryConnectionId, deliveryId])
+  @@index([tenantId, occurredAt])
+  @@index([repositoryConnectionId, occurredAt])
 }
 
 model ReleaseRequirement {
