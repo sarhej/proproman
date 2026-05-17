@@ -86,10 +86,13 @@ export function AtlasReviewPanel({ isAdmin }: Props) {
 
   if (proposals.length === 0) {
     return (
-      <Card className="p-6 text-center">
-        <p className="text-sm font-medium text-slate-800">{t("atlasHub.reviewEmptyTitle")}</p>
-        <p className="mt-2 text-sm text-slate-600">{t("atlasHub.reviewEmptyBody")}</p>
-      </Card>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">{t("atlasHub.reviewIntro")}</p>
+        <Card className="p-6 text-center">
+          <p className="text-sm font-medium text-slate-800">{t("atlasHub.reviewEmptyTitle")}</p>
+          <p className="mt-2 text-sm text-slate-600">{t("atlasHub.reviewEmptyBody")}</p>
+        </Card>
+      </div>
     );
   }
 
