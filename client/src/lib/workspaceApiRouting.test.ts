@@ -14,6 +14,7 @@ describe("workspaceApiRouting", () => {
     setWorkspaceApiCanonicalSlug("soma");
     expect(applyWorkspacePrefixToApiPath("/api/meta")).toBe("/t/soma/api/meta");
     expect(applyWorkspacePrefixToApiPath("/api/initiatives")).toBe("/t/soma/api/initiatives");
+    expect(applyWorkspacePrefixToApiPath("/api/ui-settings")).toBe("/t/soma/api/ui-settings");
   });
 
   it("does not prefix control-plane paths", () => {

@@ -292,7 +292,10 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/products", pro
  */
 app.use("/api/me", meSessionRouter);
 app.use("/api/me", meRouter);
-app.use("/api/ui-settings", uiSettingsRouter);
+/** Legacy: optional tenant via header/session; workspace plane: path-canonical tenant (required). */
+mountTenantScopedLegacyAndWorkspace(app, (path, router) => {
+  app.use(path, requireAuth, router);
+}, "/api/ui-settings", uiSettingsRouter);
 app.use("/api/agent", agentGuideRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api", executionBoardsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/accounts", accountsRouter);
