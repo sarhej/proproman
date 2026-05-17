@@ -827,17 +827,214 @@
     "notifyMe": "Повідомляти мене про зміни тут"
   },
   "notification": {
+    "entity": {
+      "USER": "Користувач",
+      "INITIATIVE": "Ініціатива",
+      "FEATURE": "Функція",
+      "REQUIREMENT": "Вимога",
+      "CAMPAIGN": "Кампанія",
+      "PRODUCT": "Продукт",
+      "DOMAIN": "Стовп",
+      "MILESTONE": "Віха",
+      "DEMAND": "Запит",
+      "COMMENT": "Коментар",
+      "DECISION": "Рішення",
+      "KPI": "KPI",
+      "RISK": "Ризик",
+      "STAKEHOLDER": "Зацікавлена сторона",
+      "SUCCESS_CRITERION": "Критерій успіху",
+      "ASSIGNMENT": "Призначення",
+      "USE_CASE": "Сценарій використання",
+      "SECURITY_TOPIC": "Тема безпеки",
+      "PERSONA": "Персона",
+      "PARTNER": "Партнер",
+      "REVENUE_STREAM": "Потік доходу",
+      "TENANT": "Робочий простір",
+      "RELEASE": "Реліз",
+      "REPOSITORY_CONNECTION": "Репозиторій",
+      "CAMPAIGN_LINK": "Посилання кампанії",
+      "DESIGN_ARTIFACT_LINK": "Дизайн-посилання",
+      "WORK_ARTIFACT_LINK": "Посилання робочого артефакту",
+      "CAPABILITY": "Можливість",
+      "CAPABILITY_BINDING": "Прив'язка можливості",
+      "UI_SETTINGS": "Налаштування UI",
+      "EXPORT": "Експорт",
+      "IMPORT": "Імпорт",
+      "ALL_DATA": "Усі дані",
+      "ONTOLOGY_REFRESH": "Онтологія",
+      "COMPILED_BRIEF": "Зібраний brief",
+      "AGENT_BRIEF_EXPORT": "Експорт agent brief"
+    },
+    "action": {
+      "CREATED": "Створено",
+      "UPDATED": "Оновлено",
+      "DELETED": "Видалено",
+      "STATUS_CHANGED": "Зміна статусу",
+      "ROLE_CHANGED": "Зміна ролі",
+      "LOGIN": "Вхід"
+    },
     "initiative": {
       "created": "Ініціативу «{{title}}» створено",
       "updated": "Ініціативу «{{title}}» оновлено",
       "deleted": "Ініціативу «{{title}}» видалено",
       "status_changed": "Статус ініціативи «{{title}}» змінено з {{old}} на {{new}}"
     },
-    "feature": { "created": "Функцію «{{title}}» створено", "updated": "Функцію «{{title}}» оновлено", "deleted": "Функцію «{{title}}» видалено" },
-    "campaign": { "created": "Кампанію «{{title}}» створено", "updated": "Кампанію «{{title}}» оновлено", "deleted": "Кампанію «{{title}}» видалено" },
-    "product": { "created": "Продукт «{{title}}» створено", "updated": "Продукт «{{title}}» оновлено", "deleted": "Продукт «{{title}}» видалено" },
-    "domain": { "created": "Стовп «{{title}}» створено", "updated": "Стовп «{{title}}» оновлено", "deleted": "Стовп «{{title}}» видалено" },
-    "default": "{{type}}: {{title}}"
+    "user": {
+      "login": "Користувач {{name}} увійшов до робочого простору",
+      "created": "Створено обліковий запис користувача {{title}}",
+      "updated": "Користувача «{{title}}» оновлено",
+      "deleted": "Користувача «{{title}}» видалено",
+      "role_changed": "Роль користувача «{{title}}» змінено з {{old}} на {{new}}",
+      "status_changed": "Статус користувача «{{title}}» змінено з {{old}} на {{new}}"
+    },
+    "feature": {
+      "created": "Функцію «{{title}}» створено",
+      "updated": "Функцію «{{title}}» оновлено",
+      "deleted": "Функцію «{{title}}» видалено"
+    },
+    "requirement": {
+      "created": "Вимогу «{{title}}» створено",
+      "updated": "Вимогу «{{title}}» оновлено",
+      "deleted": "Вимогу «{{title}}» видалено"
+    },
+    "campaign": {
+      "created": "Кампанію «{{title}}» створено",
+      "updated": "Кампанію «{{title}}» оновлено",
+      "deleted": "Кампанію «{{title}}» видалено"
+    },
+    "product": {
+      "created": "Продукт «{{title}}» створено",
+      "updated": "Продукт «{{title}}» оновлено",
+      "deleted": "Продукт «{{title}}» видалено"
+    },
+    "domain": {
+      "created": "Стовп «{{title}}» створено",
+      "updated": "Стовп «{{title}}» оновлено",
+      "deleted": "Стовп «{{title}}» видалено"
+    },
+    "milestone": {
+      "created": "Віху «{{title}}» створено",
+      "updated": "Віху «{{title}}» оновлено",
+      "deleted": "Віху «{{title}}» видалено"
+    },
+    "demand": {
+      "created": "Запит «{{title}}» створено",
+      "updated": "Запит «{{title}}» оновлено",
+      "deleted": "Запит «{{title}}» видалено"
+    },
+    "comment": {
+      "created": "Новий коментар до ініціативи",
+      "updated": "Коментар оновлено",
+      "deleted": "Коментар видалено"
+    },
+    "decision": {
+      "created": "Рішення «{{title}}» зафіксовано",
+      "updated": "Рішення «{{title}}» оновлено",
+      "deleted": "Рішення «{{title}}» видалено"
+    },
+    "kpi": {
+      "created": "KPI «{{title}}» створено",
+      "updated": "KPI «{{title}}» оновлено",
+      "deleted": "KPI «{{title}}» видалено"
+    },
+    "risk": {
+      "created": "Ризик «{{title}}» створено",
+      "updated": "Ризик «{{title}}» оновлено",
+      "deleted": "Ризик «{{title}}» видалено"
+    },
+    "stakeholder": {
+      "created": "Зацікавлену сторону «{{title}}» додано",
+      "updated": "Зацікавлену сторону «{{title}}» оновлено",
+      "deleted": "Зацікавлену сторону «{{title}}» видалено"
+    },
+    "success_criterion": {
+      "created": "Критерій успіху «{{title}}» додано",
+      "updated": "Критерій успіху «{{title}}» оновлено",
+      "deleted": "Критерій успіху «{{title}}» видалено"
+    },
+    "assignment": {
+      "created": "Призначення команди оновлено",
+      "updated": "Призначення команди оновлено",
+      "deleted": "Призначення команди видалено"
+    },
+    "use_case": {
+      "created": "Сценарій «{{title}}» створено",
+      "updated": "Сценарій «{{title}}» оновлено",
+      "deleted": "Сценарій «{{title}}» видалено"
+    },
+    "security_topic": {
+      "created": "Тему безпеки «{{title}}» створено",
+      "updated": "Тему безпеки «{{title}}» оновлено",
+      "deleted": "Тему безпеки «{{title}}» видалено"
+    },
+    "persona": {
+      "created": "Персону «{{title}}» створено",
+      "updated": "Персону «{{title}}» оновлено",
+      "deleted": "Персону «{{title}}» видалено"
+    },
+    "partner": {
+      "created": "Партнера «{{title}}» додано",
+      "updated": "Партнера «{{title}}» оновлено",
+      "deleted": "Партнера «{{title}}» видалено"
+    },
+    "revenue_stream": {
+      "created": "Потік доходу «{{title}}» створено",
+      "updated": "Потік доходу «{{title}}» оновлено",
+      "deleted": "Потік доходу «{{title}}» видалено"
+    },
+    "tenant": {
+      "created": "Робочий простір «{{title}}» створено",
+      "updated": "Налаштування робочого простору оновлено",
+      "deleted": "Робочий простір «{{title}}» видалено"
+    },
+    "release": {
+      "created": "Реліз «{{title}}» створено",
+      "updated": "Реліз «{{title}}» оновлено",
+      "deleted": "Реліз «{{title}}» видалено"
+    },
+    "repository_connection": {
+      "created": "Підключення репозиторію «{{title}}» додано",
+      "updated": "Підключення репозиторію оновлено",
+      "deleted": "Підключення репозиторію видалено"
+    },
+    "campaign_link": {
+      "created": "Посилання кампанії створено",
+      "updated": "Посилання кампанії оновлено",
+      "deleted": "Посилання кампанії видалено"
+    },
+    "design_artifact_link": {
+      "created": "Дизайн-посилання додано",
+      "updated": "Дизайн-посилання оновлено",
+      "deleted": "Дизайн-посилання видалено"
+    },
+    "work_artifact_link": {
+      "created": "Посилання робочого артефакту додано",
+      "updated": "Посилання робочого артефакту оновлено",
+      "deleted": "Посилання робочого артефакту видалено"
+    },
+    "capability": {
+      "created": "Можливість «{{title}}» створено",
+      "updated": "Можливість «{{title}}» оновлено",
+      "deleted": "Можливість «{{title}}» видалено"
+    },
+    "capability_binding": {
+      "created": "Прив'язку можливості створено",
+      "updated": "Прив'язку можливості оновлено",
+      "deleted": "Прив'язку можливості видалено"
+    },
+    "ui_settings": {
+      "updated": "Налаштування UI оновлено"
+    },
+    "export": {
+      "created": "Експорт даних завершено"
+    },
+    "import": {
+      "created": "Імпорт даних завершено"
+    },
+    "all_data": {
+      "deleted": "Усі дані робочого простору очищено"
+    },
+    "default": "{{entity}} · {{action}}: {{title}}"
   },
   "tenant": {
     "requestNewWorkspaceFullPage": "Повна сторінка реєстрації (вхід, запрошення, домен)",

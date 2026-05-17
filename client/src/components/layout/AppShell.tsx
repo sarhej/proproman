@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Globe, Home, Menu, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import { api } from "../../lib/api";
 import { computeNavShellSections } from "../../lib/navShellModel";
 import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
@@ -436,8 +437,25 @@ export function AppShell({
                 ) : (
                   <ul className="space-y-0.5">
                     {messages.map((msg) => {
+                      const titleParams = (msg.titleParams as Record<string, string>) ?? {};
+                      if (msg.titleKey === "notification.user.login" && !titleParams.name) {
+                        titleParams.name =
+                          titleParams.title !== "USER"
+                            ? titleParams.title
+                            : titleParams.email ?? titleParams.title;
+                      }
                       const displayTitle = msg.titleKey
-                        ? t(msg.titleKey, (msg.titleParams as Record<string, string>) ?? {})
+                        ? i18n.exists(msg.titleKey)
+                          ? t(msg.titleKey, titleParams)
+                          : t("notification.default", {
+                              entity: t(`notification.entity.${msg.entityType ?? ""}`, {
+                                defaultValue: msg.entityType ?? ""
+                              }),
+                              action: t(`notification.action.${titleParams.action ?? ""}`, {
+                                defaultValue: titleParams.action ?? ""
+                              }),
+                              title: titleParams.title ?? msg.title ?? ""
+                            })
                         : msg.title ?? "";
                       const displayBody = msg.bodyKey
                         ? t(msg.bodyKey, (msg.bodyParams as Record<string, string>) ?? {})

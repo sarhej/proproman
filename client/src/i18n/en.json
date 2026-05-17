@@ -874,17 +874,214 @@
     "notifyMe": "Notify me about changes here"
   },
   "notification": {
+    "entity": {
+      "USER": "User",
+      "INITIATIVE": "Initiative",
+      "FEATURE": "Feature",
+      "REQUIREMENT": "Requirement",
+      "CAMPAIGN": "Campaign",
+      "PRODUCT": "Product",
+      "DOMAIN": "Pillar",
+      "MILESTONE": "Milestone",
+      "DEMAND": "Demand",
+      "COMMENT": "Comment",
+      "DECISION": "Decision",
+      "KPI": "KPI",
+      "RISK": "Risk",
+      "STAKEHOLDER": "Stakeholder",
+      "SUCCESS_CRITERION": "Success criterion",
+      "ASSIGNMENT": "Assignment",
+      "USE_CASE": "Use case",
+      "SECURITY_TOPIC": "Security topic",
+      "PERSONA": "Persona",
+      "PARTNER": "Partner",
+      "REVENUE_STREAM": "Revenue stream",
+      "TENANT": "Workspace",
+      "RELEASE": "Release",
+      "REPOSITORY_CONNECTION": "Repository",
+      "CAMPAIGN_LINK": "Campaign link",
+      "DESIGN_ARTIFACT_LINK": "Design link",
+      "WORK_ARTIFACT_LINK": "Work artifact link",
+      "CAPABILITY": "Capability",
+      "CAPABILITY_BINDING": "Capability binding",
+      "UI_SETTINGS": "UI settings",
+      "EXPORT": "Export",
+      "IMPORT": "Import",
+      "ALL_DATA": "All data",
+      "ONTOLOGY_REFRESH": "Ontology",
+      "COMPILED_BRIEF": "Compiled brief",
+      "AGENT_BRIEF_EXPORT": "Agent brief export"
+    },
+    "action": {
+      "CREATED": "Created",
+      "UPDATED": "Updated",
+      "DELETED": "Deleted",
+      "STATUS_CHANGED": "Status changed",
+      "ROLE_CHANGED": "Role changed",
+      "LOGIN": "Sign-in"
+    },
     "initiative": {
       "created": "Initiative \"{{title}}\" was created",
       "updated": "Initiative \"{{title}}\" was updated",
       "deleted": "Initiative \"{{title}}\" was deleted",
       "status_changed": "Initiative \"{{title}}\" status changed from {{old}} to {{new}}"
     },
-    "feature": { "created": "Feature \"{{title}}\" was created", "updated": "Feature \"{{title}}\" was updated", "deleted": "Feature \"{{title}}\" was deleted" },
-    "campaign": { "created": "Campaign \"{{title}}\" was created", "updated": "Campaign \"{{title}}\" was updated", "deleted": "Campaign \"{{title}}\" was deleted" },
-    "product": { "created": "Product \"{{title}}\" was created", "updated": "Product \"{{title}}\" was updated", "deleted": "Product \"{{title}}\" was deleted" },
-    "domain": { "created": "Pillar \"{{title}}\" was created", "updated": "Pillar \"{{title}}\" was updated", "deleted": "Pillar \"{{title}}\" was deleted" },
-    "default": "{{type}}: {{title}}"
+    "user": {
+      "login": "{{name}} signed in to the workspace",
+      "created": "User account created for {{title}}",
+      "updated": "User \"{{title}}\" was updated",
+      "deleted": "User \"{{title}}\" was removed",
+      "role_changed": "Role for \"{{title}}\" changed from {{old}} to {{new}}",
+      "status_changed": "User \"{{title}}\" status changed from {{old}} to {{new}}"
+    },
+    "feature": {
+      "created": "Feature \"{{title}}\" was created",
+      "updated": "Feature \"{{title}}\" was updated",
+      "deleted": "Feature \"{{title}}\" was deleted"
+    },
+    "requirement": {
+      "created": "Requirement \"{{title}}\" was created",
+      "updated": "Requirement \"{{title}}\" was updated",
+      "deleted": "Requirement \"{{title}}\" was deleted"
+    },
+    "campaign": {
+      "created": "Campaign \"{{title}}\" was created",
+      "updated": "Campaign \"{{title}}\" was updated",
+      "deleted": "Campaign \"{{title}}\" was deleted"
+    },
+    "product": {
+      "created": "Product \"{{title}}\" was created",
+      "updated": "Product \"{{title}}\" was updated",
+      "deleted": "Product \"{{title}}\" was deleted"
+    },
+    "domain": {
+      "created": "Pillar \"{{title}}\" was created",
+      "updated": "Pillar \"{{title}}\" was updated",
+      "deleted": "Pillar \"{{title}}\" was deleted"
+    },
+    "milestone": {
+      "created": "Milestone \"{{title}}\" was created",
+      "updated": "Milestone \"{{title}}\" was updated",
+      "deleted": "Milestone \"{{title}}\" was deleted"
+    },
+    "demand": {
+      "created": "Demand \"{{title}}\" was created",
+      "updated": "Demand \"{{title}}\" was updated",
+      "deleted": "Demand \"{{title}}\" was deleted"
+    },
+    "comment": {
+      "created": "New comment on initiative",
+      "updated": "Comment was updated",
+      "deleted": "Comment was deleted"
+    },
+    "decision": {
+      "created": "Decision \"{{title}}\" was recorded",
+      "updated": "Decision \"{{title}}\" was updated",
+      "deleted": "Decision \"{{title}}\" was removed"
+    },
+    "kpi": {
+      "created": "KPI \"{{title}}\" was created",
+      "updated": "KPI \"{{title}}\" was updated",
+      "deleted": "KPI \"{{title}}\" was deleted"
+    },
+    "risk": {
+      "created": "Risk \"{{title}}\" was created",
+      "updated": "Risk \"{{title}}\" was updated",
+      "deleted": "Risk \"{{title}}\" was deleted"
+    },
+    "stakeholder": {
+      "created": "Stakeholder \"{{title}}\" was added",
+      "updated": "Stakeholder \"{{title}}\" was updated",
+      "deleted": "Stakeholder \"{{title}}\" was removed"
+    },
+    "success_criterion": {
+      "created": "Success criterion \"{{title}}\" was added",
+      "updated": "Success criterion \"{{title}}\" was updated",
+      "deleted": "Success criterion \"{{title}}\" was removed"
+    },
+    "assignment": {
+      "created": "Team assignment was updated",
+      "updated": "Team assignment was updated",
+      "deleted": "Team assignment was removed"
+    },
+    "use_case": {
+      "created": "Use case \"{{title}}\" was created",
+      "updated": "Use case \"{{title}}\" was updated",
+      "deleted": "Use case \"{{title}}\" was deleted"
+    },
+    "security_topic": {
+      "created": "Security topic \"{{title}}\" was created",
+      "updated": "Security topic \"{{title}}\" was updated",
+      "deleted": "Security topic \"{{title}}\" was deleted"
+    },
+    "persona": {
+      "created": "Persona \"{{title}}\" was created",
+      "updated": "Persona \"{{title}}\" was updated",
+      "deleted": "Persona \"{{title}}\" was deleted"
+    },
+    "partner": {
+      "created": "Partner \"{{title}}\" was added",
+      "updated": "Partner \"{{title}}\" was updated",
+      "deleted": "Partner \"{{title}}\" was removed"
+    },
+    "revenue_stream": {
+      "created": "Revenue stream \"{{title}}\" was created",
+      "updated": "Revenue stream \"{{title}}\" was updated",
+      "deleted": "Revenue stream \"{{title}}\" was deleted"
+    },
+    "tenant": {
+      "created": "Workspace \"{{title}}\" was created",
+      "updated": "Workspace settings were updated",
+      "deleted": "Workspace \"{{title}}\" was removed"
+    },
+    "release": {
+      "created": "Release \"{{title}}\" was created",
+      "updated": "Release \"{{title}}\" was updated",
+      "deleted": "Release \"{{title}}\" was deleted"
+    },
+    "repository_connection": {
+      "created": "Repository connection \"{{title}}\" was added",
+      "updated": "Repository connection was updated",
+      "deleted": "Repository connection was removed"
+    },
+    "campaign_link": {
+      "created": "Campaign link was created",
+      "updated": "Campaign link was updated",
+      "deleted": "Campaign link was removed"
+    },
+    "design_artifact_link": {
+      "created": "Design link was added",
+      "updated": "Design link was updated",
+      "deleted": "Design link was removed"
+    },
+    "work_artifact_link": {
+      "created": "Work artifact link was added",
+      "updated": "Work artifact link was updated",
+      "deleted": "Work artifact link was removed"
+    },
+    "capability": {
+      "created": "Capability \"{{title}}\" was created",
+      "updated": "Capability \"{{title}}\" was updated",
+      "deleted": "Capability \"{{title}}\" was deleted"
+    },
+    "capability_binding": {
+      "created": "Capability binding was created",
+      "updated": "Capability binding was updated",
+      "deleted": "Capability binding was removed"
+    },
+    "ui_settings": {
+      "updated": "UI settings were updated"
+    },
+    "export": {
+      "created": "Data export completed"
+    },
+    "import": {
+      "created": "Data import completed"
+    },
+    "all_data": {
+      "deleted": "All workspace data was cleared"
+    },
+    "default": "{{entity}} · {{action}}: {{title}}"
   },
   "tenant": {
     "requestNewWorkspaceFullPage": "Full registration page (sign-in, teammates, domain)",

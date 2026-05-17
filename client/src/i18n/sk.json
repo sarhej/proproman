@@ -827,17 +827,214 @@
     "notifyMe": "Upozorni ma na zmeny tu"
   },
   "notification": {
+    "entity": {
+      "USER": "Používateľ",
+      "INITIATIVE": "Iniciatíva",
+      "FEATURE": "Funkcia",
+      "REQUIREMENT": "Požiadavka",
+      "CAMPAIGN": "Kampaň",
+      "PRODUCT": "Produkt",
+      "DOMAIN": "Pilier",
+      "MILESTONE": "Míľnik",
+      "DEMAND": "Dopyt",
+      "COMMENT": "Komentár",
+      "DECISION": "Rozhodnutie",
+      "KPI": "KPI",
+      "RISK": "Riziko",
+      "STAKEHOLDER": "Zainteresovaná strana",
+      "SUCCESS_CRITERION": "Kritérium úspechu",
+      "ASSIGNMENT": "Priradenie",
+      "USE_CASE": "Use case",
+      "SECURITY_TOPIC": "Bezpečnostná téma",
+      "PERSONA": "Persona",
+      "PARTNER": "Partner",
+      "REVENUE_STREAM": "Tok príjmov",
+      "TENANT": "Pracovný priestor",
+      "RELEASE": "Release",
+      "REPOSITORY_CONNECTION": "Repozitár",
+      "CAMPAIGN_LINK": "Odkaz kampane",
+      "DESIGN_ARTIFACT_LINK": "Designový odkaz",
+      "WORK_ARTIFACT_LINK": "Odkaz pracovného artefaktu",
+      "CAPABILITY": "Schopnosť",
+      "CAPABILITY_BINDING": "Väzba schopnosti",
+      "UI_SETTINGS": "Nastavenia UI",
+      "EXPORT": "Export",
+      "IMPORT": "Import",
+      "ALL_DATA": "Všetky dáta",
+      "ONTOLOGY_REFRESH": "Ontológia",
+      "COMPILED_BRIEF": "Zostavený brief",
+      "AGENT_BRIEF_EXPORT": "Export agent briefu"
+    },
+    "action": {
+      "CREATED": "Vytvorené",
+      "UPDATED": "Upravené",
+      "DELETED": "Zmazané",
+      "STATUS_CHANGED": "Zmena stavu",
+      "ROLE_CHANGED": "Zmena role",
+      "LOGIN": "Prihlásenie"
+    },
     "initiative": {
       "created": "Iniciatíva \"{{title}}\" bola vytvorená",
       "updated": "Iniciatíva \"{{title}}\" bola upravená",
       "deleted": "Iniciatíva \"{{title}}\" bola zmazaná",
       "status_changed": "U iniciatívy \"{{title}}\" sa zmenil stav z {{old}} na {{new}}"
     },
-    "feature": { "created": "Funkcia \"{{title}}\" bola vytvorená", "updated": "Funkcia \"{{title}}\" bola upravená", "deleted": "Funkcia \"{{title}}\" bola zmazaná" },
-    "campaign": { "created": "Kampaň \"{{title}}\" bola vytvorená", "updated": "Kampaň \"{{title}}\" bola upravená", "deleted": "Kampaň \"{{title}}\" bola zmazaná" },
-    "product": { "created": "Produkt \"{{title}}\" bol vytvorený", "updated": "Produkt \"{{title}}\" bol upravený", "deleted": "Produkt \"{{title}}\" bol zmazaný" },
-    "domain": { "created": "Pilier \"{{title}}\" bol vytvorený", "updated": "Pilier \"{{title}}\" bol upravený", "deleted": "Pilier \"{{title}}\" bol zmazaný" },
-    "default": "{{type}}: {{title}}"
+    "user": {
+      "login": "Používateľ {{name}} sa prihlásil do pracovného priestoru",
+      "created": "Bol vytvorený účet používateľa {{title}}",
+      "updated": "Používateľ \"{{title}}\" bol upravený",
+      "deleted": "Používateľ \"{{title}}\" bol odstránený",
+      "role_changed": "Rola používateľa \"{{title}}\" sa zmenila z {{old}} na {{new}}",
+      "status_changed": "Stav používateľa \"{{title}}\" sa zmenil z {{old}} na {{new}}"
+    },
+    "feature": {
+      "created": "Funkcia \"{{title}}\" bola vytvorená",
+      "updated": "Funkcia \"{{title}}\" bola upravená",
+      "deleted": "Funkcia \"{{title}}\" bola zmazaná"
+    },
+    "requirement": {
+      "created": "Požiadavka \"{{title}}\" bola vytvorená",
+      "updated": "Požiadavka \"{{title}}\" bola upravená",
+      "deleted": "Požiadavka \"{{title}}\" bola zmazaná"
+    },
+    "campaign": {
+      "created": "Kampaň \"{{title}}\" bola vytvorená",
+      "updated": "Kampaň \"{{title}}\" bola upravená",
+      "deleted": "Kampaň \"{{title}}\" bola zmazaná"
+    },
+    "product": {
+      "created": "Produkt \"{{title}}\" bol vytvorený",
+      "updated": "Produkt \"{{title}}\" bol upravený",
+      "deleted": "Produkt \"{{title}}\" bol zmazaný"
+    },
+    "domain": {
+      "created": "Pilier \"{{title}}\" bol vytvorený",
+      "updated": "Pilier \"{{title}}\" bol upravený",
+      "deleted": "Pilier \"{{title}}\" bol zmazaný"
+    },
+    "milestone": {
+      "created": "Míľnik \"{{title}}\" bol vytvorený",
+      "updated": "Míľnik \"{{title}}\" bol upravený",
+      "deleted": "Míľnik \"{{title}}\" bol zmazaný"
+    },
+    "demand": {
+      "created": "Dopyt \"{{title}}\" bol vytvorený",
+      "updated": "Dopyt \"{{title}}\" bol upravený",
+      "deleted": "Dopyt \"{{title}}\" bol zmazaný"
+    },
+    "comment": {
+      "created": "Nový komentár pri iniciatíve",
+      "updated": "Komentár bol upravený",
+      "deleted": "Komentár bol zmazaný"
+    },
+    "decision": {
+      "created": "Rozhodnutie \"{{title}}\" bolo zaznamenané",
+      "updated": "Rozhodnutie \"{{title}}\" bolo upravené",
+      "deleted": "Rozhodnutie \"{{title}}\" bolo odstránené"
+    },
+    "kpi": {
+      "created": "KPI \"{{title}}\" bolo vytvorené",
+      "updated": "KPI \"{{title}}\" bolo upravené",
+      "deleted": "KPI \"{{title}}\" bolo zmazané"
+    },
+    "risk": {
+      "created": "Riziko \"{{title}}\" bolo vytvorené",
+      "updated": "Riziko \"{{title}}\" bolo upravené",
+      "deleted": "Riziko \"{{title}}\" bolo zmazané"
+    },
+    "stakeholder": {
+      "created": "Zainteresovaná strana \"{{title}}\" bola pridaná",
+      "updated": "Zainteresovaná strana \"{{title}}\" bola upravená",
+      "deleted": "Zainteresovaná strana \"{{title}}\" bola odstránená"
+    },
+    "success_criterion": {
+      "created": "Kritérium úspechu \"{{title}}\" bolo pridané",
+      "updated": "Kritérium úspechu \"{{title}}\" bolo upravené",
+      "deleted": "Kritérium úspechu \"{{title}}\" bolo odstránené"
+    },
+    "assignment": {
+      "created": "Priradenie tímu bolo aktualizované",
+      "updated": "Priradenie tímu bolo aktualizované",
+      "deleted": "Priradenie tímu bolo odstránené"
+    },
+    "use_case": {
+      "created": "Use case \"{{title}}\" bol vytvorený",
+      "updated": "Use case \"{{title}}\" bol upravený",
+      "deleted": "Use case \"{{title}}\" bol zmazaný"
+    },
+    "security_topic": {
+      "created": "Bezpečnostná téma \"{{title}}\" bola vytvorená",
+      "updated": "Bezpečnostná téma \"{{title}}\" bola upravená",
+      "deleted": "Bezpečnostná téma \"{{title}}\" bola zmazaná"
+    },
+    "persona": {
+      "created": "Persona \"{{title}}\" bola vytvorená",
+      "updated": "Persona \"{{title}}\" bola upravená",
+      "deleted": "Persona \"{{title}}\" bola zmazaná"
+    },
+    "partner": {
+      "created": "Partner \"{{title}}\" bol pridaný",
+      "updated": "Partner \"{{title}}\" bol upravený",
+      "deleted": "Partner \"{{title}}\" bol odstránený"
+    },
+    "revenue_stream": {
+      "created": "Tok príjmov \"{{title}}\" bol vytvorený",
+      "updated": "Tok príjmov \"{{title}}\" bol upravený",
+      "deleted": "Tok príjmov \"{{title}}\" bol zmazaný"
+    },
+    "tenant": {
+      "created": "Pracovný priestor \"{{title}}\" bol vytvorený",
+      "updated": "Nastavenia pracovného priestoru boli upravené",
+      "deleted": "Pracovný priestor \"{{title}}\" bol odstránený"
+    },
+    "release": {
+      "created": "Release \"{{title}}\" bol vytvorený",
+      "updated": "Release \"{{title}}\" bol upravený",
+      "deleted": "Release \"{{title}}\" bol zmazaný"
+    },
+    "repository_connection": {
+      "created": "Pripojenie repozitára \"{{title}}\" bolo pridané",
+      "updated": "Pripojenie repozitára bolo upravené",
+      "deleted": "Pripojenie repozitára bolo odstránené"
+    },
+    "campaign_link": {
+      "created": "Odkaz kampane bol vytvorený",
+      "updated": "Odkaz kampane bol upravený",
+      "deleted": "Odkaz kampane bol odstránený"
+    },
+    "design_artifact_link": {
+      "created": "Designový odkaz bol pridaný",
+      "updated": "Designový odkaz bol upravený",
+      "deleted": "Designový odkaz bol odstránený"
+    },
+    "work_artifact_link": {
+      "created": "Odkaz pracovného artefaktu bol pridaný",
+      "updated": "Odkaz pracovného artefaktu bol upravený",
+      "deleted": "Odkaz pracovného artefaktu bol odstránený"
+    },
+    "capability": {
+      "created": "Schopnosť \"{{title}}\" bola vytvorená",
+      "updated": "Schopnosť \"{{title}}\" bola upravená",
+      "deleted": "Schopnosť \"{{title}}\" bola zmazaná"
+    },
+    "capability_binding": {
+      "created": "Väzba schopnosti bola vytvorená",
+      "updated": "Väzba schopnosti bola upravená",
+      "deleted": "Väzba schopnosti bola odstránená"
+    },
+    "ui_settings": {
+      "updated": "Nastavenia UI boli upravené"
+    },
+    "export": {
+      "created": "Export dát bol dokončený"
+    },
+    "import": {
+      "created": "Import dát bol dokončený"
+    },
+    "all_data": {
+      "deleted": "Všetky dáta pracovného priestoru boli vymazané"
+    },
+    "default": "{{entity}} · {{action}}: {{title}}"
   },
   "tenant": {
     "requestNewWorkspaceFullPage": "Plná stránka registrácie (prihlásenie, pozvánky, doména)",

@@ -206,7 +206,12 @@ export function buildPayload(
   const entityType = entry.entityType;
   const entityId = entry.entityId;
   const details = entry.details ?? {};
-  const title = (details.title as string) ?? (details.name as string) ?? entityType;
+  const title =
+    (details.title as string) ??
+    (details.name as string) ??
+    (details.email as string) ??
+    (details.tag as string) ??
+    entityType;
   const linkUrl =
     entityId && entityType === "INITIATIVE"
       ? `${baseUrl.replace(/\/$/, "")}/?initiative=${entityId}`
@@ -214,7 +219,10 @@ export function buildPayload(
   const type = `${entityType}_${action}`;
 
   const titleKey = `notification.${entityType.toLowerCase()}.${action.toLowerCase()}`;
-  const titleParams: Record<string, string> = { title };
+  const titleParams: Record<string, string> = { title, action };
+  if (details.name !== undefined) titleParams.name = String(details.name);
+  if (details.email !== undefined) titleParams.email = String(details.email);
+  if (details.field !== undefined) titleParams.field = String(details.field);
   if (details.old !== undefined) titleParams.old = String(details.old);
   if (details.new !== undefined) titleParams.new = String(details.new);
 

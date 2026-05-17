@@ -4,6 +4,10 @@ import { prisma } from "../db.js";
 import { logAudit } from "../services/audit.js";
 import { autoRoleForGoogleEmail } from "./googleAutoRole.js";
 
+function userLoginAuditDetails(user: { name: string; email: string }) {
+  return { name: user.name, email: user.email };
+}
+
 export type OAuthProvider = "google" | "microsoft";
 
 export type ResolveOAuthUserParams = {
@@ -42,7 +46,7 @@ export async function resolveOrCreateOAuthUser(params: ResolveOAuthUserParams): 
       where: { id: existingByGoogle.id },
       data: { lastLoginAt: new Date() }
     });
-    await logAudit(existingByGoogle.id, "LOGIN", "USER", existingByGoogle.id);
+    await logAudit(existingByGoogle.id, "LOGIN", "USER", existingByGoogle.id, userLoginAuditDetails(existingByGoogle));
     return existingByGoogle;
   }
 
@@ -70,7 +74,7 @@ export async function resolveOrCreateOAuthUser(params: ResolveOAuthUserParams): 
         data: { email, userId: linked.id, isPrimary: linked.email === email }
       });
     }
-    await logAudit(linked.id, "LOGIN", "USER", linked.id);
+    await logAudit(linked.id, "LOGIN", "USER", linked.id, userLoginAuditDetails(linked));
     return linked;
   }
 
@@ -89,6 +93,7 @@ export async function resolveOrCreateOAuthUser(params: ResolveOAuthUserParams): 
   });
 
   await logAudit(created.id, "CREATED", "USER", created.id, {
+    ...userLoginAuditDetails(created),
     firstLogin: true,
     autoRole,
     pending: autoRole === UserRole.PENDING
@@ -112,7 +117,7 @@ async function resolveMicrosoftUser(params: ResolveOAuthUserParams): Promise<Use
       where: { id: existingByMs.id },
       data: { lastLoginAt: new Date() }
     });
-    await logAudit(existingByMs.id, "LOGIN", "USER", existingByMs.id);
+    await logAudit(existingByMs.id, "LOGIN", "USER", existingByMs.id, userLoginAuditDetails(existingByMs));
     return existingByMs;
   }
 
@@ -140,7 +145,7 @@ async function resolveMicrosoftUser(params: ResolveOAuthUserParams): Promise<Use
         data: { email, userId: linked.id, isPrimary: linked.email === email }
       });
     }
-    await logAudit(linked.id, "LOGIN", "USER", linked.id);
+    await logAudit(linked.id, "LOGIN", "USER", linked.id, userLoginAuditDetails(linked));
     return linked;
   }
 
@@ -159,6 +164,7 @@ async function resolveMicrosoftUser(params: ResolveOAuthUserParams): Promise<Use
   });
 
   await logAudit(created.id, "CREATED", "USER", created.id, {
+    ...userLoginAuditDetails(created),
     firstLogin: true,
     autoRole,
     pending: autoRole === UserRole.PENDING
@@ -189,7 +195,7 @@ export async function resolveOrCreateUserFromEmailMagicLink(normalizedEmail: str
       where: { id: existing.id },
       data: { lastLoginAt: new Date() }
     });
-    await logAudit(existing.id, "LOGIN", "USER", existing.id);
+    await logAudit(existing.id, "LOGIN", "USER", existing.id, userLoginAuditDetails(existing));
     return existing;
   }
 
@@ -205,6 +211,7 @@ export async function resolveOrCreateUserFromEmailMagicLink(normalizedEmail: str
     }
   });
   await logAudit(created.id, "CREATED", "USER", created.id, {
+    ...userLoginAuditDetails(created),
     firstLogin: true,
     autoRole,
     pending: autoRole === UserRole.PENDING

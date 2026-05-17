@@ -828,17 +828,214 @@
     "notifyMe": "Notify me about changes here"
   },
   "notification": {
-    "initiative": {
-      "created": "Initiative \"{{title}}\" was created",
-      "updated": "Initiative \"{{title}}\" was updated",
-      "deleted": "Initiative \"{{title}}\" was deleted",
-      "status_changed": "Initiative \"{{title}}\" status changed from {{old}} to {{new}}"
+    "entity": {
+      "USER": "Użytkownik",
+      "INITIATIVE": "Inicjatywa",
+      "FEATURE": "Funkcja",
+      "REQUIREMENT": "Wymaganie",
+      "CAMPAIGN": "Kampania",
+      "PRODUCT": "Produkt",
+      "DOMAIN": "Filar",
+      "MILESTONE": "Kamień milowy",
+      "DEMAND": "Zapotrzebowanie",
+      "COMMENT": "Komentarz",
+      "DECISION": "Decyzja",
+      "KPI": "KPI",
+      "RISK": "Ryzyko",
+      "STAKEHOLDER": "Interesariusz",
+      "SUCCESS_CRITERION": "Kryterium sukcesu",
+      "ASSIGNMENT": "Przypisanie",
+      "USE_CASE": "Przypadek użycia",
+      "SECURITY_TOPIC": "Temat bezpieczeństwa",
+      "PERSONA": "Persona",
+      "PARTNER": "Partner",
+      "REVENUE_STREAM": "Strumień przychodów",
+      "TENANT": "Przestrzeń robocza",
+      "RELEASE": "Wydanie",
+      "REPOSITORY_CONNECTION": "Repozytorium",
+      "CAMPAIGN_LINK": "Link kampanii",
+      "DESIGN_ARTIFACT_LINK": "Link projektowy",
+      "WORK_ARTIFACT_LINK": "Link artefaktu pracy",
+      "CAPABILITY": "Zdolność",
+      "CAPABILITY_BINDING": "Powiązanie zdolności",
+      "UI_SETTINGS": "Ustawienia UI",
+      "EXPORT": "Eksport",
+      "IMPORT": "Import",
+      "ALL_DATA": "Wszystkie dane",
+      "ONTOLOGY_REFRESH": "Ontologia",
+      "COMPILED_BRIEF": "Skrócony brief",
+      "AGENT_BRIEF_EXPORT": "Eksport briefu agenta"
     },
-    "feature": { "created": "Feature \"{{title}}\" was created", "updated": "Feature \"{{title}}\" was updated", "deleted": "Feature \"{{title}}\" was deleted" },
-    "campaign": { "created": "Campaign \"{{title}}\" was created", "updated": "Campaign \"{{title}}\" was updated", "deleted": "Campaign \"{{title}}\" was deleted" },
-    "product": { "created": "Product \"{{title}}\" was created", "updated": "Product \"{{title}}\" was updated", "deleted": "Product \"{{title}}\" was deleted" },
-    "domain": { "created": "Pillar \"{{title}}\" was created", "updated": "Pillar \"{{title}}\" was updated", "deleted": "Pillar \"{{title}}\" was deleted" },
-    "default": "{{type}}: {{title}}"
+    "action": {
+      "CREATED": "Utworzono",
+      "UPDATED": "Zaktualizowano",
+      "DELETED": "Usunięto",
+      "STATUS_CHANGED": "Zmiana statusu",
+      "ROLE_CHANGED": "Zmiana roli",
+      "LOGIN": "Logowanie"
+    },
+    "initiative": {
+      "created": "Inicjatywa \"{{title}}\" została utworzona",
+      "updated": "Inicjatywa \"{{title}}\" została zaktualizowana",
+      "deleted": "Inicjatywa \"{{title}}\" została usunięta",
+      "status_changed": "Status inicjatywy \"{{title}}\" zmieniono z {{old}} na {{new}}"
+    },
+    "user": {
+      "login": "Użytkownik {{name}} zalogował się do przestrzeni roboczej",
+      "created": "Utworzono konto użytkownika {{title}}",
+      "updated": "Użytkownik \"{{title}}\" został zaktualizowany",
+      "deleted": "Użytkownik \"{{title}}\" został usunięty",
+      "role_changed": "Rola użytkownika \"{{title}}\" zmieniona z {{old}} na {{new}}",
+      "status_changed": "Status użytkownika \"{{title}}\" zmieniono z {{old}} na {{new}}"
+    },
+    "feature": {
+      "created": "Funkcja \"{{title}}\" została utworzona",
+      "updated": "Funkcja \"{{title}}\" została zaktualizowana",
+      "deleted": "Funkcja \"{{title}}\" została usunięta"
+    },
+    "requirement": {
+      "created": "Wymaganie \"{{title}}\" zostało utworzone",
+      "updated": "Wymaganie \"{{title}}\" zostało zaktualizowane",
+      "deleted": "Wymaganie \"{{title}}\" zostało usunięte"
+    },
+    "campaign": {
+      "created": "Kampania \"{{title}}\" została utworzona",
+      "updated": "Kampania \"{{title}}\" została zaktualizowana",
+      "deleted": "Kampania \"{{title}}\" została usunięta"
+    },
+    "product": {
+      "created": "Produkt \"{{title}}\" został utworzony",
+      "updated": "Produkt \"{{title}}\" został zaktualizowany",
+      "deleted": "Produkt \"{{title}}\" został usunięty"
+    },
+    "domain": {
+      "created": "Filar \"{{title}}\" został utworzony",
+      "updated": "Filar \"{{title}}\" został zaktualizowany",
+      "deleted": "Filar \"{{title}}\" został usunięty"
+    },
+    "milestone": {
+      "created": "Kamień milowy \"{{title}}\" został utworzony",
+      "updated": "Kamień milowy \"{{title}}\" został zaktualizowany",
+      "deleted": "Kamień milowy \"{{title}}\" został usunięty"
+    },
+    "demand": {
+      "created": "Zapotrzebowanie \"{{title}}\" zostało utworzone",
+      "updated": "Zapotrzebowanie \"{{title}}\" zostało zaktualizowane",
+      "deleted": "Zapotrzebowanie \"{{title}}\" zostało usunięte"
+    },
+    "comment": {
+      "created": "Nowy komentarz przy inicjatywie",
+      "updated": "Komentarz został zaktualizowany",
+      "deleted": "Komentarz został usunięty"
+    },
+    "decision": {
+      "created": "Decyzja \"{{title}}\" została zapisana",
+      "updated": "Decyzja \"{{title}}\" została zaktualizowana",
+      "deleted": "Decyzja \"{{title}}\" została usunięta"
+    },
+    "kpi": {
+      "created": "KPI \"{{title}}\" zostało utworzone",
+      "updated": "KPI \"{{title}}\" zostało zaktualizowane",
+      "deleted": "KPI \"{{title}}\" zostało usunięte"
+    },
+    "risk": {
+      "created": "Ryzyko \"{{title}}\" zostało utworzone",
+      "updated": "Ryzyko \"{{title}}\" zostało zaktualizowane",
+      "deleted": "Ryzyko \"{{title}}\" zostało usunięte"
+    },
+    "stakeholder": {
+      "created": "Interesariusz \"{{title}}\" został dodany",
+      "updated": "Interesariusz \"{{title}}\" został zaktualizowany",
+      "deleted": "Interesariusz \"{{title}}\" został usunięty"
+    },
+    "success_criterion": {
+      "created": "Kryterium sukcesu \"{{title}}\" zostało dodane",
+      "updated": "Kryterium sukcesu \"{{title}}\" zostało zaktualizowane",
+      "deleted": "Kryterium sukcesu \"{{title}}\" zostało usunięte"
+    },
+    "assignment": {
+      "created": "Przypisanie zespołu zostało zaktualizowane",
+      "updated": "Przypisanie zespołu zostało zaktualizowane",
+      "deleted": "Przypisanie zespołu zostało usunięte"
+    },
+    "use_case": {
+      "created": "Przypadek użycia \"{{title}}\" został utworzony",
+      "updated": "Przypadek użycia \"{{title}}\" został zaktualizowany",
+      "deleted": "Przypadek użycia \"{{title}}\" został usunięty"
+    },
+    "security_topic": {
+      "created": "Temat bezpieczeństwa \"{{title}}\" został utworzony",
+      "updated": "Temat bezpieczeństwa \"{{title}}\" został zaktualizowany",
+      "deleted": "Temat bezpieczeństwa \"{{title}}\" został usunięty"
+    },
+    "persona": {
+      "created": "Persona \"{{title}}\" została utworzona",
+      "updated": "Persona \"{{title}}\" została zaktualizowana",
+      "deleted": "Persona \"{{title}}\" została usunięta"
+    },
+    "partner": {
+      "created": "Partner \"{{title}}\" został dodany",
+      "updated": "Partner \"{{title}}\" został zaktualizowany",
+      "deleted": "Partner \"{{title}}\" został usunięty"
+    },
+    "revenue_stream": {
+      "created": "Strumień przychodów \"{{title}}\" został utworzony",
+      "updated": "Strumień przychodów \"{{title}}\" został zaktualizowany",
+      "deleted": "Strumień przychodów \"{{title}}\" został usunięty"
+    },
+    "tenant": {
+      "created": "Przestrzeń robocza \"{{title}}\" została utworzona",
+      "updated": "Ustawienia przestrzeni roboczej zostały zaktualizowane",
+      "deleted": "Przestrzeń robocza \"{{title}}\" została usunięta"
+    },
+    "release": {
+      "created": "Wydanie \"{{title}}\" zostało utworzone",
+      "updated": "Wydanie \"{{title}}\" zostało zaktualizowane",
+      "deleted": "Wydanie \"{{title}}\" zostało usunięte"
+    },
+    "repository_connection": {
+      "created": "Połączenie z repozytorium \"{{title}}\" zostało dodane",
+      "updated": "Połączenie z repozytorium zostało zaktualizowane",
+      "deleted": "Połączenie z repozytorium zostało usunięte"
+    },
+    "campaign_link": {
+      "created": "Link kampanii został utworzony",
+      "updated": "Link kampanii został zaktualizowany",
+      "deleted": "Link kampanii został usunięty"
+    },
+    "design_artifact_link": {
+      "created": "Link projektowy został dodany",
+      "updated": "Link projektowy został zaktualizowany",
+      "deleted": "Link projektowy został usunięty"
+    },
+    "work_artifact_link": {
+      "created": "Link artefaktu pracy został dodany",
+      "updated": "Link artefaktu pracy został zaktualizowany",
+      "deleted": "Link artefaktu pracy został usunięty"
+    },
+    "capability": {
+      "created": "Zdolność \"{{title}}\" została utworzona",
+      "updated": "Zdolność \"{{title}}\" została zaktualizowana",
+      "deleted": "Zdolność \"{{title}}\" została usunięta"
+    },
+    "capability_binding": {
+      "created": "Powiązanie zdolności zostało utworzone",
+      "updated": "Powiązanie zdolności zostało zaktualizowane",
+      "deleted": "Powiązanie zdolności zostało usunięte"
+    },
+    "ui_settings": {
+      "updated": "Ustawienia UI zostały zaktualizowane"
+    },
+    "export": {
+      "created": "Eksport danych zakończony"
+    },
+    "import": {
+      "created": "Import danych zakończony"
+    },
+    "all_data": {
+      "deleted": "Wszystkie dane przestrzeni roboczej zostały wyczyszczone"
+    },
+    "default": "{{entity}} · {{action}}: {{title}}"
   },
   "tenant": {
     "requestNewWorkspaceFullPage": "Pełna strona rejestracji (logowanie, zaproszenia, domena)",
