@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="900" viewBox="0 0 920 900">
+  <title>Atlas Curator review inbox wireframes</title>
+  <desc>Review tab inside /atlas: pending curator proposals with diff, sources, accept/edit/reject. Human-locked topic fields block apply.</desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; }
+      .hdr { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .sub { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #334155; }
+      .txt { font-family: system-ui, sans-serif; font-size: 10px; fill: #475569; }
+      .mono { font-family: ui-monospace, monospace; font-size: 9px; fill: #64748b; }
+      .card { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+      .ok { fill: #ecfdf5; stroke: #059669; }
+      .warn { fill: #fffbeb; stroke: #d97706; }
+    ]]></style>
+  </defs>
+
+  <text x="460" y="26" text-anchor="middle" class="hdr" font-size="16">Atlas Review inbox</text>
+  <text x="460" y="44" text-anchor="middle" class="txt">Route: /atlas?tab=review &#183; API: /api/atlas-proposals</text>
+
+  <rect class="frame" x="24" y="64" width="872" height="520" rx="8"/>
+  <text x="40" y="92" class="sub">Pending proposals (2)</text>
+
+  <rect class="card" x="40" y="104" width="840" height="200" rx="6"/>
+  <text x="56" y="128" class="sub">TOPIC_LAYER_PATCH &#183; multitenancy</text>
+  <text x="56" y="148" class="txt">Field: asIsSummary</text>
+  <rect x="56" y="156" width="380" height="56" fill="#fef2f2" stroke="#fecaca" rx="4"/>
+  <text x="64" y="172" class="mono">Current: Tenant isolation uses schema-per-tenant&#x2026;</text>
+  <rect x="456" y="156" width="380" height="56" fill="#ecfdf5" stroke="#a7f3d0" rx="4"/>
+  <text x="464" y="172" class="mono">Proposed: Tenant isolation uses Postgres RLS +&#x2026;</text>
+  <text x="56" y="232" class="mono">Sources: docs/HUB.md#multitenancy &#183; confidence 0.82 &#183; agent atlas-curator</text>
+  <rect class="ok" x="56" y="248" width="72" height="24" rx="4"/>
+  <text x="92" y="264" text-anchor="middle" class="txt">Accept</text>
+  <rect x="140" y="248" width="72" height="24" fill="#e2e8f0" stroke="#cbd5e1" rx="4"/>
+  <text x="176" y="264" text-anchor="middle" class="txt">Reject</text>
+
+  <rect class="card" x="40" y="316" width="840" height="160" rx="6"/>
+  <text x="56" y="340" class="sub">LINK_PROPOSAL &#183; multitenancy</text>
+  <text x="56" y="360" class="txt">Add initiative link: Living Project Atlas core</text>
+  <text x="56" y="380" class="mono">Sources: hub initiative index match</text>
+  <rect class="ok" x="56" y="396" width="72" height="24" rx="4"/>
+  <text x="92" y="412" text-anchor="middle" class="txt">Accept</text>
+
+  <rect class="warn" x="40" y="496" width="840" height="72" rx="6"/>
+  <text x="56" y="520" class="sub">Locked field blocked</text>
+  <text x="56" y="540" class="txt">toBeSummary is human-locked on this topic. Curator may report gaps but cannot overwrite.</text>
+
+  <rect class="frame" x="24" y="600" width="420" height="260" rx="8"/>
+  <text x="40" y="628" class="sub">Accept with edit (modal)</text>
+  <text x="40" y="648" class="txt">Textarea pre-filled with proposed value; reviewer edits then Accept applies final text.</text>
+
+  <rect class="frame" x="476" y="600" width="420" height="260" rx="8"/>
+  <text x="492" y="628" class="sub">Implementation notes</text>
+  <text x="492" y="652" class="txt">1. Only OWNER/ADMIN accept/reject; VIEWER read-only inbox.</text>
+  <text x="492" y="672" class="txt">2. Accept triggers hub update + debounced atlas rebuild.</text>
+  <text x="492" y="692" class="txt">3. GAP_REPORT proposals are acknowledge-only (no hub mutation).</text>
+  <text x="492" y="712" class="mono">Schemas: server/src/atlasCurator/schemas.ts</text>
+
+  <text x="460" y="888" text-anchor="middle" class="mono">ATLAS_REVIEW_INBOX_WIREFRAMES.svg</text>
+</svg>

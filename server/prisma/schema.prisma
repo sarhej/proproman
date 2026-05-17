@@ -289,6 +289,18 @@ enum GitActivityKind {
   RELEASE
 }
 
+enum AtlasCuratorProposalType {
+  TOPIC_LAYER_PATCH
+  LINK_PROPOSAL
+  GAP_REPORT
+}
+
+enum AtlasCuratorProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 enum SecurityTopicCategory {
   AUTHN
   AUTHZ
@@ -1166,9 +1178,11 @@ model ArchitectureTopic {
   synonyms                Json?
   docPaths                Json?
   autoMatchCapabilities   Boolean                         @default(true)
+  lockedFields            Json?
   sortOrder               Int                             @default(0)
   initiativeLinks         ArchitectureTopicInitiative[]
   capabilityLinks         ArchitectureTopicCapability[]
+  curatorProposals        AtlasCuratorProposal[]
   createdAt               DateTime                        @default(now())
   updatedAt               DateTime                        @updatedAt
 
@@ -1194,6 +1208,29 @@ model ArchitectureTopicCapability {
 
   @@id([architectureTopicId, capabilityId])
   @@index([capabilityId])
+}
+
+model AtlasCuratorProposal {
+  id                  String                     @id @default(cuid())
+  tenantId            String?
+  proposalType        AtlasCuratorProposalType
+  status              AtlasCuratorProposalStatus @default(PENDING)
+  architectureTopicId String?
+  fieldPath           String?
+  currentValue        Json?
+  proposedValue       Json
+  sources             Json
+  confidence          Float?
+  createdByAgent      String
+  reviewReason        String?                    @db.Text
+  reviewerId          String?
+  reviewedAt          DateTime?
+  architectureTopic   ArchitectureTopic?         @relation(fields: [architectureTopicId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  @@index([tenantId, status])
+  @@index([architectureTopicId])
 }
 
 /// Registered GitHub/GitLab repo for artifact links and optional OAuth (see env-driven callbacks).

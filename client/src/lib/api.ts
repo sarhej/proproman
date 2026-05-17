@@ -389,6 +389,25 @@ export const api = {
       }>;
     }>(`/api/git-observe/activity${suffix}`);
   },
+  testGitObserveConnection: async (connectionId: string) =>
+    request<{ ok: boolean; deliveryId: string; webhookUrl: string; message: string }>(
+      `/api/git-observe/connections/${encodeURIComponent(connectionId)}/test-event`,
+      { method: "POST" }
+    ),
+  getAtlasProposals: async (status?: string) =>
+    request<{ proposals: Record<string, unknown>[] }>(
+      `/api/atlas-proposals${status ? `?status=${encodeURIComponent(status)}` : ""}`
+    ),
+  acceptAtlasProposal: async (id: string, body: { proposedValue?: unknown; reviewReason?: string | null }) =>
+    request<{ proposal: Record<string, unknown> }>(`/api/atlas-proposals/${id}/accept`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  rejectAtlasProposal: async (id: string, body: { reviewReason?: string | null }) =>
+    request<{ proposal: Record<string, unknown> }>(`/api/atlas-proposals/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
   getReleases: async () => request<{ releases: Release[] }>("/api/releases"),
   createRelease: async (body: unknown) =>
     request<{ release: Release }>("/api/releases", { method: "POST", body: JSON.stringify(body) }),

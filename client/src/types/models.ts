@@ -243,6 +243,7 @@ export type ArchitectureTopic = {
   synonyms?: unknown;
   docPaths?: unknown;
   autoMatchCapabilities: boolean;
+  lockedFields?: string[] | null;
   sortOrder?: number;
   initiativeLinks?: ArchitectureTopicInitiativeLink[];
   capabilityLinks?: ArchitectureTopicCapabilityLink[];

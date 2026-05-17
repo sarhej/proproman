@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { VcsProvider } from "@prisma/client";
+import { GitActivityKind, VcsProvider } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceStructureWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
+import { recordWebhookReceipt } from "../services/gitActivityIngest.js";
 
 function publicApiBase(): string {
   return (env.API_PUBLIC_URL ?? "").replace(/\/$/, "") || `http://127.0.0.1:${env.PORT}`;
@@ -90,5 +92,37 @@ gitObserveRouter.get("/activity", async (req, res) => {
       occurredAt: a.occurredAt.toISOString(),
       repository: a.repositoryConnection
     }))
+  });
+});
+
+gitObserveRouter.post("/connections/:id/test-event", requireWorkspaceStructureWrite(), async (req, res) => {
+  const tenantId = getTenantId(req);
+  const id = String(req.params.id);
+  const conn = await prisma.repositoryConnection.findFirst({ where: { id, tenantId } });
+  if (!conn) {
+    res.status(404).json({ error: "Repository connection not found" });
+    return;
+  }
+
+  const deliveryId = `test:${Date.now()}`;
+  await prisma.gitActivity.create({
+    data: {
+      tenantId,
+      repositoryConnectionId: conn.id,
+      kind: GitActivityKind.PUSH,
+      action: "test",
+      deliveryId,
+      title: "Webhook connectivity test (hub-generated)",
+      authorLogin: req.user?.id ?? "hub",
+      occurredAt: new Date()
+    }
+  });
+  await recordWebhookReceipt(conn, "test-event", null);
+
+  res.json({
+    ok: true,
+    deliveryId,
+    webhookUrl: webhookUrl(conn.provider, conn.id),
+    message: "Recorded test event; configure your VCS provider to POST real webhooks to webhookUrl."
   });
 });

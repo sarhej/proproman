@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Initiative } from "../types/models";
 import { ArchitectureTopicsPage } from "./ArchitectureTopicsPage";
+import { AtlasReviewPanel } from "../components/atlas/AtlasReviewPanel";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 
@@ -420,12 +421,7 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
         )
       ) : null}
 
-      {tab === "review" ? (
-        <Card className="p-6 text-center">
-          <p className="text-sm font-medium text-slate-800">{t("atlasHub.reviewEmptyTitle")}</p>
-          <p className="mt-2 text-sm text-slate-600">{t("atlasHub.reviewEmptyBody")}</p>
-        </Card>
-      ) : null}
+      {tab === "review" ? <AtlasReviewPanel isAdmin={isAdmin} /> : null}
 
       {tab === "connections" ? (
         <div className="space-y-4">
@@ -465,6 +461,15 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
                         <div className="text-amber-800">{c.lastWebhookError}</div>
                       ) : null}
                     </dl>
+                    {isAdmin ? (
+                      <Button
+                        variant="ghost"
+                        className="mt-2 h-7 text-xs"
+                        onClick={() => void api.testGitObserveConnection(c.id).then(() => refreshConnections())}
+                      >
+                        {t("atlasHub.testWebhook")}
+                      </Button>
+                    ) : null}
                   </li>
                 ))}
               </ul>

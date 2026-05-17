@@ -26,6 +26,7 @@ const architectureTopicSchema = z.object({
   toBeSummary: z.string().nullable().optional(),
   synonyms: z.array(z.string()).nullable().optional(),
   docPaths: z.array(z.string()).nullable().optional(),
+  lockedFields: z.array(z.enum(["asIsSummary", "toBeSummary", "synonyms", "docPaths", "title", "slug"])).nullable().optional(),
   autoMatchCapabilities: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   ...linksSchema.shape
@@ -82,6 +83,12 @@ architectureTopicsRouter.post("/", requireWorkspaceStructureWrite(), async (req,
           synonyms:
             synonyms === undefined ? undefined : synonyms === null ? Prisma.JsonNull : synonyms,
           docPaths: docPaths === undefined ? undefined : docPaths === null ? Prisma.JsonNull : docPaths,
+          lockedFields:
+            rest.lockedFields === undefined
+              ? undefined
+              : rest.lockedFields === null
+                ? Prisma.JsonNull
+                : rest.lockedFields,
           autoMatchCapabilities: rest.autoMatchCapabilities ?? true,
           sortOrder: rest.sortOrder ?? 0,
           initiativeLinks:
@@ -144,6 +151,12 @@ architectureTopicsRouter.put("/:id", requireWorkspaceStructureWrite(), async (re
           synonyms:
             synonyms === undefined ? undefined : synonyms === null ? Prisma.JsonNull : synonyms,
           docPaths: docPaths === undefined ? undefined : docPaths === null ? Prisma.JsonNull : docPaths,
+          lockedFields:
+            rest.lockedFields === undefined
+              ? undefined
+              : rest.lockedFields === null
+                ? Prisma.JsonNull
+                : rest.lockedFields,
           autoMatchCapabilities: rest.autoMatchCapabilities,
           sortOrder: rest.sortOrder
         }

@@ -26,6 +26,8 @@ function linesFromJsonArray(json: unknown): string {
   return String(json);
 }
 
+const LOCKABLE_FIELDS = ["asIsSummary", "toBeSummary", "title", "synonyms", "docPaths"] as const;
+
 const emptyDraft = {
   slug: "",
   title: "",
@@ -34,6 +36,7 @@ const emptyDraft = {
   synonymsText: "",
   docPathsText: "",
   autoMatchCapabilities: true,
+  lockedFields: [] as string[],
   initiativeIds: [] as string[],
   capabilityIds: [] as string[]
 };
@@ -61,6 +64,7 @@ export function ArchitectureTopicsPage({ isAdmin, initiatives, embedded = false 
       synonymsText: linesFromJsonArray(topic.synonyms),
       docPathsText: linesFromJsonArray(topic.docPaths),
       autoMatchCapabilities: topic.autoMatchCapabilities,
+      lockedFields: Array.isArray(topic.lockedFields) ? topic.lockedFields.map(String) : [],
       initiativeIds: topic.initiativeLinks?.map((l) => l.initiativeId) ?? [],
       capabilityIds: topic.capabilityLinks?.map((l) => l.capabilityId) ?? []
     });
@@ -101,6 +105,7 @@ export function ArchitectureTopicsPage({ isAdmin, initiatives, embedded = false 
         synonyms: parseLines(draft.synonymsText),
         docPaths: parseLines(draft.docPathsText),
         autoMatchCapabilities: draft.autoMatchCapabilities,
+        lockedFields: draft.lockedFields,
         initiativeIds: draft.initiativeIds,
         capabilityIds: draft.capabilityIds
       };
@@ -256,6 +261,32 @@ export function ArchitectureTopicsPage({ isAdmin, initiatives, embedded = false 
                 />
                 {t("architectureTopicsPage.autoMatchCapabilities")}
               </label>
+
+              {isAdmin ? (
+                <div>
+                  <p className="text-sm font-medium text-slate-800">{t("architectureTopicsPage.lockedFields")}</p>
+                  <p className="mt-1 text-xs text-slate-500">{t("architectureTopicsPage.lockedFieldsHint")}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {LOCKABLE_FIELDS.map((field) => (
+                      <label key={field} className="flex items-center gap-1 text-xs text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={draft.lockedFields.includes(field)}
+                          onChange={() =>
+                            setDraft((d) => ({
+                              ...d,
+                              lockedFields: d.lockedFields.includes(field)
+                                ? d.lockedFields.filter((x) => x !== field)
+                                : [...d.lockedFields, field]
+                            }))
+                          }
+                        />
+                        {field}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-slate-800">
