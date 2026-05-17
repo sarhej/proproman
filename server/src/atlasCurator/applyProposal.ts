@@ -34,8 +34,15 @@ function parseLinkProposal(value: unknown) {
   return parsed.data;
 }
 
+type CuratorApplyTx = Pick<
+  Prisma.TransactionClient,
+  "architectureTopic" | "architectureTopicInitiative" | "architectureTopicCapability"
+>;
+
+export type { CuratorApplyTx };
+
 export async function applyAcceptedProposal(
-  tx: Prisma.TransactionClient,
+  tx: CuratorApplyTx,
   proposal: AtlasCuratorProposal,
   finalProposedValue?: unknown
 ): Promise<void> {

@@ -4,7 +4,8 @@ import { z } from "zod";
 import {
   applyAcceptedProposal,
   curatorPayloadToCreateData,
-  ProposalApplyError
+  ProposalApplyError,
+  type CuratorApplyTx
 } from "../atlasCurator/applyProposal.js";
 import { curatorProposalPayloadSchema, fieldIsLocked } from "../atlasCurator/schemas.js";
 import { prisma } from "../db.js";
@@ -89,7 +90,7 @@ atlasProposalsRouter.post("/:id/accept", requireWorkspaceStructureWrite(), async
     await prisma.$transaction(async (tx) => {
       const existing = await tx.atlasCuratorProposal.findUnique({ where: { id } });
       if (!existing) throw new ProposalApplyError("Proposal not found", "NOT_FOUND");
-      await applyAcceptedProposal(tx, existing, parsed.data.proposedValue);
+      await applyAcceptedProposal(tx as unknown as CuratorApplyTx, existing, parsed.data.proposedValue);
       await tx.atlasCuratorProposal.update({
         where: { id },
         data: {
