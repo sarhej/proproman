@@ -100,9 +100,16 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
     {
       title: "Get one materialized object shard (JSON)",
       description:
-        "Fetch a single DOMAIN, PRODUCT, INITIATIVE, FEATURE, or REQUIREMENT shard with facts + graph links. IDs come from tymio_* lists or the workspace atlas.",
+        "Fetch a single DOMAIN, PRODUCT, INITIATIVE, FEATURE, REQUIREMENT, or ARCHITECTURE_TOPIC shard. Architecture topics include compiled as-is (docs + capabilities) and to-be (linked delivery).",
       inputSchema: mcpWithWorkspace({
-        objectType: z.enum(["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"]),
+        objectType: z.enum([
+          "DOMAIN",
+          "PRODUCT",
+          "INITIATIVE",
+          "FEATURE",
+          "REQUIREMENT",
+          "ARCHITECTURE_TOPIC"
+        ]),
         id: z.string().min(1)
       })
     },
@@ -168,9 +175,16 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
     {
       title: "Explain object shard in natural language (optional LLM)",
       description:
-        "Grounded explanation: passes shard JSON to the configured small model when WORKSPACE_ATLAS_LLM_ENABLED + OPENAI key are set. If LLM is disabled, returns structured JSON only.",
+        "Grounded explanation from materialized shard JSON. ARCHITECTURE_TOPIC shards include as-is (human summary, doc excerpts, capabilities) and to-be (initiatives, delivery rollup, gaps).",
       inputSchema: mcpWithWorkspace({
-        objectType: z.enum(["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"]),
+        objectType: z.enum([
+          "DOMAIN",
+          "PRODUCT",
+          "INITIATIVE",
+          "FEATURE",
+          "REQUIREMENT",
+          "ARCHITECTURE_TOPIC"
+        ]),
         id: z.string().min(1)
       })
     },
@@ -202,8 +216,12 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
       }
 
       const llm = createWorkspaceAtlasLlmFromEnv();
+      const systemPrompt =
+        args.objectType === "ARCHITECTURE_TOPIC"
+          ? "You explain Tymio architecture topics to developers. Use only the JSON facts. Structure the answer in two parts: (1) As-is — what is implemented today from layers.asIs (summary, doc excerpts, capabilities). (2) To-be — planned delivery from layers.toBe (initiatives, features, requirements, rollup). End with gaps if present. Do not invent facts."
+          : "You explain Tymio backlog objects to developers. Use only the JSON facts provided. Be concise. Mention parent links (domain, product, initiative, feature) when present.";
       const explanation = await llm.completeText(
-        "You explain Tymio backlog objects to developers. Use only the JSON facts provided. Be concise. Mention parent links (domain, product, initiative, feature) when present.",
+        systemPrompt,
         `Explain this ${shard.objectType} object for a teammate:\n${JSON.stringify(shard, null, 2)}`
       );
       return textContent(

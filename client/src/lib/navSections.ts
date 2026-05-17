@@ -75,7 +75,8 @@ export const navSections: NavSection[] = [
       { to: "/accounts", labelKey: "nav.accounts", icon: Building2 },
       { to: "/demands", labelKey: "nav.demands", icon: Filter },
       { to: "/partners", labelKey: "nav.partners", icon: Users2 },
-      { to: "/sdlc", labelKey: "nav.sdlcHub", icon: GitBranch }
+      { to: "/sdlc", labelKey: "nav.sdlcHub", icon: GitBranch },
+      { to: "/architecture-topics", labelKey: "nav.architectureTopics", icon: GitBranch }
     ]
   },
   {

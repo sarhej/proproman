@@ -687,8 +687,9 @@ model Initiative {
   incomingDeps         Dependency[]              @relation("ToInitiative")
   comments             InitiativeComment[]
   successCriteriaItems SuccessCriterion[]
-  useCaseLinks         UseCaseInitiative[]
-  securityTopicLinks   SecurityTopicInitiative[]
+  useCaseLinks              UseCaseInitiative[]
+  securityTopicLinks        SecurityTopicInitiative[]
+  architectureTopicLinks    ArchitectureTopicInitiative[]
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
 
@@ -1148,6 +1149,47 @@ model SecurityTopicPartner {
   @@index([partnerId])
 }
 
+/// Cross-cutting architecture narrative: as-is (platform + docs) and to-be (linked delivery).
+model ArchitectureTopic {
+  id                      String                          @id @default(cuid())
+  tenantId                String?
+  slug                    String
+  title                   String
+  asIsSummary             String?                         @db.Text
+  toBeSummary             String?                         @db.Text
+  synonyms                Json?
+  docPaths                Json?
+  autoMatchCapabilities   Boolean                         @default(true)
+  sortOrder               Int                             @default(0)
+  initiativeLinks         ArchitectureTopicInitiative[]
+  capabilityLinks         ArchitectureTopicCapability[]
+  createdAt               DateTime                        @default(now())
+  updatedAt               DateTime                        @updatedAt
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model ArchitectureTopicInitiative {
+  architectureTopicId String
+  initiativeId        String
+  architectureTopic   ArchitectureTopic @relation(fields: [architectureTopicId], references: [id], onDelete: Cascade)
+  initiative          Initiative        @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@id([architectureTopicId, initiativeId])
+  @@index([initiativeId])
+}
+
+model ArchitectureTopicCapability {
+  architectureTopicId String
+  capabilityId        String
+  architectureTopic   ArchitectureTopic @relation(fields: [architectureTopicId], references: [id], onDelete: Cascade)
+  capability          Capability        @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@id([architectureTopicId, capabilityId])
+  @@index([capabilityId])
+}
+
 /// Registered GitHub/GitLab repo for artifact links and optional OAuth (see env-driven callbacks).
 model RepositoryConnection {
   id                     String             @id @default(cuid())
@@ -1365,7 +1407,8 @@ model Capability {
   parentId         String?
   parent           Capability?         @relation("CapabilityHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children         Capability[]        @relation("CapabilityHierarchy")
-  bindings         CapabilityBinding[]
+  bindings              CapabilityBinding[]
+  architectureTopicLinks ArchitectureTopicCapability[]
   sortOrder        Int                 @default(0)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt

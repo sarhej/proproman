@@ -1,7 +1,7 @@
 import type { WorkspaceAtlas } from "./zodSchemas.js";
 
 export type WorkspaceSearchHit = {
-  objectType: "DOMAIN" | "PRODUCT" | "INITIATIVE" | "FEATURE" | "REQUIREMENT";
+  objectType: "DOMAIN" | "PRODUCT" | "INITIATIVE" | "FEATURE" | "REQUIREMENT" | "ARCHITECTURE_TOPIC";
   id: string;
   title: string;
   subtitle?: string;
@@ -58,6 +58,12 @@ export function searchWorkspaceAtlas(atlas: WorkspaceAtlas, query: string, limit
     if (hits.length >= limit) break;
     if (norm(r.title).includes(q)) {
       push({ objectType: "REQUIREMENT", id: r.id, title: r.title, subtitle: r.featureId });
+    }
+  }
+  for (const t of atlas.architectureTopicIndex ?? []) {
+    if (hits.length >= limit) break;
+    if (norm(t.title).includes(q) || norm(t.slug).includes(q)) {
+      push({ objectType: "ARCHITECTURE_TOPIC", id: t.id, title: t.title, subtitle: t.slug });
     }
   }
 

@@ -7,6 +7,11 @@ import { workspaceAtlasMetrics } from "./metrics.js";
 import { ensureTenantAtlasDirs, tenantAtlasDir } from "./paths.js";
 import { writeObjectShard, writeWorkspaceAtlas } from "./store.js";
 import type { ObjectShard, WorkspaceAtlas } from "./zodSchemas.js";
+import {
+  buildArchitectureTopicShard,
+  compileArchitectureTopicLayers,
+  loadArchitectureTopicsForTenant
+} from "./architectureTopicMaterializer.js";
 
 function toPlain<T>(value: T): Record<string, unknown> {
   return JSON.parse(
@@ -43,7 +48,7 @@ function initiativeEdges(initiative: Initiative & { outgoingDeps: Dependency[]; 
 
 async function cleanupRemovedShards(
   tenantId: string,
-  dirName: "DOMAIN" | "PRODUCT" | "INITIATIVE" | "FEATURE" | "REQUIREMENT",
+  dirName: "DOMAIN" | "PRODUCT" | "INITIATIVE" | "FEATURE" | "REQUIREMENT" | "ARCHITECTURE_TOPIC",
   keepIds: Set<string>
 ): Promise<void> {
   const dir = path.join(tenantAtlasDir(tenantId), "objects", dirName);
@@ -188,6 +193,8 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
       ...designArtifactLinks.map((l) => l.updatedAt)
     ]);
 
+    const architectureTopics = await loadArchitectureTopicsForTenant(tenantId);
+
     await ensureTenantAtlasDirs(tenantId);
 
     const nowProv = (sourceUpdatedAt: string): ObjectShard["provenance"] => ({
@@ -309,6 +316,18 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
       await writeObjectShard(tenantId, shard);
     }
 
+    const backlogForTopics = { initiatives, features, requirements };
+    for (const topic of architectureTopics) {
+      const layers = await compileArchitectureTopicLayers(topic, backlogForTopics);
+      const shard = buildArchitectureTopicShard(
+        topic,
+        tenant.slug,
+        layers,
+        nowProv(topic.updatedAt.toISOString())
+      );
+      await writeObjectShard(tenantId, shard);
+    }
+
     const atlas: WorkspaceAtlas = {
       schemaVersion: WORKSPACE_ATLAS_SCHEMA_VERSION,
       tenantId,
@@ -354,8 +373,15 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
         product: products.length,
         initiative: initiatives.length,
         feature: features.length,
-        requirement: requirements.length
+        requirement: requirements.length,
+        architectureTopic: architectureTopics.length
       },
+      architectureTopicIndex: architectureTopics.map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        title: t.title,
+        sortOrder: t.sortOrder
+      })),
       capabilityOntology: {
         kind: "pointer",
         note:
@@ -414,7 +440,8 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
       cleanupRemovedShards(tenantId, "PRODUCT", new Set(products.map((p) => p.id))),
       cleanupRemovedShards(tenantId, "INITIATIVE", new Set(initiatives.map((i) => i.id))),
       cleanupRemovedShards(tenantId, "FEATURE", new Set(features.map((f) => f.id))),
-      cleanupRemovedShards(tenantId, "REQUIREMENT", new Set(requirements.map((r) => r.id)))
+      cleanupRemovedShards(tenantId, "REQUIREMENT", new Set(requirements.map((r) => r.id))),
+      cleanupRemovedShards(tenantId, "ARCHITECTURE_TOPIC", new Set(architectureTopics.map((t) => t.id)))
     ]);
 
     workspaceAtlasMetrics.lastRebuildAt = new Date().toISOString();

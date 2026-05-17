@@ -113,7 +113,8 @@ export const workspaceAtlasSchema = z
       product: z.number().int().nonnegative(),
       initiative: z.number().int().nonnegative(),
       feature: z.number().int().nonnegative(),
-      requirement: z.number().int().nonnegative()
+      requirement: z.number().int().nonnegative(),
+      architectureTopic: z.number().int().nonnegative().optional()
     }),
     capabilityOntology: z.object({
       kind: z.literal("pointer"),
@@ -125,7 +126,17 @@ export const workspaceAtlasSchema = z
       spine: z.string(),
       doc: z.string().optional()
     }),
-    auxiliaryIndex: workspaceAtlasAuxiliaryIndexSchema.optional()
+    auxiliaryIndex: workspaceAtlasAuxiliaryIndexSchema.optional(),
+    architectureTopicIndex: z
+      .array(
+        z.object({
+          id: z.string(),
+          slug: z.string(),
+          title: z.string(),
+          sortOrder: z.number().int()
+        })
+      )
+      .optional()
   })
   .strict();
 
@@ -136,7 +147,8 @@ export const objectShardObjectType = z.enum([
   "PRODUCT",
   "INITIATIVE",
   "FEATURE",
-  "REQUIREMENT"
+  "REQUIREMENT",
+  "ARCHITECTURE_TOPIC"
 ]);
 
 export const objectShardSchema = z

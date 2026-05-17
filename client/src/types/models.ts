@@ -224,6 +224,30 @@ export type SecurityTopic = {
   status: SecurityTopicStatus;
 };
 
+export type ArchitectureTopicInitiativeLink = {
+  initiativeId: string;
+  initiative?: { id: string; title: string; status?: string };
+};
+
+export type ArchitectureTopicCapabilityLink = {
+  capabilityId: string;
+  capability?: { id: string; slug: string; title: string; status?: string };
+};
+
+export type ArchitectureTopic = {
+  id: string;
+  slug: string;
+  title: string;
+  asIsSummary?: string | null;
+  toBeSummary?: string | null;
+  synonyms?: unknown;
+  docPaths?: unknown;
+  autoMatchCapabilities: boolean;
+  sortOrder?: number;
+  initiativeLinks?: ArchitectureTopicInitiativeLink[];
+  capabilityLinks?: ArchitectureTopicCapabilityLink[];
+};
+
 export type Release = {
   id: string;
   tag: string;

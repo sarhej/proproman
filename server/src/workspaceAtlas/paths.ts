@@ -8,7 +8,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Prisma `@default(cuid())` — one filesystem path segment only (blocks `..` / separators in IDs). */
 const PRISMA_CUID_SEGMENT = /^c[a-z0-9]{24}$/;
 
-const ATLAS_OBJECT_DIR_TYPES = ["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"] as const;
+const ATLAS_OBJECT_DIR_TYPES = [
+  "DOMAIN",
+  "PRODUCT",
+  "INITIATIVE",
+  "FEATURE",
+  "REQUIREMENT",
+  "ARCHITECTURE_TOPIC"
+] as const;
 
 export function assertSafeAtlasPathSegment(segment: string, label: string): void {
   if (!PRISMA_CUID_SEGMENT.test(segment)) {
@@ -47,7 +54,7 @@ export async function ensureTenantAtlasDirs(tenantId: string): Promise<void> {
   const base = tenantAtlasDir(tenantId);
   const objects = path.join(base, "objects");
   await fs.mkdir(objects, { recursive: true });
-  for (const t of ["DOMAIN", "PRODUCT", "INITIATIVE", "FEATURE", "REQUIREMENT"]) {
+  for (const t of ATLAS_OBJECT_DIR_TYPES) {
     await fs.mkdir(path.join(objects, t), { recursive: true });
   }
 }

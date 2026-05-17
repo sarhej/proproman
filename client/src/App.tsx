@@ -46,6 +46,7 @@ import { AccountsPage } from "./pages/AccountsPage";
 import { DemandsPage } from "./pages/DemandsPage";
 import { PartnersPage } from "./pages/PartnersPage";
 import { SdlcPage } from "./pages/SdlcPage";
+import { ArchitectureTopicsPage } from "./pages/ArchitectureTopicsPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
@@ -1092,6 +1093,17 @@ function App() {
               element={
                 <ViewRoute user={user} path="/sdlc" hiddenNavPaths={uiSettings.hiddenNavPaths}>
                   <SdlcPage isAdmin={perms.canEditStructure} initiatives={board.initiatives} />
+                </ViewRoute>
+              }
+            />
+            <Route
+              path="architecture-topics"
+              element={
+                <ViewRoute user={user} path="/architecture-topics" hiddenNavPaths={uiSettings.hiddenNavPaths}>
+                  <ArchitectureTopicsPage
+                    isAdmin={perms.canEditStructure}
+                    initiatives={board.initiatives}
+                  />
                 </ViewRoute>
               }
             />

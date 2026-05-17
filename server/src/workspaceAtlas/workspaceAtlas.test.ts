@@ -4,7 +4,7 @@ import { parseWorkspaceAtlas } from "./zodSchemas.js";
 import { searchWorkspaceAtlas } from "./search.js";
 
 const minimalAtlas = {
-  schemaVersion: "1",
+  schemaVersion: "2",
   tenantId: "t1",
   workspaceSlug: "acme",
   materializedAt: "2026-01-01T00:00:00.000Z",

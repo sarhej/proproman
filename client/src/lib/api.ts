@@ -44,6 +44,7 @@ import type {
   DesignArtifactLink,
   UseCase,
   SecurityTopic,
+  ArchitectureTopic,
   Release
 } from "../types/models";
 
@@ -317,6 +318,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body)
     }),
+  getArchitectureTopics: async () =>
+    request<{ architectureTopics: ArchitectureTopic[] }>("/api/architecture-topics"),
+  getArchitectureTopic: async (id: string) =>
+    request<{ architectureTopic: ArchitectureTopic }>(`/api/architecture-topics/${id}`),
+  createArchitectureTopic: async (body: unknown) =>
+    request<{ architectureTopic: ArchitectureTopic }>("/api/architecture-topics", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  updateArchitectureTopic: async (id: string, body: unknown) =>
+    request<{ architectureTopic: ArchitectureTopic }>(`/api/architecture-topics/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }),
+  deleteArchitectureTopic: async (id: string) =>
+    request<void>(`/api/architecture-topics/${id}`, { method: "DELETE" }),
   getReleases: async () => request<{ releases: Release[] }>("/api/releases"),
   createRelease: async (body: unknown) =>
     request<{ release: Release }>("/api/releases", { method: "POST", body: JSON.stringify(body) }),
