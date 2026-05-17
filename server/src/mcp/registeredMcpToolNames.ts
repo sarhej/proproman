@@ -86,6 +86,7 @@ export const REGISTERED_MCP_TOOL_NAMES = [
   "tymio_reorder_features",
   "tymio_reorder_initiatives",
   "tymio_reorder_requirements",
+  "tymio_run_atlas_curator",
   "tymio_search_features",
   "tymio_search_initiatives",
   "tymio_search_requirements",

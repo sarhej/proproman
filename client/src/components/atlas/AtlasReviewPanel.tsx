@@ -36,6 +36,8 @@ export function AtlasReviewPanel({ isAdmin }: Props) {
   const [loading, setLoading] = useState(true);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [curatorBusy, setCuratorBusy] = useState(false);
+  const [curatorMessage, setCuratorMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -80,17 +82,66 @@ export function AtlasReviewPanel({ isAdmin }: Props) {
     }
   }
 
+  async function runCurator() {
+    setCuratorBusy(true);
+    setCuratorMessage(null);
+    try {
+      const res = await api.runAtlasCurator();
+      setCuratorMessage(
+        t("atlasHub.runCuratorResult", {
+          created: res.result.created,
+          skipped: res.result.skipped,
+          topics: res.result.topicsProcessed
+        })
+      );
+      await refresh();
+    } catch (err) {
+      setCuratorMessage(
+        t("atlasHub.runCuratorError", {
+          message: err instanceof Error ? err.message : String(err)
+        })
+      );
+    } finally {
+      setCuratorBusy(false);
+    }
+  }
+
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-slate-600">{t("atlasHub.reviewIntro")}</p>
+      {isAdmin ? (
+        <Button
+          variant="ghost"
+          className="h-8 text-xs"
+          disabled={curatorBusy}
+          onClick={() => void runCurator()}
+        >
+          {curatorBusy ? t("atlasHub.runCuratorBusy") : t("atlasHub.runCurator")}
+        </Button>
+      ) : null}
+    </div>
+  );
+
   if (loading) {
-    return <p className="text-sm text-slate-500">{t("atlasHub.loading")}</p>;
+    return (
+      <div className="space-y-4">
+        {isAdmin ? header : null}
+        <p className="text-sm text-slate-500">{t("atlasHub.loading")}</p>
+      </div>
+    );
   }
 
   if (proposals.length === 0) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-slate-600">{t("atlasHub.reviewIntro")}</p>
+        {header}
+        {curatorMessage ? <p className="text-sm text-slate-700">{curatorMessage}</p> : null}
         <Card className="p-6 text-center">
           <p className="text-sm font-medium text-slate-800">{t("atlasHub.reviewEmptyTitle")}</p>
           <p className="mt-2 text-sm text-slate-600">{t("atlasHub.reviewEmptyBody")}</p>
+          {isAdmin ? (
+            <p className="mt-3 text-xs text-slate-500">{t("atlasHub.runCuratorHint")}</p>
+          ) : null}
         </Card>
       </div>
     );
@@ -98,7 +149,8 @@ export function AtlasReviewPanel({ isAdmin }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">{t("atlasHub.reviewIntro")}</p>
+      {header}
+      {curatorMessage ? <p className="text-sm text-slate-700">{curatorMessage}</p> : null}
       {proposals.map((p) => {
         const proposedText = formatValue(p.proposedValue);
         const currentText = formatValue(p.currentValue);

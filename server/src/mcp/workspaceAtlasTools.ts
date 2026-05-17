@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { isPlatformSuperAdmin } from "../lib/workspaceRbac.js";
-import { workspaceMembershipCanWriteContent } from "../lib/workspaceRbac.js";
+import { workspaceMembershipCanManageStructure, workspaceMembershipCanWriteContent } from "../lib/workspaceRbac.js";
 import { appendMcpFeedbackToToolResult } from "../lib/mcpFeedbackNotice.js";
 import { getTenantContext, requireTenantContext } from "../tenant/tenantContext.js";
 import { compileWorkspaceAtlasForTenant } from "../workspaceAtlas/compiler.js";
@@ -9,6 +9,7 @@ import { createWorkspaceAtlasLlmFromEnv } from "../workspaceAtlas/llm.js";
 import { workspaceAtlasMetrics } from "../workspaceAtlas/metrics.js";
 import { readObjectShard, readWorkspaceAtlas } from "../workspaceAtlas/store.js";
 import { searchWorkspaceAtlas } from "../workspaceAtlas/search.js";
+import { runAtlasCurator } from "../atlasCurator/run.js";
 import { env } from "../env.js";
 
 function textContent(text: string) {
@@ -56,6 +57,13 @@ function requireMcpWorkspaceContentWrite(membershipRole: string, globalRole: str
   if (isPlatformSuperAdmin(globalRole)) return;
   if (!workspaceMembershipCanWriteContent(membershipRole)) {
     throw new Error("Forbidden: workspace VIEWER cannot modify data.");
+  }
+}
+
+function requireMcpWorkspaceStructureWrite(membershipRole: string, globalRole: string): void {
+  if (isPlatformSuperAdmin(globalRole)) return;
+  if (!workspaceMembershipCanManageStructure(membershipRole)) {
+    throw new Error("Forbidden: requires workspace OWNER or ADMIN.");
   }
 }
 
@@ -268,6 +276,29 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
           2
         )
       );
+    }
+  );
+
+  server.registerTool(
+    "tymio_run_atlas_curator",
+    {
+      title: "Run Atlas Curator agent (proposal intake only)",
+      description:
+        "Low-creativity agent: reads compiled topic shards + git context, emits structured curator proposals into the review inbox. Never auto-accepts. Requires workspace OWNER/ADMIN. Optional architectureTopicId scopes to one topic.",
+      inputSchema: mcpWithWorkspace({
+        architectureTopicId: z.string().min(1).optional()
+      })
+    },
+    async (args, ctx) => {
+      assertMcpWorkspaceSlug(args.workspaceSlug);
+      const { role } = getUserFromCtx(ctx);
+      const { membershipRole, tenantId } = getTenantContext()!;
+      requireMcpWorkspaceStructureWrite(membershipRole, role);
+      const result = await runAtlasCurator({
+        tenantId,
+        architectureTopicId: args.architectureTopicId
+      });
+      return textContent(JSON.stringify({ ok: true, result, metrics: workspaceAtlasMetrics }, null, 2));
     }
   );
 }

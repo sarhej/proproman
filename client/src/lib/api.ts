@@ -408,6 +408,19 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body)
     }),
+  runAtlasCurator: async (body?: { architectureTopicId?: string }) =>
+    request<{
+      result: {
+        created: number;
+        skipped: number;
+        topicsProcessed: number;
+        proposalIds: string[];
+        errors: Array<{ architectureTopicId: string; message: string }>;
+      };
+    }>("/api/atlas-curator/run", {
+      method: "POST",
+      body: JSON.stringify(body ?? {})
+    }),
   getReleases: async () => request<{ releases: Release[] }>("/api/releases"),
   createRelease: async (body: unknown) =>
     request<{ release: Release }>("/api/releases", { method: "POST", body: JSON.stringify(body) }),
