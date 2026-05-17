@@ -2,7 +2,6 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Globe, Home, Menu, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../../i18n";
 import { api } from "../../lib/api";
 import { computeNavShellSections } from "../../lib/navShellModel";
 import type { Tenant, User, UserMessage, UserNotificationSubscription } from "../../types/models";
