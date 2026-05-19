@@ -43,6 +43,17 @@ On the **full** MCP tool surface (remote **`/t/…/mcp`** or stdio OAuth to that
 
 **Guide:** [Workspace atlas (MCP)](/wiki/workspace-atlas) — or raw Markdown **`/wiki/articles/workspace-atlas.md`**.
 
+## Troubleshooting (Cursor / Streamable HTTP)
+
+| Symptom in MCP logs | Typical cause | What to do |
+|---------------------|---------------|------------|
+| **`Failed to open SSE stream: Conflict` (HTTP 409)** | Client opened a second notification SSE while the server still had the previous stream (reconnect, toggling MCP on/off, or two clients sharing one session). | **Disable** the Tymio MCP server, wait a few seconds, enable again (or restart Cursor). Ensure you do **not** have **two MCP entries** with the same workspace URL. After a hub deploy, reconnect once. |
+| **`Session not found`** then **`Not connected`** | Hub restarted, deploy, or load moved to another instance while Cursor kept an old `mcp-session-id`. | Toggle MCP off/on or restart Cursor so it runs **`initialize`** again. |
+| Only **`tymio_list_my_workspaces`** tools | Server URL is root **`/mcp`** (discovery), not **`/t/<slug>/mcp`**. | Point MCP at **`https://<host>/t/<workspace-slug>/mcp`**. |
+| **`mcp_auth` only** | OAuth not completed for this MCP server entry. | Run sign-in / **`mcp_auth`** for that server. |
+
+**Production:** MCP sessions are held **in memory on the API process**. Keep **one Railway replica** for the hub API unless you add shared session storage; multiple replicas without sticky routing cause intermittent **`Session not found`**.
+
 ## Raw Markdown
 
 This article is also available as static Markdown at **`/wiki/articles/mcp-connection.md`** on the same host (for direct fetches by agents).

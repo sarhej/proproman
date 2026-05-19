@@ -17,6 +17,10 @@ import {
   globalMcpProtectedResourceMetadataUrl,
   tenantMcpProtectedResourceMetadataUrl
 } from "./mcpProtectedResource.js";
+import {
+  prepareExistingMcpTransportForRequest,
+  shouldStartNewMcpSessionAfterStaleId
+} from "./mcpSessionRouting.js";
 
 const provider = new TymioOAuthProvider();
 
@@ -131,13 +135,20 @@ export function mountMcp(app: express.Express): void {
 
         if (sessionId && transports.has(sessionId)) {
           const transport = transports.get(sessionId)!;
+          prepareExistingMcpTransportForRequest(transport, req);
           await transport.handleRequest(req, res, req.body);
           return;
         }
 
         if (sessionId && !transports.has(sessionId)) {
-          res.status(404).json({ error: "Session not found" });
-          return;
+          if (shouldStartNewMcpSessionAfterStaleId(sessionId, false, req.body)) {
+            console.info(
+              "[MCP] Stale mcp-session-id with initialize — starting new session (deploy or reconnect)"
+            );
+          } else {
+            res.status(404).json({ error: "Session not found" });
+            return;
+          }
         }
 
         const transport = new StreamableHTTPServerTransport({
