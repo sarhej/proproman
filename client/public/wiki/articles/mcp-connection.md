@@ -51,6 +51,7 @@ On the **full** MCP tool surface (remote **`/t/…/mcp`** or stdio OAuth to that
 | **`Session not found`** then **`Not connected`** | Hub restarted, deploy, or load moved to another instance while Cursor kept an old `mcp-session-id`. | Toggle MCP off/on or restart Cursor so it runs **`initialize`** again. |
 | Only **`tymio_list_my_workspaces`** tools | Server URL is root **`/mcp`** (discovery), not **`/t/<slug>/mcp`**. | Point MCP at **`https://<host>/t/<workspace-slug>/mcp`**. |
 | **`mcp_auth` only** | OAuth not completed for this MCP server entry. | Run sign-in / **`mcp_auth`** for that server. |
+| **`Internal Server Error` on connect** (refresh in logs) | Stored refresh token invalid, rotated, or revoked (often after a prior failed refresh). | **Sign out** of the Tymio MCP server in Cursor (or delete its OAuth tokens), then **sign in again**. Do not keep retrying with the same stored tokens. |
 
 **Production:** MCP sessions are held **in memory on the API process**. Keep **one Railway replica** for the hub API unless you add shared session storage; multiple replicas without sticky routing cause intermittent **`Session not found`**.
 

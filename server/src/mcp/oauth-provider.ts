@@ -15,6 +15,11 @@ import type {
   OAuthTokens,
   OAuthTokenRevocationRequest
 } from "@modelcontextprotocol/sdk/shared/auth.js";
+import { InvalidGrantError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import { mcpRefreshGrantError } from "./mcpOAuthErrors.js";
+
+/** Allow Cursor to retry with the same refresh token shortly after a successful rotate (or a 500 mid-flight). */
+const REFRESH_IDEMPOTENT_GRACE_MS = 120_000;
 
 export function getMcpBaseUrl(): string {
   const base =
@@ -207,60 +212,159 @@ export class TymioOAuthProvider implements OAuthServerProvider {
   ): Promise<OAuthTokens> {
     void resource;
     const entry = await prisma.mcpRefreshToken.findUnique({ where: { token: refreshToken } });
-    
+
     if (!entry) {
-      throw new Error("Invalid refresh token");
+      throw mcpRefreshGrantError("not_found", { clientId: client.client_id });
     }
-    
+
     if (entry.clientId !== client.client_id) {
-      throw new Error("Client mismatch");
+      throw mcpRefreshGrantError("client_mismatch", {
+        clientId: client.client_id,
+        tokenClientId: entry.clientId
+      });
     }
 
     if (entry.expiresAt < new Date()) {
-      await prisma.mcpRefreshToken.delete({ where: { id: entry.id } });
-      throw new Error("Refresh token expired");
+      await prisma.mcpRefreshToken.delete({ where: { id: entry.id } }).catch(() => undefined);
+      throw mcpRefreshGrantError("expired", { clientId: client.client_id });
     }
 
-    // Zero-Trust: Refresh Token Rotation Reuse Detection
     if (entry.usedAt) {
-      // Token was already used! This means it was stolen or replayed.
-      // Revoke the entire token family to protect the user.
-      console.warn(`[MCP OAuth] Refresh token reuse detected for family ${entry.familyId}. Revoking all tokens.`);
+      const idempotent = await this.tryIdempotentRefreshAfterUse(entry, client, scopes);
+      if (idempotent) return idempotent;
+
+      console.warn(
+        `[MCP OAuth] Refresh token reuse for family ${entry.familyId}; revoking family`
+      );
       await prisma.mcpRefreshToken.deleteMany({ where: { familyId: entry.familyId } });
-      throw new Error("Invalid refresh token (reuse detected)");
+      throw mcpRefreshGrantError("reuse_detected", { familyId: entry.familyId });
     }
 
-    // Mark the current token as used
-    await prisma.mcpRefreshToken.update({
-      where: { id: entry.id },
-      data: { usedAt: new Date() }
-    });
+    return this.rotateRefreshToken(entry, client, scopes);
+  }
 
-    const user = await prisma.user.findUnique({ where: { id: entry.userId } });
-    if (!user || !user.isActive) throw new Error("User not found or inactive");
+  /** Client retried with the pre-rotation refresh token soon after a successful rotate (common after HTTP 500). */
+  private async tryIdempotentRefreshAfterUse(
+    entry: {
+      id: string;
+      familyId: string;
+      userId: string;
+      clientId: string;
+      scopes: string[];
+      usedAt: Date | null;
+    },
+    client: OAuthClientInformationFull,
+    scopes?: string[]
+  ): Promise<OAuthTokens | null> {
+    if (!entry.usedAt) return null;
+    if (Date.now() - entry.usedAt.getTime() > REFRESH_IDEMPOTENT_GRACE_MS) return null;
 
-    const effectiveScopes = scopes ?? entry.scopes;
-    const accessToken = await mintAccessToken(user.id, user.role, client.client_id, effectiveScopes);
-    
-    // Issue a new refresh token in the same family
-    const newToken = crypto.randomUUID();
-    await prisma.mcpRefreshToken.create({
-      data: {
-        token: newToken,
-        userId: user.id,
-        clientId: client.client_id,
-        scopes: effectiveScopes,
+    const successor = await prisma.mcpRefreshToken.findFirst({
+      where: {
         familyId: entry.familyId,
-        expiresAt: new Date(Date.now() + REFRESH_TTL * 1000)
-      }
+        clientId: client.client_id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+        createdAt: { gt: entry.usedAt }
+      },
+      orderBy: { createdAt: "desc" }
     });
+    if (!successor) return null;
 
+    console.info(
+      `[MCP OAuth] Idempotent refresh for family ${entry.familyId} (client retried with rotated token)`
+    );
+    return this.issueTokensForRefreshRow(successor, client, scopes);
+  }
+
+  private async issueTokensForRefreshRow(
+    row: { userId: string; scopes: string[]; token: string },
+    client: OAuthClientInformationFull,
+    scopes?: string[]
+  ): Promise<OAuthTokens> {
+    const user = await prisma.user.findUnique({ where: { id: row.userId } });
+    if (!user?.isActive) {
+      throw mcpRefreshGrantError("user_inactive", { userId: row.userId });
+    }
+    const effectiveScopes = scopes ?? row.scopes;
+    const accessToken = await mintAccessToken(
+      user.id,
+      user.role,
+      client.client_id,
+      effectiveScopes
+    );
     return {
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: TOKEN_TTL,
-      refresh_token: newToken
+      refresh_token: row.token
     };
+  }
+
+  private async rotateRefreshToken(
+    entry: {
+      id: string;
+      userId: string;
+      familyId: string;
+      scopes: string[];
+    },
+    client: OAuthClientInformationFull,
+    scopes?: string[]
+  ): Promise<OAuthTokens> {
+    const effectiveScopes = scopes ?? entry.scopes;
+    const newRefreshToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + REFRESH_TTL * 1000);
+
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const claim = await tx.mcpRefreshToken.updateMany({
+          where: { id: entry.id, usedAt: null },
+          data: { usedAt: new Date() }
+        });
+        if (claim.count === 0) {
+          throw mcpRefreshGrantError("concurrent_refresh", { tokenId: entry.id });
+        }
+
+        const user = await tx.user.findUnique({ where: { id: entry.userId } });
+        if (!user?.isActive) {
+          throw mcpRefreshGrantError("user_inactive", { userId: entry.userId });
+        }
+
+        await tx.mcpRefreshToken.create({
+          data: {
+            token: newRefreshToken,
+            userId: user.id,
+            clientId: client.client_id,
+            scopes: effectiveScopes,
+            familyId: entry.familyId,
+            expiresAt
+          }
+        });
+
+        const accessToken = await mintAccessToken(
+          user.id,
+          user.role,
+          client.client_id,
+          effectiveScopes
+        );
+
+        return {
+          access_token: accessToken,
+          token_type: "Bearer",
+          expires_in: TOKEN_TTL,
+          refresh_token: newRefreshToken
+        };
+      });
+    } catch (err) {
+      if (err instanceof InvalidGrantError) {
+        const current = await prisma.mcpRefreshToken.findUnique({ where: { id: entry.id } });
+        if (current?.usedAt) {
+          const idempotent = await this.tryIdempotentRefreshAfterUse(current, client, scopes);
+          if (idempotent) return idempotent;
+        }
+      }
+      throw err;
+    }
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { InvalidGrantError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { TymioOAuthProvider } from "./oauth-provider.js";
 import { prisma } from "../db.js";
 
@@ -6,14 +7,17 @@ vi.mock("../db.js", () => ({
   prisma: {
     mcpRefreshToken: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       create: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
     },
+    $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
   },
 }));
 
@@ -41,7 +45,7 @@ describe("TymioOAuthProvider - Refresh Token Rotation", () => {
         { client_id: "client-1" } as any,
         "bad-token"
       )
-    ).rejects.toThrow("Invalid refresh token");
+    ).rejects.toBeInstanceOf(InvalidGrantError);
   });
 
   it("throws error if client ID does not match", async () => {
@@ -62,10 +66,11 @@ describe("TymioOAuthProvider - Refresh Token Rotation", () => {
         { client_id: "client-1" } as any,
         "good-token"
       )
-    ).rejects.toThrow("Client mismatch");
+    ).rejects.toBeInstanceOf(InvalidGrantError);
   });
 
   it("throws error and deletes token if expired", async () => {
+    vi.mocked(prisma.mcpRefreshToken.delete).mockResolvedValue({} as never);
     vi.mocked(prisma.mcpRefreshToken.findUnique).mockResolvedValue({
       id: "1",
       token: "expired-token",
@@ -83,7 +88,7 @@ describe("TymioOAuthProvider - Refresh Token Rotation", () => {
         { client_id: "client-1" } as any,
         "expired-token"
       )
-    ).rejects.toThrow("Refresh token expired");
+    ).rejects.toBeInstanceOf(InvalidGrantError);
 
     expect(prisma.mcpRefreshToken.delete).toHaveBeenCalledWith({
       where: { id: "1" },
@@ -98,19 +103,19 @@ describe("TymioOAuthProvider - Refresh Token Rotation", () => {
       userId: "user-1",
       scopes: [],
       expiresAt: new Date(Date.now() + 10000),
-      usedAt: new Date(), // Already used!
+      usedAt: new Date(Date.now() - 300_000),
       familyId: "fam-1",
       createdAt: new Date(),
     });
+    vi.mocked(prisma.mcpRefreshToken.findFirst).mockResolvedValue(null);
 
     await expect(
       provider.exchangeRefreshToken(
         { client_id: "client-1" } as any,
         "stolen-token"
       )
-    ).rejects.toThrow("Invalid refresh token (reuse detected)");
+    ).rejects.toBeInstanceOf(InvalidGrantError);
 
-    // Should revoke the entire family
     expect(prisma.mcpRefreshToken.deleteMany).toHaveBeenCalledWith({
       where: { familyId: "fam-1" },
     });
@@ -134,19 +139,18 @@ describe("TymioOAuthProvider - Refresh Token Rotation", () => {
       role: "ADMIN",
       isActive: true,
     } as any);
+    vi.mocked(prisma.mcpRefreshToken.updateMany).mockResolvedValue({ count: 1 });
 
     const result = await provider.exchangeRefreshToken(
       { client_id: "client-1" } as any,
       "valid-token"
     );
 
-    // Old token marked as used
-    expect(prisma.mcpRefreshToken.update).toHaveBeenCalledWith({
-      where: { id: "1" },
+    expect(prisma.mcpRefreshToken.updateMany).toHaveBeenCalledWith({
+      where: { id: "1", usedAt: null },
       data: { usedAt: expect.any(Date) },
     });
 
-    // New token created in the same family
     expect(prisma.mcpRefreshToken.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         token: expect.any(String),
