@@ -21,6 +21,7 @@ import {
   prepareExistingMcpTransportForRequest,
   shouldStartNewMcpSessionAfterStaleId
 } from "./mcpSessionRouting.js";
+import { buildMcpOAuthSuccessPage } from "./mcpOAuthSuccessPage.js";
 
 const provider = new TymioOAuthProvider();
 
@@ -78,7 +79,10 @@ export function mountMcp(app: express.Express): void {
         return;
       }
       const { redirectUri } = await handleGoogleCallback(code, state);
-      res.redirect(redirectUri);
+      res
+        .status(200)
+        .type("html")
+        .send(buildMcpOAuthSuccessPage({ redirectUri, clientLabel: "Cursor" }));
     } catch (err) {
       console.error("MCP Google callback error:", err);
       res.status(500).send("Authentication failed");
