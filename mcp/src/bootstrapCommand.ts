@@ -16,6 +16,7 @@ import {
   type OpenCodeRemoteEntry
 } from "./bootstrap/mergeMcpConfig.js";
 import { writeTextFileWithBackup } from "./bootstrap/writeWithBackup.js";
+import { ensureBootstrapOAuth, verifyBootstrapWorkspaceMembership } from "./bootstrap/bootstrapAuth.js";
 
 const DEFAULT_SKILL_IDS = [
   "tymio-workspace",
@@ -111,8 +112,12 @@ Options:
   --scope <project|user>                       Config file location (default: project). Codex ignores (user global only)
   --force                                      Overwrite differing existing tymio-* url values
   --dry-run                                    Print actions only
-  --login                                      Run browser OAuth (tymio-mcp login) if no saved tokens
+  --login                                      Force browser OAuth before verifying --slug (re-sign-in / switch account)
   --skills                                     Install default hub skills (${DEFAULT_SKILL_IDS.join(", ")})
+
+When --slug (or TYMIO_WORKSPACE_SLUG) is set, bootstrap requires OAuth and verifies ACTIVE
+membership via tymio_list_my_workspaces before writing a workspace MCP URL. Run tymio-mcp logout
+then bootstrap --login to switch Google accounts.
 
 Afterwards: restart the IDE / OpenCode; use a workspace MCP URL for full tymio_* tools.
 `;
@@ -177,15 +182,29 @@ export async function runBootstrapCommand(args: string[]): Promise<number> {
   const slugResolved = slug?.trim() || process.env.TYMIO_WORKSPACE_SLUG?.trim() || null;
   const workspaceUrl = slugResolved ? hubWorkspaceMcpUrl(origin, slugResolved) : null;
 
-  if (doLogin && !hasSavedOAuthTokens()) {
-    if (dryRun) {
-      process.stderr.write("[dry-run] would run tymio-mcp login\n");
-    } else {
-      process.stderr.write("Running OAuth login…\n");
-      await runLoginCommand(defaultMcpUrl());
+  if (slugResolved) {
+    if (!(await ensureBootstrapOAuth({ origin, dryRun, forceLogin: doLogin }))) {
+      return 1;
     }
-  } else if (!hasSavedOAuthTokens()) {
-    process.stderr.write("Note: no saved OAuth tokens yet — run: tymio-mcp login\n");
+    const membership = await verifyBootstrapWorkspaceMembership({
+      origin,
+      slug: slugResolved,
+      dryRun
+    });
+    if (!membership.ok) {
+      return 1;
+    }
+  } else if (doLogin) {
+    if (!hasSavedOAuthTokens()) {
+      if (dryRun) {
+        process.stderr.write("[dry-run] would run tymio-mcp login\n");
+      } else {
+        process.stderr.write("Running OAuth login…\n");
+        await runLoginCommand(defaultMcpUrl());
+      }
+    } else {
+      process.stderr.write("OAuth tokens already cached (discovery-only bootstrap; use --login to re-sign-in).\n");
+    }
   }
 
   let clients: BootstrapClient[];

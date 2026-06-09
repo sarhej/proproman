@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.2
+
+- **`tymio-mcp bootstrap`** — when **`--slug`** or **`TYMIO_WORKSPACE_SLUG` is set, requires OAuth (auto-runs **`tymio-mcp login`** if no cached tokens) and verifies ACTIVE workspace membership via **`tymio_list_my_workspaces`** before writing a workspace MCP URL. Refuses to pin a slug the signed-in user cannot access. **`--login`** forces re-sign-in (account switch: **`tymio-mcp logout`** then **`bootstrap --login`**).
+- **Tests:** bootstrap auth gate, membership verification, MCP **`list_my_workspaces`** client helper.
+
 ## 2.4.1
 
 - **`tymio-mcp login`** — optional **`TYMIO_OAUTH_LOGIN_TIMEOUT_MS`** (positive milliseconds) caps how long the CLI waits for the OAuth redirect (avoids hanging forever if the user abandons the browser flow).
