@@ -28,15 +28,57 @@ jobs:
       - name: Security check
         run: npm run security:check
 
+  detect-railway-deploy:
+    name: Detect Railway deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      should_deploy: ${{ steps.paths.outputs.should_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: paths
+        run: |
+          set -euo pipefail
+          pattern='^(client|server|admin|mcp|docs)/|^(Dockerfile|\.dockerignore|railway\.json|package\.json|package-lock\.json|server/tsconfig\.build\.json)'
+          if git diff --name-only HEAD^ HEAD | grep -qE "$pattern"; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Railway-deployable paths changed"
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "No Railway-deployable paths changed (workflow/docs only)"
+          fi
+
   verify-production:
     name: Verify production deploy
-    needs: build-gate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-gate, detect-railway-deploy]
+    if: |
+      always() &&
+      needs.build-gate.result == 'success' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && needs.detect-railway-deploy.outputs.should_deploy == 'true')
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Wait for Railway deploy SHA
         env:
-          DEPLOY_VERIFY_ATTEMPTS: "48"
+          DEPLOY_VERIFY_ATTEMPTS: "60"
           DEPLOY_VERIFY_INTERVAL_SEC: "15"
         run: bash scripts/deploy-verify.sh "${{ github.sha }}"
+
+  deploy-skipped:
+    name: Verify skipped (no Railway deploy)
+    needs: [build-gate, detect-railway-deploy]
+    if: |
+      always() &&
+      needs.build-gate.result == 'success' &&
+      github.event_name == 'push' &&
+      needs.detect-railway-deploy.outputs.should_deploy == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Build gate passed. Commit only touches non-Railway paths; production SHA verify skipped."
+          curl -sf https://tymio.app/api/health | python3 -m json.tool

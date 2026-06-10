@@ -39,12 +39,13 @@ You act as **DevOps** for this monorepo: keep **main** deployable, run **securit
 
 ## Deploy (Railway)
 
-- Production auto-deploys on push to **main** (`railway.json` + Dockerfile).
-- **Before push:** `npm run build` (Railway runs the same).
-- **After push:** `npm run deploy:verify` or `bash scripts/deploy-verify.sh <sha>` — polls `/api/health` until `deploy.sha` matches.
-- GitHub **Deploy** workflow (`.github/workflows/deploy.yml`): build gate + production SHA verify on every `main` push.
-- Post-deploy smoke: `curl -sf https://tymio.app/api/health` — expect `{ ok: true, deploy: { sha: "…" } }`.
-- Railway CLI/MCP: run `railway login` locally if unauthorized; dashboard for build logs.
+- Production auto-deploys on push to **main** when `railway.json` watch paths change (not `.github/**` alone).
+- **Before push:** `npm run build` then `npm run security:check`.
+- **After push (deployable paths):** `npm run deploy:verify` — polls `/api/health` until `deploy.sha` matches.
+- **Workflow-only commits** skip SHA verify (no Railway rebuild expected); build gate still runs.
+- GitHub **Deploy** workflow: build gate + conditional production verify.
+- Health: `curl -sf https://tymio.app/api/health` → `{ ok, deploy: { sha, branch, environment } }`.
+- Railway CLI: `railway login` locally for build logs; MCP may be unavailable.
 
 ## Tools
 
