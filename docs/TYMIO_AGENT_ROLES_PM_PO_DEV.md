@@ -1,4 +1,4 @@
-# Tymio hub agents: PM, PO, and DEV
+# Tymio hub agents: PM, PO, DEV, and DevOps
 
 This document compares **which hub functions and data** each autonomous agent role should rely on, and points to **draft Cursor skills** (one per role).
 
@@ -7,6 +7,7 @@ This document compares **which hub functions and data** each autonomous agent ro
 | Product Manager | [.cursor/skills/tymio-pm-agent/SKILL.md](../.cursor/skills/tymio-pm-agent/SKILL.md) |
 | Product Owner | [.cursor/skills/tymio-po-agent/SKILL.md](../.cursor/skills/tymio-po-agent/SKILL.md) |
 | Developer | [.cursor/skills/tymio-dev-agent/SKILL.md](../.cursor/skills/tymio-dev-agent/SKILL.md) |
+| DevOps | [.cursor/skills/tymio-devops-agent/SKILL.md](../.cursor/skills/tymio-devops-agent/SKILL.md) |
 
 Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKILL.md](../.cursor/skills/tymio-workspace/SKILL.md) and [mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md](../mcp/TYMIO_MCP_CLI_AGENT_GUIDANCE.md).
 
