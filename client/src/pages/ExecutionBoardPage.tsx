@@ -50,11 +50,24 @@ function requirementDoneForBoard(r: Requirement): boolean {
   return r.isDone === true || r.status === "DONE";
 }
 
-/** First column on this board mapped to DONE (by sortOrder), if any. */
-function doneColumnIdForBoard(boardColumns: ExecutionColumn[]): string | null {
+/** First column on this board mapped to a PM status (by sortOrder), if any. */
+function columnIdForMappedStatus(boardColumns: ExecutionColumn[], status: string): string | null {
   const ordered = boardColumns.slice().sort((a, b) => a.sortOrder - b.sortOrder);
-  const col = ordered.find((c) => c.mappedStatus === "DONE");
+  const col = ordered.find((c) => c.mappedStatus === status);
   return col?.id ?? null;
+}
+
+/**
+ * When executionColumnId is unset, place active PM statuses on the matching board column.
+ * NOT_STARTED stays in Unassigned until explicitly placed on the board.
+ */
+function columnIdForStatusFallback(boardColumns: ExecutionColumn[], r: Requirement): string | null {
+  if (requirementDoneForBoard(r)) {
+    return columnIdForMappedStatus(boardColumns, "DONE");
+  }
+  const status = r.status ?? "NOT_STARTED";
+  if (status === "NOT_STARTED") return null;
+  return columnIdForMappedStatus(boardColumns, status);
 }
 
 /** Column keys: UNASSIGNED + each execution column id for the selected board. */
@@ -66,17 +79,15 @@ function buildColumnItemIds(
   const byId = new Map(items.map((x) => [x.requirement.id, x.requirement]));
   const map: Record<string, string[]> = { [UNASSIGNED]: [] };
   for (const c of boardColumns) map[c.id] = [];
-  const doneColId = doneColumnIdForBoard(boardColumns);
   for (const item of items) {
     const r = item.requirement;
     const cid = r.executionColumnId;
     let key: string;
     if (cid && map[cid] !== undefined) {
       key = cid;
-    } else if (requirementDoneForBoard(r) && doneColId) {
-      key = doneColId;
     } else {
-      key = UNASSIGNED;
+      const fallbackColId = columnIdForStatusFallback(boardColumns, r);
+      key = fallbackColId && map[fallbackColId] !== undefined ? fallbackColId : UNASSIGNED;
     }
     map[key].push(r.id);
   }

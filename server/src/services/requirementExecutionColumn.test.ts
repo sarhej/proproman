@@ -1,18 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TaskStatus } from "@prisma/client";
-import { applyExecutionColumn, productIdForFeature } from "./requirementExecutionColumn.js";
+import {
+  applyExecutionColumn,
+  executionColumnIdForStatusChange,
+  productIdForFeature
+} from "./requirementExecutionColumn.js";
 import { prisma } from "../db.js";
 
 vi.mock("../db.js", () => ({
   prisma: {
     feature: { findUnique: vi.fn() },
-    executionColumn: { findUnique: vi.fn() }
+    executionColumn: { findUnique: vi.fn() },
+    executionBoard: { findFirst: vi.fn() }
   }
 }));
 
 const mockPrisma = prisma as unknown as {
   feature: { findUnique: ReturnType<typeof vi.fn> };
   executionColumn: { findUnique: ReturnType<typeof vi.fn> };
+  executionBoard: { findFirst: ReturnType<typeof vi.fn> };
 };
 
 describe("requirementExecutionColumn", () => {
@@ -108,6 +114,25 @@ describe("requirementExecutionColumn", () => {
       });
       mockPrisma.feature.findUnique.mockResolvedValue(null);
       await expect(applyExecutionColumn("feat-1", "col-1")).rejects.toThrow("COLUMN_PRODUCT_MISMATCH");
+    });
+  });
+
+  describe("executionColumnIdForStatusChange", () => {
+    it("returns null for NOT_STARTED so cards stay unassigned", async () => {
+      await expect(executionColumnIdForStatusChange("prod-1", TaskStatus.NOT_STARTED)).resolves.toBeNull();
+      expect(mockPrisma.executionBoard.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("returns default-board column id for active statuses", async () => {
+      mockPrisma.executionBoard.findFirst.mockResolvedValue({
+        columns: [
+          { id: "col-backlog", mappedStatus: TaskStatus.NOT_STARTED, sortOrder: 0 },
+          { id: "col-progress", mappedStatus: TaskStatus.IN_PROGRESS, sortOrder: 1 }
+        ]
+      });
+      await expect(executionColumnIdForStatusChange("prod-1", TaskStatus.IN_PROGRESS)).resolves.toBe(
+        "col-progress"
+      );
     });
   });
 });

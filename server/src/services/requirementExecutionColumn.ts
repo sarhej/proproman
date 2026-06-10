@@ -30,6 +30,33 @@ export type ColumnApplyResult = {
   isDone?: boolean;
 };
 
+/** Default-board column for a PM status (first column by sortOrder with that mappedStatus). */
+export async function columnIdForStatusOnDefaultBoard(
+  productId: string,
+  status: TaskStatus
+): Promise<string | null> {
+  const board = await prisma.executionBoard.findFirst({
+    where: { productId },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    include: { columns: { orderBy: { sortOrder: "asc" } } }
+  });
+  if (!board) return null;
+  const col = board.columns.find((c) => c.mappedStatus === status);
+  return col?.id ?? null;
+}
+
+/**
+ * When PM status changes outside the board (e.g. Product Explorer), keep the default board column in sync.
+ * NOT_STARTED clears the column so the card returns to Unassigned.
+ */
+export async function executionColumnIdForStatusChange(
+  productId: string,
+  status: TaskStatus
+): Promise<string | null> {
+  if (status === TaskStatus.NOT_STARTED) return null;
+  return columnIdForStatusOnDefaultBoard(productId, status);
+}
+
 /** When assigning a column, sync PM status + isDone from column mapping. */
 export async function applyExecutionColumn(
   featureId: string,

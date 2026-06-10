@@ -11,6 +11,7 @@ import { notifyHubChange } from "../services/hubChangeHub.js";
 import { executionBoardLayoutSchema, labelsSchema, requirementReorderSchema } from "./schemas.js";
 import {
   applyExecutionColumn,
+  executionColumnIdForStatusChange,
   nextExecutionSortOrder,
   productIdForFeature
 } from "../services/requirementExecutionColumn.js";
@@ -307,6 +308,16 @@ requirementsRouter.put("/:id", requireWorkspaceContentWrite(), async (req, res) 
   if (parsed.data.deployedAt !== undefined) updateData.deployedAt = parsed.data.deployedAt ? new Date(parsed.data.deployedAt) : null;
 
   let nextExecCol: string | null | undefined;
+  if (parsed.data.status !== undefined && parsed.data.executionColumnId === undefined) {
+    const pid = await productIdForFeature(featureId);
+    if (pid) {
+      const syncedColId = await executionColumnIdForStatusChange(pid, parsed.data.status);
+      if (syncedColId !== existing.executionColumnId) {
+        updateData.executionColumnId = syncedColId;
+        nextExecCol = syncedColId;
+      }
+    }
+  }
   if (parsed.data.executionColumnId !== undefined) {
     if (parsed.data.executionColumnId === null) {
       updateData.executionColumnId = null;

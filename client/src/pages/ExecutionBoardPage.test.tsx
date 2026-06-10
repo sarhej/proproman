@@ -93,8 +93,16 @@ const defaultBoardPayload = {
         {
           id: "c2",
           boardId: "b1",
-          name: "Done",
+          name: "In progress",
           sortOrder: 1,
+          mappedStatus: "IN_PROGRESS" as const,
+          isDefault: false
+        },
+        {
+          id: "c3",
+          boardId: "b1",
+          name: "Done",
+          sortOrder: 2,
           mappedStatus: "DONE" as const,
           isDefault: false
         }
@@ -131,6 +139,41 @@ describe("ExecutionBoardPage", () => {
     });
     expect(await screen.findByText("Task One")).toBeInTheDocument();
     expect(screen.getByText("Unassigned")).toBeInTheDocument();
+  });
+
+  it("places in-progress requirement in In progress column when executionColumnId is missing", async () => {
+    const product = minimalProduct();
+    const reqs = product.initiatives[0]!.features![0]!.requirements!;
+    reqs[0] = { ...reqs[0]!, status: "IN_PROGRESS", isDone: false };
+    mockApi.getProducts.mockResolvedValue({ products: [product] });
+
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
+    });
+
+    function columnShell(from: Element): HTMLElement | null {
+      let el: Element | null = from;
+      while (el) {
+        if (
+          el instanceof HTMLElement &&
+          el.className.includes("min-h-[160px]") &&
+          el.className.includes("w-[200px]")
+        ) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    }
+    const progressCols = screen.getAllByText("In progress");
+    const progressShell = columnShell(progressCols[0]!);
+    const unassignedShell = columnShell(screen.getByText("Unassigned"));
+    expect(progressShell).toBeTruthy();
+    expect(unassignedShell).toBeTruthy();
+    expect(await screen.findByText("Task One")).toBeInTheDocument();
+    expect(within(progressShell!).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
   });
 
   it("places done requirement in Done column when executionColumnId is missing", async () => {
@@ -172,7 +215,7 @@ describe("ExecutionBoardPage", () => {
     const product = minimalProduct();
     const reqs = product.initiatives[0]!.features![0]!.requirements!;
     reqs[0] = { ...reqs[0]!, executionColumnId: "c1" };
-    reqs[1] = { ...reqs[1]!, executionColumnId: "c2" };
+    reqs[1] = { ...reqs[1]!, executionColumnId: "c3" };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
     renderBoard();
