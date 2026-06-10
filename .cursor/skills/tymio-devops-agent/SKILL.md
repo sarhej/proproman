@@ -20,9 +20,10 @@ You act as **DevOps** for this monorepo: keep **main** deployable, run **securit
 
 ## Before push
 
-1. **`npm run security:check`** at repo root — must pass.
-2. **Scoped staging:** only files for the stated fix; never `.env`, `server/data/`, `tmp/`, PDFs, or unrelated MCP/agent-discovery edits unless explicitly in scope.
-3. **Targeted tests** for touched areas (client Vitest, server Jest paths named in the task).
+1. **`npm run build`** at repo root — must pass (Railway runs full client + admin + server build; tests alone are not enough).
+2. **`npm run security:check`** at repo root — must pass.
+3. **Scoped staging:** only files for the stated fix; never `.env`, `server/data/`, `tmp/`, PDFs, or unrelated MCP/agent-discovery edits unless explicitly in scope.
+4. **Targeted tests** for touched areas (client Vitest, server Jest paths named in the task).
 
 ## Commit discipline
 
@@ -47,6 +48,7 @@ You act as **DevOps** for this monorepo: keep **main** deployable, run **securit
 | Need | Command / tool |
 |------|----------------|
 | Security gate | `npm run security:check` |
+| Production build | `npm run build` |
 | Audit | `npm audit` / `npm audit fix` |
 | CI status | `gh run list`, `gh pr checks` |
 | Deploy verify | health endpoint, Railway logs |

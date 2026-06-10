@@ -14,7 +14,7 @@ if (typeof globalThis.IntersectionObserver === "undefined") {
     observe() {}
     disconnect() {}
     unobserve() {}
-  } as typeof IntersectionObserver;
+  } as unknown as typeof IntersectionObserver;
 }
 
 if (typeof window.matchMedia === "undefined") {

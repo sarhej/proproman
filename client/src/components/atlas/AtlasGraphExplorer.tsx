@@ -124,7 +124,7 @@ export function AtlasGraphExplorer({ atlas, onSelectTopicInOverview }: Props) {
       })
     ).then((pairs) => {
       if (cancelled) return;
-      setTopicEdges(new Map(pairs));
+      setTopicEdges(new Map(pairs.map(([id, ids]) => [id, [...ids]])));
     });
     return () => {
       cancelled = true;

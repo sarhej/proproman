@@ -162,13 +162,6 @@ function itemMatchesFilters(
   return true;
 }
 
-function findColumnKeyForReqId(id: string, columnItemIds: Record<string, string[]>): string | null {
-  for (const [key, ids] of Object.entries(columnItemIds)) {
-    if (ids.includes(id)) return key;
-  }
-  return null;
-}
-
 function ReqCard({
   item,
   isDragging,
@@ -433,15 +426,16 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
 
   function pointerXFromDragEvent(event: DragStartEvent | DragMoveEvent): number | null {
     const activator = event.activatorEvent;
+    const deltaX = "delta" in event ? event.delta.x : 0;
     if (activator instanceof MouseEvent) {
-      return activator.clientX + event.delta.x;
+      return activator.clientX + deltaX;
     }
     if (activator instanceof TouchEvent) {
       const touch = activator.touches[0] ?? activator.changedTouches[0];
-      if (touch) return touch.clientX + event.delta.x;
+      if (touch) return touch.clientX + deltaX;
     }
     if ("clientX" in activator && typeof activator.clientX === "number") {
-      return activator.clientX + event.delta.x;
+      return activator.clientX + deltaX;
     }
     return null;
   }
@@ -478,22 +472,6 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
     } catch {
       await load({ silent: true });
     }
-  }
-
-  /** Programmatic column move — kept for optional mobile/accessibility fallback UI. */
-  async function moveCardToColumn(reqId: string, targetColumnKey: string) {
-    if (readOnly || !productId || filtersActive) return;
-    const activeContainer = findColumnKeyForReqId(reqId, columnItemIds);
-    if (!activeContainer || activeContainer === targetColumnKey) return;
-    const from = [...(columnItemIds[activeContainer] ?? [])];
-    const to = [...(columnItemIds[targetColumnKey] ?? [])];
-    const fromIdx = from.indexOf(reqId);
-    if (fromIdx < 0) return;
-    const [removed] = from.splice(fromIdx, 1);
-    to.push(removed);
-    const nextMap = { ...columnItemIds, [activeContainer]: from, [targetColumnKey]: to };
-    setColumnItemIds(nextMap);
-    await persistLayout(nextMap);
   }
 
   async function onDragEnd(event: DragEndEvent) {
