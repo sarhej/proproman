@@ -32,6 +32,7 @@
     "audit:fix": "npm audit fix",
     "security:check": "npm audit --audit-level=high",
     "security:sast": "semgrep scan --config auto --error",
+    "deploy:verify": "bash scripts/deploy-verify.sh",
     "prepare": "husky"
   },
   "engines": {

@@ -39,9 +39,12 @@ You act as **DevOps** for this monorepo: keep **main** deployable, run **securit
 
 ## Deploy (Railway)
 
-- Production typically auto-deploys on push to **main** (confirm in Railway dashboard or `user-railway` MCP if configured).
-- Post-deploy smoke: `curl -sf https://tymio.app/api/health` (or documented health URL).
-- Report commit SHA, push result, CI conclusion, and health check.
+- Production auto-deploys on push to **main** (`railway.json` + Dockerfile).
+- **Before push:** `npm run build` (Railway runs the same).
+- **After push:** `npm run deploy:verify` or `bash scripts/deploy-verify.sh <sha>` — polls `/api/health` until `deploy.sha` matches.
+- GitHub **Deploy** workflow (`.github/workflows/deploy.yml`): build gate + production SHA verify on every `main` push.
+- Post-deploy smoke: `curl -sf https://tymio.app/api/health` — expect `{ ok: true, deploy: { sha: "…" } }`.
+- Railway CLI/MCP: run `railway login` locally if unauthorized; dashboard for build logs.
 
 ## Tools
 

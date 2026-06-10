@@ -45,6 +45,7 @@ import { ontologyRouter } from "./routes/ontology.js";
 import { uiSettingsRouter } from "./routes/ui-settings.js";
 import { hubEventsRouter } from "./routes/hub-events.js";
 import { agentGuideRouter } from "./routes/agent-guide.js";
+import { buildHealthPayload } from "./lib/deployInfo.js";
 import { prisma, prismaUnscoped } from "./db.js";
 import { normalizePublicTenantSlug } from "./lib/publicTenantSlug.js";
 import { apiKeyAuth } from "./middleware/apiKeyAuth.js";
@@ -194,7 +195,7 @@ app.use("/api/vcs/oauth/gitlab", vcsOauthGitlabRouter);
 
 // Public routes (no auth required) — mounted before MCP OAuth middleware
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json(buildHealthPayload());
 });
 /** Public diagnostic; registered before `app.use("/api/tenant-requests")` and before `mountTenantScoped("/api", …)` so it never hits unauthenticated `requireAuth`. */
 app.get("/api/tenant-requests/lookup-by-slug/:slug", tenantRequestLookupBySlugHandler);

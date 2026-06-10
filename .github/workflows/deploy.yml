@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build-gate:
+    name: Build gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Security check
+        run: npm run security:check
+
+  verify-production:
+    name: Verify production deploy
+    needs: build-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Railway deploy SHA
+        env:
+          DEPLOY_VERIFY_ATTEMPTS: "48"
+          DEPLOY_VERIFY_INTERVAL_SEC: "15"
+        run: bash scripts/deploy-verify.sh "${{ github.sha }}"
