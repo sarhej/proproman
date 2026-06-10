@@ -21,6 +21,8 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=server/prisma/schema.prisma
       - name: Production build
         run: npm run build
       - name: Security check
