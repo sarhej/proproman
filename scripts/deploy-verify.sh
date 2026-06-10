@@ -8,7 +8,7 @@ MAX_ATTEMPTS="${DEPLOY_VERIFY_ATTEMPTS:-40}"
 INTERVAL_SEC="${DEPLOY_VERIFY_INTERVAL_SEC:-15}"
 
 normalize_sha() {
-  echo "${1,,}" | cut -c1-40
+  echo "$1" | tr '[:upper:]' '[:lower:]' | cut -c1-40
 }
 
 want="$(normalize_sha "$EXPECTED_SHA")"
