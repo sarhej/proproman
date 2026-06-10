@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Request, Response } from "express";
 import { GitActivityKind, VcsProvider } from "@prisma/client";
@@ -36,11 +36,11 @@ vi.mock("../services/hubChangeHub.js", () => ({
 
 import { githubVcsWebhookHandler } from "./vcs-webhooks.js";
 
-const secret = "test-webhook-secret";
 const connectionId = "conn-1";
+let webhookSecret: string;
 
 function sign(payload: Buffer): string {
-  return `sha256=${createHmac("sha256", secret).update(payload).digest("hex")}`;
+  return `sha256=${createHmac("sha256", webhookSecret).update(payload).digest("hex")}`;
 }
 
 function makeRes(): Response & { statusCode: number; body?: string } {
@@ -70,11 +70,12 @@ function makeReq(payload: Buffer, headers: Record<string, string>): Request {
 describe("githubVcsWebhookHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    webhookSecret = randomBytes(24).toString("hex");
     hoisted.repositoryConnectionFindUnique.mockResolvedValue({
       id: connectionId,
       tenantId: "tenant-1",
       provider: VcsProvider.GITHUB,
-      webhookSecret: secret
+      webhookSecret
     });
     hoisted.repositoryConnectionUpdate.mockResolvedValue({});
     hoisted.gitActivityUpsert.mockResolvedValue({});

@@ -3,6 +3,9 @@ import { render, screen } from "@testing-library/react";
 import {
   KanbanBoardLayout,
   kanbanColumnClassName,
+  minTrackWidthPx,
+  mobileColumnWidthPx,
+  KANBAN_MOBILE_COL_MAX_PX,
   useKanbanColumnClassName
 } from "./KanbanBoardLayout";
 
@@ -143,5 +146,64 @@ describe("KanbanBoardLayout", () => {
   it("exports kanbanColumnClassName helper", () => {
     expect(kanbanColumnClassName(false)).toContain("kanban-column--distribute");
     expect(kanbanColumnClassName(true)).toContain("kanban-column--overflow");
+  });
+
+  it("switches to overflow columns when distribute layout still spills horizontally", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn()
+      }))
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get() {
+        return 1200;
+      }
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+      configurable: true,
+      get() {
+        return 1210;
+      }
+    });
+    render(
+      <KanbanBoardLayout columnCount={3}>
+        <ColumnProbe />
+      </KanbanBoardLayout>
+    );
+    expect(screen.getByTestId("column-probe").className).toContain("kanban-column--overflow");
+  });
+
+  it("adds inline-end padding on track for last-column scroll clearance", () => {
+    const { container } = render(
+      <KanbanBoardLayout columnCount={3}>
+        <ColumnProbe />
+      </KanbanBoardLayout>
+    );
+    const track = container.querySelector(".kanban-track");
+    expect(track?.className).toContain("kanban-track");
+    expect(getComputedStyle(track!).paddingInlineEnd).not.toBe("0px");
+  });
+
+  it("mobileColumnWidthPx mirrors CSS min(100%, 340px)", () => {
+    expect(mobileColumnWidthPx(280)).toBe(280);
+    expect(mobileColumnWidthPx(390)).toBe(KANBAN_MOBILE_COL_MAX_PX);
+    expect(mobileColumnWidthPx(340)).toBe(340);
+  });
+
+  it("minTrackWidthPx uses viewport-based mobile column width plus trailing gap", () => {
+    const viewport = 300;
+    const col = mobileColumnWidthPx(viewport);
+    expect(minTrackWidthPx(3, true, viewport)).toBe(3 * col + 2 * 12 + 12);
+    expect(minTrackWidthPx(3, true, 400)).toBe(3 * KANBAN_MOBILE_COL_MAX_PX + 2 * 12 + 12);
+  });
+
+  it("minTrackWidthPx desktop overflow includes trailing gap", () => {
+    expect(minTrackWidthPx(4, false)).toBe(4 * 220 + 3 * 12 + 12);
   });
 });

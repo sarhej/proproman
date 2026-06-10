@@ -385,7 +385,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
       {/* Main + sidebar — stack on mobile */}
       <div className="flex flex-col gap-6 p-4 lg:flex-row">
         {/* Main column */}
-        <div className="min-w-0 flex-1 space-y-6 lg:order-1">
+        <div className="order-2 min-w-0 flex-1 space-y-6 lg:order-1">
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <Label>{t("requirementDetail.externalRef")}</Label>
             <p className="mt-0.5 text-xs text-slate-500">{t("requirementDetail.externalRefHint")}</p>
@@ -773,7 +773,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         </div>
 
         {/* Sidebar – summary first on mobile */}
-        <aside className="w-full shrink-0 space-y-4 lg:order-2 lg:w-72">
+        <aside className="order-first w-full shrink-0 space-y-4 lg:order-2 lg:w-72">
           <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Summary

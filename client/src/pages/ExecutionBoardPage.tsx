@@ -591,7 +591,7 @@ export function ExecutionBoardPage({ onRefreshBoardSilent, readOnly }: Props) {
       onDragEnd={onDragEnd}
       onDragCancel={onDragEndOrCancel}
     >
-      <div className="space-y-3 px-2 py-3 lg:px-3 lg:py-4">
+      <div className="min-w-0 space-y-3 px-2 py-3 lg:px-3 lg:py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">{t("executionBoard.title")}</h1>

@@ -11,11 +11,14 @@
   --kanban-col-min: 220px;
   --kanban-col-max: 420px;
   --kanban-col-gap: 12px;
-  --kanban-mobile-col-width: min(88vw, 340px);
+  /* 100% = kanban viewport width (not vw — padded shells made 88vw wider than the scrollport). */
+  --kanban-mobile-col-width: min(100%, 340px);
 }
 
 /* Kanban board horizontal scroll viewport */
 .kanban-viewport {
+  max-width: 100%;
+  scroll-padding-inline-end: var(--kanban-col-gap);
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: #94a3b8 #e2e8f0;
@@ -67,6 +70,12 @@
   flex: 0 0 auto;
   width: var(--kanban-col-min);
   min-width: var(--kanban-col-min);
+  max-width: var(--kanban-col-min);
+}
+
+.kanban-track {
+  box-sizing: border-box;
+  padding-inline-end: var(--kanban-col-gap);
 }
 
 /* Mobile: Trello-style one-column swipe (scroll-snap) */
@@ -101,8 +110,11 @@
 }
 
 .kanban-card-draggable {
-  touch-action: none;
   cursor: grab;
+}
+
+.kanban-viewport--drag-active .kanban-card-draggable {
+  touch-action: none;
 }
 
 .kanban-card-draggable:active {

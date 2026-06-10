@@ -12,7 +12,14 @@ import { useTranslation } from "react-i18next";
 
 const KANBAN_COL_MIN_PX = 220;
 const KANBAN_COL_GAP_PX = 12;
+/** Matches CSS `--kanban-mobile-col-width: min(100%, 340px)` cap. */
+export const KANBAN_MOBILE_COL_MAX_PX = 340;
 const MOBILE_KANBAN_MQ = "(max-width: 1023px)";
+
+/** Column width on mobile snap — mirrors `min(100%, 340px)` from CSS. */
+export function mobileColumnWidthPx(viewportWidthPx: number): number {
+  return Math.min(Math.max(viewportWidthPx, 0), KANBAN_MOBILE_COL_MAX_PX);
+}
 
 type KanbanLayoutContextValue = {
   columnClassName: string;
@@ -33,13 +40,19 @@ export function kanbanColumnClassName(overflowMode: boolean, mobileSnap = false)
     : "kanban-column kanban-column--distribute";
 }
 
-export function minTrackWidthPx(columnCount: number, mobileSnap = false): number {
+export function minTrackWidthPx(
+  columnCount: number,
+  mobileSnap = false,
+  viewportWidthPx?: number
+): number {
   if (columnCount <= 0) return 0;
+  const gaps = Math.max(columnCount - 1, 0) * KANBAN_COL_GAP_PX;
+  const trailingPad = KANBAN_COL_GAP_PX;
   if (mobileSnap) {
-    const mobileCol = 340;
-    return columnCount * mobileCol + (columnCount - 1) * KANBAN_COL_GAP_PX;
+    const mobileCol = mobileColumnWidthPx(viewportWidthPx ?? KANBAN_MOBILE_COL_MAX_PX);
+    return columnCount * mobileCol + gaps + trailingPad;
   }
-  return columnCount * KANBAN_COL_MIN_PX + (columnCount - 1) * KANBAN_COL_GAP_PX;
+  return columnCount * KANBAN_COL_MIN_PX + gaps + trailingPad;
 }
 
 export function useMobileKanbanSnap(): boolean {
@@ -102,10 +115,15 @@ export function KanbanBoardLayout({
     const el = viewportRef.current;
     if (!el) return;
     const viewportWidth = el.clientWidth;
-    const minWidth = minTrackWidthPx(columnCount, mobileSnap);
-    const needsOverflow = mobileSnap || minWidth > viewportWidth;
-    setOverflowMode(needsOverflow);
+    const minWidth = minTrackWidthPx(columnCount, mobileSnap, viewportWidth);
+    const needsOverflowByCount = mobileSnap || minWidth > viewportWidth;
+    setOverflowMode(needsOverflowByCount);
     syncScrollState(el);
+    // If distribute columns still spill past the scrollport, switch to fixed-width overflow columns.
+    if (!needsOverflowByCount && el.scrollWidth > el.clientWidth + 1) {
+      setOverflowMode(true);
+      syncScrollState(el);
+    }
   }, [columnCount, mobileSnap, syncScrollState]);
 
   useEffect(() => {
@@ -184,7 +202,9 @@ export function KanbanBoardLayout({
 
   const columnClassName = kanbanColumnClassName(overflowMode, mobileSnap);
   const showFade = scrollable && !atEnd && !mobileSnap;
-  const trackMinWidth = overflowMode ? minTrackWidthPx(columnCount, mobileSnap) : undefined;
+  const trackMinWidth = overflowMode
+    ? minTrackWidthPx(columnCount, mobileSnap, viewportRef.current?.clientWidth)
+    : undefined;
   const snapLabels =
     columnSnapLabels && columnSnapLabels.length === columnCount
       ? columnSnapLabels
@@ -209,7 +229,7 @@ export function KanbanBoardLayout({
 
   return (
     <KanbanLayoutContext.Provider value={{ columnClassName, overflowMode, mobileSnap }}>
-      <div className={["kanban-board-shell relative min-w-0", className ?? ""].filter(Boolean).join(" ")}>
+      <div className={["kanban-board-shell relative min-w-0 max-w-full", className ?? ""].filter(Boolean).join(" ")}>
         {mobileSnap ? (
           <div
             className="mb-2 flex gap-1 overflow-x-auto pb-1 lg:hidden"
