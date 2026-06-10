@@ -119,7 +119,10 @@
     "exportCsv": "Експорт CSV",
     "exportPdf": "Експорт PDF",
     "logout": "Вийти",
-    "workspaceSettings": "Налаштування робочого простору"
+    "workspaceSettings": "Налаштування робочого простору",
+    "sidebarCollapse": "Згорнути бічну панель",
+    "sidebarExpand": "Розгорнути бічну панель",
+    "openMenu": "Відкрити меню навігації"
   },
   "filters": {
     "domain": "Стовп",
@@ -627,9 +630,18 @@
     "deleteColumnConfirm": "Видалити колонку «{{name}}»? Вимоги в цій колонці стануть без призначення.",
     "filterInitiative": "Ініціатива",
     "filterFeature": "Функція",
+    "filterPmStatus": "Статус PM",
+    "filterSearch": "Пошук",
+    "filterSearchPlaceholder": "Назва, функція, ініціатива…",
     "unassigned": "Без призначення",
     "unassignedHint": "Не в колонці дошки",
-    "clearFiltersToReorder": "Щоб перетягувати картки вгору/вниз і змінювати порядок у колонках, скиньте пошук і фільтри."
+    "clearFiltersToReorder": "Щоб перетягувати картки вгору/вниз і змінювати порядок у колонках, скиньте пошук і фільтри.",
+    "scrollColumnsLeft": "Прокрутити стовпці вліво",
+    "scrollColumnsRight": "Прокрутити стовпці вправо",
+    "mobileColumnNav": "Стовпці дошки",
+    "mobileSwipeHint": "Утримуйте картку для переміщення · Проведіть для зміни стовпця",
+    "moveToColumn": "Перемістити до стовпця",
+    "dragCard": "Перетягніть для переміщення або сортування"
   },
   "boardSettings": {
     "title": "Налаштування дошки",

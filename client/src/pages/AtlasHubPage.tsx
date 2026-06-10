@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { Initiative } from "../types/models";
 import { ArchitectureTopicsPage } from "./ArchitectureTopicsPage";
+import { AtlasGraphExplorer } from "../components/atlas/AtlasGraphExplorer";
 import { AtlasReviewPanel } from "../components/atlas/AtlasReviewPanel";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -19,6 +20,8 @@ type WorkspaceAtlasPayload = {
   workspaceSlug: string;
   materializedAt: string;
   sourceMaxUpdatedAt: string;
+  domains: Array<{ id: string; name: string; color: string; sortOrder: number }>;
+  products: Array<{ id: string; name: string; slug: string; sortOrder: number }>;
   objectCounts: {
     domain: number;
     product: number;
@@ -28,7 +31,15 @@ type WorkspaceAtlasPayload = {
     architectureTopic?: number;
   };
   architectureTopicIndex?: Array<{ id: string; slug: string; title: string; sortOrder: number }>;
-  initiativeIndex: Array<{ id: string; title: string; status: string }>;
+  initiativeIndex: Array<{
+    id: string;
+    title: string;
+    domainId: string;
+    productId?: string | null;
+    status: string;
+    horizon: string;
+    priority: string;
+  }>;
   featureIndex: Array<{ id: string; title: string; initiativeId: string; status: string }>;
   requirementIndex: Array<{ id: string; title: string; featureId: string; status: string }>;
   auxiliaryIndex?: {
@@ -78,15 +89,15 @@ function excerpt(value: unknown, max = 1200): string {
 export function AtlasHubPage({ isAdmin, initiatives }: Props) {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const ideMode = searchParams.get("ide") === "1" || searchParams.get("ide") === "true";
   const tabParam = searchParams.get("tab");
-  const tab: AtlasTab = isAtlasTab(tabParam) ? tabParam : "overview";
+  const tab: AtlasTab = isAtlasTab(tabParam) ? tabParam : (ideMode ? "graph" : "overview");
 
   const [atlas, setAtlas] = useState<WorkspaceAtlasPayload | null>(null);
   const [compiled, setCompiled] = useState(false);
   const [loadingAtlas, setLoadingAtlas] = useState(true);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [topicShard, setTopicShard] = useState<ObjectShardPayload | null>(null);
-  const [graphInitiativeId, setGraphInitiativeId] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<FreshnessPayload | null>(null);
   const [gitHealth, setGitHealth] = useState<GitHealthConnection[]>([]);
   const [gitActivity, setGitActivity] = useState<GitActivityRow[]>([]);
@@ -151,36 +162,24 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
     if (tab === "connections") void refreshConnections();
   }, [tab, refreshConnections]);
 
-  const featuresByInitiative = useMemo(() => {
-    if (!atlas) return new Map<string, WorkspaceAtlasPayload["featureIndex"]>();
-    const map = new Map<string, WorkspaceAtlasPayload["featureIndex"]>();
-    for (const f of atlas.featureIndex) {
-      const list = map.get(f.initiativeId) ?? [];
-      list.push(f);
-      map.set(f.initiativeId, list);
-    }
-    return map;
-  }, [atlas]);
-
-  const requirementsByFeature = useMemo(() => {
-    if (!atlas) return new Map<string, WorkspaceAtlasPayload["requirementIndex"]>();
-    const map = new Map<string, WorkspaceAtlasPayload["requirementIndex"]>();
-    for (const r of atlas.requirementIndex) {
-      const list = map.get(r.featureId) ?? [];
-      list.push(r);
-      map.set(r.featureId, list);
-    }
-    return map;
-  }, [atlas]);
-
   const topicLayers = topicShard?.facts?.layers as TopicLayers | undefined;
+
+  const openTopicInOverview = useCallback(
+    (topicId: string) => {
+      setSelectedTopicId(topicId);
+      setTab("overview");
+    },
+    [searchParams, setSearchParams]
+  );
 
   return (
     <div className="space-y-4 p-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-900">{t("atlasHub.title")}</h1>
-        <p className="mt-1 text-sm text-slate-600">{t("atlasHub.intro")}</p>
-      </div>
+      {!ideMode && (
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">{t("atlasHub.title")}</h1>
+          <p className="mt-1 text-sm text-slate-600">{t("atlasHub.intro")}</p>
+        </div>
+      )}
 
       <nav className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
         {TAB_IDS.map((id) => (
@@ -354,70 +353,7 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
         ) : !compiled || !atlas ? (
           <p className="text-sm text-slate-600">{t("atlasHub.notCompiled")}</p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[minmax(240px,1fr)_minmax(280px,360px)]">
-            <Card className="max-h-[70vh] overflow-auto p-3">
-              <h2 className="text-sm font-semibold text-slate-800">{t("atlasHub.graphBacklog")}</h2>
-              <ul className="mt-2 space-y-2">
-                {atlas.initiativeIndex.map((init) => {
-                  const features = featuresByInitiative.get(init.id) ?? [];
-                  const open = graphInitiativeId === init.id;
-                  return (
-                    <li key={init.id} className="rounded border border-slate-100">
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                        onClick={() => setGraphInitiativeId(open ? null : init.id)}
-                      >
-                        <span className="font-medium text-slate-900">{init.title}</span>
-                        <span className="text-xs text-slate-500">{init.status}</span>
-                      </button>
-                      {open ? (
-                        <ul className="border-t border-slate-100 px-3 pb-2">
-                          {features.map((f) => (
-                            <li key={f.id} className="mt-1 text-xs text-slate-700">
-                              <span className="font-medium">{f.title}</span>
-                              <span className="text-slate-500"> ({f.status})</span>
-                              <ul className="ml-3 mt-0.5 text-slate-600">
-                                {(requirementsByFeature.get(f.id) ?? []).map((r) => (
-                                  <li key={r.id}>
-                                    {r.title} <span className="text-slate-400">({r.status})</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-              {(atlas.architectureTopicIndex?.length ?? 0) > 0 ? (
-                <>
-                  <h2 className="mt-4 text-sm font-semibold text-slate-800">{t("atlasHub.graphTopics")}</h2>
-                  <ul className="mt-2 space-y-1">
-                    {atlas.architectureTopicIndex!.map((topic) => (
-                      <li key={topic.id}>
-                        <button
-                          type="button"
-                          className="text-sm text-blue-700 hover:underline"
-                          onClick={() => {
-                            setSelectedTopicId(topic.id);
-                            setTab("overview");
-                          }}
-                        >
-                          {topic.title}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : null}
-            </Card>
-            <Card className="p-3">
-              <p className="text-sm text-slate-600">{t("atlasHub.graphHint")}</p>
-            </Card>
-          </div>
+          <AtlasGraphExplorer atlas={atlas} onSelectTopicInOverview={openTopicInOverview} />
         )
       ) : null}
 

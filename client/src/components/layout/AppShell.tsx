@@ -1,6 +1,17 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Globe, Home, Menu, Plus, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Bell,
+  Download,
+  Globe,
+  Home,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  X
+} from "lucide-react";
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { computeNavShellSections } from "../../lib/navShellModel";
@@ -29,7 +40,21 @@ type Props = {
   onLogout: () => void;
   onExport: () => void;
   onExportPdf: () => void;
+  /** When true, hides header and sidebar for IDE embedding. */
+  ideMode?: boolean;
+  /** When "fluid", main content uses full viewport width (no 1600px cap). */
+  layoutMode?: "default" | "fluid";
 };
+
+export const NAV_SIDEBAR_COLLAPSED_KEY = "nav.sidebarCollapsed";
+
+export function readSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(NAV_SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 function NavContent({
   permissions,
@@ -41,7 +66,8 @@ function NavContent({
   phone,
   onExport,
   onExportPdf,
-  onLogout
+  onLogout,
+  collapsed
 }: {
   permissions: Permissions;
   hiddenNavPaths: Set<string>;
@@ -53,6 +79,7 @@ function NavContent({
   onExport?: () => void;
   onExportPdf?: () => void;
   onLogout?: () => void;
+  collapsed?: boolean;
 }) {
   const { t } = useTranslation();
   const navBlocks = computeNavShellSections({
@@ -68,7 +95,7 @@ function NavContent({
 
   return (
     <>
-      {!phone && (
+      {!phone && !collapsed && (
         <div className="mb-3 flex items-center gap-2 px-2 py-1 text-xs font-semibold uppercase text-slate-500">
           <Home size={14} /> {t("nav.views")}
         </div>
@@ -77,19 +104,28 @@ function NavContent({
         {navBlocks.map(({ section, items }) => {
           return (
             <div key={section.labelKey}>
-              <div className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                {t(section.labelKey)}
-              </div>
-              {items.map((item) =>
-                item.fullPage ? (
+              {!collapsed ? (
+                <div className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {t(section.labelKey)}
+                </div>
+              ) : null}
+              {items.map((item) => {
+                const label = t(item.labelKey);
+                const linkClass = collapsed
+                  ? "flex items-center justify-center rounded-md px-2 py-2.5 lg:py-2 text-sm text-slate-700 hover:bg-slate-100"
+                  : "flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-slate-700 hover:bg-slate-100";
+                const activeClass = "bg-sky-100 text-sky-900";
+                return item.fullPage ? (
                   <a
                     key={`${item.labelKey}-${item.to}`}
                     href={item.to}
                     onClick={onNavigate}
-                    className="flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                    className={linkClass}
+                    aria-label={collapsed ? label : undefined}
+                    title={collapsed ? label : undefined}
                   >
                     <item.icon size={14} />
-                    {t(item.labelKey)}
+                    {!collapsed ? label : null}
                   </a>
                 ) : (
                   <NavLink
@@ -98,14 +134,16 @@ function NavContent({
                     end
                     onClick={onNavigate}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm ${isActive ? "bg-sky-100 text-sky-900" : "text-slate-700 hover:bg-slate-100"}`
+                      `${linkClass} ${isActive ? activeClass : ""}`
                     }
+                    aria-label={collapsed ? label : undefined}
+                    title={collapsed ? label : undefined}
                   >
                     <item.icon size={14} />
-                    {t(item.labelKey)}
+                    {!collapsed ? label : null}
                   </NavLink>
-                )
-              )}
+                );
+              })}
             </div>
           );
         })}
@@ -114,27 +152,52 @@ function NavContent({
         <Link
           to={`${navTo("/")}?new=1`}
           onClick={onNavigate}
-          className="mt-3 flex items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-2 text-center text-sm text-white hover:bg-sky-700"
+          className={`mt-3 flex items-center justify-center gap-1.5 rounded-md bg-sky-600 text-center text-sm text-white hover:bg-sky-700 ${
+            collapsed ? "px-2 py-2" : "px-3 py-2"
+          }`}
+          aria-label={collapsed ? t("nav.newInitiative") : undefined}
+          title={collapsed ? t("nav.newInitiative") : undefined}
         >
           <Plus size={14} />
-          {t("nav.newInitiative")}
+          {!collapsed ? t("nav.newInitiative") : null}
         </Link>
       )}
       {(onExport || onExportPdf || onLogout) && (
         <div className="mt-4 border-t border-slate-200 pt-3 grid gap-1">
           {onExport && (
-            <button onClick={() => { onNavigate?.(); onExport(); }} className="flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-slate-700 hover:bg-slate-100">
-              {t("nav.exportCsv")}
+            <button
+              onClick={() => { onNavigate?.(); onExport(); }}
+              className={`flex items-center rounded-md text-sm text-slate-700 hover:bg-slate-100 ${
+                collapsed ? "justify-center px-2 py-2.5" : "gap-2 px-3 py-2.5 lg:py-1.5"
+              }`}
+              aria-label={collapsed ? t("nav.exportCsv") : undefined}
+              title={collapsed ? t("nav.exportCsv") : undefined}
+            >
+              {!collapsed ? t("nav.exportCsv") : <Download size={14} />}
             </button>
           )}
           {onExportPdf && (
-            <button onClick={() => { onNavigate?.(); onExportPdf(); }} className="flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-slate-700 hover:bg-slate-100">
-              {t("nav.exportPdf")}
+            <button
+              onClick={() => { onNavigate?.(); onExportPdf(); }}
+              className={`flex items-center rounded-md text-sm text-slate-700 hover:bg-slate-100 ${
+                collapsed ? "justify-center px-2 py-2.5" : "gap-2 px-3 py-2.5 lg:py-1.5"
+              }`}
+              aria-label={collapsed ? t("nav.exportPdf") : undefined}
+              title={collapsed ? t("nav.exportPdf") : undefined}
+            >
+              {!collapsed ? t("nav.exportPdf") : <Download size={14} />}
             </button>
           )}
           {onLogout && (
-            <button onClick={() => { onNavigate?.(); onLogout(); }} className="flex items-center gap-2 rounded-md px-3 py-2.5 lg:py-1.5 text-sm text-red-600 hover:bg-red-50">
-              {t("nav.logout")}
+            <button
+              onClick={() => { onNavigate?.(); onLogout(); }}
+              className={`flex items-center rounded-md text-sm text-red-600 hover:bg-red-50 ${
+                collapsed ? "justify-center px-2 py-2.5" : "gap-2 px-3 py-2.5 lg:py-1.5"
+              }`}
+              aria-label={collapsed ? t("nav.logout") : undefined}
+              title={collapsed ? t("nav.logout") : undefined}
+            >
+              {!collapsed ? t("nav.logout") : <LogOut size={14} />}
             </button>
           )}
         </div>
@@ -238,8 +301,11 @@ export function AppShell({
   onLogout,
   onExport,
   onExportPdf,
+  ideMode,
+  layoutMode = "default",
 }: Props) {
   const { t, i18n } = useTranslation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
   const pickerCodes =
     localePickerCodes && localePickerCodes.length > 0 ? localePickerCodes : [...APP_LOCALE_CODES];
   const currentLng = normalizeUiLanguageCode(i18n.language);
@@ -267,6 +333,29 @@ export function AppShell({
   }, []);
 
   useEffect(() => { closeDrawer(); }, [location.pathname, closeDrawer]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(NAV_SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? "true" : "false");
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (ideMode) return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setSidebarCollapsed((c) => !c);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [ideMode]);
+
+  const fluidLayout = layoutMode === "fluid";
+  const sidebarWidth = sidebarCollapsed ? "56px" : "240px";
 
   useEffect(() => {
     void loadMessages();
@@ -311,11 +400,11 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Mobile drawer overlay */}
-      {drawerOpen && (
+      {!ideMode && drawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={closeDrawer}>
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="absolute inset-y-0 right-0 w-[280px] overflow-y-auto bg-white p-3 shadow-xl"
+            className="absolute inset-y-0 left-0 w-[min(280px,88vw)] overflow-y-auto bg-white p-3 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -386,163 +475,217 @@ export function AppShell({
         </div>
       )}
 
-      <header data-print-hide className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:px-6">
-        <div className="flex items-center gap-3 text-sm">
-          <img src="/tymio-icon.svg" alt="Tymio" className="h-7 w-7 rounded lg:hidden" />
-          <img src="/logo.svg" alt="Tymio" className="hidden lg:block h-7" />
-          <span className="hidden lg:inline font-semibold text-slate-500">{t("app.brand")}</span>
-          {activeTenant && (
-            <div className="hidden lg:block">
-              <TenantSwitcher
-                activeTenant={activeTenant}
-                currentUser={{ name: user.name, email: user.email }}
-                onSwitch={() => {
-                  onTenantSwitch?.();
-                }}
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {onNewInitiative ? (
+      {!ideMode && (
+        <header data-print-hide className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
             <button
               type="button"
-              onClick={onNewInitiative}
-              className="hidden lg:flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
+              className="lg:hidden rounded p-1.5 hover:bg-slate-100"
+              onClick={() => {
+                setPhone(isPhone());
+                setDrawerOpen(true);
+              }}
+              aria-label={t("nav.openMenu")}
             >
-              <Plus size={14} />
-              {t("nav.newInitiative")}
+              <Menu size={20} className="text-slate-600" />
             </button>
-          ) : null}
-          <div className="relative" ref={messagesRef}>
-            <button
-              type="button"
-              onClick={() => { setMessagesOpen((o) => !o); if (!messagesOpen) void loadMessages(); }}
-              className="relative rounded p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              title={t("nav.messages")}
-            >
-              <Bell size={18} />
-              {unreadCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              ) : null}
-            </button>
-            {messagesOpen && (
-              <div className="absolute right-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                <div className="px-3 py-2 text-xs font-semibold uppercase text-slate-400">{t("nav.messages")}</div>
-                {messages.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-slate-400">{t("nav.messagesEmpty")}</p>
-                ) : (
-                  <ul className="space-y-0.5">
-                    {messages.map((msg) => {
-                      const titleParams = (msg.titleParams as Record<string, string>) ?? {};
-                      if (msg.titleKey === "notification.user.login" && !titleParams.name) {
-                        titleParams.name =
-                          titleParams.title !== "USER"
-                            ? titleParams.title
-                            : titleParams.email ?? titleParams.title;
-                      }
-                      const displayTitle = msg.titleKey
-                        ? i18n.exists(msg.titleKey)
-                          ? t(msg.titleKey, titleParams)
-                          : t("notification.default", {
-                              entity: t(`notification.entity.${msg.entityType ?? ""}`, {
-                                defaultValue: msg.entityType ?? ""
-                              }),
-                              action: t(`notification.action.${titleParams.action ?? ""}`, {
-                                defaultValue: titleParams.action ?? ""
-                              }),
-                              title: titleParams.title ?? msg.title ?? ""
-                            })
-                        : msg.title ?? "";
-                      const displayBody = msg.bodyKey
-                        ? t(msg.bodyKey, (msg.bodyParams as Record<string, string>) ?? {})
-                        : msg.body ?? null;
-                      const displayLinkLabel = msg.linkLabelKey
-                        ? t(msg.linkLabelKey, (msg.linkLabelParams as Record<string, string>) ?? {})
-                        : msg.linkLabel ?? null;
-                      return (
-                        <li key={msg.id}>
-                          <button
-                            type="button"
-                            onClick={() => handleMessageClick(msg)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${!msg.readAt ? "bg-sky-50/50" : ""}`}
-                          >
-                            <div className="font-medium text-slate-900">{displayTitle}</div>
-                            {displayBody ? <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">{displayBody}</div> : null}
-                            <div className="mt-1 text-[10px] text-slate-400">
-                              {new Date(msg.createdAt).toLocaleString()}
-                              {msg.linkUrl && displayLinkLabel ? ` \u00b7 ${displayLinkLabel}` : ""}
-                            </div>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                <div className="border-t border-slate-100 px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => { setSubscriptionsModalOpen(true); setMessagesOpen(false); }}
-                    className="text-xs text-sky-600 hover:text-sky-800 font-medium"
-                  >
-                    {t("notificationSubscriptions.title")}
-                  </button>
-                </div>
+            <img src="/tymio-icon.svg" alt="Tymio" className="h-7 w-7 rounded lg:hidden" />
+            <img src="/logo.svg" alt="Tymio" className="hidden lg:block h-7" />
+            <span className="hidden lg:inline font-semibold text-slate-500">{t("app.brand")}</span>
+            {activeTenant && (
+              <div className="hidden lg:block">
+                <TenantSwitcher
+                  activeTenant={activeTenant}
+                  currentUser={{ name: user.name, email: user.email }}
+                  onSwitch={() => {
+                    onTenantSwitch?.();
+                  }}
+                />
               </div>
             )}
           </div>
-          {subscriptionsModalOpen && (
-            <SubscriptionsModal
-              onClose={() => setSubscriptionsModalOpen(false)}
-            />
-          )}
-          <div className="hidden lg:flex max-w-[min(100%,14rem)] flex-wrap items-center justify-end gap-0.5 rounded border border-slate-200 px-1 py-0.5">
-            <Globe size={13} className="text-slate-400 shrink-0" />
-            {pickerCodes.map((lng) => (
+          <div className="flex items-center gap-2">
+            {onNewInitiative ? (
               <button
-                key={lng}
                 type="button"
-                title={t(`lang.${lng}`)}
-                onClick={() => {
-                  void i18n.changeLanguage(lng);
-                  try {
-                    localStorage.setItem("lang", lng);
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-                className={`px-1.5 py-0.5 text-[11px] font-medium rounded ${
-                  currentLng === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
-                }`}
+                onClick={onNewInitiative}
+                className="hidden lg:flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
               >
-                {lng.toUpperCase()}
+                <Plus size={14} />
+                {t("nav.newInitiative")}
               </button>
-            ))}
+            ) : null}
+            <div className="relative" ref={messagesRef}>
+              <button
+                type="button"
+                onClick={() => { setMessagesOpen((o) => !o); if (!messagesOpen) void loadMessages(); }}
+                className="relative rounded p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                title={t("nav.messages")}
+              >
+                <Bell size={18} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                ) : null}
+              </button>
+              {messagesOpen && (
+                <div className="absolute right-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                  <div className="px-3 py-2 text-xs font-semibold uppercase text-slate-400">{t("nav.messages")}</div>
+                  {messages.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-slate-400">{t("nav.messagesEmpty")}</p>
+                  ) : (
+                    <ul className="space-y-0.5">
+                      {messages.map((msg) => {
+                        const titleParams = (msg.titleParams as Record<string, string>) ?? {};
+                        if (msg.titleKey === "notification.user.login" && !titleParams.name) {
+                          titleParams.name =
+                            titleParams.title !== "USER"
+                              ? titleParams.title
+                              : titleParams.email ?? titleParams.title;
+                        }
+                        const displayTitle = msg.titleKey
+                          ? i18n.exists(msg.titleKey)
+                            ? t(msg.titleKey, titleParams)
+                            : t("notification.default", {
+                                entity: t(`notification.entity.${msg.entityType ?? ""}`, {
+                                  defaultValue: msg.entityType ?? ""
+                                }),
+                                action: t(`notification.action.${titleParams.action ?? ""}`, {
+                                  defaultValue: titleParams.action ?? ""
+                                }),
+                                title: titleParams.title ?? msg.title ?? ""
+                              })
+                          : msg.title ?? "";
+                        const displayBody = msg.bodyKey
+                          ? t(msg.bodyKey, (msg.bodyParams as Record<string, string>) ?? {})
+                          : msg.body ?? null;
+                        const displayLinkLabel = msg.linkLabelKey
+                          ? t(msg.linkLabelKey, (msg.linkLabelParams as Record<string, string>) ?? {})
+                          : msg.linkLabel ?? null;
+                        return (
+                          <li key={msg.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleMessageClick(msg)}
+                              className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${!msg.readAt ? "bg-sky-50/50" : ""}`}
+                            >
+                              <div className="font-medium text-slate-900">{displayTitle}</div>
+                              {displayBody ? <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">{displayBody}</div> : null}
+                              <div className="mt-1 text-[10px] text-slate-400">
+                                {new Date(msg.createdAt).toLocaleString()}
+                                {msg.linkUrl && displayLinkLabel ? ` \u00b7 ${displayLinkLabel}` : ""}
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <div className="border-t border-slate-100 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSubscriptionsModalOpen(true); setMessagesOpen(false); }}
+                      className="text-xs text-sky-600 hover:text-sky-800 font-medium"
+                    >
+                      {t("notificationSubscriptions.title")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {subscriptionsModalOpen && (
+              <SubscriptionsModal
+                onClose={() => setSubscriptionsModalOpen(false)}
+              />
+            )}
+            <div className="hidden lg:flex max-w-[min(100%,14rem)] flex-wrap items-center justify-end gap-0.5 rounded border border-slate-200 px-1 py-0.5">
+              <Globe size={13} className="text-slate-400 shrink-0" />
+              {pickerCodes.map((lng) => (
+                <button
+                  key={lng}
+                  type="button"
+                  title={t(`lang.${lng}`)}
+                  onClick={() => {
+                    void i18n.changeLanguage(lng);
+                    try {
+                      localStorage.setItem("lang", lng);
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  className={`px-1.5 py-0.5 text-[11px] font-medium rounded ${
+                    currentLng === lng ? "bg-sky-100 text-sky-700" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {lng.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <span className="hidden text-sm text-slate-500 lg:block">{user.name}</span>
+            <span className="hidden rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-500 lg:block">{user.role}</span>
           </div>
-          <span className="hidden text-sm text-slate-500 lg:block">{user.name}</span>
-          <span className="hidden rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-500 lg:block">{user.role}</span>
-          <button className="lg:hidden rounded p-1 hover:bg-slate-100" onClick={() => { setPhone(isPhone()); setDrawerOpen(true); }}>
-            <Menu size={20} className="text-slate-600" />
-          </button>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <div data-print-layout className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 p-4 lg:grid-cols-[240px_1fr] lg:p-6">
-        <aside data-print-hide className="hidden lg:block rounded-lg border border-slate-200 bg-white p-2">
-          <NavContent
-            permissions={permissions}
-            hiddenNavPaths={hiddenNavPaths}
-            canManageWorkspaceStructure={canManageWorkspaceStructure}
-            hubWorkspaceSlug={hubWorkspaceSlug}
-            onExport={onExport}
-            onExportPdf={onExportPdf}
-            onLogout={onLogout}
-          />
-          <LegalFooterLinks className="mt-4 border-t border-slate-100 px-2 pb-2 pt-3 text-[11px] leading-snug text-slate-400" />
-        </aside>
-        <main data-print-content>{children}</main>
+      <div
+        data-print-layout
+        className={[
+          "mx-auto grid grid-cols-1 gap-4 p-4",
+          fluidLayout ? "max-w-none" : "max-w-[1600px]",
+          ideMode ? "" : "lg:grid-cols-[var(--app-sidebar-width)_1fr] lg:p-6"
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={
+          ideMode ? undefined : ({ "--app-sidebar-width": sidebarWidth } as CSSProperties)
+        }
+      >
+        {!ideMode && (
+          <div className="relative hidden lg:block">
+            <aside
+              id="app-sidebar"
+              data-print-hide
+              className={`rounded-lg border border-slate-200 bg-white ${
+                sidebarCollapsed ? "p-1" : "p-2"
+              }`}
+            >
+              <NavContent
+                permissions={permissions}
+                hiddenNavPaths={hiddenNavPaths}
+                canManageWorkspaceStructure={canManageWorkspaceStructure}
+                hubWorkspaceSlug={hubWorkspaceSlug}
+                onExport={onExport}
+                onExportPdf={onExportPdf}
+                onLogout={onLogout}
+                collapsed={sidebarCollapsed}
+              />
+              {!sidebarCollapsed ? (
+                <LegalFooterLinks className="mt-4 border-t border-slate-100 px-2 pb-2 pt-3 text-[11px] leading-snug text-slate-400" />
+              ) : null}
+            </aside>
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              aria-expanded={!sidebarCollapsed}
+              aria-controls="app-sidebar"
+              title={
+                sidebarCollapsed
+                  ? `${t("nav.sidebarExpand")} (⌘B)`
+                  : `${t("nav.sidebarCollapse")} (⌘B)`
+              }
+              className="absolute -right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-700"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span className="sr-only">
+                {sidebarCollapsed ? t("nav.sidebarExpand") : t("nav.sidebarCollapse")}
+              </span>
+            </button>
+          </div>
+        )}
+        <main data-print-content className="min-w-0">
+          {children}
+        </main>
       </div>
     </div>
   );

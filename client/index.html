@@ -10,7 +10,8 @@
     <meta name="theme-color" content="#0f172a" />
     <meta property="og:image" content="https://tymio.app/logo.png" />
     <meta name="twitter:image" content="https://tymio.app/logo.png" />
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+    <link rel="alternate" type="text/markdown" href="/llms.txt" title="Agent instructions" />
+    <link rel="alternate" type="application/json" href="/api/mcp/agent-context" title="Agent context JSON" />
     <meta
       name="description"
       content="Tymio — workspace-based product management (initiatives, roadmaps, delivery). Supported UI languages: English, Czech, Slovak, Ukrainian, Polish (codes: en, cs, sk, uk, pl). SPA: use JavaScript or API/MCP."
@@ -95,6 +96,13 @@
         <p><strong>This page requires JavaScript</strong> to show the full application. You are seeing this message because scripts are disabled.</p>
         <h2>For coding agents and headless HTTP clients</h2>
         <p>
+          <strong>First rule:</strong> if the user gave a workspace browser URL like
+          <code>https://tymio.app/t/&lt;workspace-slug&gt;/</code>, the MCP server URL is
+          <code>https://tymio.app/t/&lt;workspace-slug&gt;/mcp</code>. Root <code>/mcp</code> is discovery-only.
+          Public JSON: <code>GET /api/mcp/workspace-context/&lt;workspace-slug&gt;</code> or
+          <code>GET /api/mcp/agent-context</code>. Markdown: <code>/llms.txt</code>.
+        </p>
+        <p>
           The HTML you fetched is only the shell. The interactive UI is a React SPA loaded from <code>/src/main.tsx</code> (dev) or hashed bundles in production.
           <strong>Seeing almost no content besides the title is expected</strong> if JavaScript is not executed.
         </p>
@@ -149,6 +157,9 @@
 # Tymio — note for automated fetchers (SPA shell)
 
 This response is a JavaScript single-page app. Without executing the bundled script, you will only see an empty #root and the document title. That is normal.
+
+## Connect an agent (read this first)
+If the user pasted a workspace browser URL like https://<host>/t/<workspace-slug>/..., derive MCP as https://<host>/t/<workspace-slug>/mcp. Root /mcp is discovery-only (list workspaces + routing guide). Auth is OAuth; no per-user MCP API key in Settings. Public JSON: GET /api/mcp/workspace-context/<workspace-slug> or GET /api/mcp/agent-context. Markdown: /llms.txt
 
 ## Product
 Multi-tenant product management: workspaces, initiatives, features, requirements, delivery boards, accounts, partners, demands, campaigns.

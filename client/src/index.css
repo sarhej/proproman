@@ -8,6 +8,114 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --kanban-col-min: 220px;
+  --kanban-col-max: 420px;
+  --kanban-col-gap: 12px;
+  --kanban-mobile-col-width: min(88vw, 340px);
+}
+
+/* Kanban board horizontal scroll viewport */
+.kanban-viewport {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.kanban-viewport::-webkit-scrollbar {
+  height: 10px;
+}
+
+.kanban-viewport::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.kanban-viewport::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+}
+
+.kanban-viewport::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.kanban-viewport--scrollable {
+  box-shadow: inset -8px 0 8px -8px rgba(0, 0, 0, 0.08);
+}
+
+.kanban-viewport--fade-right .kanban-scroll-fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2.5rem;
+  background: linear-gradient(to right, transparent, #f8fafc 95%);
+}
+
+.kanban-column {
+  /* Allow flex items to shrink below intrinsic content width (prevents card spill). */
+  min-width: 0;
+  max-width: var(--kanban-col-max);
+  overflow: hidden;
+}
+
+.kanban-column--distribute {
+  flex: 1 1 0;
+}
+
+.kanban-column--overflow {
+  flex: 0 0 auto;
+  width: var(--kanban-col-min);
+  min-width: var(--kanban-col-min);
+}
+
+/* Mobile: Trello-style one-column swipe (scroll-snap) */
+.kanban-viewport--mobile-snap {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+
+.kanban-viewport--mobile-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.kanban-viewport--drag-active {
+  scroll-snap-type: none;
+  touch-action: none;
+}
+
+.kanban-column--mobile-snap {
+  flex: 0 0 var(--kanban-mobile-col-width);
+  width: var(--kanban-mobile-col-width);
+  min-width: var(--kanban-mobile-col-width);
+  max-width: var(--kanban-mobile-col-width);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.kanban-drag-handle {
+  touch-action: none;
+}
+
+.kanban-card-draggable {
+  touch-action: none;
+  cursor: grab;
+}
+
+.kanban-card-draggable:active {
+  cursor: grabbing;
+}
+
+.kanban-drag-overlay-mobile {
+  opacity: 0.96;
+  filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.18));
+}
+
+.kanban-drag-overlay-card {
+  background: #fff;
 }
 
 * {

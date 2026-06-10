@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="2100" viewBox="0 0 1920 2100">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; ry: 18; }
+      .header { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+      .sidebar { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; ry: 12; }
+      .sidebar-collapsed { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 8; ry: 8; }
+      .main { fill: #f8fafc; }
+      .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #334155; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; fill: #334155; }
+      .small { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .tiny { font-family: Arial, sans-serif; font-size: 11px; fill: #64748b; }
+      .accent { fill: #0ea5e9; }
+      .good { fill: #16a34a; }
+      .warn { fill: #d97706; }
+      .chip { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 1; rx: 12; ry: 12; }
+      .chip-accent { fill: #e0f2fe; stroke: #7dd3fc; stroke-width: 1; rx: 12; ry: 12; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; rx: 8; ry: 8; }
+      .button-primary { fill: #0f172a; stroke: #0f172a; stroke-width: 1.2; rx: 8; ry: 8; }
+      .column { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; ry: 12; }
+      .column-wide { fill: #f0f9ff; stroke: #7dd3fc; stroke-width: 1.5; rx: 12; ry: 12; }
+      .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; rx: 10; ry: 10; }
+      .note { fill: #fff7ed; stroke: #fdba74; stroke-width: 1.2; rx: 12; ry: 12; }
+      .note-blue { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1.2; rx: 12; ry: 12; }
+      .scroll-fade { fill: url(#fadeRight); }
+      .nav-active { fill: #e0f2fe; stroke: #7dd3fc; stroke-width: 1; rx: 6; ry: 6; }
+      .nav-item { fill: #ffffff; stroke: none; }
+      .connector { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); stroke-dasharray: 6 4; }
+      .divider { stroke: #e2e8f0; stroke-width: 1; }
+      .highlight-zone { fill: none; stroke: #0ea5e9; stroke-width: 2; stroke-dasharray: 8 4; rx: 8; ry: 8; }
+    </style>
+    <linearGradient id="fadeRight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc" stop-opacity="0" />
+      <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.95" />
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1920" height="2100" />
+  <text x="60" y="52" class="title">Execution Board &#x2014; Full-Width Kanban Layout</text>
+  <text x="60" y="78" class="text">Wireframes for collapsible sidebar, fluid board width, and content-aware column sizing with horizontal scroll overflow.</text>
+  <text x="60" y="98" class="small">Design doc: docs/designs/KANBAN_BOARD_FULL_WIDTH_DESIGN.md &#xB7; Desktop focus (lg+)</text>
+
+  <!-- STATE 1: Sidebar expanded -->
+  <rect class="page" x="50" y="130" width="900" height="620" />
+  <text x="75" y="162" class="section">State A. Sidebar expanded &#x2014; columns distribute</text>
+  <text x="75" y="184" class="small">Few columns: each grows equally up to max-width; board uses full main area (no 1600px cap).</text>
+
+  <rect class="header" x="74" y="200" width="852" height="44" />
+  <text x="90" y="228" class="label">Tymio</text>
+  <text x="760" y="228" class="small">User &#xB7; Notifications</text>
+
+  <rect class="sidebar" x="74" y="252" width="200" height="474" />
+  <rect class="button" x="238" y="262" width="28" height="28" />
+  <text x="246" y="280" class="tiny">&#x2039;</text>
+  <text x="90" y="282" class="tiny">VIEWS</text>
+  <rect class="nav-active" x="84" y="296" width="180" height="28" />
+  <text x="98" y="314" class="tiny">&#x25FB; Product Explorer</text>
+  <text x="98" y="342" class="tiny">&#x25FB; Status Kanban</text>
+  <text x="98" y="370" class="tiny">&#x25FB; Atlas Hub</text>
+  <text x="84" y="404" class="small">Toggle: aria-expanded=true</text>
+  <text x="84" y="422" class="tiny">Width: 240px (expanded)</text>
+
+  <rect class="main" x="282" y="252" width="644" height="474" />
+  <text x="298" y="278" class="label">Execution Board</text>
+  <text x="298" y="296" class="tiny">Product: Mobile App &#xB7; Board: Delivery team</text>
+  <rect class="button" x="750" y="262" width="88" height="26" />
+  <text x="768" y="278" class="tiny">Settings</text>
+
+  <rect class="highlight-zone" x="290" y="308" width="628" height="408" />
+  <text x="298" y="326" class="tiny accent">Kanban viewport (overflow-x-auto) &#x2014; full width of main</text>
+
+  <rect class="column-wide" x="298" y="338" width="196" height="360" />
+  <text x="312" y="362" class="label">Unassigned</text>
+  <rect class="chip" x="430" y="346" width="28" height="18" />
+  <text x="436" y="358" class="tiny">27</text>
+  <rect class="card" x="308" y="378" width="176" height="72" />
+  <text x="318" y="398" class="tiny">REQ-101 OAuth refresh</text>
+  <text x="318" y="414" class="tiny">Feature: Auth</text>
+  <rect class="card" x="308" y="458" width="176" height="72" />
+  <text x="318" y="478" class="tiny">REQ-102 Push notifications</text>
+
+  <rect class="column-wide" x="506" y="338" width="196" height="360" />
+  <text x="520" y="362" class="label">Backlog</text>
+  <rect class="chip" x="638" y="346" width="22" height="18" />
+  <text x="644" y="358" class="tiny">4</text>
+  <rect class="card" x="516" y="378" width="176" height="72" />
+  <text x="526" y="398" class="tiny">REQ-14 SAML setup</text>
+
+  <rect class="column-wide" x="714" y="338" width="196" height="360" />
+  <text x="728" y="362" class="label">In Progress</text>
+  <rect class="chip-accent" x="860" y="346" width="22" height="18" />
+  <text x="866" y="358" class="tiny">6</text>
+  <rect class="card" x="724" y="378" width="176" height="72" />
+  <text x="734" y="398" class="tiny">REQ-22 Tenant migration</text>
+
+  <text x="298" y="718" class="tiny">flex-1 columns &#xB7; min 220px &#xB7; max 420px &#xB7; equal leftover distribution</text>
+
+  <!-- STATE 2: Sidebar collapsed -->
+  <rect class="page" x="970" y="130" width="900" height="620" />
+  <text x="995" y="162" class="section">State B. Sidebar collapsed &#x2014; reclaimed width</text>
+  <text x="995" y="184" class="small">Icon rail (56px) + wider columns; toggle on sidebar edge; state persisted in localStorage.</text>
+
+  <rect class="header" x="994" y="200" width="852" height="44" />
+  <text x="1010" y="228" class="label">Tymio</text>
+
+  <rect class="sidebar-collapsed" x="994" y="252" width="56" height="474" />
+  <rect class="button" x="1002" y="262" width="40" height="28" />
+  <text x="1014" y="280" class="tiny">&#x203A;</text>
+  <rect class="nav-active" x="1002" y="300" width="40" height="32" />
+  <text x="1014" y="320" class="tiny">&#x25FB;</text>
+  <text x="1014" y="352" class="tiny">&#x25FB;</text>
+  <text x="1014" y="384" class="tiny">&#x25FB;</text>
+  <text x="1000" y="420" class="tiny">56px</text>
+
+  <rect class="main" x="1062" y="252" width="784" height="474" />
+  <text x="1078" y="278" class="label">Execution Board</text>
+  <text x="1078" y="296" class="tiny">+184px vs State A for column area</text>
+
+  <rect class="column-wide" x="1078" y="338" width="240" height="360" />
+  <text x="1092" y="362" class="label">Unassigned</text>
+  <rect class="chip" x="1270" y="346" width="28" height="18" />
+  <text x="1276" y="358" class="tiny">27</text>
+  <rect class="card" x="1088" y="378" width="220" height="72" />
+  <text x="1098" y="398" class="tiny">REQ-101 OAuth refresh token rotation</text>
+
+  <rect class="column-wide" x="1330" y="338" width="240" height="360" />
+  <text x="1344" y="362" class="label">Backlog</text>
+  <rect class="card" x="1340" y="378" width="220" height="72" />
+  <text x="1350" y="398" class="tiny">REQ-14 SAML setup guide</text>
+
+  <rect class="column-wide" x="1582" y="338" width="240" height="360" />
+  <text x="1596" y="362" class="label">In Progress</text>
+  <rect class="card" x="1592" y="378" width="220" height="72" />
+  <text x="1602" y="398" class="tiny">REQ-22 Tenant migration</text>
+
+  <rect class="note-blue" x="1078" y="710" width="744" height="28" rx="6" ry="6" />
+  <text x="1092" y="728" class="tiny">Collapsed: tooltips on icon hover; Cmd+B toggles; aria-label on each nav icon</text>
+
+  <!-- STATE 3: Many columns horizontal scroll -->
+  <rect class="page" x="50" y="780" width="1820" height="520" />
+  <text x="75" y="812" class="section">State C. Many columns &#x2014; horizontal scroll (no squish)</text>
+  <text x="75" y="834" class="small">When sum(column min-widths) &gt; viewport: track grows; columns stay fixed min width; scroll affordance on right edge.</text>
+
+  <rect class="sidebar-collapsed" x="74" y="850" width="56" height="420" />
+  <rect class="main" x="142" y="850" width="1710" height="420" />
+
+  <rect class="highlight-zone" x="150" y="900" width="1694" height="350" />
+  <rect class="scroll-fade" x="1750" y="900" width="94" height="350" />
+  <text x="1760" y="1080" class="tiny" transform="rotate(90 1760 1080)">scroll &#x2192;</text>
+
+  <text x="158" y="892" class="tiny accent">overflow-x-auto container &#x2014; inset shadow when scrollable</text>
+
+  <rect class="column" x="158" y="918" width="180" height="310" />
+  <text x="172" y="942" class="label">Unassigned</text>
+  <text x="172" y="958" class="tiny">min 220px</text>
+
+  <rect class="column" x="350" y="918" width="180" height="310" />
+  <text x="364" y="942" class="label">Backlog</text>
+
+  <rect class="column" x="542" y="918" width="180" height="310" />
+  <text x="556" y="942" class="label">Ready</text>
+
+  <rect class="column" x="734" y="918" width="180" height="310" />
+  <text x="748" y="942" class="label">In Progress</text>
+
+  <rect class="column" x="926" y="918" width="180" height="310" />
+  <text x="940" y="942" class="label">Code Review</text>
+
+  <rect class="column" x="1118" y="918" width="180" height="310" />
+  <text x="1132" y="942" class="label">QA</text>
+
+  <rect class="column" x="1310" y="918" width="180" height="310" />
+  <text x="1324" y="942" class="label">Staging</text>
+
+  <rect class="column" x="1502" y="918" width="180" height="310" />
+  <text x="1516" y="942" class="label">Blocked</text>
+
+  <rect class="column" x="1694" y="918" width="180" height="310" />
+  <text x="1708" y="942" class="label">Done</text>
+  <text x="1708" y="958" class="tiny">partially visible</text>
+
+  <rect class="note" x="158" y="1240" width="520" height="44" />
+  <text x="172" y="1260" class="small">Columns: flex 0 0 auto at min-width when overflowing</text>
+  <text x="172" y="1276" class="tiny">Do NOT shrink below --kanban-col-min (220px)</text>
+
+  <!-- STATE 4: Column sizing annotation -->
+  <rect class="page" x="50" y="1330" width="900" height="720" />
+  <text x="75" y="1362" class="section">State D. Column width algorithm (annotation)</text>
+  <text x="75" y="1384" class="small">Content-driven floor + equal distribution of remaining space + max cap.</text>
+
+  <rect class="note-blue" x="74" y="1400" width="852" height="200" />
+  <text x="94" y="1428" class="label">Sizing rules (desktop)</text>
+  <text x="94" y="1452" class="small">1. --kanban-col-min: 220px &#x2014; floor for readability and DnD targets</text>
+  <text x="94" y="1472" class="small">2. --kanban-col-max: 420px &#x2014; cap so 3 columns on ultrawide do not become unreadably wide</text>
+  <text x="94" y="1492" class="small">3. If total min width &lt; viewport: flex-grow 1 equally (distribution mode)</text>
+  <text x="94" y="1512" class="small">4. If total min width &gt; viewport: flex-shrink 0, track width = content, horizontal scroll (overflow mode)</text>
+  <text x="94" y="1532" class="small">5. Card titles wrap (2&#x2013;3 lines); long tokens truncate with title attribute</text>
+  <text x="94" y="1552" class="small">6. Unassigned with 27+ cards: vertical page scroll only; column width follows same rules</text>
+
+  <!-- Distribution diagram -->
+  <text x="94" y="1630" class="label">Distribution mode (3 columns, wide viewport)</text>
+  <rect class="main" x="94" y="1644" width="820" height="120" />
+  <rect class="column-wide" x="110" y="1660" width="250" height="88" />
+  <text x="124" y="1684" class="tiny">Col A &#x2014; flex 1 (33%)</text>
+  <rect class="column-wide" x="378" y="1660" width="250" height="88" />
+  <text x="392" y="1684" class="tiny">Col B &#x2014; flex 1 (33%)</text>
+  <rect class="column-wide" x="646" y="1660" width="250" height="88" />
+  <text x="660" y="1684" class="tiny">Col C &#x2014; flex 1 (33%)</text>
+  <line class="divider" x1="110" y1="1768" x2="896" y2="1768" />
+  <text x="110" y="1790" class="tiny">Remaining space after min-width satisfied &#x2192; split equally until max-width</text>
+
+  <!-- Overflow diagram -->
+  <text x="94" y="1830" class="label">Overflow mode (8 columns, narrow viewport)</text>
+  <rect class="main" x="94" y="1844" width="820" height="120" />
+  <rect class="highlight-zone" x="102" y="1852" width="700" height="104" />
+  <rect class="column" x="110" y="1868" width="160" height="72" />
+  <text x="120" y="1892" class="tiny">220px fixed</text>
+  <rect class="column" x="282" y="1868" width="160" height="72" />
+  <rect class="column" x="454" y="1868" width="160" height="72" />
+  <rect class="column" x="626" y="1868" width="160" height="72" />
+  <rect class="scroll-fade" x="750" y="1852" width="52" height="104" />
+  <text x="760" y="1908" class="tiny">&#x2192;</text>
+  <text x="110" y="1988" class="tiny">Viewport clips; user scrolls horizontally to reach Done / Blocked columns</text>
+
+  <!-- Implementation notes panel -->
+  <rect class="page" x="970" y="1330" width="900" height="720" />
+  <text x="995" y="1362" class="section">Implementation notes</text>
+
+  <rect class="note" x="994" y="1380" width="852" height="320" />
+  <text x="1014" y="1408" class="label">Files to change (see design doc)</text>
+  <text x="1014" y="1432" class="small">AppShell.tsx &#x2014; collapsible sidebar, fluid layout mode, min-w-0 on main</text>
+  <text x="1014" y="1452" class="small">ExecutionBoardPage.tsx &#x2014; remove w-[200px] shrink-0; kanban viewport wrapper</text>
+  <text x="1014" y="1472" class="small">New: KanbanBoardLayout.tsx (shared track + viewport + scroll affordance)</text>
+  <text x="1014" y="1492" class="small">index.css &#x2014; --kanban-col-min/max tokens</text>
+  <text x="1014" y="1512" class="small">en.json + locales &#x2014; nav.sidebarCollapse, nav.sidebarExpand</text>
+  <text x="1014" y="1532" class="small">ExecutionBoardPage.test.tsx &#x2014; layout class assertions</text>
+  <text x="1014" y="1560" class="label">Remove / avoid</text>
+  <text x="1014" y="1584" class="small">max-w-[1600px] on board routes (gutter source #1)</text>
+  <text x="1014" y="1604" class="small">Double padding: shell lg:p-6 + page p-4 (gutter source #2)</text>
+  <text x="1014" y="1624" class="small">Fixed 200px columns (gutter source #3)</text>
+  <text x="1014" y="1644" class="small">grid-cols-N squish on StatusKanban (separate follow-up)</text>
+
+  <rect class="note-blue" x="994" y="1720" width="852" height="300" />
+  <text x="1014" y="1748" class="label">UX review blockers (must fix before ship)</text>
+  <text x="1014" y="1772" class="small">1. Unassigned 27+ cards: no search/filter on board &#x2014; unusable without filters</text>
+  <text x="1014" y="1792" class="small">2. Horizontal scroll: no column jump nav or sticky first column</text>
+  <text x="1014" y="1812" class="small">3. Collapsed sidebar: icon-only nav hurts discoverability for infrequent users</text>
+  <text x="1014" y="1832" class="small">4. Keyboard: DnD and column scroll not accessible to screen readers</text>
+  <text x="1014" y="1852" class="small">5. No visual WIP or column health when counts exceed single-digit</text>
+  <text x="1014" y="1872" class="small">6. Scroll affordance fade alone is weak; need scrollbar always visible on overflow</text>
+  <text x="1014" y="1900" class="label">Recommended v1 additions</text>
+  <text x="1014" y="1924" class="small">Board-level search/filter row (initiative, feature, PM status) per prior wireframes</text>
+  <text x="1014" y="1944" class="small">Column header mini-map or &lt; &gt; scroll buttons when overflow detected</text>
+  <text x="1014" y="1964" class="small">Persist sidebar collapse; default expanded for first visit</text>
+  <text x="1014" y="1984" class="small">Show scrollbar-gutter: stable to prevent layout shift</text>
+
+  <!-- Connector from A to B -->
+  <path class="connector" d="M 950 400 L 970 400" />
+  <text x="952" y="392" class="tiny">toggle</text>
+
+</svg>

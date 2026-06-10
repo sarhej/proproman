@@ -120,7 +120,10 @@
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "logout": "Logout",
-    "workspaceSettings": "Ustawienia przestrzeni roboczej"
+    "workspaceSettings": "Ustawienia przestrzeni roboczej",
+    "sidebarCollapse": "Zwiń pasek boczny",
+    "sidebarExpand": "Rozwiń pasek boczny",
+    "openMenu": "Otwórz menu nawigacji"
   },
   "filters": {
     "domain": "Pillar",
@@ -628,9 +631,18 @@
     "deleteColumnConfirm": "Delete column \"{{name}}\"? Requirements in this column become unassigned.",
     "filterInitiative": "Initiative",
     "filterFeature": "Feature",
+    "filterPmStatus": "Status PM",
+    "filterSearch": "Szukaj",
+    "filterSearchPlaceholder": "Tytuł, funkcja, inicjatywa…",
     "unassigned": "Unassigned",
     "unassignedHint": "Not on a board column",
-    "clearFiltersToReorder": "Clear search and filters to drag cards vertically and reorder within columns."
+    "clearFiltersToReorder": "Clear search and filters to drag cards vertically and reorder within columns.",
+    "scrollColumnsLeft": "Przewiń kolumny w lewo",
+    "scrollColumnsRight": "Przewiń kolumny w prawo",
+    "mobileColumnNav": "Kolumny tablicy",
+    "mobileSwipeHint": "Przytrzymaj kartę, aby przenieść · Przesuń, aby zmienić kolumnę",
+    "moveToColumn": "Przenieś do kolumny",
+    "dragCard": "Przeciągnij, aby przenieść lub posortować"
   },
   "boardSettings": {
     "title": "Board settings",

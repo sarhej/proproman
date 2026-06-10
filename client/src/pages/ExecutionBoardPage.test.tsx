@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ExecutionBoardPage } from "./ExecutionBoardPage";
 import { api } from "../lib/api";
@@ -124,6 +124,26 @@ function renderBoard(path = "/products/p1/execution-board", readOnly = true) {
   );
 }
 
+function columnShell(from: Element): HTMLElement | null {
+  let el: Element | null = from;
+  while (el) {
+    if (el instanceof HTMLElement && el.className.includes("kanban-column")) {
+      return el;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function columnHeaderInTrack(container: HTMLElement, label: string): HTMLElement {
+  const track = container.querySelector(".kanban-track");
+  if (!track) throw new Error("kanban track not found");
+  const matches = within(track as HTMLElement).getAllByText(label);
+  const header = matches.map((node) => columnShell(node)).find(Boolean);
+  if (!header) throw new Error(`column header not found: ${label}`);
+  return header;
+}
+
 describe("ExecutionBoardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -147,33 +167,18 @@ describe("ExecutionBoardPage", () => {
     reqs[0] = { ...reqs[0]!, status: "IN_PROGRESS", isDone: false };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
-    renderBoard();
+    const { container } = renderBoard();
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
     });
 
-    function columnShell(from: Element): HTMLElement | null {
-      let el: Element | null = from;
-      while (el) {
-        if (
-          el instanceof HTMLElement &&
-          el.className.includes("min-h-[160px]") &&
-          el.className.includes("w-[200px]")
-        ) {
-          return el;
-        }
-        el = el.parentElement;
-      }
-      return null;
-    }
-    const progressCols = screen.getAllByText("In progress");
-    const progressShell = columnShell(progressCols[0]!);
-    const unassignedShell = columnShell(screen.getByText("Unassigned"));
+    const progressShell = columnHeaderInTrack(container, "In progress");
+    const unassignedShell = columnHeaderInTrack(container, "Unassigned");
     expect(progressShell).toBeTruthy();
     expect(unassignedShell).toBeTruthy();
     expect(await screen.findByText("Task One")).toBeInTheDocument();
-    expect(within(progressShell!).getByText("Task One")).toBeInTheDocument();
-    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
+    expect(within(progressShell).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell).queryByText("Task One")).toBeNull();
   });
 
   it("places done requirement in Done column when executionColumnId is missing", async () => {
@@ -182,33 +187,16 @@ describe("ExecutionBoardPage", () => {
     reqs[0] = { ...reqs[0]!, isDone: true, status: "DONE" };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
-    renderBoard();
+    const { container } = renderBoard();
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
     });
 
-    function columnShell(from: Element): HTMLElement | null {
-      let el: Element | null = from;
-      while (el) {
-        if (
-          el instanceof HTMLElement &&
-          el.className.includes("min-h-[160px]") &&
-          el.className.includes("w-[200px]")
-        ) {
-          return el;
-        }
-        el = el.parentElement;
-      }
-      return null;
-    }
-    const doneCols = screen.getAllByText("Done");
-    const doneShell = columnShell(doneCols[0]!);
-    const unassignedShell = columnShell(screen.getByText("Unassigned"));
-    expect(doneShell).toBeTruthy();
-    expect(unassignedShell).toBeTruthy();
+    const doneShell = columnHeaderInTrack(container, "Done");
+    const unassignedShell = columnHeaderInTrack(container, "Unassigned");
     expect(await screen.findByText("Task One")).toBeInTheDocument();
-    expect(within(doneShell!).getByText("Task One")).toBeInTheDocument();
-    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
+    expect(within(doneShell).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell).queryByText("Task One")).toBeNull();
   });
 
   it("places requirement in mapped column when executionColumnId matches", async () => {
@@ -218,42 +206,20 @@ describe("ExecutionBoardPage", () => {
     reqs[1] = { ...reqs[1]!, executionColumnId: "c3" };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
-    renderBoard();
+    const { container } = renderBoard();
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
     });
 
-    const openCols = screen.getAllByText("Open");
-    expect(openCols.length).toBeGreaterThan(0);
-    const doneCols = screen.getAllByText("Done");
-    expect(doneCols.length).toBeGreaterThan(0);
-
     expect(await screen.findByText("Task One")).toBeInTheDocument();
     expect(screen.getByText("Other Task")).toBeInTheDocument();
 
-    function columnShell(from: Element): HTMLElement | null {
-      let el: Element | null = from;
-      while (el) {
-        if (
-          el instanceof HTMLElement &&
-          el.className.includes("min-h-[160px]") &&
-          el.className.includes("w-[200px]")
-        ) {
-          return el;
-        }
-        el = el.parentElement;
-      }
-      return null;
-    }
-    const openShell = columnShell(openCols[0]!);
-    const doneShell = columnShell(doneCols[0]!);
-    const unassignedShell = columnShell(screen.getByText("Unassigned"));
-    expect(openShell).toBeTruthy();
-    expect(doneShell).toBeTruthy();
-    expect(unassignedShell).toBeTruthy();
-    expect(within(openShell!).getByText("Task One")).toBeInTheDocument();
-    expect(within(doneShell!).getByText("Other Task")).toBeInTheDocument();
-    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
+    const openShell = columnHeaderInTrack(container, "Open");
+    const doneShell = columnHeaderInTrack(container, "Done");
+    const unassignedShell = columnHeaderInTrack(container, "Unassigned");
+    expect(within(openShell).getByText("Task One")).toBeInTheDocument();
+    expect(within(doneShell).getByText("Other Task")).toBeInTheDocument();
+    expect(within(unassignedShell).queryByText("Task One")).toBeNull();
   });
 
   it("sends orphan executionColumnId to Unassigned when requirement is not done", async () => {
@@ -281,31 +247,16 @@ describe("ExecutionBoardPage", () => {
     };
     mockApi.getProducts.mockResolvedValue({ products: [product] });
 
-    renderBoard();
+    const { container } = renderBoard();
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
     });
 
-    function columnShell(from: Element): HTMLElement | null {
-      let el: Element | null = from;
-      while (el) {
-        if (
-          el instanceof HTMLElement &&
-          el.className.includes("min-h-[160px]") &&
-          el.className.includes("w-[200px]")
-        ) {
-          return el;
-        }
-        el = el.parentElement;
-      }
-      return null;
-    }
-    const doneShell = columnShell(screen.getAllByText("Done")[0]!);
-    const unassignedShell = columnShell(screen.getByText("Unassigned"));
-    expect(doneShell).toBeTruthy();
+    const doneShell = columnHeaderInTrack(container, "Done");
+    const unassignedShell = columnHeaderInTrack(container, "Unassigned");
     expect(await screen.findByText("Task One")).toBeInTheDocument();
-    expect(within(doneShell!).getByText("Task One")).toBeInTheDocument();
-    expect(within(unassignedShell!).queryByText("Task One")).toBeNull();
+    expect(within(doneShell).getByText("Task One")).toBeInTheDocument();
+    expect(within(unassignedShell).queryByText("Task One")).toBeNull();
   });
 
   it("labels product as System when itemType is SYSTEM", async () => {
@@ -402,5 +353,66 @@ describe("ExecutionBoardPage", () => {
     });
     const settings = screen.getByRole("link", { name: /board settings/i });
     expect(settings.getAttribute("href")).toContain("boardId=b1");
+  });
+
+  it("renders kanban viewport layout wrapper", async () => {
+    const { container } = renderBoard();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Execution board");
+    });
+    expect(container.querySelector(".kanban-viewport")).toBeTruthy();
+    expect(container.querySelector(".kanban-track")).toBeTruthy();
+  });
+
+  it("filters cards by search text", async () => {
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByText("Task One")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByPlaceholderText(/title, feature, initiative/i), {
+      target: { value: "Other" }
+    });
+    expect(screen.queryByText("Task One")).toBeNull();
+    expect(screen.getByText("Other Task")).toBeInTheDocument();
+  });
+
+  it("does not show per-card move dropdown on mobile viewport", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes("max-width"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn()
+      }))
+    });
+    renderBoard("/products/p1/execution-board", false);
+    await waitFor(() => {
+      expect(screen.getByText("Task One")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/move to column/i)).toBeNull();
+    expect(screen.queryByLabelText(/drag to reorder/i)).toBeNull();
+  });
+
+  it("filters cards by PM status", async () => {
+    const product = minimalProduct();
+    const reqs = product.initiatives[0]!.features![0]!.requirements!;
+    reqs[0] = { ...reqs[0]!, status: "IN_PROGRESS", isDone: false };
+    reqs[1] = { ...reqs[1]!, status: "NOT_STARTED", isDone: false };
+    mockApi.getProducts.mockResolvedValue({ products: [product] });
+
+    renderBoard();
+    await waitFor(() => {
+      expect(screen.getByText("Task One")).toBeInTheDocument();
+    });
+
+    const pmSelect = screen
+      .getAllByRole("combobox")
+      .find((el) => within(el).queryByRole("option", { name: /in progress/i }));
+    expect(pmSelect).toBeDefined();
+    fireEvent.change(pmSelect!, { target: { value: "IN_PROGRESS" } });
+    expect(screen.getByText("Task One")).toBeInTheDocument();
+    expect(screen.queryByText("Other Task")).toBeNull();
   });
 });

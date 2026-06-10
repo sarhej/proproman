@@ -248,8 +248,13 @@ function App() {
   useEffect(() => { void loadDevTenants(); }, [loadDevTenants]);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const ideParam = searchParams.get("ide");
+  const ideMode = ideParam === "1" || ideParam === "true";
   const logicalPathname = stripWorkspacePrefix(location.pathname);
+  const fluidLayout = logicalPathname.includes("/execution-board");
+
   const hideFilters =
+    ideMode ||
     logicalPathname === "/gantt" ||
     logicalPathname.startsWith("/features/") ||
     logicalPathname.startsWith("/requirements/") ||
@@ -825,6 +830,8 @@ function App() {
       onExportPdf={() => {
         window.print();
       }}
+      ideMode={ideMode}
+      layoutMode={fluidLayout ? "fluid" : "default"}
     >
       {slugRegistrationHint ? (
         <div

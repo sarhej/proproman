@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { BoardFilters } from "../hooks/useBoardData";
 import type { Domain, Feature, Initiative, InitiativeStatus, ProductWithHierarchy, Requirement, User } from "../types/models";
@@ -68,6 +69,8 @@ export function ProductExplorerPage({
   hubProductReloadTick = 0
 }: Props) {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const ideMode = searchParams.get("ide") === "1" || searchParams.get("ide") === "true";
   const [products, setProducts] = useState<ProductWithHierarchy[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -262,74 +265,76 @@ export function ProductExplorerPage({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
-        <div>
-          <Label>{t("common.status")}</Label>
-          <Select value={statusFilter} onChange={(e) => setStatusFilter((e.target.value || "") as InitiativeStatus | "")}>
-            <option value="">{t("filters.all")}</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{t(`status.${s}`)}</option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label>{t("productTree.impact")}</Label>
-          <Select value={impactFilter} onChange={(e) => setImpactFilter(e.target.value as "any" | "with")}>
-            <option value="any">{t("filters.all")}</option>
-            <option value="with">{t("productTree.withImpact")}</option>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Label>{t("productTree.terminologyLabel")}</Label>
-          <span className="inline-flex rounded border border-slate-200 bg-slate-50 p-0.5 text-xs">
+      {!ideMode && (
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
+          <div>
+            <Label>{t("common.status")}</Label>
+            <Select value={statusFilter} onChange={(e) => setStatusFilter((e.target.value || "") as InitiativeStatus | "")}>
+              <option value="">{t("filters.all")}</option>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{t(`status.${s}`)}</option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label>{t("productTree.impact")}</Label>
+            <Select value={impactFilter} onChange={(e) => setImpactFilter(e.target.value as "any" | "with")}>
+              <option value="any">{t("filters.all")}</option>
+              <option value="with">{t("productTree.withImpact")}</option>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label>{t("productTree.terminologyLabel")}</Label>
+            <span className="inline-flex rounded border border-slate-200 bg-slate-50 p-0.5 text-xs">
+              <button
+                type="button"
+                className={`rounded px-2 py-1 ${terminology === "initiative" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                onClick={() => {
+                  setTerminology("initiative");
+                  try {
+                    localStorage.setItem(TERMINOLOGY_KEY, "initiative");
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+              >
+                {t("productTree.initiativeLabel")}
+              </button>
+              <button
+                type="button"
+                className={`rounded px-2 py-1 ${terminology === "epic" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                onClick={() => {
+                  setTerminology("epic");
+                  try {
+                    localStorage.setItem(TERMINOLOGY_KEY, "epic");
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+              >
+                {t("productTree.epicLabel")}
+              </button>
+            </span>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
             <button
               type="button"
-              className={`rounded px-2 py-1 ${terminology === "initiative" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-              onClick={() => {
-                setTerminology("initiative");
-                try {
-                  localStorage.setItem(TERMINOLOGY_KEY, "initiative");
-                } catch {
-                  /* ignore */
-                }
-              }}
+              className="text-xs font-medium text-sky-700 hover:underline"
+              onClick={() => setExpandAllTick((n) => n + 1)}
             >
-              {t("productTree.initiativeLabel")}
+              {t("productTree.expandAll")}
             </button>
+            <span className="text-slate-300">|</span>
             <button
               type="button"
-              className={`rounded px-2 py-1 ${terminology === "epic" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-              onClick={() => {
-                setTerminology("epic");
-                try {
-                  localStorage.setItem(TERMINOLOGY_KEY, "epic");
-                } catch {
-                  /* ignore */
-                }
-              }}
+              className="text-xs font-medium text-sky-700 hover:underline"
+              onClick={() => setCollapseAllTick((n) => n + 1)}
             >
-              {t("productTree.epicLabel")}
+              {t("productTree.collapseAll")}
             </button>
-          </span>
+          </div>
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
-          <button
-            type="button"
-            className="text-xs font-medium text-sky-700 hover:underline"
-            onClick={() => setExpandAllTick((n) => n + 1)}
-          >
-            {t("productTree.expandAll")}
-          </button>
-          <span className="text-slate-300">|</span>
-          <button
-            type="button"
-            className="text-xs font-medium text-sky-700 hover:underline"
-            onClick={() => setCollapseAllTick((n) => n + 1)}
-          >
-            {t("productTree.collapseAll")}
-          </button>
-        </div>
-      </div>
+      )}
       <ProductTree
         products={filtered}
         hierarchyProducts={products}

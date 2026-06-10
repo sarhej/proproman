@@ -2,6 +2,16 @@
 
 > Canonical product: https://tymio.app (replace with your deployment origin if self-hosted).
 
+## Connect an agent (read this first)
+
+- **If the user pasted a workspace browser URL** like `https://tymio.app/t/okopay/` or any path under `/t/<workspace-slug>/…`, the **MCP server URL** is **`https://tymio.app/t/<workspace-slug>/mcp`** (same host, append `/mcp` to the workspace path segment).
+- **Root MCP** `https://tymio.app/mcp` is **discovery-only** (list workspaces + routing guide). It does **not** run backlog tools.
+- **Auth:** OAuth (Google via hub). **No per-user MCP API key** in Tymio Settings.
+- **Machine-readable JSON (no auth):**
+  - `GET /api/mcp/agent-context` — global agent hints + full CLI guide Markdown
+  - `GET /api/mcp/workspace-context/<workspace-slug>` — derives `workspaceMcpUrl` from a slug
+- **Human/agent Markdown:** this file (`/llms.txt`) and `/wiki/mcp-connection`
+
 ## What this is
 
 Tymio is a **multi-tenant product management** web application (React SPA): workspaces (organizations), initiatives, features, requirements, execution boards, planning, and optional B2B/marketing modules. The HTML shell loads a JavaScript bundle; **most content requires JS** in a browser.

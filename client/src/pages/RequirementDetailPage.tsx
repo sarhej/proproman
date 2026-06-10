@@ -247,7 +247,7 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
     <div className="min-h-0">
       {/* Breadcrumb bar – wireframe header */}
       <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+        <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 sm:text-sm">
           <Link to={w("/product-explorer")} className="hover:text-slate-700">
             {t("productExplorerPage.breadcrumb")}
           </Link>
@@ -272,8 +272,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
 
       {/* Title row: chips + actions (wireframe) */}
       <div className="border-b border-slate-200 bg-white px-4 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
             {editing ? (
               <Input
                 value={editTitle}
@@ -282,9 +282,9 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
                 placeholder="Requirement title"
               />
             ) : (
-              <h1 className="text-xl font-semibold text-slate-900">{requirement.title}</h1>
+              <h1 className="text-lg font-semibold text-slate-900 sm:text-xl">{requirement.title}</h1>
             )}
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 break-words">
               {product?.name ?? "—"} · {initiative.title} · {feature.title}
             </p>
           </div>
@@ -382,10 +382,10 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
         </div>
       </div>
 
-      {/* Two columns: main + sidebar */}
-      <div className="flex gap-6 p-4">
+      {/* Main + sidebar — stack on mobile */}
+      <div className="flex flex-col gap-6 p-4 lg:flex-row">
         {/* Main column */}
-        <div className="min-w-0 flex-1 space-y-6">
+        <div className="min-w-0 flex-1 space-y-6 lg:order-1">
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <Label>{t("requirementDetail.externalRef")}</Label>
             <p className="mt-0.5 text-xs text-slate-500">{t("requirementDetail.externalRefHint")}</p>
@@ -772,8 +772,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
           )}
         </div>
 
-        {/* Sidebar – wireframe right rail */}
-        <aside className="w-72 shrink-0 space-y-4">
+        {/* Sidebar – summary first on mobile */}
+        <aside className="w-full shrink-0 space-y-4 lg:order-2 lg:w-72">
           <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Summary

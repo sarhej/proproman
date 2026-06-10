@@ -123,7 +123,10 @@
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "logout": "Logout",
-    "workspaceSettings": "Workspace settings"
+    "workspaceSettings": "Workspace settings",
+    "sidebarCollapse": "Collapse sidebar",
+    "sidebarExpand": "Expand sidebar",
+    "openMenu": "Open navigation menu"
   },
   "filters": {
     "domain": "Pillar",
@@ -603,6 +606,24 @@
     "graphBacklog": "Backlog spine",
     "graphTopics": "Architecture topics",
     "graphHint": "Expand initiatives to browse features and requirements from the compiled index. Interactive graph canvas comes in a later release.",
+    "graphSearch": "Search graph",
+    "graphSearchPlaceholder": "Filter by domain, product, initiative, feature, requirement, or topic…",
+    "graphSelectNode": "Select a node to view compiled shard details, graph edges, and provenance.",
+    "graphNodeType": {
+      "domain": "Domain",
+      "product": "Product",
+      "initiative": "Initiative",
+      "feature": "Feature",
+      "requirement": "Requirement",
+      "topic": "Architecture topic"
+    },
+    "graphNoProduct": "Unassigned product",
+    "graphEdges": "Graph edges",
+    "graphExpand": "Expand",
+    "graphCollapse": "Collapse",
+    "graphTopicNoLinks": "No linked initiatives in compiled topic shard.",
+    "graphOpenTopicOverview": "Open compiled layers in Overview",
+    "graphShardMissing": "Compiled shard not available for this node.",
     "reviewEmptyTitle": "No pending proposals",
     "reviewEmptyBody": "When Atlas Curator (or an admin via API) submits a topic patch, link, or gap report, it appears here for approve or reject before hub or atlas content changes.",
     "reviewIntro": "Pending curator proposals. Accept applies changes to architecture topics and triggers atlas rebuild; reject leaves hub unchanged.",
@@ -739,9 +760,18 @@
     "deleteColumnConfirm": "Delete column \"{{name}}\"? Requirements in this column become unassigned.",
     "filterInitiative": "Initiative",
     "filterFeature": "Feature",
+    "filterPmStatus": "PM status",
+    "filterSearch": "Search",
+    "filterSearchPlaceholder": "Title, feature, initiative…",
     "unassigned": "Unassigned",
     "unassignedHint": "Not on a board column",
-    "clearFiltersToReorder": "Clear search and filters to drag cards vertically and reorder within columns."
+    "clearFiltersToReorder": "Clear search and filters to drag cards vertically and reorder within columns.",
+    "scrollColumnsLeft": "Scroll columns left",
+    "scrollColumnsRight": "Scroll columns right",
+    "mobileColumnNav": "Board columns",
+    "mobileSwipeHint": "Press and hold a card to move it · Swipe to switch columns",
+    "moveToColumn": "Move to column",
+    "dragCard": "Drag to reorder or move"
   },
   "boardSettings": {
     "title": "Board settings",
