@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { AgentMcpCliHiddenGuidance } from "../components/agent/AgentMcpCliHiddenGuidance";
+import { McpQuickInstall } from "../components/agent/McpQuickInstall";
 import { Card } from "../components/ui/Card";
 import { Bot, Copy, Check } from "lucide-react";
 import { useState } from "react";
@@ -64,6 +65,12 @@ export function AgentSetupPage() {
         <h2 className="mb-2 text-sm font-semibold text-amber-950">{t("agentSetup.oauthNotApiKeyTitle")}</h2>
         <p className="text-sm leading-relaxed text-amber-950/90">{t("agentSetup.oauthNotApiKeyBody")}</p>
       </Card>
+
+      <McpQuickInstall
+        mcpUrl={mcpUrl}
+        workspaceSlug={slug}
+        hubOrigin={window.location.origin}
+      />
 
       <Card className="p-6">
         <h2 className="mb-3 text-lg font-semibold text-slate-800">{t("agentSetup.howToConnect")}</h2>
