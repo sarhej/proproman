@@ -7,10 +7,7 @@ export function mcpServerName(workspaceSlug: string): string {
 
 export function encodeMcpConfigBase64(config: Record<string, unknown>): string {
   const json = JSON.stringify(config);
-  if (typeof globalThis.btoa === "function") {
-    return globalThis.btoa(json);
-  }
-  return Buffer.from(json, "utf8").toString("base64");
+  return globalThis.btoa(json);
 }
 
 /**
