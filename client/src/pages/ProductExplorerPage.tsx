@@ -18,7 +18,7 @@ type Props = {
   boardFilters?: BoardFilters;
   /** Pause hub-driven board refresh while dragging in the explorer tree */
   onExplorerHubLockChange?: (locked: boolean) => void;
-  /** When this increments (hub PRODUCT events or explicit server reload), refetch product tree + meta. */
+  /** When this increments (hub backlog/structure events or explicit server reload), refetch product tree + meta. */
   hubProductReloadTick?: number;
 };
 
@@ -91,6 +91,14 @@ export function ProductExplorerPage({
   useEffect(() => {
     void load();
   }, [load, hubProductReloadTick]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [load]);
 
   const onInitiativeUpdated = useCallback((updated: Initiative) => {
     setProducts((prev) =>

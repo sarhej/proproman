@@ -48,10 +48,6 @@ export function useWorkspaceHubEvents({ enabled, workspaceApiSlug, onEvent }: Op
       }
     };
 
-    es.onerror = () => {
-      es.close();
-    };
-
     return () => {
       es.close();
     };

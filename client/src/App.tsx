@@ -79,7 +79,7 @@ import {
   setWorkspaceTenantSessionForTab,
 } from "./lib/workspaceTenantHeader";
 import { APP_LOCALE_CODES, canManageWorkspaceLanguages, normalizeUiLanguageCode } from "./lib/appLocales";
-import type { HubChangeEventPayload } from "./lib/hubChangeEvent";
+import { PRODUCT_EXPLORER_HUB_ENTITIES, type HubChangeEventPayload } from "./lib/hubChangeEvent";
 import { WikiIndexPage } from "./pages/wiki/WikiIndexPage";
 import { WikiArticlePage } from "./pages/wiki/WikiArticlePage";
 import { SeoHead } from "./components/seo/SeoHead";
@@ -164,7 +164,7 @@ function App() {
   const hubRefreshSuppressedRef = useRef(false);
   const initiativeFormDirtyRef = useRef(false);
   const [hubRemoteChangePending, setHubRemoteChangePending] = useState(false);
-  /** Bumps on hub PRODUCT events so Product Explorer refetches `/api/products` (separate from board meta). */
+  /** Bumps on hub backlog/structure events so Product Explorer refetches `/api/products` (separate from board meta). */
   const [hubProductReloadTick, setHubProductReloadTick] = useState(0);
   const board = useBoardData(boardDataEnabled, { hubRefreshSuppressedRef });
   const perms = usePermissions(user);
@@ -274,7 +274,7 @@ function App() {
 
   const handleHubEvent = useCallback(
     (e: HubChangeEventPayload) => {
-      if (e.entityType === "PRODUCT") {
+      if (PRODUCT_EXPLORER_HUB_ENTITIES.has(e.entityType) && !hubRefreshSuppressedRef.current) {
         setHubProductReloadTick((n) => n + 1);
       }
       const openId = selected?.id;

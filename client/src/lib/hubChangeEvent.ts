@@ -16,3 +16,12 @@ export type HubChangeEventPayload = {
   entityId?: string | null;
   initiativeId?: string | null;
 };
+
+/** Hub writes that should refetch Products & Systems (`/api/products` + meta). */
+export const PRODUCT_EXPLORER_HUB_ENTITIES: ReadonlySet<HubChangeEntityType> = new Set([
+  "PRODUCT",
+  "INITIATIVE",
+  "FEATURE",
+  "REQUIREMENT",
+  "DOMAIN"
+]);
