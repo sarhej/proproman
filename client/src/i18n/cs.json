@@ -1276,6 +1276,7 @@
     "linkFromLibrary": "Link from library",
     "unlink": "Odpojit",
     "captureTitle": "Attach image",
+    "previewUnavailable": "Náhled není k dispozici",
     "annotate": "Anotovat",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
@@ -1317,6 +1318,7 @@
       "undo": "Undo",
       "redo": "Redo",
       "save": "Save annotated",
+      "loadFailed": "Obrázek pro anotaci se nepodařilo načíst",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",

@@ -17,7 +17,55 @@ type Stroke =
   | { tool: "rect"; color: string; x: number; y: number; w: number; h: number }
   | { tool: "text"; color: string; x: number; y: number; text: string };
 
+type SourceImage = {
+  width: number;
+  height: number;
+  draw: (ctx: CanvasRenderingContext2D) => void;
+  dispose?: () => void;
+};
+
 const COLORS = ["#dc2626", "#eab308", "#0f172a"];
+
+/**
+ * Load a File into a drawable source without blob-URL revoke races
+ * (React Strict Mode was blanking the canvas when Object URLs were revoked mid-decode).
+ */
+export async function loadAnnotatorSource(file: File): Promise<SourceImage> {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(file);
+    if (!bitmap.width || !bitmap.height) {
+      bitmap.close();
+      throw new Error("empty_image");
+    }
+    return {
+      width: bitmap.width,
+      height: bitmap.height,
+      draw: (ctx) => ctx.drawImage(bitmap, 0, 0),
+      dispose: () => bitmap.close()
+    };
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("image_load_failed"));
+      img.src = url;
+    });
+    if (!image.naturalWidth || !image.naturalHeight) {
+      throw new Error("empty_image");
+    }
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      draw: (ctx) => ctx.drawImage(image, 0, 0)
+    };
+  } finally {
+    // Safe: bitmap is already decoded into the HTMLImageElement.
+    URL.revokeObjectURL(url);
+  }
+}
 
 /**
  * Lean canvas annotator — pen / arrow / rect / text → baked PNG.
@@ -29,7 +77,9 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
   const [color, setColor] = useState(COLORS[0]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  const [source, setSource] = useState<SourceImage | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const drawing = useRef<{
     active: boolean;
     startX: number;
@@ -39,25 +89,47 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
 
   useEffect(() => {
     if (!open) return;
-    const url = URL.createObjectURL(imageFile);
-    const image = new Image();
-    image.onload = () => {
-      setImg(image);
-      setStrokes([]);
-      setRedoStack([]);
+    let cancelled = false;
+    let owned: SourceImage | null = null;
+    setLoading(true);
+    setLoadError(null);
+    setSource(null);
+    setStrokes([]);
+    setRedoStack([]);
+
+    void loadAnnotatorSource(imageFile)
+      .then((loaded) => {
+        if (cancelled) {
+          loaded.dispose?.();
+          return;
+        }
+        owned = loaded;
+        setSource(loaded);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setLoadError(t("attachments.annotator.loadFailed"));
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      owned?.dispose?.();
+      owned = null;
     };
-    image.src = url;
-    return () => URL.revokeObjectURL(url);
+    // intentionally omit `t` — avoid reloading the bitmap on i18n re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, imageFile]);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !img) return;
+    if (!canvas || !source) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
+    canvas.width = source.width;
+    canvas.height = source.height;
+    source.draw(ctx);
     for (const s of strokes) {
       ctx.strokeStyle = "color" in s ? s.color : color;
       ctx.fillStyle = "color" in s ? s.color : color;
@@ -76,11 +148,7 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
         ctx.fillText(s.text, s.x, s.y);
       }
     }
-    const cur = drawing.current.current;
-    if (cur) {
-      // preview handled by including in strokes on pointer up only; skip live for simplicity
-    }
-  }, [img, strokes, color]);
+  }, [source, strokes, color]);
 
   useEffect(() => {
     redraw();
@@ -121,7 +189,6 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
         const next = [...prev];
         const last = drawing.current.current;
         if (last) {
-          // live update: replace trailing pen stroke
           if (next.length && next[next.length - 1] === last) {
             next[next.length - 1] = last;
           } else {
@@ -177,7 +244,7 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
 
   const save = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !source) return;
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -227,19 +294,29 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
             <Button type="button" variant="secondary" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="button" onClick={save}>
+            <Button type="button" onClick={save} disabled={!source || !!loadError}>
               {t("attachments.annotator.save")}
             </Button>
           </div>
         </div>
         <div className="flex-1 overflow-auto bg-slate-100 p-3">
-          <canvas
-            ref={canvasRef}
-            className="mx-auto max-h-[70vh] max-w-full cursor-crosshair touch-none bg-white shadow"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-          />
+          {loading ? (
+            <p className="py-12 text-center text-sm text-slate-500">{t("common.loading")}</p>
+          ) : null}
+          {loadError ? (
+            <p className="py-12 text-center text-sm text-rose-600" role="alert">
+              {loadError}
+            </p>
+          ) : null}
+          {!loading && !loadError ? (
+            <canvas
+              ref={canvasRef}
+              className="mx-auto max-h-[70vh] max-w-full cursor-crosshair touch-none bg-white shadow"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+            />
+          ) : null}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useObjectUrl } from "../../hooks/useObjectUrl";
 import { api, attachmentContentUrl } from "../../lib/api";
 import {
   imageFileFromDataTransfer,
@@ -38,17 +39,12 @@ export function AttachmentPanel({ target, readOnly }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const zoneRef = useRef<HTMLDivElement>(null);
-
-  const pendingPreviewUrl = useMemo(
-    () => (pendingFile ? URL.createObjectURL(pendingFile) : null),
-    [pendingFile]
-  );
+  const pendingPreviewUrl = useObjectUrl(pendingFile);
+  const [previewBroken, setPreviewBroken] = useState(false);
 
   useEffect(() => {
-    return () => {
-      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
-    };
-  }, [pendingPreviewUrl]);
+    setPreviewBroken(false);
+  }, [pendingFile]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -199,15 +195,24 @@ export function AttachmentPanel({ target, readOnly }: Props) {
         </ul>
       )}
 
-      {pendingFile && !annotating && pendingPreviewUrl ? (
+      {pendingFile && !annotating ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-xl">
             <h3 className="mb-2 text-sm font-semibold">{t("attachments.captureTitle")}</h3>
-            <img
-              src={pendingPreviewUrl}
-              alt=""
-              className="mb-3 max-h-48 w-full rounded object-contain bg-slate-50"
-            />
+            <div className="mb-3 flex min-h-40 items-center justify-center overflow-hidden rounded-md bg-slate-100">
+              {pendingPreviewUrl && !previewBroken ? (
+                <img
+                  src={pendingPreviewUrl}
+                  alt={pendingFile.name}
+                  className="max-h-56 w-full object-contain"
+                  onError={() => setPreviewBroken(true)}
+                />
+              ) : (
+                <p className="px-4 py-8 text-center text-sm text-slate-500">
+                  {t("attachments.previewUnavailable")}
+                </p>
+              )}
+            </div>
             <p className="mb-3 truncate text-xs text-slate-600">
               {pendingFile.name} · {Math.round(pendingFile.size / 1024)} KiB
             </p>

@@ -1277,6 +1277,7 @@
     "linkFromLibrary": "Link from library",
     "unlink": "Odłącz",
     "captureTitle": "Attach image",
+    "previewUnavailable": "Podgląd niedostępny",
     "annotate": "Adnotuj",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
@@ -1318,6 +1319,7 @@
       "undo": "Undo",
       "redo": "Redo",
       "save": "Save annotated",
+      "loadFailed": "Nie udało się wczytać obrazu do adnotacji",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",
