@@ -1271,7 +1271,7 @@
   },
   "attachments": {
     "panelTitle": "Załączniki",
-    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "pasteHint": "Kliknij tutaj i wklej zrzut (Cmd/Ctrl+V) — albo Upload / link z biblioteki. PNG, JPEG, WebP do 10 MiB.",
     "empty": "No attachments yet.",
     "upload": "Prześlij",
     "linkFromLibrary": "Link from library",

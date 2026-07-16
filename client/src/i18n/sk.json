@@ -1270,7 +1270,7 @@
   },
   "attachments": {
     "panelTitle": "Prílohy",
-    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "pasteHint": "Kliknite sem a vložte screenshot (Cmd/Ctrl+V) — alebo Upload / odkaz z knižnice. PNG, JPEG, WebP do 10 MiB.",
     "empty": "No attachments yet.",
     "upload": "Nahrať",
     "linkFromLibrary": "Link from library",

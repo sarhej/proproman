@@ -437,6 +437,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
             )}
           </section>
 
+          <AttachmentPanel target={{ requirementId: requirement.id }} readOnly={readOnly} />
+
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <Label>{t("labels.title")}</Label>
             <p className="mt-0.5 text-xs text-slate-500">{t("labels.requirementHint")}</p>
@@ -748,8 +750,6 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
               </div>
             ) : null}
           </section>
-
-          <AttachmentPanel target={{ requirementId: requirement.id }} readOnly={readOnly} />
 
           {siblings.length > 0 && (
             <section className="rounded-lg border border-slate-200 bg-white p-4">

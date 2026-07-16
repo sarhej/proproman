@@ -1419,7 +1419,7 @@
   },
   "attachments": {
     "panelTitle": "Attachments",
-    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "pasteHint": "Click this box, then paste (Cmd/Ctrl+V) a screenshot — or use Upload / Link from library. PNG, JPEG, WebP up to 10 MiB.",
     "empty": "No attachments yet.",
     "upload": "Upload",
     "linkFromLibrary": "Link from library",

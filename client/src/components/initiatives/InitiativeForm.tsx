@@ -16,6 +16,7 @@ import type {
   User
 } from "../../types/models";
 import { formatPriority } from "../../lib/format";
+import { AttachmentPanel } from "../attachments/AttachmentPanel";
 import { Button } from "../ui/Button";
 import { Input, Label, Select, Textarea } from "../ui/Field";
 
@@ -403,6 +404,10 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           </Select>
         </div>
       </div>
+
+      {initiative?.id ? (
+        <AttachmentPanel target={{ initiativeId: initiative.id }} readOnly={readOnly} />
+      ) : null}
 
       <div className="rounded-md border border-slate-200 p-3">
         <p className="mb-2 text-sm font-semibold">{t("initiative.personaImpact")}</p>

@@ -317,6 +317,8 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
         )}
       </section>
 
+      <AttachmentPanel target={{ featureId: feature.id }} readOnly={readOnly} />
+
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -486,8 +488,6 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
           </div>
         ) : null}
       </section>
-
-      <AttachmentPanel target={{ featureId: feature.id }} readOnly={readOnly} />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-700">

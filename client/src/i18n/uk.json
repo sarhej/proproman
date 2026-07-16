@@ -1270,7 +1270,7 @@
   },
   "attachments": {
     "panelTitle": "Вкладення",
-    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "pasteHint": "Клацніть тут і вставте скріншот (Cmd/Ctrl+V) — або Upload / посилання з бібліотеки. PNG, JPEG, WebP до 10 MiB.",
     "empty": "No attachments yet.",
     "upload": "Завантажити",
     "linkFromLibrary": "Link from library",
