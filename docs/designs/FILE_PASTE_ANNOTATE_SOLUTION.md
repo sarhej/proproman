@@ -1,10 +1,17 @@
 # File paste / upload / annotate — solution design
 
-**Status:** NO IMPLEMENTATION YET — awaiting approval  
-**Date:** 2026-07-16  
+**Status:** Implemented (v0 library + annotate + admin) — original kept; annotated is a separate sibling PNG  
+**Date:** 2026-07-16 (updated 2026-07-16)  
 **Related:** `AI_PRODUCT_INTAKE_PARSER_SCHEMAS.md`, `AI_PRODUCT_INTAKE_WIREFRAMES.svg`  
 **Wireframes:** `FILE_PASTE_ANNOTATE_WIREFRAMES.svg`  
 **Reference studied:** `/Users/supersergio/projects/cursor-mobile` (patterns only)
+
+### Implemented annotation model
+
+- **ORIGINAL** bytes are never overwritten.
+- **Save annotated** creates a second `Attachment` with `kind: ANNOTATED` and `parentAttachmentId` → original; both are linked to the entity.
+- Entity list groups annotated + original with clear badges so either picture can be opened.
+- Bake uses a fresh decode of the source file + strokes (not the fragile display canvas).
 
 ---
 

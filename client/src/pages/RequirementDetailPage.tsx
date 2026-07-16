@@ -23,6 +23,7 @@ import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { LabelEditor } from "../components/ui/LabelEditor";
 import { AttachmentPanel } from "../components/attachments/AttachmentPanel";
+import { VoiceMicButton } from "../components/voice/VoiceMicButton";
 
 const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
 const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"];
@@ -418,7 +419,19 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <Label>{t("common.description")}</Label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label>{t("common.description")}</Label>
+              {!readOnly ? (
+                <VoiceMicButton
+                  mode="field"
+                  target={{ requirementId: requirement.id }}
+                  onInsertTranscript={(text) => {
+                    setEditing(true);
+                    setEditDescription((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+                  }}
+                />
+              ) : null}
+            </div>
             <p className="mt-0.5 text-xs text-slate-500">{t("requirementDetail.descriptionHint")}</p>
             {editing ? (
               <Textarea

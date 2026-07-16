@@ -10,3 +10,6 @@ export const CSP_IMG_SRC = [
   "https://*.googleusercontent.com",
   "https://*.ggpht.com"
 ] as const;
+
+/** Playback of voice ORIGINAL via content URL or blob: object URLs. */
+export const CSP_MEDIA_SRC = ["'self'", "blob:"] as const;

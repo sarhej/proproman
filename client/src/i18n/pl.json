@@ -1281,6 +1281,9 @@
     "annotate": "Adnotuj",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
+    "kindOriginal": "Oryginał",
+    "kindDerivative": "Pochodny",
+    "kindTranscript": "Transkrypt",
     "loadFailed": "Failed to load attachments",
     "uploadFailed": "Upload failed",
     "libraryTitle": "Workspace library",
@@ -1320,12 +1323,30 @@
       "redo": "Redo",
       "save": "Save annotated",
       "loadFailed": "Nie udało się wczytać obrazu do adnotacji",
+      "bakeFailed": "Nie udało się zapisać adnotowanego obrazu. Spróbuj ponownie.",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",
         "rect": "Rect",
         "text": "Text"
       }
+    },
+    "voice": {
+      "mic": "Mikrofon",
+      "recording": "Nagrywanie",
+      "transcribing": "Transkrypcja…",
+      "reviewTitle": "Sprawdź notatkę głosową",
+      "transcriptLabel": "Transkrypt",
+      "piiNotice": "Głos może zawierać dane osobowe. Sprawdź przed dołączeniem.",
+      "stop": "Stop",
+      "attachAndInsert": "Dołącz i wstaw",
+      "attachOnly": "Tylko dołącz",
+      "discard": "Odrzuć",
+      "play": "Odtwórz",
+      "permissionDenied": "Odmowa dostępu do mikrofonu. Włącz mikrofon w ustawieniach przeglądarki.",
+      "notConfigured": "Transkrypcja głosu jest niedostępna na tym serwerze.",
+      "captureFailed": "Nagrywanie głosu nie powiodło się",
+      "emptyRecording": "Nagranie jest puste"
     }
   }
 }

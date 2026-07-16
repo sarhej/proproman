@@ -9,7 +9,8 @@ vi.mock("../../lib/api", () => ({
     uploadAttachment: vi.fn(),
     createAttachmentLink: vi.fn(),
     deleteAttachmentLink: vi.fn(),
-    listAttachments: vi.fn()
+    listAttachments: vi.fn(),
+    getVoiceStatus: vi.fn().mockResolvedValue({ enabled: false })
   },
   attachmentContentUrl: (id: string) => `/api/attachments/${id}/content`
 }));

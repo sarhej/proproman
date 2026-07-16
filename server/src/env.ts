@@ -120,7 +120,20 @@ const envSchema = z.object({
   ATTACHMENT_S3_FORCE_PATH_STYLE: z
     .string()
     .optional()
-    .transform((v) => v === "true" || v === "1" || v === "yes")
+    .transform((v) => v === "true" || v === "1" || v === "yes"),
+  /**
+   * Voice STT (Whisper). Default on unless explicitly disabled.
+   * Uses SPEECH_OPENAI_API_KEY, else WORKSPACE_ATLAS_OPENAI_API_KEY.
+   */
+  SPEECH_STT_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return true;
+      return !(v === "false" || v === "0" || v === "no");
+    }),
+  SPEECH_OPENAI_API_KEY: optionalString,
+  SPEECH_OPENAI_MODEL: z.string().default("whisper-1")
 });
 
 export const env = envSchema

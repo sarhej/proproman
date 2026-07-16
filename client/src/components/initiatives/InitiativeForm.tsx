@@ -17,6 +17,7 @@ import type {
 } from "../../types/models";
 import { formatPriority } from "../../lib/format";
 import { AttachmentPanel } from "../attachments/AttachmentPanel";
+import { VoiceMicButton } from "../voice/VoiceMicButton";
 import { Button } from "../ui/Button";
 import { Input, Label, Select, Textarea } from "../ui/Field";
 
@@ -204,7 +205,23 @@ export const InitiativeForm = forwardRef<InitiativeFormHandle, Props>(function I
           />
         </div>
         <div className="md:col-span-2">
-          <Label>{t("initiative.description")}</Label>
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <Label>{t("initiative.description")}</Label>
+            {initiative?.id && !readOnly ? (
+              <VoiceMicButton
+                mode="field"
+                target={{ initiativeId: initiative.id }}
+                onInsertTranscript={(text) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    description: prev.description.trim()
+                      ? `${prev.description.trim()}\n${text}`
+                      : text
+                  }))
+                }
+              />
+            ) : null}
+          </div>
           <Textarea
             rows={3}
             value={form.description}

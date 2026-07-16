@@ -1280,6 +1280,9 @@
     "annotate": "Анотувати",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
+    "kindOriginal": "Оригінал",
+    "kindDerivative": "Похідний",
+    "kindTranscript": "Транскрипт",
     "loadFailed": "Failed to load attachments",
     "uploadFailed": "Upload failed",
     "libraryTitle": "Workspace library",
@@ -1319,12 +1322,30 @@
       "redo": "Redo",
       "save": "Save annotated",
       "loadFailed": "Не вдалося завантажити зображення для анотації",
+      "bakeFailed": "Не вдалося зберегти анотовані зображення. Спробуйте ще раз.",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",
         "rect": "Rect",
         "text": "Text"
       }
+    },
+    "voice": {
+      "mic": "Мікрофон",
+      "recording": "Запис",
+      "transcribing": "Транскрибую…",
+      "reviewTitle": "Перевірити голосову нотатку",
+      "transcriptLabel": "Транскрипт",
+      "piiNotice": "Голос може містити персональні дані. Перевірте перед прикріпленням.",
+      "stop": "Стоп",
+      "attachAndInsert": "Прикріпити та вставити",
+      "attachOnly": "Лише прикріпити",
+      "discard": "Відхилити",
+      "play": "Відтворити",
+      "permissionDenied": "Доступ до мікрофона заборонено. Увімкніть мікрофон у налаштуваннях браузера.",
+      "notConfigured": "Голосова транскрипція на цьому сервері недоступна.",
+      "captureFailed": "Не вдалося записати голос",
+      "emptyRecording": "Запис порожній"
     }
   }
 }

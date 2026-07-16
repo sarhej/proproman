@@ -4,9 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import {
   ATTACHMENT_MAX_BYTES,
+  ATTACHMENT_AUDIO_MAX_BYTES,
   buildAttachmentStorageKey,
   sanitizeFilename,
   sha256Hex,
+  sniffAudioMime,
   sniffImageMime,
   validateAttachmentBytes
 } from "./constants.js";
@@ -18,6 +20,9 @@ const PNG_1X1 = Buffer.from(
   "base64"
 );
 
+/** Minimal EBML/WebM-looking header */
+const WEBM_HDR = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x01, 0x00, 0x00, 0x00]);
+
 describe("attachment constants", () => {
   it("sniffs png/jpeg/webp", () => {
     expect(sniffImageMime(PNG_1X1)).toBe("image/png");
@@ -27,6 +32,14 @@ describe("attachment constants", () => {
     webp.write("WEBP", 8);
     expect(sniffImageMime(webp)).toBe("image/webp");
     expect(sniffImageMime(Buffer.from("not-an-image"))).toBeNull();
+  });
+
+  it("sniffs webm/wav audio", () => {
+    expect(sniffAudioMime(WEBM_HDR)).toBe("audio/webm");
+    const wav = Buffer.alloc(12);
+    wav.write("RIFF", 0);
+    wav.write("WAVE", 8);
+    expect(sniffAudioMime(wav)).toBe("audio/wav");
   });
 
   it("rejects oversized and bad mime", () => {
@@ -46,6 +59,20 @@ describe("attachment constants", () => {
     const size = validateAttachmentBytes(huge);
     expect(size.ok).toBe(false);
     if (!size.ok) expect(size.error.code).toBe("SIZE_REJECTED");
+  });
+
+  it("accepts audio webm and transcript text", () => {
+    const audio = validateAttachmentBytes(WEBM_HDR, "audio/webm", { expectAudio: true });
+    expect(audio.ok).toBe(true);
+    if (audio.ok) expect(audio.mimeType).toBe("audio/webm");
+
+    const txt = validateAttachmentBytes(Buffer.from("hello", "utf8"), "text/plain", {
+      expectTranscript: true
+    });
+    expect(txt.ok).toBe(true);
+    if (txt.ok) expect(txt.mimeType).toBe("text/plain");
+
+    expect(ATTACHMENT_AUDIO_MAX_BYTES).toBeGreaterThanOrEqual(ATTACHMENT_MAX_BYTES);
   });
 
   it("builds safe storage keys and checksums", () => {

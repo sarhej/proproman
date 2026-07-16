@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
-
-type Tool = "pen" | "arrow" | "rect" | "text";
+import {
+  bakeAnnotatedPng,
+  drawAnnotatorStrokes,
+  type AnnotatorStroke,
+  type AnnotatorTool
+} from "./annotatorBake";
 
 type Props = {
   open: boolean;
   imageFile: File;
   onClose: () => void;
-  onSave: (annotatedPng: File) => void;
+  onSave: (annotatedPng: File) => void | Promise<void>;
 };
-
-type Stroke =
-  | { tool: "pen"; color: string; points: { x: number; y: number }[] }
-  | { tool: "arrow"; color: string; x1: number; y1: number; x2: number; y2: number }
-  | { tool: "rect"; color: string; x: number; y: number; w: number; h: number }
-  | { tool: "text"; color: string; x: number; y: number; text: string };
 
 type SourceImage = {
   width: number;
@@ -62,29 +60,30 @@ export async function loadAnnotatorSource(file: File): Promise<SourceImage> {
       draw: (ctx) => ctx.drawImage(image, 0, 0)
     };
   } finally {
-    // Safe: bitmap is already decoded into the HTMLImageElement.
     URL.revokeObjectURL(url);
   }
 }
 
 /**
- * Lean canvas annotator — pen / arrow / rect / text → baked PNG.
+ * Lean canvas annotator — pen / arrow / rect / text → separate baked PNG (original kept).
  */
 export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [tool, setTool] = useState<Tool>("pen");
+  const [tool, setTool] = useState<AnnotatorTool>("pen");
   const [color, setColor] = useState(COLORS[0]);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [redoStack, setRedoStack] = useState<Stroke[]>([]);
+  const [strokes, setStrokes] = useState<AnnotatorStroke[]>([]);
+  const [redoStack, setRedoStack] = useState<AnnotatorStroke[]>([]);
   const [source, setSource] = useState<SourceImage | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const drawing = useRef<{
     active: boolean;
     startX: number;
     startY: number;
-    current?: Stroke;
+    current?: AnnotatorStroke;
   }>({ active: false, startX: 0, startY: 0 });
 
   useEffect(() => {
@@ -93,6 +92,7 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
     let owned: SourceImage | null = null;
     setLoading(true);
     setLoadError(null);
+    setSaveError(null);
     setSource(null);
     setStrokes([]);
     setRedoStack([]);
@@ -125,30 +125,24 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !source) return;
+    // Draw offscreen first so a detached ImageBitmap cannot clear the visible canvas.
+    const off = document.createElement("canvas");
+    off.width = source.width;
+    off.height = source.height;
+    const octx = off.getContext("2d");
+    if (!octx) return;
+    try {
+      source.draw(octx);
+    } catch {
+      return;
+    }
+    drawAnnotatorStrokes(octx, strokes, off.width);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     canvas.width = source.width;
     canvas.height = source.height;
-    source.draw(ctx);
-    for (const s of strokes) {
-      ctx.strokeStyle = "color" in s ? s.color : color;
-      ctx.fillStyle = "color" in s ? s.color : color;
-      ctx.lineWidth = Math.max(2, Math.round(canvas.width / 400));
-      ctx.lineCap = "round";
-      if (s.tool === "pen") {
-        ctx.beginPath();
-        s.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-        ctx.stroke();
-      } else if (s.tool === "rect") {
-        ctx.strokeRect(s.x, s.y, s.w, s.h);
-      } else if (s.tool === "arrow") {
-        drawArrow(ctx, s.x1, s.y1, s.x2, s.y2);
-      } else if (s.tool === "text") {
-        ctx.font = `${Math.max(14, Math.round(canvas.width / 40))}px sans-serif`;
-        ctx.fillText(s.text, s.x, s.y);
-      }
-    }
-  }, [source, strokes, color]);
+    ctx.drawImage(off, 0, 0);
+  }, [source, strokes]);
 
   useEffect(() => {
     redraw();
@@ -242,18 +236,18 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
     });
   };
 
-  const save = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !source) return;
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const name = imageFile.name.replace(/\.[^.]+$/, "") + "-annotated.png";
-        onSave(new File([blob], name, { type: "image/png" }));
-      },
-      "image/png",
-      0.92
-    );
+  const save = async () => {
+    if (!source || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const file = await bakeAnnotatedPng(imageFile, strokes);
+      await onSave(file);
+    } catch {
+      setSaveError(t("attachments.annotator.bakeFailed"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -261,7 +255,7 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
       <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2">
           <span className="mr-2 text-sm font-semibold text-slate-800">{t("attachments.annotator.title")}</span>
-          {(["pen", "arrow", "rect", "text"] as Tool[]).map((toolName) => (
+          {(["pen", "arrow", "rect", "text"] as AnnotatorTool[]).map((toolName) => (
             <Button
               key={toolName}
               type="button"
@@ -291,14 +285,19 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
             {t("attachments.annotator.redo")}
           </Button>
           <div className="ml-auto flex gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button type="button" onClick={save} disabled={!source || !!loadError}>
-              {t("attachments.annotator.save")}
+            <Button type="button" onClick={() => void save()} disabled={!source || !!loadError || saving}>
+              {saving ? t("common.loading") : t("attachments.annotator.save")}
             </Button>
           </div>
         </div>
+        {saveError ? (
+          <p className="border-b border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+            {saveError}
+          </p>
+        ) : null}
         <div className="flex-1 overflow-auto bg-slate-100 p-3">
           {loading ? (
             <p className="py-12 text-center text-sm text-slate-500">{t("common.loading")}</p>
@@ -321,19 +320,4 @@ export function ImageAnnotatorDialog({ open, imageFile, onClose, onSave }: Props
       </div>
     </div>
   );
-}
-
-function drawArrow(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {
-  const head = Math.max(8, Math.hypot(x2 - x1, y2 - y1) * 0.08);
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
 }

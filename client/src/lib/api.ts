@@ -415,6 +415,42 @@ export const api = {
     }),
   hardDeleteAttachment: async (id: string) =>
     request<void>(`/api/attachments/${id}?confirm=1`, { method: "DELETE" }),
+  voiceCapture: async (
+    file: File,
+    meta?: {
+      filename?: string;
+      transcript?: string;
+      featureId?: string | null;
+      requirementId?: string | null;
+      initiativeId?: string | null;
+      demandId?: string | null;
+      intakeSessionId?: string | null;
+      role?: string;
+    }
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (meta) {
+      for (const [k, v] of Object.entries(meta)) {
+        if (v !== undefined && v !== null) form.append(k, String(v));
+      }
+    }
+    return multipartRequest<{
+      transcript: string;
+      language: string | null;
+      audio: { attachment: Attachment; link: AttachmentLink | null };
+      transcriptAttachment: { attachment: Attachment; link: AttachmentLink | null };
+    }>("/api/voice/capture", form);
+  },
+  voiceTranscribe: async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return multipartRequest<{ transcript: string; language: string | null }>(
+      "/api/voice/transcribe",
+      form
+    );
+  },
+  getVoiceStatus: async () => request<{ enabled: boolean }>("/api/voice/status"),
   getAttachmentLinks: async (params?: {
     featureId?: string;
     requirementId?: string;

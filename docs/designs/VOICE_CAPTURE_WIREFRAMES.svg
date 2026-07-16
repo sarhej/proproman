@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1680" viewBox="0 0 2000 1680">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .panel { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .panel-soft { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+      .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #334155; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; fill: #334155; }
+      .small { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .tiny { font-family: Arial, sans-serif; font-size: 11px; fill: #64748b; }
+      .chip { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 1; }
+      .chip-rec { fill: #fee2e2; stroke: #fca5a5; stroke-width: 1; }
+      .chip-ok { fill: #dcfce7; stroke: #86efac; stroke-width: 1; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .button-primary { fill: #0f172a; stroke: #0f172a; stroke-width: 1.2; }
+      .button-danger { fill: #dc2626; stroke: #dc2626; stroke-width: 1.2; }
+      .input { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .note { fill: #fff7ed; stroke: #fdba74; stroke-width: 1.2; }
+      .modal { fill: #ffffff; stroke: #64748b; stroke-width: 2; }
+      .wave { fill: none; stroke: #0f172a; stroke-width: 2; }
+      .mic { fill: #0f172a; }
+      .mic-rec { fill: #dc2626; }
+      .btn-label { font-family: Arial, sans-serif; font-size: 12px; fill: #0f172a; }
+      .btn-label-inv { font-family: Arial, sans-serif; font-size: 12px; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="1680" />
+  <text x="50" y="48" class="title">Voice capture / STT &#x2014; shared mic + audio library</text>
+  <text x="50" y="74" class="text">See VOICE_CAPTURE_SOLUTION.md. AWAITING APPROVAL &#x2014; no implementation yet. Reuse Attachment library; Whisper via existing OpenAI key.</text>
+
+  <!-- A: Attachments panel with Mic -->
+  <rect class="page" x="40" y="100" width="600" height="520" rx="18" ry="18" />
+  <text x="65" y="135" class="section">A. Attachments panel + Mic</text>
+  <text x="65" y="158" class="small">Feature / Requirement / Initiative &#x2014; mode=attachment</text>
+
+  <rect class="panel" x="70" y="180" width="540" height="400" rx="12" ry="12" />
+  <text x="90" y="210" class="label">Attachments</text>
+  <rect class="button" x="320" y="190" width="90" height="28" rx="6" ry="6" />
+  <text x="340" y="208" class="btn-label">Upload</text>
+  <rect class="button" x="420" y="190" width="70" height="28" rx="6" ry="6" />
+  <text x="438" y="208" class="btn-label">Link</text>
+  <rect class="button-danger" x="500" y="190" width="90" height="28" rx="6" ry="6" />
+  <circle class="mic-rec" cx="520" cy="204" r="5" />
+  <text x="532" y="208" class="btn-label-inv">Mic</text>
+
+  <text x="90" y="250" class="tiny">Paste hint&#x2026; or record voice evidence</text>
+
+  <rect class="panel-soft" x="90" y="270" width="500" height="70" rx="8" ry="8" />
+  <rect class="chip-ok" x="105" y="285" width="48" height="40" rx="4" ry="4" />
+  <text x="112" y="310" class="tiny">WAV</text>
+  <text x="165" y="300" class="text">note-2026-07-16.webm</text>
+  <rect class="chip" x="165" y="310" width="58" height="16" rx="4" ry="4" />
+  <text x="172" y="322" class="tiny">ORIGINAL</text>
+  <text x="240" y="322" class="tiny">audio &#xB7; 420 KiB</text>
+
+  <rect class="panel-soft" x="120" y="350" width="470" height="55" rx="8" ry="8" />
+  <rect class="chip" x="135" y="362" width="48" height="32" rx="4" ry="4" />
+  <text x="142" y="382" class="tiny">TXT</text>
+  <text x="195" y="375" class="text">note-2026-07-16-transcript.txt</text>
+  <rect class="chip" x="195" y="385" width="72" height="14" rx="3" ry="3" />
+  <text x="200" y="396" class="tiny">TRANSCRIPT</text>
+
+  <rect class="note" x="90" y="420" width="500" height="50" rx="8" ry="8" />
+  <text x="105" y="442" class="small">Pairing: Annotated/Original pattern &#x2014; audio ORIGINAL + nested transcript DERIVATIVE.</text>
+  <text x="105" y="460" class="tiny">Both openable; audio playable via content URL + media-src blob/self.</text>
+
+  <text x="65" y="500" class="tiny">Impl: VoiceMicButton in AttachmentPanel toolbar.</text>
+  <text x="65" y="518" class="tiny">POST /api/voice/capture &#x2192; two attachments + links.</text>
+
+  <!-- B: Field mode -->
+  <rect class="page" x="680" y="100" width="620" height="520" rx="18" ry="18" />
+  <text x="705" y="135" class="section">B. Description field + Mic</text>
+  <text x="705" y="158" class="small">mode=field &#x2014; insert transcript + keep wave</text>
+
+  <rect class="panel" x="710" y="180" width="560" height="400" rx="12" ry="12" />
+  <text x="730" y="210" class="label">DESCRIPTION</text>
+  <rect class="button" x="1180" y="192" width="70" height="28" rx="6" ry="6" />
+  <circle class="mic" cx="1200" cy="206" r="5" />
+  <text x="1212" y="210" class="btn-label">Mic</text>
+
+  <rect class="input" x="730" y="230" width="520" height="160" rx="8" ry="8" />
+  <text x="745" y="260" class="text">Employees cannot save education/experience&#x2026;</text>
+  <text x="745" y="280" class="text">[voice] Testers report intermittent 500 on save</text>
+  <text x="745" y="300" class="text">when profile has empty end date.</text>
+
+  <rect class="panel-soft" x="730" y="410" width="520" height="90" rx="8" ry="8" />
+  <text x="745" y="435" class="label">Also attached</text>
+  <text x="745" y="458" class="small">voice-original.webm &#xB7; ORIGINAL</text>
+  <text x="745" y="478" class="small">voice-transcript.txt &#xB7; nested under audio</text>
+
+  <text x="705" y="500" class="tiny">Default: insert at caret + upload pair to entity target.</text>
+  <text x="705" y="518" class="tiny">User can edit transcript in review sheet before commit.</text>
+
+  <!-- C: Recording states -->
+  <rect class="page" x="1340" y="100" width="620" height="520" rx="18" ry="18" />
+  <text x="1365" y="135" class="section">C. Capture states</text>
+  <text x="1365" y="158" class="small">Shared VoiceCaptureSheet</text>
+
+  <rect class="modal" x="1375" y="180" width="550" height="130" rx="12" ry="12" />
+  <text x="1395" y="210" class="label">1. Recording</text>
+  <circle class="mic-rec" cx="1410" cy="245" r="10" />
+  <path class="wave" d="M1440 245 l8 -12 8 20 8 -16 8 10 8 -8 8 14 8 -6" />
+  <text x="1550" y="250" class="text">0:12</text>
+  <rect class="button-danger" x="1680" y="232" width="70" height="28" rx="6" ry="6" />
+  <text x="1695" y="250" class="btn-label-inv">Stop</text>
+  <rect class="button" x="1760" y="232" width="70" height="28" rx="6" ry="6" />
+  <text x="1772" y="250" class="btn-label">Cancel</text>
+
+  <rect class="modal" x="1375" y="330" width="550" height="100" rx="12" ry="12" />
+  <text x="1395" y="360" class="label">2. Transcribing (server Whisper)</text>
+  <text x="1395" y="390" class="small">POST /api/voice/transcribe &#x2014; OpenAI key server-side only</text>
+  <rect class="chip" x="1395" y="400" width="120" height="18" rx="4" ry="4" />
+  <text x="1405" y="413" class="tiny">any language auto</text>
+
+  <rect class="modal" x="1375" y="450" width="550" height="140" rx="12" ry="12" />
+  <text x="1395" y="478" class="label">3. Review</text>
+  <rect class="input" x="1395" y="490" width="340" height="50" rx="6" ry="6" />
+  <text x="1405" y="512" class="small">Testers report intermittent 500&#x2026;</text>
+  <text x="1405" y="528" class="tiny">editable before commit</text>
+  <rect class="button" x="1750" y="490" width="60" height="24" rx="4" ry="4" />
+  <text x="1760" y="506" class="btn-label">Play</text>
+  <rect class="button-primary" x="1395" y="550" width="130" height="26" rx="6" ry="6" />
+  <text x="1410" y="567" class="btn-label-inv">Attach &amp; insert</text>
+  <rect class="button" x="1535" y="550" width="100" height="26" rx="6" ry="6" />
+  <text x="1550" y="567" class="btn-label">Attach only</text>
+  <rect class="button" x="1645" y="550" width="80" height="26" rx="6" ry="6" />
+  <text x="1660" y="567" class="btn-label">Discard</text>
+
+  <!-- D: Architecture -->
+  <rect class="page" x="40" y="660" width="1260" height="420" rx="18" ry="18" />
+  <text x="65" y="695" class="section">D. Architecture (shared)</text>
+
+  <rect class="panel-soft" x="70" y="720" width="280" height="120" rx="10" ry="10" />
+  <text x="90" y="750" class="label">Client</text>
+  <text x="90" y="775" class="small">VoiceMicButton</text>
+  <text x="90" y="795" class="small">MediaRecorder &#x2192; webm</text>
+  <text x="90" y="815" class="small">VoiceCaptureSheet</text>
+
+  <text x="370" y="780" class="text">&#x2192;</text>
+
+  <rect class="panel-soft" x="400" y="720" width="320" height="120" rx="10" ry="10" />
+  <text x="420" y="750" class="label">API</text>
+  <text x="420" y="775" class="small">POST /api/voice/transcribe</text>
+  <text x="420" y="795" class="small">POST /api/voice/capture</text>
+  <text x="420" y="815" class="small">RBAC: content write</text>
+
+  <text x="740" y="780" class="text">&#x2192;</text>
+
+  <rect class="panel-soft" x="770" y="720" width="240" height="120" rx="10" ry="10" />
+  <text x="790" y="750" class="label">Whisper</text>
+  <text x="790" y="775" class="small">OpenAI /v1/audio/</text>
+  <text x="790" y="795" class="small">transcriptions</text>
+  <text x="790" y="815" class="small">key: server only</text>
+
+  <text x="1030" y="780" class="text">&#x2192;</text>
+
+  <rect class="panel-soft" x="1060" y="720" width="210" height="120" rx="10" ry="10" />
+  <text x="1080" y="750" class="label">Library</text>
+  <text x="1080" y="775" class="small">ORIGINAL audio</text>
+  <text x="1080" y="795" class="small">DERIVATIVE txt</text>
+  <text x="1080" y="815" class="small">AttachmentLink</text>
+
+  <rect class="note" x="70" y="870" width="1200" height="180" rx="10" ry="10" />
+  <text x="90" y="900" class="label">Implementation notes</text>
+  <text x="90" y="925" class="small">1. Env: SPEECH_STT_ENABLED + SPEECH_OPENAI_API_KEY (fallback WORKSPACE_ATLAS_OPENAI_API_KEY). Measured: atlas OpenAI key present locally.</text>
+  <text x="90" y="948" class="small">2. Expand attachment MIME for audio + text/plain transcripts; CSP media-src 'self' blob:.</text>
+  <text x="90" y="971" class="small">3. One shared control; screens pass mode + optional field insert callback + AttachmentTarget.</text>
+  <text x="90" y="994" class="small">4. Review sheet required before persist (v1). Multilingual auto-detect via Whisper.</text>
+  <text x="90" y="1017" class="small">5. v1 screens: Attachments panel + description fields on Feature / Requirement / Initiative. Intake / annotator text = later.</text>
+  <text x="90" y="1040" class="tiny">NOT v1: streaming captions, diarization, Web Speech API as primary, MCP voice tools.</text>
+
+  <!-- E: Errors -->
+  <rect class="page" x="1340" y="660" width="620" height="420" rx="18" ry="18" />
+  <text x="1365" y="695" class="section">E. Errors / empty</text>
+
+  <rect class="panel" x="1375" y="720" width="550" height="80" rx="10" ry="10" />
+  <text x="1395" y="750" class="label">Mic permission denied</text>
+  <text x="1395" y="775" class="small">Show enable-mic instructions; no upload.</text>
+
+  <rect class="panel" x="1375" y="820" width="550" height="80" rx="10" ry="10" />
+  <text x="1395" y="850" class="label">SPEECH_NOT_CONFIGURED</text>
+  <text x="1395" y="875" class="small">503 &#x2014; mic hidden or disabled with admin hint.</text>
+
+  <rect class="panel" x="1375" y="920" width="550" height="80" rx="10" ry="10" />
+  <text x="1395" y="950" class="label">STT / network failure</text>
+  <text x="1395" y="975" class="small">Keep local recording; Retry / Attach audio only.</text>
+
+  <rect class="chip-rec" x="1375" y="1020" width="550" height="36" rx="8" ry="8" />
+  <text x="1395" y="1043" class="small">PII notice: voice may contain personal data &#x2014; same as file attachments.</text>
+
+  <!-- F: Decision box -->
+  <rect class="page" x="40" y="1120" width="1920" height="520" rx="18" ry="18" />
+  <text x="65" y="1160" class="section">F. Approval checklist</text>
+  <text x="65" y="1195" class="text">Confirm before coding:</text>
+  <text x="65" y="1230" class="small">[ ] OpenAI Whisper via existing atlas key (+ optional SPEECH_* override)</text>
+  <text x="65" y="1260" class="small">[ ] Always store ORIGINAL audio when entity target is present</text>
+  <text x="65" y="1290" class="small">[ ] Transcript as DERIVATIVE text sibling + optional field insert</text>
+  <text x="65" y="1320" class="small">[ ] Review sheet before commit</text>
+  <text x="65" y="1350" class="small">[ ] v1 = Attachments mic + description fields on Feature / Requirement / Initiative</text>
+  <text x="65" y="1390" class="label">Key files (planned)</text>
+  <text x="65" y="1420" class="tiny">client/src/components/voice/VoiceMicButton.tsx, VoiceCaptureSheet.tsx</text>
+  <text x="65" y="1445" class="tiny">server/src/speech/whisperClient.ts, server/src/routes/voice.ts</text>
+  <text x="65" y="1470" class="tiny">Extend server/src/attachments/constants.ts MIME; helmet media-src</text>
+  <text x="65" y="1510" class="text">Docs: VOICE_CAPTURE_SOLUTION.md &#xB7; Wireframes: this file</text>
+  <text x="65" y="1545" class="small">After approval: implement v1 with tests; do not start coding until checklist confirmed.</text>
+  <text x="65" y="1585" class="tiny">Status banner on all panels: AWAITING APPROVAL</text>
+</svg>

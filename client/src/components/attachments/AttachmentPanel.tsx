@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useObjectUrl } from "../../hooks/useObjectUrl";
 import { api, attachmentContentUrl } from "../../lib/api";
@@ -6,10 +6,12 @@ import {
   imageFileFromDataTransfer,
   validateClientImageFile
 } from "../../lib/attachmentCapture";
-import type { AttachmentLink } from "../../types/models";
+import type { Attachment, AttachmentLink } from "../../types/models";
 import { Button } from "../ui/Button";
 import { ImageAnnotatorDialog } from "./ImageAnnotatorDialog";
 import { AttachmentLibraryPicker } from "./AttachmentLibraryPicker";
+import { groupAttachmentLinks } from "./groupAttachmentLinks";
+import { VoiceMicButton } from "../voice/VoiceMicButton";
 
 export type AttachmentTarget = {
   featureId?: string | null;
@@ -23,6 +25,91 @@ type Props = {
   target: AttachmentTarget;
   readOnly?: boolean;
 };
+
+function kindLabel(
+  kind: Attachment["kind"] | undefined,
+  t: (key: string) => string
+): string {
+  if (kind === "ANNOTATED") return t("attachments.kindAnnotated");
+  if (kind === "ORIGINAL") {
+    // Audio originals use same badge; mime shown in subtitle
+    return t("attachments.kindOriginal");
+  }
+  if (kind === "DERIVATIVE") return t("attachments.kindTranscript");
+  return "";
+}
+
+function AttachmentRow({
+  link,
+  readOnly,
+  nested,
+  onUnlink
+}: {
+  link: AttachmentLink;
+  readOnly?: boolean;
+  nested?: boolean;
+  onUnlink: (linkId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const a = link.attachment;
+  if (!a) return null;
+  const badge = kindLabel(a.kind, t);
+
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-3 text-sm ${nested ? "ml-6 border-l-2 border-slate-200 pl-3" : ""}`}
+    >
+      <a
+        href={attachmentContentUrl(a.id)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block h-14 w-14 overflow-hidden rounded border border-slate-200 bg-slate-50"
+      >
+        {a.mimeType.startsWith("audio/") ? (
+          <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-600">
+            AUD
+          </div>
+        ) : a.mimeType === "text/plain" ? (
+          <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-600">
+            TXT
+          </div>
+        ) : (
+          <img
+            src={attachmentContentUrl(a.id)}
+            alt={a.filename}
+            className="h-full w-full object-cover"
+          />
+        )}
+      </a>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate font-medium text-slate-800">{a.filename}</span>
+          {badge ? (
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <div className="text-xs text-slate-500">
+          {a.mimeType} · {Math.round(a.byteSize / 1024)} KiB
+        </div>
+        {a.mimeType.startsWith("audio/") ? (
+          <audio className="mt-1 max-w-full" controls preload="none" src={attachmentContentUrl(a.id)} />
+        ) : null}
+      </div>
+      {!readOnly ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-7 px-2 text-xs text-red-600"
+          onClick={() => onUnlink(link.id)}
+        >
+          {t("attachments.unlink")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Shared attachments panel — paste / drop / upload + link-from-library.
@@ -41,6 +128,8 @@ export function AttachmentPanel({ target, readOnly }: Props) {
   const zoneRef = useRef<HTMLDivElement>(null);
   const pendingPreviewUrl = useObjectUrl(pendingFile);
   const [previewBroken, setPreviewBroken] = useState(false);
+
+  const pairs = useMemo(() => groupAttachmentLinks(links), [links]);
 
   useEffect(() => {
     setPreviewBroken(false);
@@ -80,6 +169,7 @@ export function AttachmentPanel({ target, readOnly }: Props) {
       await api.uploadAttachment(file, {
         filename: file.name,
         source,
+        kind: "ORIGINAL",
         ...target
       });
       setPendingFile(null);
@@ -87,6 +177,11 @@ export function AttachmentPanel({ target, readOnly }: Props) {
     } catch (e) {
       setError(e instanceof Error ? e.message : t("attachments.uploadFailed"));
     }
+  };
+
+  const unlink = async (linkId: string) => {
+    await api.deleteAttachmentLink(linkId);
+    await load();
   };
 
   const onPaste = (e: React.ClipboardEvent) => {
@@ -128,6 +223,7 @@ export function AttachmentPanel({ target, readOnly }: Props) {
             <Button type="button" size="sm" variant="secondary" onClick={() => inputRef.current?.click()}>
               {t("attachments.upload")}
             </Button>
+            <VoiceMicButton mode="attachment" target={target} onAttached={() => void load()} />
             <input
               ref={inputRef}
               type="file"
@@ -148,50 +244,23 @@ export function AttachmentPanel({ target, readOnly }: Props) {
       ) : null}
       {loading ? (
         <p className="text-sm text-slate-500">{t("common.loading")}</p>
-      ) : links.length === 0 ? (
+      ) : pairs.length === 0 ? (
         <p className="text-sm text-slate-500">{t("attachments.empty")}</p>
       ) : (
-        <ul className="space-y-2">
-          {links.map((link) => {
-            const a = link.attachment;
-            if (!a) return null;
-            return (
-              <li key={link.id} className="flex flex-wrap items-center gap-3 text-sm">
-                <a
-                  href={attachmentContentUrl(a.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block h-14 w-14 overflow-hidden rounded border border-slate-200 bg-slate-50"
-                >
-                  <img
-                    src={attachmentContentUrl(a.id)}
-                    alt={a.filename}
-                    className="h-full w-full object-cover"
-                  />
-                </a>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-slate-800">{a.filename}</div>
-                  <div className="text-xs text-slate-500">
-                    {a.mimeType} · {Math.round(a.byteSize / 1024)} KiB
-                    {a.kind === "ANNOTATED" ? ` · ${t("attachments.kindAnnotated")}` : ""}
-                  </div>
-                </div>
-                {!readOnly ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs text-red-600"
-                    onClick={async () => {
-                      await api.deleteAttachmentLink(link.id);
-                      await load();
-                    }}
-                  >
-                    {t("attachments.unlink")}
-                  </Button>
-                ) : null}
-              </li>
-            );
-          })}
+        <ul className="space-y-3">
+          {pairs.map((pair) => (
+            <li key={pair.primary.id} className="space-y-2">
+              <AttachmentRow link={pair.primary} readOnly={readOnly} onUnlink={(id) => void unlink(id)} />
+              {pair.related ? (
+                <AttachmentRow
+                  link={pair.related}
+                  readOnly={readOnly}
+                  nested
+                  onUnlink={(id) => void unlink(id)}
+                />
+              ) : null}
+            </li>
+          ))}
         </ul>
       )}
 

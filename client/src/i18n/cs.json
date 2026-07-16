@@ -1280,6 +1280,9 @@
     "annotate": "Anotovat",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
+    "kindOriginal": "Originál",
+    "kindDerivative": "Derivát",
+    "kindTranscript": "Přepis",
     "loadFailed": "Failed to load attachments",
     "uploadFailed": "Upload failed",
     "libraryTitle": "Workspace library",
@@ -1319,12 +1322,30 @@
       "redo": "Redo",
       "save": "Save annotated",
       "loadFailed": "Obrázek pro anotaci se nepodařilo načíst",
+      "bakeFailed": "Anotovaný obrázek se nepodařilo uložit. Zkuste to znovu.",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",
         "rect": "Rect",
         "text": "Text"
       }
+    },
+    "voice": {
+      "mic": "Mikrofon",
+      "recording": "Nahrávání",
+      "transcribing": "Přepisuji…",
+      "reviewTitle": "Zkontrolovat hlasovou poznámku",
+      "transcriptLabel": "Přepis",
+      "piiNotice": "Hlas může obsahovat osobní údaje. Před připojením zkontrolujte.",
+      "stop": "Stop",
+      "attachAndInsert": "Připojit a vložit",
+      "attachOnly": "Jen připojit",
+      "discard": "Zahodit",
+      "play": "Přehrát",
+      "permissionDenied": "Přístup k mikrofonu byl odepřen. Povolte mikrofon v nastavení prohlížeče.",
+      "notConfigured": "Hlasový přepis na tomto serveru není k dispozici.",
+      "captureFailed": "Hlasový záznam selhal",
+      "emptyRecording": "Nahrávka je prázdná"
     }
   }
 }

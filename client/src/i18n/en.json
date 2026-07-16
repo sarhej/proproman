@@ -1429,6 +1429,9 @@
     "annotate": "Annotate",
     "attachAsIs": "Attach as-is",
     "kindAnnotated": "Annotated",
+    "kindOriginal": "Original",
+    "kindDerivative": "Derivative",
+    "kindTranscript": "Transcript",
     "loadFailed": "Failed to load attachments",
     "uploadFailed": "Upload failed",
     "libraryTitle": "Workspace library",
@@ -1468,12 +1471,30 @@
       "redo": "Redo",
       "save": "Save annotated",
       "loadFailed": "Could not load image for annotation",
+      "bakeFailed": "Could not save the annotated image. Try again.",
       "tool": {
         "pen": "Pen",
         "arrow": "Arrow",
         "rect": "Rect",
         "text": "Text"
       }
+    },
+    "voice": {
+      "mic": "Mic",
+      "recording": "Recording",
+      "transcribing": "Transcribing…",
+      "reviewTitle": "Review voice note",
+      "transcriptLabel": "Transcript",
+      "piiNotice": "Voice may contain personal data. Review before attaching.",
+      "stop": "Stop",
+      "attachAndInsert": "Attach & insert",
+      "attachOnly": "Attach only",
+      "discard": "Discard",
+      "play": "Play",
+      "permissionDenied": "Microphone permission denied. Enable mic in browser settings.",
+      "notConfigured": "Voice transcription is not available on this server.",
+      "captureFailed": "Voice capture failed",
+      "emptyRecording": "Recording is empty"
     }
   }
 }

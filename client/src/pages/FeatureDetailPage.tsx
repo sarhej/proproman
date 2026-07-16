@@ -8,6 +8,7 @@ import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { LabelEditor } from "../components/ui/LabelEditor";
 import { AttachmentPanel } from "../components/attachments/AttachmentPanel";
+import { VoiceMicButton } from "../components/voice/VoiceMicButton";
 
 type Props = {
   initiatives: Initiative[];
@@ -229,11 +230,23 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-700">{t("featureDetail.description")}</h2>
-          {!readOnly && !editingDetails ? (
-            <Button variant="secondary" type="button" onClick={() => setEditingDetails(true)}>
-              {t("featureDetail.editDetails")}
-            </Button>
-          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {!readOnly ? (
+              <VoiceMicButton
+                mode="field"
+                target={{ featureId: feature.id }}
+                onInsertTranscript={(text) => {
+                  setEditingDetails(true);
+                  setEditDesc((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+                }}
+              />
+            ) : null}
+            {!readOnly && !editingDetails ? (
+              <Button variant="secondary" type="button" onClick={() => setEditingDetails(true)}>
+                {t("featureDetail.editDetails")}
+              </Button>
+            ) : null}
+          </div>
         </div>
         {editingDetails && !readOnly ? (
           <div className="space-y-4">

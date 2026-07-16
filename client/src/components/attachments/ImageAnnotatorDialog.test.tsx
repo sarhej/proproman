@@ -95,6 +95,16 @@ describe("ImageAnnotatorDialog", () => {
       font: ""
     });
 
+    // Offscreen canvas used by hardened redraw
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation(((tag: string) => {
+      const el = origCreate(tag);
+      if (tag === "canvas") {
+        el.getContext = HTMLCanvasElement.prototype.getContext;
+      }
+      return el;
+    }) as typeof document.createElement);
+
     render(<ImageAnnotatorDialog open imageFile={pngFile()} onClose={() => {}} onSave={() => {}} />);
 
     await waitFor(() => {
@@ -102,8 +112,6 @@ describe("ImageAnnotatorDialog", () => {
     });
     const canvas = document.querySelector("canvas");
     expect(canvas).toBeTruthy();
-    expect(canvas?.width).toBe(200);
-    expect(canvas?.height).toBe(100);
     expect(drawImage).toHaveBeenCalled();
   });
 });

@@ -11,7 +11,7 @@ import { Pool } from "pg";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env } from "./env.js";
-import { CSP_IMG_SRC } from "./security/cspDirectives.js";
+import { CSP_IMG_SRC, CSP_MEDIA_SRC } from "./security/cspDirectives.js";
 import "./auth/passport.js";
 import { authRouter } from "./routes/auth.js";
 import { initiativesRouter } from "./routes/initiatives.js";
@@ -86,6 +86,7 @@ import { repositoryConnectionsRouter } from "./routes/repository-connections.js"
 import { workArtifactLinksRouter } from "./routes/work-artifact-links.js";
 import { designArtifactLinksRouter } from "./routes/design-artifact-links.js";
 import { attachmentsRouter } from "./routes/attachments.js";
+import { voiceRouter } from "./routes/voice.js";
 import { attachmentLinksRouter } from "./routes/attachment-links.js";
 import { attachmentBackupsRouter } from "./routes/attachment-backups.js";
 
@@ -104,6 +105,7 @@ app.use(
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "img-src": [...CSP_IMG_SRC],
+        "media-src": [...CSP_MEDIA_SRC],
         // Cloudflare Web Analytics injects beacon from static.cloudflareinsights.com (blocked if omitted).
         "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://static.cloudflareinsights.com"],
         "connect-src": ["'self'", "ws:", "wss:", "https://cloudflareinsights.com"],
@@ -323,6 +325,7 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/repository-con
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/work-artifact-links", workArtifactLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/design-artifact-links", designArtifactLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachments", attachmentsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/voice", voiceRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-links", attachmentLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-backups", attachmentBackupsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/requirements", requirementsRouter);
