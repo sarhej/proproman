@@ -44,7 +44,7 @@ export function AttachmentPanel({ target, readOnly }: Props) {
 
   useEffect(() => {
     setPreviewBroken(false);
-  }, [pendingFile]);
+  }, [pendingFile, pendingPreviewUrl]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -200,17 +200,20 @@ export function AttachmentPanel({ target, readOnly }: Props) {
           <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-xl">
             <h3 className="mb-2 text-sm font-semibold">{t("attachments.captureTitle")}</h3>
             <div className="mb-3 flex min-h-40 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-              {pendingPreviewUrl && !previewBroken ? (
+              {!pendingPreviewUrl ? (
+                <p className="px-4 py-8 text-center text-sm text-slate-500">{t("common.loading")}</p>
+              ) : previewBroken ? (
+                <p className="px-4 py-8 text-center text-sm text-slate-500">
+                  {t("attachments.previewUnavailable")}
+                </p>
+              ) : (
                 <img
+                  key={pendingPreviewUrl}
                   src={pendingPreviewUrl}
                   alt={pendingFile.name}
                   className="max-h-56 w-full object-contain"
                   onError={() => setPreviewBroken(true)}
                 />
-              ) : (
-                <p className="px-4 py-8 text-center text-sm text-slate-500">
-                  {t("attachments.previewUnavailable")}
-                </p>
               )}
             </div>
             <p className="mb-3 truncate text-xs text-slate-600">

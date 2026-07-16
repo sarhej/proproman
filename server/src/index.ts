@@ -11,6 +11,7 @@ import { Pool } from "pg";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env } from "./env.js";
+import { CSP_IMG_SRC } from "./security/cspDirectives.js";
 import "./auth/passport.js";
 import { authRouter } from "./routes/auth.js";
 import { initiativesRouter } from "./routes/initiatives.js";
@@ -102,7 +103,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "img-src": ["'self'", "data:", "https://*.googleusercontent.com", "https://*.ggpht.com"],
+        "img-src": [...CSP_IMG_SRC],
         // Cloudflare Web Analytics injects beacon from static.cloudflareinsights.com (blocked if omitted).
         "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://static.cloudflareinsights.com"],
         "connect-src": ["'self'", "ws:", "wss:", "https://cloudflareinsights.com"],
