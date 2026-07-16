@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { TENANT_SCOPED_MODELS } from "./tenantPrisma.js";
+import {
+  TENANT_SCOPED_MODELS,
+  prepareFindUniqueArgsForTenantCheck,
+  filterFindUniqueResultForTenant
+} from "./tenantPrisma.js";
 
 function injectTenantWhere(args: Record<string, unknown>, tenantId: string): Record<string, unknown> {
   return { ...args, where: { ...(args.where as object ?? {}), tenantId } };
@@ -63,6 +67,66 @@ describe("injectTenantData", () => {
   it("handles undefined data gracefully", () => {
     const result = injectTenantData({ where: { id: "1" } }, "t-1");
     expect(result.data).toEqual({ tenantId: "t-1" });
+  });
+});
+
+describe("findUnique narrow select tenant check (MCP update_requirement regression)", () => {
+  it("adds tenantId to select when caller omitted it", () => {
+    const prepared = prepareFindUniqueArgsForTenantCheck({
+      where: { id: "req-1" },
+      select: { featureId: true }
+    });
+    expect(prepared.stripTenantIdFromResult).toBe(true);
+    expect(prepared.args.select).toEqual({ featureId: true, tenantId: true });
+  });
+
+  it("does not mark strip when tenantId already selected", () => {
+    const prepared = prepareFindUniqueArgsForTenantCheck({
+      where: { id: "req-1" },
+      select: { featureId: true, tenantId: true }
+    });
+    expect(prepared.stripTenantIdFromResult).toBe(false);
+  });
+
+  it("does not alter args when select is absent (full model includes tenantId)", () => {
+    const prepared = prepareFindUniqueArgsForTenantCheck({ where: { id: "req-1" } });
+    expect(prepared.stripTenantIdFromResult).toBe(false);
+    expect(prepared.args).toEqual({ where: { id: "req-1" } });
+  });
+
+  it("keeps same-tenant row and strips injected tenantId from result", () => {
+    const filtered = filterFindUniqueResultForTenant(
+      { featureId: "feat-1", tenantId: "t-1" },
+      "t-1",
+      true
+    );
+    expect(filtered).toEqual({ featureId: "feat-1" });
+  });
+
+  it("returns null for cross-tenant row", () => {
+    const filtered = filterFindUniqueResultForTenant(
+      { featureId: "feat-1", tenantId: "other" },
+      "t-1",
+      true
+    );
+    expect(filtered).toBeNull();
+  });
+
+  it("reproduces the old bug shape: missing tenantId looked like cross-tenant", () => {
+    // Historical bug: undefined !== "t-1" → null even for same-tenant rows
+    expect(undefined !== "t-1").toBe(true);
+    const wronglyNull =
+      ({ featureId: "feat-1" } as Record<string, unknown>).tenantId !== "t-1"
+        ? null
+        : { featureId: "feat-1" };
+    expect(wronglyNull).toBeNull();
+
+    const fixed = filterFindUniqueResultForTenant(
+      { featureId: "feat-1", tenantId: "t-1" },
+      "t-1",
+      true
+    );
+    expect(fixed).toEqual({ featureId: "feat-1" });
   });
 });
 

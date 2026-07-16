@@ -65,6 +65,41 @@ function injectTenantData(args: AnyArgs, tenantId: string): AnyArgs {
 }
 
 /**
+ * findUnique tenant check: if the caller used a narrow `select` that omits `tenantId`,
+ * temporarily include it so we can verify ownership (otherwise `undefined !== tenantId`
+ * falsely returns null — broke tymio_update_requirement / PUT requirements).
+ */
+export function prepareFindUniqueArgsForTenantCheck(args: AnyArgs): {
+  args: AnyArgs;
+  stripTenantIdFromResult: boolean;
+} {
+  const select = args.select;
+  if (!select || typeof select !== "object" || Array.isArray(select)) {
+    return { args, stripTenantIdFromResult: false };
+  }
+  const selectObj = select as Record<string, unknown>;
+  if (selectObj.tenantId) {
+    return { args, stripTenantIdFromResult: false };
+  }
+  return {
+    args: { ...args, select: { ...selectObj, tenantId: true } },
+    stripTenantIdFromResult: true
+  };
+}
+
+export function filterFindUniqueResultForTenant(
+  result: Record<string, unknown> | null | undefined,
+  tenantId: string,
+  stripTenantIdFromResult: boolean
+): Record<string, unknown> | null {
+  if (!result) return null;
+  if (result.tenantId !== tenantId) return null;
+  if (!stripTenantIdFromResult) return result;
+  const { tenantId: _omit, ...rest } = result;
+  return rest;
+}
+
+/**
  * Create a Prisma client extension that auto-injects tenantId
  * from AsyncLocalStorage into queries on tenant-scoped models.
  *
@@ -90,14 +125,20 @@ export function createTenantExtension(base: PrismaClient) {
           return query(args);
         },
         async findUnique({ model, args, query }) {
-          const result = await query(args);
-          if (model && isTenantScoped(model) && result) {
-            const ctx = getTenantContext();
-            if (ctx && (result as Record<string, unknown>).tenantId !== ctx.tenantId) {
-              return null;
-            }
+          if (!model || !isTenantScoped(model)) {
+            return query(args);
           }
-          return result;
+          const ctx = getTenantContext();
+          if (!ctx) {
+            return query(args);
+          }
+          const prepared = prepareFindUniqueArgsForTenantCheck(args as AnyArgs);
+          const result = await query(prepared.args as typeof args);
+          return filterFindUniqueResultForTenant(
+            result as Record<string, unknown> | null,
+            ctx.tenantId,
+            prepared.stripTenantIdFromResult
+          ) as typeof result;
         },
         async create({ model, args, query }) {
           if (model && isTenantScoped(model)) {
