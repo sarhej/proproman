@@ -22,6 +22,7 @@ import { formatPriority } from "../lib/format";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { LabelEditor } from "../components/ui/LabelEditor";
+import { AttachmentPanel } from "../components/attachments/AttachmentPanel";
 
 const PRIORITIES: Priority[] = ["P0", "P1", "P2", "P3"];
 const STATUSES: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "TESTING", "DONE"];
@@ -747,6 +748,8 @@ export function RequirementDetailPage({ initiatives, onOpenInitiative, onSaved, 
               </div>
             ) : null}
           </section>
+
+          <AttachmentPanel target={{ requirementId: requirement.id }} readOnly={readOnly} />
 
           {siblings.length > 0 && (
             <section className="rounded-lg border border-slate-200 bg-white p-4">

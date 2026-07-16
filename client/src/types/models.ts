@@ -210,6 +210,60 @@ export type DesignArtifactLink = {
   title?: string | null;
 };
 
+export type AttachmentSource = "UPLOAD" | "PASTE" | "AGENT" | "URL_FETCH" | "BACKUP_RESTORE";
+export type AttachmentKind = "ORIGINAL" | "ANNOTATED" | "DERIVATIVE";
+export type AttachmentStatus = "PENDING" | "ACTIVE" | "RETIRED" | "PURGED";
+export type AttachmentLinkRole = "EVIDENCE" | "DESCRIPTION" | "OTHER";
+export type AttachmentBackupJobStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED";
+
+export type Attachment = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  byteSize: number;
+  checksum: string;
+  storageKey: string;
+  source: AttachmentSource;
+  kind: AttachmentKind;
+  parentAttachmentId?: string | null;
+  status: AttachmentStatus;
+  retiredAt?: string | null;
+  retireReason?: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: { id: string; name: string; email: string };
+  _count?: { links: number };
+  links?: AttachmentLink[];
+};
+
+export type AttachmentLink = {
+  id: string;
+  attachmentId: string;
+  featureId?: string | null;
+  requirementId?: string | null;
+  initiativeId?: string | null;
+  demandId?: string | null;
+  intakeSessionId?: string | null;
+  role: AttachmentLinkRole;
+  createdByUserId: string;
+  createdAt: string;
+  attachment?: Attachment;
+};
+
+export type AttachmentBackupJob = {
+  id: string;
+  status: AttachmentBackupJobStatus;
+  manifestStorageKey?: string | null;
+  archiveStorageKey?: string | null;
+  filterJson?: unknown;
+  byteSize?: number | null;
+  error?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  createdAt: string;
+};
+
 export type UseCase = {
   id: string;
   title: string;

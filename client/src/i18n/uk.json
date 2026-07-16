@@ -36,7 +36,7 @@
     "pendingWorkspaceRegFootnote": "Це окремо від статусу облікового запису вище: нові заявки на робочий простір перевіряє Tymio, а не адміністратори цього простору.",
     "createInitiative": "Створити ініціативу",
     "close": "Закрити",
-    "noNavViewsAvailable": "Для вашого облікового запису немає доступних подань. Попросіть суперадміністратора ввімкнути принаймні одне подання: Admin \u2192 Settings \u2192 Navigation views."
+    "noNavViewsAvailable": "Для вашого облікового запису немає доступних подань. Попросіть суперадміністратора ввімкнути принаймні одне подання: Admin → Settings → Navigation views."
   },
   "hub": {
     "remoteEditBanner": "Ініціативу оновлено в іншому місці, поки у вас є незбережені зміни. Оновіть, щоб побачити актуальну версію, або закрийте й редагуйте далі.",
@@ -142,7 +142,8 @@
     "workspaceSettings": "Налаштування робочого простору",
     "sidebarCollapse": "Згорнути бічну панель",
     "sidebarExpand": "Розгорнути бічну панель",
-    "openMenu": "Відкрити меню навігації"
+    "openMenu": "Відкрити меню навігації",
+    "adminArtifacts": "Артефакти"
   },
   "filters": {
     "domain": "Стовп",
@@ -384,7 +385,6 @@
     "newKpi": "Новий KPI…",
     "stakeholderName": "Ім’я…",
     "stakeholderOrg": "Організація…",
-    "targetDate": "Цільова дата",
     "target": "Ціль",
     "current": "Поточне",
     "unit": "Одиниця",
@@ -811,7 +811,12 @@
       "GLOBAL_ROLE": "Глобальна роль",
       "OBJECT_ASSIGNEE": "Виконавець на об’єкті"
     },
-    "channel": { "IN_APP": "У застосунку", "EMAIL": "Email", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
+    "channel": {
+      "IN_APP": "У застосунку",
+      "EMAIL": "Email",
+      "SLACK": "Slack",
+      "WHATSAPP": "WhatsApp"
+    },
     "exportSuccess": "Експорт успішно завантажено.",
     "exportFailed": "Експорт не вдався. Деталі в консолі.",
     "invalidFile": "Некоректний файл: очікується версія {{version}}.",
@@ -855,7 +860,14 @@
     "title": "Мої підписки на сповіщення",
     "empty": "Підписок немає. Натисніть «Повідомляти мене» в ініціативі або стовпі.",
     "unsubscribe": "Відписатися",
-    "scope": { "GLOBAL": "Усі", "DOMAIN": "Стовп", "INITIATIVE": "Ініціатива", "CAMPAIGN": "Кампанія", "FEATURE": "Функція", "USER": "Користувач" },
+    "scope": {
+      "GLOBAL": "Усі",
+      "DOMAIN": "Стовп",
+      "INITIATIVE": "Ініціатива",
+      "CAMPAIGN": "Кампанія",
+      "FEATURE": "Функція",
+      "USER": "Користувач"
+    },
     "notifyMe": "Повідомляти мене про зміни тут"
   },
   "notification": {
@@ -1255,5 +1267,62 @@
     "workspaceNotFoundDescription": "This workspace URL is not valid or is no longer available.",
     "pendingTitle": "Find your Tymio workspace",
     "pendingDescription": "Your account is signed in but not yet in a workspace. Enter a workspace slug or request a new organization."
+  },
+  "attachments": {
+    "panelTitle": "Вкладення",
+    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "empty": "No attachments yet.",
+    "upload": "Завантажити",
+    "linkFromLibrary": "Link from library",
+    "unlink": "Відвʼязати",
+    "captureTitle": "Attach image",
+    "annotate": "Анотувати",
+    "attachAsIs": "Attach as-is",
+    "kindAnnotated": "Annotated",
+    "loadFailed": "Failed to load attachments",
+    "uploadFailed": "Upload failed",
+    "libraryTitle": "Workspace library",
+    "libraryHint": "Link an existing ACTIVE artifact without re-uploading.",
+    "libraryEmpty": "No matching artifacts.",
+    "searchPlaceholder": "Search filename",
+    "linksCount": "links",
+    "link": "Link",
+    "adminTitle": "Артефакти",
+    "adminSubtitle": "Browse, retire, restore, and export a backup manifest for this workspace.",
+    "includeRetired": "Include retired",
+    "runBackup": "Export backup manifest",
+    "backupCreated": "Backup manifest created.",
+    "backupFailed": "Backup failed",
+    "backupJobs": "Recent backup jobs",
+    "noBackupJobs": "No backup jobs yet.",
+    "downloadManifest": "Download manifest",
+    "colPreview": "Preview",
+    "colFilename": "Filename",
+    "colStatus": "Status",
+    "colLinks": "Links",
+    "colSize": "Size",
+    "colActions": "Actions",
+    "retire": "Архівувати",
+    "restore": "Відновити",
+    "hardDelete": "Delete permanently",
+    "hardDeleteConfirm": "Permanently delete this retired artifact and its blob? This cannot be undone.",
+    "errors": {
+      "MIME_REJECTED": "Only PNG, JPEG, and WebP images are allowed.",
+      "SIZE_REJECTED": "File exceeds the 10 MiB limit.",
+      "EMPTY": "File is empty."
+    },
+    "annotator": {
+      "title": "Annotate image",
+      "textPrompt": "Label text",
+      "undo": "Undo",
+      "redo": "Redo",
+      "save": "Save annotated",
+      "tool": {
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "rect": "Rect",
+        "text": "Text"
+      }
+    }
   }
 }

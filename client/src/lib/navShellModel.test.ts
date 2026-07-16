@@ -26,6 +26,7 @@ describe("computeNavShellSections", () => {
     expect(pathsInSection(blocks, "nav.admin")).toEqual([
       "/admin/users",
       "/admin/settings",
+      "/admin/artifacts",
       "/workspace-settings",
       "/agent-setup",
     ]);
@@ -40,6 +41,7 @@ describe("computeNavShellSections", () => {
     expect(pathsInSection(blocks, "nav.admin")).toEqual([
       "/admin/users",
       "/admin/settings",
+      "/admin/artifacts",
       "/agent-setup",
       "/platform/",
     ]);
@@ -51,7 +53,10 @@ describe("computeNavShellSections", () => {
       canManageWorkspaceStructure: true,
       hiddenNavPaths: new Set(),
     });
-    expect(pathsInSection(blocks, "nav.admin")).toEqual(["/workspace-settings"]);
+    expect(pathsInSection(blocks, "nav.admin")).toEqual([
+      "/admin/artifacts",
+      "/workspace-settings",
+    ]);
   });
 
   it("hides entire admin section when neither global admin nor workspace structure manager", () => {
@@ -69,7 +74,10 @@ describe("computeNavShellSections", () => {
       canManageWorkspaceStructure: true,
       hiddenNavPaths: new Set(["/workspace-settings", "/priority"]),
     });
-    expect(pathsInSection(blocks, "nav.admin")).toEqual(["/workspace-settings"]);
+    expect(pathsInSection(blocks, "nav.admin")).toEqual([
+      "/admin/artifacts",
+      "/workspace-settings",
+    ]);
     expect(pathsInSection(blocks, "nav.boards")).not.toContain("/priority");
   });
 
@@ -90,9 +98,11 @@ describe("navSections data (admin / structure split)", () => {
     const items = admin!.items;
     const users = items.find((i) => i.to === "/admin/users");
     const settings = items.find((i) => i.to === "/admin/settings");
+    const artifacts = items.find((i) => i.to === "/admin/artifacts");
     const ws = items.find((i) => i.to === "/workspace-settings");
     expect(users?.userManagementOnly).toBe(true);
     expect(settings?.userManagementOnly).toBe(true);
+    expect(artifacts?.workspaceStructureOnly).toBe(true);
     expect(ws?.workspaceStructureOnly).toBe(true);
     expect(ws?.userManagementOnly).toBeUndefined();
   });

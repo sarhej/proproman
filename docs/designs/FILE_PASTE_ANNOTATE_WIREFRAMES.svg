@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2480" viewBox="0 0 2000 2480">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .panel { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .panel-soft { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+      .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #334155; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; fill: #334155; }
+      .small { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .tiny { font-family: Arial, sans-serif; font-size: 11px; fill: #64748b; }
+      .chip { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 1; }
+      .chip-good { fill: #dcfce7; stroke: #86efac; stroke-width: 1; }
+      .chip-warn { fill: #fef3c7; stroke: #fcd34d; stroke-width: 1; }
+      .chip-bad { fill: #fee2e2; stroke: #fca5a5; stroke-width: 1; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .button-primary { fill: #0f172a; stroke: #0f172a; stroke-width: 1.2; }
+      .button-accent { fill: #dc2626; stroke: #dc2626; stroke-width: 1.2; }
+      .input { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .note { fill: #fff7ed; stroke: #fdba74; stroke-width: 1.2; }
+      .modal { fill: #ffffff; stroke: #64748b; stroke-width: 2; }
+      .dropzone { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 6 4; }
+      .shot { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1; }
+      .mark { fill: none; stroke: #dc2626; stroke-width: 3; }
+      .tool-active { fill: #0f172a; stroke: #0f172a; }
+      .row { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="2480" />
+  <text x="50" y="48" class="title">File paste / annotate &#x2014; library + admin flows</text>
+  <text x="50" y="74" class="text">Attachment = workspace artifact; screens only link. See FILE_PASTE_ANNOTATE_SOLUTION.md. NO IMPLEMENTATION YET.</text>
+
+  <!-- A: Intake capture with paste -->
+  <rect class="page" x="40" y="100" width="620" height="520" rx="18" ry="18" />
+  <text x="65" y="135" class="section">A. Intake capture (desktop)</text>
+  <text x="65" y="158" class="small">Product page &#x2192; Create Bug &#x2192; shared intake shell</text>
+  <rect class="modal" x="65" y="175" width="570" height="400" rx="14" ry="14" />
+  <text x="85" y="205" class="label">Describe the issue</text>
+  <rect class="input" x="85" y="218" width="530" height="70" rx="8" ry="8" />
+  <text x="100" y="248" class="tiny">Login CTA is clipped on iPhone SE...</text>
+  <rect class="dropzone" x="85" y="305" width="530" height="120" rx="10" ry="10" />
+  <text x="250" y="355" class="label">Drop screenshot here</text>
+  <text x="200" y="378" class="small">or paste (&#x2318;V) &#xB7; or Upload file</text>
+  <rect class="chip-good" x="85" y="445" width="160" height="28" rx="6" ry="6" />
+  <text x="100" y="463" class="tiny">screenshot.png &#xB7; pasted</text>
+  <rect class="button" x="260" y="445" width="100" height="28" rx="8" ry="8" />
+  <text x="278" y="463" class="tiny">Annotate</text>
+  <rect class="button" x="375" y="445" width="100" height="28" rx="8" ry="8" />
+  <text x="390" y="463" class="tiny">Attach as-is</text>
+  <rect class="button-primary" x="490" y="445" width="125" height="28" rx="8" ry="8" />
+  <text x="520" y="463" class="tiny" fill="#ffffff">Continue</text>
+  <text x="85" y="510" class="small">Creates Attachment in library + AttachmentLink to intake.</text>
+
+  <!-- B: Annotate modal -->
+  <rect class="page" x="690" y="100" width="620" height="520" rx="18" ry="18" />
+  <text x="715" y="135" class="section">B. Annotate modal (desktop)</text>
+  <text x="715" y="158" class="small">Original kept &#xB7; export baked PNG + original</text>
+  <rect class="modal" x="715" y="175" width="570" height="400" rx="14" ry="14" />
+  <rect class="panel-soft" x="730" y="190" width="540" height="40" rx="8" ry="8" />
+  <rect class="tool-active" x="742" y="198" width="36" height="24" rx="4" ry="4" />
+  <text x="752" y="214" class="tiny" fill="#ffffff">Pen</text>
+  <rect class="button" x="786" y="198" width="44" height="24" rx="4" ry="4" />
+  <text x="794" y="214" class="tiny">Arrow</text>
+  <rect class="button" x="838" y="198" width="40" height="24" rx="4" ry="4" />
+  <text x="846" y="214" class="tiny">Rect</text>
+  <rect class="button" x="886" y="198" width="40" height="24" rx="4" ry="4" />
+  <text x="896" y="214" class="tiny">Text</text>
+  <rect class="button-accent" x="936" y="198" width="22" height="24" rx="4" ry="4" />
+  <rect class="button" x="968" y="198" width="22" height="24" rx="4" ry="4" fill="#eab308" stroke="#ca8a04" />
+  <rect class="button" x="1000" y="198" width="22" height="24" rx="4" ry="4" fill="#0f172a" />
+  <rect class="button" x="1040" y="198" width="44" height="24" rx="4" ry="4" />
+  <text x="1048" y="214" class="tiny">Undo</text>
+  <rect class="shot" x="730" y="245" width="540" height="250" rx="8" ry="8" />
+  <text x="760" y="290" class="small">Screenshot preview</text>
+  <rect x="820" y="320" width="160" height="48" rx="6" ry="6" fill="#94a3b8" />
+  <text x="855" y="348" class="tiny" fill="#ffffff">Log in</text>
+  <rect class="mark" x="800" y="300" width="200" height="90" rx="4" ry="4" />
+  <path class="mark" d="M 1000 345 L 1080 345" />
+  <text x="1085" y="350" class="tiny" fill="#dc2626">clipped</text>
+  <rect class="button" x="730" y="510" width="100" height="32" rx="8" ry="8" />
+  <text x="755" y="530" class="tiny">Cancel</text>
+  <rect class="button-primary" x="1100" y="510" width="155" height="32" rx="8" ry="8" />
+  <text x="1125" y="530" class="tiny" fill="#ffffff">Save annotated</text>
+
+  <!-- C: Requirement attachments -->
+  <rect class="page" x="1340" y="100" width="620" height="520" rx="18" ry="18" />
+  <text x="1365" y="135" class="section">C. Requirement attachments</text>
+  <text x="1365" y="158" class="small">Link from library or capture new</text>
+  <rect class="panel-soft" x="1365" y="180" width="570" height="48" />
+  <text x="1385" y="210" class="label">Requirement &#xB7; Login CTA overflow</text>
+  <rect class="panel" x="1365" y="245" width="570" height="320" rx="12" ry="12" />
+  <text x="1385" y="275" class="label">Attachments</text>
+  <rect class="button" x="1680" y="255" width="130" height="26" rx="6" ry="6" />
+  <text x="1695" y="272" class="tiny">Link from library</text>
+  <rect class="shot" x="1385" y="295" width="120" height="80" rx="6" ry="6" />
+  <rect class="mark" x="1405" y="315" width="70" height="35" />
+  <text x="1520" y="320" class="small">screenshot-annotated.png</text>
+  <text x="1520" y="340" class="tiny">ORIGINAL + ANNOTATED &#xB7; also on Feature #12</text>
+  <rect class="button" x="1520" y="355" width="70" height="22" rx="4" ry="4" />
+  <text x="1535" y="370" class="tiny">Open</text>
+  <rect class="button" x="1600" y="355" width="70" height="22" rx="4" ry="4" />
+  <text x="1615" y="370" class="tiny">Unlink</text>
+  <rect class="dropzone" x="1385" y="400" width="530" height="70" rx="8" ry="8" />
+  <text x="1520" y="430" class="small">Paste, drop, or upload (new library item)</text>
+  <text x="1480" y="450" class="tiny">Images v0: PNG / JPEG / WebP &#xB7; max 10 MiB</text>
+  <text x="1365" y="545" class="small">Unlink removes link only &#x2014; blob stays in library.</text>
+
+  <!-- D: Mobile flow -->
+  <rect class="page" x="40" y="650" width="420" height="720" rx="18" ry="18" />
+  <text x="65" y="685" class="section">D. Mobile &#x2014; paste / share</text>
+  <rect class="panel" x="100" y="710" width="280" height="560" rx="28" ry="28" />
+  <rect class="panel-soft" x="120" y="735" width="240" height="36" rx="8" ry="8" />
+  <text x="150" y="758" class="tiny">Create Bug &#xB7; Intake</text>
+  <rect class="input" x="120" y="785" width="240" height="60" rx="8" ry="8" />
+  <text x="135" y="818" class="tiny">Short description...</text>
+  <rect class="dropzone" x="120" y="860" width="240" height="100" rx="8" ry="8" />
+  <text x="165" y="905" class="tiny">Tap to upload / paste</text>
+  <text x="155" y="925" class="tiny">Long-press paste image</text>
+  <rect class="shot" x="120" y="980" width="240" height="120" rx="8" ry="8" />
+  <rect class="mark" x="150" y="1010" width="100" height="50" />
+  <text x="160" y="1120" class="tiny">Annotate opens full-screen</text>
+  <rect class="button-primary" x="120" y="1145" width="240" height="36" rx="8" ry="8" />
+  <text x="195" y="1168" class="tiny" fill="#ffffff">Continue</text>
+  <text x="65" y="1345" class="small">No PWA share-target required for v0;</text>
+  <text x="65" y="1362" class="small">OS paste + file picker is enough.</text>
+
+  <!-- E: Architecture -->
+  <rect class="page" x="490" y="650" width="720" height="720" rx="18" ry="18" />
+  <text x="515" y="685" class="section">E. Architecture mantra</text>
+  <rect class="note" x="515" y="710" width="670" height="160" rx="12" ry="12" />
+  <text x="535" y="740" class="label">Attachment is the artifact</text>
+  <text x="535" y="765" class="small">Screens only create AttachmentLink (capture / pick / unlink).</text>
+  <text x="535" y="785" class="small">Same file reusable on Requirement, Feature, Initiative, Demand, Intake.</text>
+  <text x="535" y="805" class="small">Admin owns lifecycle: retire, restore, backup, hard-delete.</text>
+  <text x="535" y="825" class="small">Unlink &#x2260; delete. Retire hides from pickers; blob kept.</text>
+
+  <rect class="panel-soft" x="515" y="890" width="670" height="200" rx="12" ry="12" />
+  <text x="535" y="920" class="label">Phases</text>
+  <text x="535" y="945" class="small">v0 &#x2014; library + paste/drop + entity links + link-from-library.</text>
+  <text x="535" y="965" class="small">v0.5 &#x2014; Admin Artifacts + retire/restore.</text>
+  <text x="535" y="985" class="small">v1 &#x2014; annotate + dual ORIGINAL/ANNOTATED.</text>
+  <text x="535" y="1005" class="small">v2 &#x2014; backup jobs + MCP + vision intake.</text>
+  <text x="535" y="1035" class="tiny">Storage: tenants/{tenantId}/attachments/... and .../attachment-backups/...</text>
+  <text x="535" y="1055" class="tiny">Signed GET; ADMIN+ for retire/backup/purge.</text>
+
+  <rect class="chip-warn" x="515" y="1110" width="670" height="100" rx="12" ry="12" />
+  <text x="535" y="1140" class="label">Open questions (solution doc &#xA7;11)</text>
+  <text x="535" y="1165" class="small">Storage vendor? RBAC? Retire grace vs hard delete? Backup = manifest first?</text>
+  <text x="535" y="1185" class="small">Status: documentation only &#x2014; no product code.</text>
+
+  <!-- F: Paste conflict -->
+  <rect class="page" x="1240" y="650" width="720" height="720" rx="18" ry="18" />
+  <text x="1265" y="685" class="section">F. Paste conflict &#xB7; text vs image</text>
+  <rect class="modal" x="1285" y="720" width="630" height="280" rx="14" ry="14" />
+  <text x="1305" y="755" class="label">Clipboard has an image</text>
+  <text x="1305" y="780" class="small">You are focused in a text field. What should we do?</text>
+  <rect class="button-primary" x="1305" y="810" width="280" height="44" rx="8" ry="8" />
+  <text x="1365" y="837" class="small" fill="#ffffff">Attach image (recommended)</text>
+  <rect class="button" x="1605" y="810" width="280" height="44" rx="8" ry="8" />
+  <text x="1685" y="837" class="small">Paste as text only</text>
+  <text x="1305" y="890" class="tiny">If clipboard is image-only (no text), skip chooser and open capture sheet.</text>
+  <text x="1305" y="915" class="tiny">If text-only, never steal paste.</text>
+  <text x="1305" y="940" class="tiny">Avoid always-on global overlay (high surprise cost).</text>
+
+  <rect class="panel-soft" x="1285" y="1030" width="630" height="280" rx="12" ry="12" />
+  <text x="1305" y="1065" class="label">Implementation notes (post-approval)</text>
+  <text x="1305" y="1095" class="small">Modules: AttachmentCapture, ImageAnnotator, AttachmentList,</text>
+  <text x="1305" y="1118" class="small">AttachmentLibraryPicker, AdminArtifactsPage.</text>
+  <text x="1305" y="1141" class="small">Prisma: Attachment + AttachmentLink + AttachmentBackupJob.</text>
+  <text x="1305" y="1164" class="small">Do not overload Asset / WorkArtifactLink / DesignArtifactLink.</text>
+  <text x="1305" y="1187" class="small">Inspiration: cursor-mobile paste &#x2192; Draw on it &#x2192; PNG bake;</text>
+  <text x="1305" y="1210" class="small">destination = hub library + links, not agent chat.</text>
+  <text x="1305" y="1245" class="tiny">Wireframe: docs/designs/FILE_PASTE_ANNOTATE_WIREFRAMES.svg</text>
+  <text x="1305" y="1265" class="tiny">Solution: docs/designs/FILE_PASTE_ANNOTATE_SOLUTION.md</text>
+
+  <!-- G: Admin Artifacts library -->
+  <rect class="page" x="40" y="1410" width="960" height="520" rx="18" ry="18" />
+  <text x="65" y="1445" class="section">G. Admin &#x2192; Artifacts (workspace library)</text>
+  <text x="65" y="1468" class="small">ADMIN+ &#xB7; browse / search / usage / retire &#xB7; not a per-screen silo</text>
+  <rect class="panel-soft" x="65" y="1485" width="910" height="44" rx="8" ry="8" />
+  <rect class="input" x="80" y="1494" width="280" height="28" rx="6" ry="6" />
+  <text x="95" y="1513" class="tiny">Search filename / uploader...</text>
+  <rect class="chip" x="380" y="1496" width="70" height="24" rx="6" ry="6" />
+  <text x="392" y="1512" class="tiny">ACTIVE</text>
+  <rect class="chip" x="460" y="1496" width="80" height="24" rx="6" ry="6" />
+  <text x="472" y="1512" class="tiny">RETIRED</text>
+  <rect class="chip" x="550" y="1496" width="90" height="24" rx="6" ry="6" />
+  <text x="560" y="1512" class="tiny">Unused only</text>
+  <rect class="button-primary" x="780" y="1494" width="180" height="28" rx="6" ry="6" />
+  <text x="815" y="1513" class="tiny" fill="#ffffff">Run backup...</text>
+
+  <rect class="row" x="65" y="1545" width="910" height="36" rx="4" ry="4" />
+  <text x="80" y="1568" class="tiny">File</text>
+  <text x="320" y="1568" class="tiny">Kind</text>
+  <text x="420" y="1568" class="tiny">Size</text>
+  <text x="500" y="1568" class="tiny">Links</text>
+  <text x="580" y="1568" class="tiny">Status</text>
+  <text x="700" y="1568" class="tiny">Actions</text>
+
+  <rect class="row" x="65" y="1585" width="910" height="48" rx="4" ry="4" />
+  <text x="80" y="1614" class="small">screenshot-annotated.png</text>
+  <text x="320" y="1614" class="tiny">ANNOTATED</text>
+  <text x="420" y="1614" class="tiny">420 KB</text>
+  <text x="500" y="1614" class="tiny">3 objects</text>
+  <rect class="chip-good" x="580" y="1600" width="70" height="22" rx="4" ry="4" />
+  <text x="592" y="1615" class="tiny">ACTIVE</text>
+  <rect class="button" x="700" y="1598" width="60" height="24" rx="4" ry="4" />
+  <text x="712" y="1614" class="tiny">Open</text>
+  <rect class="button" x="770" y="1598" width="60" height="24" rx="4" ry="4" />
+  <text x="782" y="1614" class="tiny">Links</text>
+  <rect class="button" x="840" y="1598" width="60" height="24" rx="4" ry="4" />
+  <text x="850" y="1614" class="tiny">Retire</text>
+
+  <rect class="row" x="65" y="1640" width="910" height="48" rx="4" ry="4" />
+  <text x="80" y="1669" class="small">old-mockup.png</text>
+  <text x="320" y="1669" class="tiny">ORIGINAL</text>
+  <text x="420" y="1669" class="tiny">1.2 MB</text>
+  <text x="500" y="1669" class="tiny">0 objects</text>
+  <rect class="chip-bad" x="580" y="1655" width="80" height="22" rx="4" ry="4" />
+  <text x="592" y="1670" class="tiny">RETIRED</text>
+  <rect class="button" x="700" y="1653" width="70" height="24" rx="4" ry="4" />
+  <text x="710" y="1669" class="tiny">Restore</text>
+  <rect class="button" x="780" y="1653" width="90" height="24" rx="4" ry="4" />
+  <text x="790" y="1669" class="tiny">Hard delete</text>
+
+  <text x="65" y="1720" class="small">Quota: 128 MB used / soft limit 2 GB &#xB7; Retire unused (&gt;90d, 0 links) bulk action</text>
+  <text x="65" y="1745" class="tiny">Hard delete requires confirm; prefer backup first. Audit log on retire / purge / backup.</text>
+  <text x="65" y="1770" class="tiny">Nav: Admin &#x2192; Artifacts (workspace-scoped under /t/&#x7B;slug&#x7D;/...).</text>
+  <text x="65" y="1795" class="tiny">Pickers on entity screens exclude RETIRED by default.</text>
+  <text x="65" y="1820" class="tiny">&#x201C;Links&#x201D; drawer lists Feature / Requirement / Initiative / Demand / Intake usages.</text>
+  <text x="65" y="1845" class="tiny">Same library powers Link from library on panel C.</text>
+  <text x="65" y="1870" class="tiny">v0.5 ship target for this screen; v0 can ship entity capture without full admin table.</text>
+
+  <!-- H: Backup + retire confirm -->
+  <rect class="page" x="1040" y="1410" width="920" height="520" rx="18" ry="18" />
+  <text x="1065" y="1445" class="section">H. Backup job + retire confirm</text>
+  <text x="1065" y="1468" class="small">ADMIN+ &#xB7; tenant-scoped export &#xB7; retire is soft by default</text>
+
+  <rect class="modal" x="1065" y="1490" width="430" height="280" rx="12" ry="12" />
+  <text x="1085" y="1520" class="label">Run artifact backup</text>
+  <text x="1085" y="1545" class="small">Include:</text>
+  <rect class="chip-good" x="1085" y="1558" width="80" height="22" rx="4" ry="4" />
+  <text x="1095" y="1573" class="tiny">ACTIVE</text>
+  <rect class="chip" x="1175" y="1558" width="90" height="22" rx="4" ry="4" />
+  <text x="1185" y="1573" class="tiny">RETIRED</text>
+  <text x="1085" y="1610" class="small">Output:</text>
+  <text x="1085" y="1630" class="tiny">1) Manifest JSON (ids, checksums, link graph)</text>
+  <text x="1085" y="1650" class="tiny">2) Optional blob archive (zip) &#x2014; v2</text>
+  <text x="1085" y="1675" class="tiny">Stored under attachment-backups/{jobId}/</text>
+  <rect class="button" x="1085" y="1705" width="100" height="32" rx="8" ry="8" />
+  <text x="1110" y="1725" class="tiny">Cancel</text>
+  <rect class="button-primary" x="1210" y="1705" width="160" height="32" rx="8" ry="8" />
+  <text x="1245" y="1725" class="tiny" fill="#ffffff">Start backup</text>
+
+  <rect class="modal" x="1520" y="1490" width="400" height="280" rx="12" ry="12" />
+  <text x="1540" y="1520" class="label">Retire artifact?</text>
+  <text x="1540" y="1548" class="small">old-mockup.png will leave pickers</text>
+  <text x="1540" y="1568" class="small">and normal entity UIs.</text>
+  <text x="1540" y="1595" class="tiny">&#x2022; Blob kept until hard delete</text>
+  <text x="1540" y="1615" class="tiny">&#x2022; Existing links show retired badge</text>
+  <text x="1540" y="1635" class="tiny">&#x2022; Restore anytime (ADMIN)</text>
+  <rect class="input" x="1540" y="1655" width="360" height="36" rx="6" ry="6" />
+  <text x="1555" y="1678" class="tiny">Reason (optional)...</text>
+  <rect class="button" x="1540" y="1710" width="100" height="32" rx="8" ry="8" />
+  <text x="1565" y="1730" class="tiny">Cancel</text>
+  <rect class="button-accent" x="1660" y="1710" width="120" height="32" rx="8" ry="8" />
+  <text x="1690" y="1730" class="tiny" fill="#ffffff">Retire</text>
+
+  <rect class="panel-soft" x="1065" y="1795" width="855" height="100" rx="10" ry="10" />
+  <text x="1085" y="1825" class="label">Lifecycle rule</text>
+  <text x="1085" y="1850" class="small">Unlink (EDITOR) &#x2192; Retire (ADMIN) &#x2192; Backup (ADMIN) &#x2192; Hard delete (ADMIN, rare).</text>
+  <text x="1085" y="1875" class="tiny">Never cascade-delete blobs when one entity unlinks. Cross-workspace sharing is out of scope.</text>
+
+  <!-- I: Library picker -->
+  <rect class="page" x="40" y="1960" width="960" height="460" rx="18" ry="18" />
+  <text x="65" y="1995" class="section">I. Link from library picker</text>
+  <text x="65" y="2018" class="small">Used on Requirement / Feature / Intake &#xB7; reuse without re-upload</text>
+  <rect class="modal" x="65" y="2040" width="910" height="340" rx="12" ry="12" />
+  <text x="85" y="2075" class="label">Choose existing artifact</text>
+  <rect class="input" x="85" y="2090" width="400" height="32" rx="6" ry="6" />
+  <text x="100" y="2111" class="tiny">Filter ACTIVE images...</text>
+  <rect class="shot" x="85" y="2140" width="100" height="70" rx="6" ry="6" />
+  <text x="200" y="2165" class="small">screenshot-annotated.png</text>
+  <text x="200" y="2185" class="tiny">Used on 3 objects &#xB7; ANNOTATED</text>
+  <rect class="shot" x="85" y="2230" width="100" height="70" rx="6" ry="6" />
+  <text x="200" y="2255" class="small">login-flow.png</text>
+  <text x="200" y="2275" class="tiny">Used on 1 object &#xB7; ORIGINAL</text>
+  <rect class="button" x="85" y="2320" width="100" height="32" rx="8" ry="8" />
+  <text x="110" y="2340" class="tiny">Cancel</text>
+  <rect class="button-primary" x="210" y="2320" width="160" height="32" rx="8" ry="8" />
+  <text x="245" y="2340" class="tiny" fill="#ffffff">Link selected</text>
+  <text x="420" y="2340" class="tiny">Creates AttachmentLink only &#x2014; no new blob.</text>
+
+  <!-- J: Notes footer -->
+  <rect class="page" x="1040" y="1960" width="920" height="460" rx="18" ry="18" />
+  <text x="1065" y="1995" class="section">J. Why admin + backup matter</text>
+  <rect class="panel-soft" x="1065" y="2020" width="870" height="360" rx="12" ry="12" />
+  <text x="1085" y="2055" class="small">Without Admin Artifacts, the library becomes a dark archive:</text>
+  <text x="1085" y="2080" class="small">&#x2022; Orphaned uploads after unlink with no owner UI</text>
+  <text x="1085" y="2105" class="small">&#x2022; No way to free storage or retire PII / obsolete mocks</text>
+  <text x="1085" y="2130" class="small">&#x2022; No tenant-level backup for evidence used in audits</text>
+  <text x="1085" y="2155" class="small">&#x2022; Agents/MCP need stable ids; ops need exportability</text>
+  <text x="1085" y="2190" class="label">Therefore</text>
+  <text x="1085" y="2215" class="small">Capture UX (A&#x2013;C) and Admin lifecycle (G&#x2013;H) are one platform,</text>
+  <text x="1085" y="2240" class="small">shipped in phases &#x2014; not two unrelated features.</text>
+  <text x="1085" y="2275" class="tiny">Docs: FILE_PASTE_ANNOTATE_SOLUTION.md &#xA7;7.0&#x2013;7.5, &#xA7;4.4&#x2013;4.5, &#xA7;10</text>
+  <text x="1085" y="2305" class="tiny">NO IMPLEMENTATION YET &#x2014; awaiting approval.</text>
+</svg>

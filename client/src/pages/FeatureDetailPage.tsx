@@ -7,6 +7,7 @@ import type { DeployedToStage, Feature, Initiative, RepositoryConnection, WorkAr
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { LabelEditor } from "../components/ui/LabelEditor";
+import { AttachmentPanel } from "../components/attachments/AttachmentPanel";
 
 type Props = {
   initiatives: Initiative[];
@@ -485,6 +486,8 @@ export function FeatureDetailPage({ initiatives, onOpenInitiative, onSaved, onFe
           </div>
         ) : null}
       </section>
+
+      <AttachmentPanel target={{ featureId: feature.id }} readOnly={readOnly} />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-700">

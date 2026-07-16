@@ -324,6 +324,40 @@ enum DemandSignalHint {
   INTERNAL
 }
 
+enum AttachmentSource {
+  UPLOAD
+  PASTE
+  AGENT
+  URL_FETCH
+  BACKUP_RESTORE
+}
+
+enum AttachmentKind {
+  ORIGINAL
+  ANNOTATED
+  DERIVATIVE
+}
+
+enum AttachmentStatus {
+  PENDING
+  ACTIVE
+  RETIRED
+  PURGED
+}
+
+enum AttachmentLinkRole {
+  EVIDENCE
+  DESCRIPTION
+  OTHER
+}
+
+enum AttachmentBackupJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
 // ---------------------------------------------------------------------------
 // Multitenancy – control-plane models
 // ---------------------------------------------------------------------------
@@ -498,6 +532,10 @@ model User {
   mcpRefreshTokens          McpRefreshToken[]
   notificationPreferences   UserNotificationPreference[]
   requirementsAssigned      Requirement[]                  @relation("RequirementAssignee")
+  attachmentsCreated        Attachment[]                   @relation("AttachmentCreatedBy")
+  attachmentsRetired        Attachment[]                   @relation("AttachmentRetiredBy")
+  attachmentLinksCreated    AttachmentLink[]               @relation("AttachmentLinkCreatedBy")
+  attachmentBackupJobs      AttachmentBackupJob[]          @relation("AttachmentBackupCreatedBy")
   preferredLocale           String?
   createdAt                 DateTime                       @default(now())
   updatedAt                 DateTime                       @updatedAt
@@ -708,6 +746,7 @@ model Initiative {
   useCaseLinks              UseCaseInitiative[]
   securityTopicLinks        SecurityTopicInitiative[]
   architectureTopicLinks    ArchitectureTopicInitiative[]
+  attachmentLinks           AttachmentLink[]
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
 
@@ -791,6 +830,7 @@ model Feature {
   useCaseLinks       UseCaseFeature[]
   workArtifactLinks  WorkArtifactLink[]
   designArtifactLinks DesignArtifactLink[]
+  attachmentLinks    AttachmentLink[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -826,6 +866,7 @@ model Requirement {
   releaseLinks         ReleaseRequirement[]
   workArtifactLinks    WorkArtifactLink[]
   designArtifactLinks  DesignArtifactLink[]
+  attachmentLinks      AttachmentLink[]
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -928,9 +969,10 @@ model Demand {
   account     Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
   partner     Partner?         @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   owner       User?            @relation("DemandOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  demandLinks DemandLink[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  demandLinks     DemandLink[]
+  attachmentLinks AttachmentLink[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([tenantId])
 }
@@ -1538,4 +1580,88 @@ model McpRefreshToken {
   @@index([token])
   @@index([familyId])
   @@index([userId, clientId])
+}
+
+/// Workspace artifact library — durable blob metadata (one blob, many AttachmentLinks).
+model Attachment {
+  id                 String           @id @default(cuid())
+  tenantId           String?
+  createdByUserId    String
+  filename           String
+  mimeType           String
+  byteSize           Int
+  checksum           String
+  storageKey         String
+  source             AttachmentSource @default(UPLOAD)
+  kind               AttachmentKind   @default(ORIGINAL)
+  parentAttachmentId String?
+  status             AttachmentStatus @default(PENDING)
+  retiredAt          DateTime?
+  retiredByUserId    String?
+  retireReason       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  createdBy        User               @relation("AttachmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  retiredBy        User?              @relation("AttachmentRetiredBy", fields: [retiredByUserId], references: [id], onDelete: SetNull)
+  parentAttachment Attachment?        @relation("AttachmentVariants", fields: [parentAttachmentId], references: [id], onDelete: SetNull)
+  variants         Attachment[]       @relation("AttachmentVariants")
+  links            AttachmentLink[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([checksum])
+  @@index([parentAttachmentId])
+  @@index([createdByUserId])
+}
+
+model AttachmentLink {
+  id              String             @id @default(cuid())
+  tenantId        String?
+  attachmentId    String
+  featureId       String?
+  requirementId   String?
+  initiativeId    String?
+  demandId        String?
+  /// Soft reference — IntakeSession model may land later; no FK.
+  intakeSessionId String?
+  role            AttachmentLinkRole @default(EVIDENCE)
+  createdByUserId String
+  createdAt       DateTime           @default(now())
+
+  attachment  Attachment  @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  feature     Feature?    @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  requirement Requirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  initiative  Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  demand      Demand?     @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("AttachmentLinkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([attachmentId])
+  @@index([featureId])
+  @@index([requirementId])
+  @@index([initiativeId])
+  @@index([demandId])
+  @@index([intakeSessionId])
+}
+
+model AttachmentBackupJob {
+  id                 String                     @id @default(cuid())
+  tenantId           String?
+  createdByUserId    String
+  status             AttachmentBackupJobStatus  @default(PENDING)
+  manifestStorageKey String?
+  archiveStorageKey  String?
+  filterJson         Json?
+  byteSize           Int?
+  error              String?
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  createdBy User @relation("AttachmentBackupCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
 }

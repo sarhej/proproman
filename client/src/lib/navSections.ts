@@ -15,7 +15,8 @@ import {
   Table,
   Users,
   Users2,
-  Bot
+  Bot,
+  FileImage
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -97,6 +98,12 @@ export const navSections: NavSection[] = [
     items: [
       { to: "/admin/users", labelKey: "nav.adminUsers", icon: Users, userManagementOnly: true },
       { to: "/admin/settings", labelKey: "nav.adminMenuSettings", icon: Settings, userManagementOnly: true },
+      {
+        to: "/admin/artifacts",
+        labelKey: "nav.adminArtifacts",
+        icon: FileImage,
+        workspaceStructureOnly: true
+      },
       {
         to: "/workspace-settings",
         labelKey: "nav.workspaceSettings",

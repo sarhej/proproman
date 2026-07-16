@@ -36,7 +36,7 @@
     "pendingWorkspaceRegFootnote": "To jest niezależne od statusu konta powyżej: nowe wnioski o przestrzeń weryfikuje Tymio, a nie administratorzy tej przestrzeni.",
     "createInitiative": "Utwórz inicjatywę",
     "close": "Zamknij",
-    "noNavViewsAvailable": "Brak widoków nawigacji dla Twojego konta. Poproś superadministratora, aby włączył co najmniej jeden widok: Admin \u2192 Ustawienia \u2192 Widoki nawigacji."
+    "noNavViewsAvailable": "Brak widoków nawigacji dla Twojego konta. Poproś superadministratora, aby włączył co najmniej jeden widok: Admin → Ustawienia → Widoki nawigacji."
   },
   "hub": {
     "remoteEditBanner": "Inicjatywa została zaktualizowana gdzie indziej, gdy masz niezapisane zmiany. Odśwież, aby zobaczyć najnowszą wersję, lub odrzuć i edytuj dalej.",
@@ -143,7 +143,8 @@
     "workspaceSettings": "Ustawienia przestrzeni roboczej",
     "sidebarCollapse": "Zwiń pasek boczny",
     "sidebarExpand": "Rozwiń pasek boczny",
-    "openMenu": "Otwórz menu nawigacji"
+    "openMenu": "Otwórz menu nawigacji",
+    "adminArtifacts": "Artefakty"
   },
   "filters": {
     "domain": "Pillar",
@@ -340,7 +341,7 @@
     "notes": "Notes",
     "notesDesignHint": "Use for section-level design links (e.g. primary Figma section), design status, and related frames — keep the main description product-facing.",
     "startDate": "Start Date",
-    "targetDate": "Target Date",
+    "targetDate": "Target date",
     "milestoneDate": "Milestone Date",
     "dateConfidence": "Date Confidence",
     "arrImpact": "ARR Impact",
@@ -385,7 +386,6 @@
     "newKpi": "New KPI...",
     "stakeholderName": "Name...",
     "stakeholderOrg": "Organization...",
-    "targetDate": "Target date",
     "target": "Target",
     "current": "Current",
     "unit": "Unit",
@@ -812,7 +812,12 @@
       "GLOBAL_ROLE": "Global role",
       "OBJECT_ASSIGNEE": "Object assignee"
     },
-    "channel": { "IN_APP": "In-app", "EMAIL": "Email", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
+    "channel": {
+      "IN_APP": "In-app",
+      "EMAIL": "Email",
+      "SLACK": "Slack",
+      "WHATSAPP": "WhatsApp"
+    },
     "exportSuccess": "Export downloaded successfully.",
     "exportFailed": "Export failed. Check the console for details.",
     "invalidFile": "Invalid file: expected version {{version}}.",
@@ -856,7 +861,14 @@
     "title": "My notification subscriptions",
     "empty": "You have no subscriptions. Use \"Notify me\" on an initiative or pillar to subscribe.",
     "unsubscribe": "Unsubscribe",
-    "scope": { "GLOBAL": "All", "DOMAIN": "Pillar", "INITIATIVE": "Initiative", "CAMPAIGN": "Campaign", "FEATURE": "Feature", "USER": "User" },
+    "scope": {
+      "GLOBAL": "All",
+      "DOMAIN": "Pillar",
+      "INITIATIVE": "Initiative",
+      "CAMPAIGN": "Campaign",
+      "FEATURE": "Feature",
+      "USER": "User"
+    },
     "notifyMe": "Notify me about changes here"
   },
   "notification": {
@@ -1256,5 +1268,62 @@
     "workspaceNotFoundDescription": "This workspace URL is not valid or is no longer available.",
     "pendingTitle": "Find your Tymio workspace",
     "pendingDescription": "Your account is signed in but not yet in a workspace. Enter a workspace slug or request a new organization."
+  },
+  "attachments": {
+    "panelTitle": "Załączniki",
+    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "empty": "No attachments yet.",
+    "upload": "Prześlij",
+    "linkFromLibrary": "Link from library",
+    "unlink": "Odłącz",
+    "captureTitle": "Attach image",
+    "annotate": "Adnotuj",
+    "attachAsIs": "Attach as-is",
+    "kindAnnotated": "Annotated",
+    "loadFailed": "Failed to load attachments",
+    "uploadFailed": "Upload failed",
+    "libraryTitle": "Workspace library",
+    "libraryHint": "Link an existing ACTIVE artifact without re-uploading.",
+    "libraryEmpty": "No matching artifacts.",
+    "searchPlaceholder": "Search filename",
+    "linksCount": "links",
+    "link": "Link",
+    "adminTitle": "Artefakty",
+    "adminSubtitle": "Browse, retire, restore, and export a backup manifest for this workspace.",
+    "includeRetired": "Include retired",
+    "runBackup": "Export backup manifest",
+    "backupCreated": "Backup manifest created.",
+    "backupFailed": "Backup failed",
+    "backupJobs": "Recent backup jobs",
+    "noBackupJobs": "No backup jobs yet.",
+    "downloadManifest": "Download manifest",
+    "colPreview": "Preview",
+    "colFilename": "Filename",
+    "colStatus": "Status",
+    "colLinks": "Links",
+    "colSize": "Size",
+    "colActions": "Actions",
+    "retire": "Wycofaj",
+    "restore": "Przywróć",
+    "hardDelete": "Delete permanently",
+    "hardDeleteConfirm": "Permanently delete this retired artifact and its blob? This cannot be undone.",
+    "errors": {
+      "MIME_REJECTED": "Only PNG, JPEG, and WebP images are allowed.",
+      "SIZE_REJECTED": "File exceeds the 10 MiB limit.",
+      "EMPTY": "File is empty."
+    },
+    "annotator": {
+      "title": "Annotate image",
+      "textPrompt": "Label text",
+      "undo": "Undo",
+      "redo": "Redo",
+      "save": "Save annotated",
+      "tool": {
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "rect": "Rect",
+        "text": "Text"
+      }
+    }
   }
 }

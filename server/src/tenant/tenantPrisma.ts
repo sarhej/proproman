@@ -44,7 +44,10 @@ export const TENANT_SCOPED_MODELS = new Set([
   "GitActivity",
   "WorkArtifactLink",
   "DesignArtifactLink",
-  "Release"
+  "Release",
+  "Attachment",
+  "AttachmentLink",
+  "AttachmentBackupJob"
 ]);
 
 function isTenantScoped(model: string): boolean {

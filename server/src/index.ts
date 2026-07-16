@@ -84,6 +84,9 @@ import { releasesRouter } from "./routes/releases.js";
 import { repositoryConnectionsRouter } from "./routes/repository-connections.js";
 import { workArtifactLinksRouter } from "./routes/work-artifact-links.js";
 import { designArtifactLinksRouter } from "./routes/design-artifact-links.js";
+import { attachmentsRouter } from "./routes/attachments.js";
+import { attachmentLinksRouter } from "./routes/attachment-links.js";
+import { attachmentBackupsRouter } from "./routes/attachment-backups.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -318,6 +321,9 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/releases", rel
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/repository-connections", repositoryConnectionsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/work-artifact-links", workArtifactLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/design-artifact-links", designArtifactLinksRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachments", attachmentsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-links", attachmentLinksRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-backups", attachmentBackupsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/requirements", requirementsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/assignments", assignmentsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/timeline", timelineRouter);

@@ -42,6 +42,9 @@ import type {
   RepositoryConnection,
   WorkArtifactLink,
   DesignArtifactLink,
+  Attachment,
+  AttachmentLink,
+  AttachmentBackupJob,
   UseCase,
   SecurityTopic,
   ArchitectureTopic,
@@ -85,6 +88,50 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T;
   }
   return (await response.json()) as T;
+}
+
+/** Multipart upload — do not set Content-Type (browser sets boundary). */
+async function multipartRequest<T>(path: string, form: FormData): Promise<T> {
+  const resolvedPath = applyWorkspacePrefixToApiPath(path);
+  const tenantId = getWorkspaceTenantIdForApi();
+  const useWorkspacePlane = resolvedPath.startsWith("/t/");
+  const headers: Record<string, string> = {};
+  if (!useWorkspacePlane && tenantId) headers["X-Tenant-Id"] = tenantId;
+  const response = await fetch(`${baseUrl}${resolvedPath}`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: form
+  });
+  if (!response.ok) {
+    let body: { error?: string; code?: string } | undefined;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    const err = new Error(body?.error ?? `Upload failed: ${response.status}`) as Error & {
+      status?: number;
+      body?: unknown;
+    };
+    err.status = response.status;
+    err.body = body;
+    throw err;
+  }
+  return (await response.json()) as T;
+}
+
+/** Authenticated content URL for an attachment preview/download. */
+export function attachmentContentUrl(attachmentId: string, admin = false): string {
+  const path = applyWorkspacePrefixToApiPath(
+    `/api/attachments/${attachmentId}/content${admin ? "?admin=1" : ""}`
+  );
+  return `${baseUrl}${path}`;
+}
+
+export function attachmentBackupManifestUrl(jobId: string): string {
+  const path = applyWorkspacePrefixToApiPath(`/api/attachment-backups/${jobId}/manifest`);
+  return `${baseUrl}${path}`;
 }
 
 export const api = {
@@ -308,6 +355,113 @@ export const api = {
     }),
   deleteDesignArtifactLink: async (id: string) =>
     request<void>(`/api/design-artifact-links/${id}`, { method: "DELETE" }),
+
+  listAttachments: async (params?: {
+    q?: string;
+    status?: string;
+    unused?: boolean;
+    includeRetired?: boolean;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.q) q.set("q", params.q);
+    if (params?.status) q.set("status", params.status);
+    if (params?.unused) q.set("unused", "1");
+    if (params?.includeRetired) q.set("includeRetired", "1");
+    const suffix = q.toString() ? `?${q}` : "";
+    return request<{ attachments: Attachment[] }>(`/api/attachments${suffix}`);
+  },
+  getAttachment: async (id: string) =>
+    request<{
+      attachment: Attachment;
+      downloadUrl: string | null;
+      contentPath?: string | null;
+    }>(`/api/attachments/${id}`),
+  uploadAttachment: async (
+    file: File,
+    meta?: {
+      filename?: string;
+      source?: string;
+      kind?: string;
+      parentAttachmentId?: string | null;
+      featureId?: string | null;
+      requirementId?: string | null;
+      initiativeId?: string | null;
+      demandId?: string | null;
+      intakeSessionId?: string | null;
+      role?: string;
+    }
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (meta) {
+      for (const [k, v] of Object.entries(meta)) {
+        if (v !== undefined && v !== null) form.append(k, String(v));
+      }
+    }
+    return multipartRequest<{ attachment: Attachment; link: AttachmentLink | null }>(
+      "/api/attachments",
+      form
+    );
+  },
+  retireAttachment: async (id: string, reason?: string) =>
+    request<{ attachment: Attachment }>(`/api/attachments/${id}/retire`, {
+      method: "POST",
+      body: JSON.stringify({ reason })
+    }),
+  restoreAttachment: async (id: string) =>
+    request<{ attachment: Attachment }>(`/api/attachments/${id}/restore`, {
+      method: "POST",
+      body: JSON.stringify({})
+    }),
+  hardDeleteAttachment: async (id: string) =>
+    request<void>(`/api/attachments/${id}?confirm=1`, { method: "DELETE" }),
+  getAttachmentLinks: async (params?: {
+    featureId?: string;
+    requirementId?: string;
+    initiativeId?: string;
+    demandId?: string;
+    intakeSessionId?: string;
+    attachmentId?: string;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.featureId) q.set("featureId", params.featureId);
+    if (params?.requirementId) q.set("requirementId", params.requirementId);
+    if (params?.initiativeId) q.set("initiativeId", params.initiativeId);
+    if (params?.demandId) q.set("demandId", params.demandId);
+    if (params?.intakeSessionId) q.set("intakeSessionId", params.intakeSessionId);
+    if (params?.attachmentId) q.set("attachmentId", params.attachmentId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return request<{ attachmentLinks: AttachmentLink[] }>(`/api/attachment-links${suffix}`);
+  },
+  createAttachmentLink: async (body: {
+    attachmentId: string;
+    featureId?: string | null;
+    requirementId?: string | null;
+    initiativeId?: string | null;
+    demandId?: string | null;
+    intakeSessionId?: string | null;
+    role?: string;
+  }) =>
+    request<{ attachmentLink: AttachmentLink; alreadyLinked?: boolean }>("/api/attachment-links", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  deleteAttachmentLink: async (id: string) =>
+    request<void>(`/api/attachment-links/${id}`, { method: "DELETE" }),
+  listAttachmentBackups: async () =>
+    request<{ jobs: AttachmentBackupJob[] }>("/api/attachment-backups"),
+  createAttachmentBackup: async (body?: { includeRetired?: boolean }) =>
+    request<{ job: AttachmentBackupJob; contentPath?: string }>("/api/attachment-backups", {
+      method: "POST",
+      body: JSON.stringify(body ?? {})
+    }),
+  getAttachmentBackup: async (id: string) =>
+    request<{
+      job: AttachmentBackupJob;
+      manifestDownloadUrl: string | null;
+      contentPath: string | null;
+    }>(`/api/attachment-backups/${id}`),
+
   getUseCases: async () => request<{ useCases: UseCase[] }>("/api/use-cases"),
   createUseCase: async (body: unknown) =>
     request<{ useCase: UseCase }>("/api/use-cases", { method: "POST", body: JSON.stringify(body) }),

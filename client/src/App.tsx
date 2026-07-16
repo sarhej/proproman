@@ -51,6 +51,7 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { GanttPage } from "./pages/GanttPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminArtifactsPage } from "./pages/admin/AdminArtifactsPage";
 import { AgentSetupPage } from "./pages/AgentSetupPage";
 import { KpiDashboardPage } from "./pages/KpiDashboardPage";
 import { MilestonesTimelinePage } from "./pages/MilestonesTimelinePage";
@@ -1057,6 +1058,21 @@ function App() {
                 </ViewRoute>
               }
             />
+            {canManageWorkspaceStructure ? (
+              <Route
+                path="admin/artifacts"
+                element={
+                  <ViewRoute
+                    user={user}
+                    path="/admin/artifacts"
+                    hiddenNavPaths={uiSettings.hiddenNavPaths}
+                    ignoreHide={canManageWorkspaceStructure}
+                  >
+                    <AdminArtifactsPage />
+                  </ViewRoute>
+                }
+              />
+            ) : null}
             <Route
               path="accounts"
               element={

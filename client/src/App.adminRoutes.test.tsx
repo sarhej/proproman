@@ -90,6 +90,18 @@ vi.mock("./pages/AdminPage", () => ({
   ),
 }));
 
+vi.mock("./pages/admin/AdminArtifactsPage", () => ({
+  AdminArtifactsPage: () => <div data-testid="admin-artifacts-page" />,
+}));
+
+vi.mock("./lib/appLocales", async () => {
+  const actual = await vi.importActual<typeof import("./lib/appLocales")>("./lib/appLocales");
+  return {
+    ...actual,
+    canManageWorkspaceLanguages: () => true,
+  };
+});
+
 describe("App admin routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,6 +126,17 @@ describe("App admin routes", () => {
     );
     await waitFor(() => {
       expect(screen.getByTestId("admin-page")).toHaveAttribute("data-mode", "settings");
+    });
+  });
+
+  it("renders artifacts page at /admin/artifacts", async () => {
+    render(
+      <MemoryRouter initialEntries={["/admin/artifacts"]}>
+        <App />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("admin-artifacts-page")).toBeInTheDocument();
     });
   });
 });

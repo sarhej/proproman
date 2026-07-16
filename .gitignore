@@ -7,3 +7,6 @@ dist
 .DS_Store
 playwright-report/
 test-results/
+# Local attachment blob storage (dev / Railway volume)
+server/data/attachments/
+tmp/

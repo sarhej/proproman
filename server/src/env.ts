@@ -104,7 +104,23 @@ const envSchema = z.object({
   VCS_GITLAB_CLIENT_ID: optionalString,
   VCS_GITLAB_CLIENT_SECRET: optionalString,
   /** Optional: GitLab instance origin for OAuth/token (default https://gitlab.com). */
-  VCS_GITLAB_BASE_URL: optionalString
+  VCS_GITLAB_BASE_URL: optionalString,
+  /**
+   * Attachment blob storage driver: `local` (default, FS under ATTACHMENT_STORAGE_DIR) or `s3`.
+   * S3-compatible (R2/MinIO): set ATTACHMENT_S3_* — never commit secrets.
+   */
+  ATTACHMENT_STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
+  /** Local FS root for attachment blobs (default: server/data/attachments). */
+  ATTACHMENT_STORAGE_DIR: optionalString,
+  ATTACHMENT_S3_BUCKET: optionalString,
+  ATTACHMENT_S3_REGION: optionalString,
+  ATTACHMENT_S3_ENDPOINT: optionalString,
+  ATTACHMENT_S3_ACCESS_KEY_ID: optionalString,
+  ATTACHMENT_S3_SECRET_ACCESS_KEY: optionalString,
+  ATTACHMENT_S3_FORCE_PATH_STYLE: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1" || v === "yes")
 });
 
 export const env = envSchema

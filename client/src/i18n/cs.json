@@ -36,7 +36,7 @@
     "pendingWorkspaceRegFootnote": "Je to odděleně od stavu účtu výše: nové žádosti o pracovní prostor schvaluje Tymio, ne administrátoři daného prostoru.",
     "createInitiative": "Vytvořit iniciativu",
     "close": "Zavřít",
-    "noNavViewsAvailable": "Pro váš účet nejsou k dispozici žádné pohledy. Požádejte super administrátora, aby v Admin \u2192 Nastaven\u00ed zapnul alespo\u0148 jeden pohled (Navigace)."
+    "noNavViewsAvailable": "Pro váš účet nejsou k dispozici žádné pohledy. Požádejte super administrátora, aby v Admin → Nastavení zapnul alespoň jeden pohled (Navigace)."
   },
   "hub": {
     "remoteEditBanner": "Iniciativa byla mezitím změněna jinde, zatímco máte neuložené úpravy. Obnovte pro aktuální verzi, nebo zavřete upozornění a pokračujte v úpravách.",
@@ -142,7 +142,8 @@
     "workspaceSettings": "Nastavení pracovního prostoru",
     "sidebarCollapse": "Sbalit postranní panel",
     "sidebarExpand": "Rozbalit postranní panel",
-    "openMenu": "Otevřít navigační menu"
+    "openMenu": "Otevřít navigační menu",
+    "adminArtifacts": "Artefakty"
   },
   "filters": {
     "domain": "Pilíř",
@@ -384,7 +385,6 @@
     "newKpi": "Nové KPI...",
     "stakeholderName": "Jméno...",
     "stakeholderOrg": "Organizace...",
-    "targetDate": "Cílové datum",
     "target": "Cíl",
     "current": "Aktuální",
     "unit": "Jednotka",
@@ -811,7 +811,12 @@
       "GLOBAL_ROLE": "Globální role",
       "OBJECT_ASSIGNEE": "Přiřazenec objektu"
     },
-    "channel": { "IN_APP": "V aplikaci", "EMAIL": "E-mail", "SLACK": "Slack", "WHATSAPP": "WhatsApp" },
+    "channel": {
+      "IN_APP": "V aplikaci",
+      "EMAIL": "E-mail",
+      "SLACK": "Slack",
+      "WHATSAPP": "WhatsApp"
+    },
     "exportSuccess": "Export úspěšně stažen.",
     "exportFailed": "Export selhal. Zkontrolujte konzoli.",
     "invalidFile": "Neplatný soubor: očekávaná verze {{version}}.",
@@ -855,7 +860,14 @@
     "title": "Moje odběry notifikací",
     "empty": "Nemáte žádné odběry. Použijte „Upozornit mě“ u iniciativy nebo pilíře.",
     "unsubscribe": "Zrušit odběr",
-    "scope": { "GLOBAL": "Vše", "DOMAIN": "Pilíř", "INITIATIVE": "Iniciativa", "CAMPAIGN": "Kampaň", "FEATURE": "Funkce", "USER": "Uživatel" },
+    "scope": {
+      "GLOBAL": "Vše",
+      "DOMAIN": "Pilíř",
+      "INITIATIVE": "Iniciativa",
+      "CAMPAIGN": "Kampaň",
+      "FEATURE": "Funkce",
+      "USER": "Uživatel"
+    },
     "notifyMe": "Upozornit mě na změny zde"
   },
   "notification": {
@@ -1255,5 +1267,62 @@
     "workspaceNotFoundDescription": "This workspace URL is not valid or is no longer available.",
     "pendingTitle": "Find your Tymio workspace",
     "pendingDescription": "Your account is signed in but not yet in a workspace. Enter a workspace slug or request a new organization."
+  },
+  "attachments": {
+    "panelTitle": "Přílohy",
+    "pasteHint": "Paste a screenshot here, or drop / upload a PNG, JPEG, or WebP (max 10 MiB).",
+    "empty": "No attachments yet.",
+    "upload": "Nahrát",
+    "linkFromLibrary": "Link from library",
+    "unlink": "Odpojit",
+    "captureTitle": "Attach image",
+    "annotate": "Anotovat",
+    "attachAsIs": "Attach as-is",
+    "kindAnnotated": "Annotated",
+    "loadFailed": "Failed to load attachments",
+    "uploadFailed": "Upload failed",
+    "libraryTitle": "Workspace library",
+    "libraryHint": "Link an existing ACTIVE artifact without re-uploading.",
+    "libraryEmpty": "No matching artifacts.",
+    "searchPlaceholder": "Search filename",
+    "linksCount": "links",
+    "link": "Link",
+    "adminTitle": "Artefakty",
+    "adminSubtitle": "Browse, retire, restore, and export a backup manifest for this workspace.",
+    "includeRetired": "Include retired",
+    "runBackup": "Export backup manifest",
+    "backupCreated": "Backup manifest created.",
+    "backupFailed": "Backup failed",
+    "backupJobs": "Recent backup jobs",
+    "noBackupJobs": "No backup jobs yet.",
+    "downloadManifest": "Download manifest",
+    "colPreview": "Preview",
+    "colFilename": "Filename",
+    "colStatus": "Status",
+    "colLinks": "Links",
+    "colSize": "Size",
+    "colActions": "Actions",
+    "retire": "Vyřadit",
+    "restore": "Obnovit",
+    "hardDelete": "Delete permanently",
+    "hardDeleteConfirm": "Permanently delete this retired artifact and its blob? This cannot be undone.",
+    "errors": {
+      "MIME_REJECTED": "Only PNG, JPEG, and WebP images are allowed.",
+      "SIZE_REJECTED": "File exceeds the 10 MiB limit.",
+      "EMPTY": "File is empty."
+    },
+    "annotator": {
+      "title": "Annotate image",
+      "textPrompt": "Label text",
+      "undo": "Undo",
+      "redo": "Redo",
+      "save": "Save annotated",
+      "tool": {
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "rect": "Rect",
+        "text": "Text"
+      }
+    }
   }
 }
