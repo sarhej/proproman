@@ -110,6 +110,12 @@ export function buildAttachmentStorageKey(
   return `tenants/${tenantId}/attachments/${yyyy}/${mm}/${attachmentId}/${sanitizeFilename(filename)}`;
 }
 
+/** Parse tenant id from `tenants/<tenantId>/attachments/...` (for backfill / repair). */
+export function tenantIdFromAttachmentStorageKey(key: string): string | null {
+  const m = /^tenants\/([^/]+)\/attachments\//.exec(key);
+  return m?.[1] ?? null;
+}
+
 export function buildBackupManifestKey(tenantId: string, jobId: string): string {
   return `tenants/${tenantId}/attachment-backups/${jobId}/manifest.json`;
 }

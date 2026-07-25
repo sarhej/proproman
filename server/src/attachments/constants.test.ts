@@ -10,6 +10,7 @@ import {
   sha256Hex,
   sniffAudioMime,
   sniffImageMime,
+  tenantIdFromAttachmentStorageKey,
   validateAttachmentBytes
 } from "./constants.js";
 import { LocalAttachmentStorage } from "./localStorage.js";
@@ -79,6 +80,8 @@ describe("attachment constants", () => {
     expect(sanitizeFilename("../evil.png")).toBe(".._evil.png");
     const key = buildAttachmentStorageKey("t1", "a1", "shot.png", new Date("2026-07-16T00:00:00Z"));
     expect(key).toBe("tenants/t1/attachments/2026/07/a1/shot.png");
+    expect(tenantIdFromAttachmentStorageKey(key)).toBe("t1");
+    expect(tenantIdFromAttachmentStorageKey("pending")).toBeNull();
     expect(sha256Hex(PNG_1X1)).toMatch(/^[a-f0-9]{64}$/);
   });
 });

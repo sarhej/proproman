@@ -20,5 +20,24 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-empty-object-type": "off"
     }
+  },
+  {
+    files: ["src/routes/**/*.ts"],
+    ignores: ["src/routes/**/*.test.ts"],
+    rules: {
+      /**
+       * Multer callbacks drop AsyncLocalStorage. Never invoke upload.single(...)(req,res,cb)
+       * — wrap with multerSingleWithTenant(upload.single(...)).
+       */
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.type='CallExpression'][callee.callee.object.name='upload'][callee.callee.property.name='single']",
+          message:
+            "Do not invoke upload.single(...)(req,res,cb). Use multerSingleWithTenant(upload.single(...)) so tenant ALS survives multer."
+        }
+      ]
+    }
   }
 ];

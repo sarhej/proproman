@@ -71,6 +71,7 @@ attachmentBackupsRouter.post("/", requireWorkspaceStructureWrite(), async (req, 
   const tenantId = getTenantId(req);
   const job = await prisma.attachmentBackupJob.create({
     data: {
+      tenantId,
       createdByUserId: req.user!.id,
       status: AttachmentBackupJobStatus.PENDING,
       filterJson: parsed.data as Prisma.InputJsonValue,

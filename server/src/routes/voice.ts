@@ -12,6 +12,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
+import { multerSingleWithTenant } from "../tenant/multerWithTenant.js";
 import { logAudit } from "../services/audit.js";
 import { getAttachmentStorage } from "../attachments/storageFactory.js";
 import {
@@ -88,15 +89,7 @@ voiceRouter.get("/status", (_req, res) => {
 voiceRouter.post(
   "/transcribe",
   requireWorkspaceContentWrite(),
-  (req, res, next) => {
-    upload.single("file")(req, res, (err) => {
-      if (err) {
-        res.status(400).json({ error: err.message || "Upload failed" });
-        return;
-      }
-      next();
-    });
-  },
+  multerSingleWithTenant(upload.single("file")),
   async (req, res) => {
     if (!isSpeechSttConfigured()) {
       res.status(503).json({ error: "Speech STT is not configured", code: "SPEECH_NOT_CONFIGURED" });
@@ -133,15 +126,7 @@ voiceRouter.post(
 voiceRouter.post(
   "/capture",
   requireWorkspaceContentWrite(),
-  (req, res, next) => {
-    upload.single("file")(req, res, (err) => {
-      if (err) {
-        res.status(400).json({ error: err.message || "Upload failed" });
-        return;
-      }
-      next();
-    });
-  },
+  multerSingleWithTenant(upload.single("file")),
   async (req, res) => {
     if (!isSpeechSttConfigured()) {
       res.status(503).json({ error: "Speech STT is not configured", code: "SPEECH_NOT_CONFIGURED" });
@@ -212,6 +197,7 @@ voiceRouter.post(
 
     const audioRow = await prisma.attachment.create({
       data: {
+        tenantId,
         createdByUserId: req.user!.id,
         filename: audioFilename,
         mimeType: audioValidation.mimeType,
@@ -235,11 +221,12 @@ voiceRouter.post(
 
     const audioActive = await prisma.attachment.update({
       where: { id: audioRow.id },
-      data: { storageKey: audioKey, status: AttachmentStatus.ACTIVE }
+      data: { storageKey: audioKey, status: AttachmentStatus.ACTIVE, tenantId }
     });
 
     const transcriptRow = await prisma.attachment.create({
       data: {
+        tenantId,
         createdByUserId: req.user!.id,
         filename: transcriptFilename,
         mimeType: "text/plain",
@@ -264,7 +251,7 @@ voiceRouter.post(
 
     const transcriptActive = await prisma.attachment.update({
       where: { id: transcriptRow.id },
-      data: { storageKey: transcriptKey, status: AttachmentStatus.ACTIVE }
+      data: { storageKey: transcriptKey, status: AttachmentStatus.ACTIVE, tenantId }
     });
 
     const role = parsed.data.role ?? AttachmentLinkRole.EVIDENCE;
@@ -273,6 +260,7 @@ voiceRouter.post(
     if (linkTarget) {
       audioLink = await prisma.attachmentLink.create({
         data: {
+          tenantId,
           attachmentId: audioActive.id,
           createdByUserId: req.user!.id,
           role,
@@ -281,6 +269,7 @@ voiceRouter.post(
       });
       transcriptLink = await prisma.attachmentLink.create({
         data: {
+          tenantId,
           attachmentId: transcriptActive.id,
           createdByUserId: req.user!.id,
           role,

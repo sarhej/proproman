@@ -46,7 +46,8 @@ vi.mock("../tenant/tenantContext.js", () => ({
     tenantSlug: "acme",
     schemaName: "tenant_acme",
     membershipRole: hoisted.membershipRole
-  })
+  }),
+  runWithTenant: (_ctx: unknown, fn: () => unknown) => fn()
 }));
 
 vi.mock("../speech/whisperClient.js", () => ({
@@ -172,6 +173,33 @@ describe("voice HTTP", () => {
     expect(res.body.transcriptAttachment.attachment.id).toBe("txt-1");
     expect(hoisted.transcribe).not.toHaveBeenCalled();
     expect(hoisted.attachmentCreate).toHaveBeenCalledTimes(2);
+    expect(hoisted.attachmentCreate).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant-1",
+          kind: AttachmentKind.ORIGINAL
+        })
+      })
+    );
+    expect(hoisted.attachmentCreate).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant-1",
+          kind: AttachmentKind.DERIVATIVE,
+          parentAttachmentId: "audio-1"
+        })
+      })
+    );
     expect(hoisted.attachmentLinkCreate).toHaveBeenCalledTimes(2);
+    expect(hoisted.attachmentLinkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant-1",
+          featureId: "feat-1"
+        })
+      })
+    );
   });
 });

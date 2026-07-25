@@ -15,6 +15,7 @@ import {
   requireWorkspaceStructureWrite
 } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
+import { multerSingleWithTenant } from "../tenant/multerWithTenant.js";
 import { logAudit } from "../services/audit.js";
 import { getAttachmentStorage } from "../attachments/storageFactory.js";
 import {
@@ -177,15 +178,7 @@ attachmentsRouter.get("/:id/content", async (req, res) => {
 attachmentsRouter.post(
   "/",
   requireWorkspaceContentWrite(),
-  (req, res, next) => {
-    upload.single("file")(req, res, (err) => {
-      if (err) {
-        res.status(400).json({ error: err.message || "Upload failed" });
-        return;
-      }
-      next();
-    });
-  },
+  multerSingleWithTenant(upload.single("file")),
   async (req, res) => {
     const file = req.file;
     if (!file?.buffer) {
@@ -228,6 +221,7 @@ attachmentsRouter.post(
 
     const attachment = await prisma.attachment.create({
       data: {
+        tenantId,
         createdByUserId: req.user!.id,
         filename,
         mimeType: validation.mimeType,
@@ -244,7 +238,7 @@ attachmentsRouter.post(
     const storageKey = buildAttachmentStorageKey(tenantId, attachment.id, filename);
     try {
       await getAttachmentStorage().put(storageKey, file.buffer, validation.mimeType);
-    } catch (err) {
+    } catch {
       await prisma.attachment.delete({ where: { id: attachment.id } }).catch(() => undefined);
       res.status(500).json({ error: "Failed to store file" });
       return;
@@ -252,13 +246,14 @@ attachmentsRouter.post(
 
     const active = await prisma.attachment.update({
       where: { id: attachment.id },
-      data: { storageKey, status: AttachmentStatus.ACTIVE }
+      data: { storageKey, status: AttachmentStatus.ACTIVE, tenantId }
     });
 
     let link = null;
     if (linkTarget) {
       link = await prisma.attachmentLink.create({
         data: {
+          tenantId,
           attachmentId: active.id,
           createdByUserId: req.user!.id,
           role: parsed.data.role ?? AttachmentLinkRole.EVIDENCE,
@@ -300,6 +295,7 @@ attachmentsRouter.post("/presign", requireWorkspaceContentWrite(), async (req, r
   const filename = sanitizeFilename(parsed.data.filename);
   const attachment = await prisma.attachment.create({
     data: {
+      tenantId,
       createdByUserId: req.user!.id,
       filename,
       mimeType: parsed.data.mimeType,
@@ -315,7 +311,7 @@ attachmentsRouter.post("/presign", requireWorkspaceContentWrite(), async (req, r
   const storageKey = buildAttachmentStorageKey(tenantId, attachment.id, filename);
   await prisma.attachment.update({
     where: { id: attachment.id },
-    data: { storageKey }
+    data: { storageKey, tenantId }
   });
   const signedUploadUrl = await getAttachmentStorage().getSignedUploadUrl(
     storageKey,
@@ -334,15 +330,7 @@ attachmentsRouter.post("/presign", requireWorkspaceContentWrite(), async (req, r
 attachmentsRouter.post(
   "/:id/upload-bytes",
   requireWorkspaceContentWrite(),
-  (req, res, next) => {
-    upload.single("file")(req, res, (err) => {
-      if (err) {
-        res.status(400).json({ error: err.message || "Upload failed" });
-        return;
-      }
-      next();
-    });
-  },
+  multerSingleWithTenant(upload.single("file")),
   async (req, res) => {
     const id = String(req.params.id);
     const row = await prisma.attachment.findFirst({ where: { id } });
