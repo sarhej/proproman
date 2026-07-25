@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
+import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 import { ATTACHMENT_MAX_LINKS_PER_ENTITY } from "../attachments/constants.js";
 
@@ -97,6 +98,7 @@ attachmentLinksRouter.post("/", requireWorkspaceContentWrite(), async (req, res)
 
   const row = await prisma.attachmentLink.create({
     data: {
+      tenantId: getTenantId(req),
       attachmentId: p.attachmentId,
       featureId: p.featureId ?? null,
       requirementId: p.requirementId ?? null,

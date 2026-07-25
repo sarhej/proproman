@@ -41,6 +41,13 @@ run("prisma migrate deploy", () => {
   });
 });
 
+run("backfill-attachment-tenantids", () => {
+  execSync("node server/scripts/backfill-attachment-tenantids.cjs", {
+    stdio: "inherit",
+    cwd: path.join(__dirname, "../.."),
+  });
+});
+
 run("repair-migrations", () => {
   execSync("node server/scripts/repair-migrations.cjs", {
     stdio: "inherit",

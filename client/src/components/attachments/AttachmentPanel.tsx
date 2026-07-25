@@ -315,7 +315,6 @@ export function AttachmentPanel({ target, readOnly }: Props) {
           imageFile={pendingFile}
           onClose={() => setAnnotating(false)}
           onSave={async (annotated) => {
-            setAnnotating(false);
             try {
               const orig = await api.uploadAttachment(pendingFile, {
                 filename: pendingFile.name,
@@ -330,10 +329,12 @@ export function AttachmentPanel({ target, readOnly }: Props) {
                 parentAttachmentId: orig.attachment.id,
                 ...target
               });
+              setAnnotating(false);
               setPendingFile(null);
               await load();
             } catch (e) {
               setError(e instanceof Error ? e.message : t("attachments.uploadFailed"));
+              throw e;
             }
           }}
         />

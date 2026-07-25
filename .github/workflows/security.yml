@@ -34,6 +34,14 @@ jobs:
       - name: Run Semgrep
         run: semgrep scan --config auto --error
 
+  multer-tenant-als:
+    name: Multer tenant ALS guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject bare upload.single in routes
+        run: bash scripts/check-multer-tenant-als.sh
+
   secret-scanning:
     name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest

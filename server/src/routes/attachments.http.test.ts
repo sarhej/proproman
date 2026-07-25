@@ -69,7 +69,8 @@ vi.mock("../tenant/tenantContext.js", () => ({
     tenantSlug: "acme",
     schemaName: "tenant_acme",
     membershipRole: hoisted.membershipRole
-  })
+  }),
+  runWithTenant: (_ctx: unknown, fn: () => unknown) => fn()
 }));
 
 import { attachmentsRouter } from "./attachments.js";
@@ -155,7 +156,56 @@ describe("attachments HTTP", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.attachment.status).toBe(AttachmentStatus.ACTIVE);
+    expect(hoisted.attachmentCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tenantId: "tenant-1" })
+      })
+    );
     expect(hoisted.logAudit).toHaveBeenCalled();
+  });
+
+  it("auto-links upload with initiativeId and sets link tenantId", async () => {
+    const created = {
+      id: "att-init",
+      filename: "shot.png",
+      mimeType: "image/png",
+      byteSize: PNG_1X1.length,
+      checksum: "x",
+      storageKey: "pending",
+      status: AttachmentStatus.PENDING,
+      source: "UPLOAD",
+      kind: "ORIGINAL",
+      tenantId: "tenant-1"
+    };
+    hoisted.attachmentCreate.mockResolvedValueOnce(created);
+    hoisted.attachmentUpdate.mockResolvedValueOnce({
+      ...created,
+      storageKey: "tenants/tenant-1/attachments/2026/07/att-init/shot.png",
+      status: AttachmentStatus.ACTIVE
+    });
+    hoisted.attachmentLinkCreate.mockResolvedValueOnce({
+      id: "link-init",
+      attachmentId: "att-init",
+      initiativeId: "init-1",
+      tenantId: "tenant-1"
+    });
+
+    const res = await request(makeApp())
+      .post("/api/attachments")
+      .field("filename", "shot.png")
+      .field("initiativeId", "init-1")
+      .attach("file", PNG_1X1, { filename: "shot.png", contentType: "image/png" });
+
+    expect(res.status).toBe(201);
+    expect(hoisted.attachmentLinkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant-1",
+          initiativeId: "init-1",
+          attachmentId: "att-init"
+        })
+      })
+    );
   });
 
   it("denies upload for VIEWER", async () => {
@@ -259,6 +309,15 @@ describe("attachments HTTP", () => {
       .send({ attachmentId: "att1", featureId: "f1" });
     expect(res.status).toBe(201);
     expect(res.body.attachmentLink.id).toBe("link1");
+    expect(hoisted.attachmentLinkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant-1",
+          attachmentId: "att1",
+          featureId: "f1"
+        })
+      })
+    );
   });
 
   it("creates backup manifest job", async () => {
