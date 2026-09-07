@@ -1,7 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import express, { type NextFunction, type Request, type Response } from "express";
 import request from "supertest";
 import { UserRole } from "@prisma/client";
+import {
+  markAtlasCompileFailed,
+  markAtlasCompileStarted,
+  markAtlasCompileSucceeded,
+  markAtlasRebuildPending,
+  resetAtlasRebuildStateForTests
+} from "../workspaceAtlas/rebuildState.js";
 
 const hoisted = vi.hoisted(() => ({
   readWorkspaceAtlas: vi.fn(),
@@ -48,6 +55,10 @@ function makeApp() {
   return app;
 }
 
+function atlasFixture(overrides: Partial<typeof sampleAtlas> = {}) {
+  return { ...sampleAtlas, ...overrides };
+}
+
 const sampleAtlas = {
   schemaVersion: "1" as const,
   tenantId: "tenant-1",
@@ -73,22 +84,128 @@ const sampleAtlas = {
 describe("workspaceAtlasRouter HTTP", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetAtlasRebuildStateForTests();
+  });
+
+  afterEach(() => {
+    resetAtlasRebuildStateForTests();
   });
 
   it("GET / returns compiled false when atlas missing", async () => {
     hoisted.readWorkspaceAtlas.mockResolvedValueOnce(null);
     const res = await request(makeApp()).get("/api/workspace-atlas");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ atlas: null, compiled: false, freshness: null });
+    expect(res.body.atlas).toBeNull();
+    expect(res.body.compiled).toBe(false);
+    expect(res.body.freshness).toBeNull();
+    expect(res.body.health).toMatchObject({
+      status: "incomplete",
+      pendingRebuild: false,
+      compiling: false,
+      lastRebuildAt: null,
+      lastErrorMessage: null
+    });
   });
 
-  it("GET / returns atlas with freshness metadata", async () => {
+  it("GET / returns incomplete even when rebuild is pending", async () => {
+    markAtlasRebuildPending("tenant-1");
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(null);
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.health).toMatchObject({
+      status: "incomplete",
+      pendingRebuild: true
+    });
+  });
+
+  it("GET / returns stale when source is newer than materialization", async () => {
     hoisted.readWorkspaceAtlas.mockResolvedValueOnce(sampleAtlas);
     const res = await request(makeApp()).get("/api/workspace-atlas");
     expect(res.status).toBe(200);
     expect(res.body.compiled).toBe(true);
     expect(res.body.freshness.isStale).toBe(true);
     expect(res.body.freshness.workspaceSlug).toBe("tymio");
+    expect(res.body.freshness.ageMinutes).toBeTypeOf("number");
+    expect(res.body.health.status).toBe("stale");
+  });
+
+  it("GET / returns current when timestamps are equal (not stale)", async () => {
+    const ts = "2026-09-07T12:00:00.000Z";
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(
+      atlasFixture({ materializedAt: ts, sourceMaxUpdatedAt: ts })
+    );
+    markAtlasCompileSucceeded("tenant-1");
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.freshness.isStale).toBe(false);
+    expect(res.body.health.status).toBe("current");
+    expect(res.body.health.lastRebuildAt).toBeTruthy();
+  });
+
+  it("GET / returns current when materialization is newer than source", async () => {
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(
+      atlasFixture({
+        materializedAt: "2026-09-07T14:00:00.000Z",
+        sourceMaxUpdatedAt: "2026-09-07T13:00:00.000Z"
+      })
+    );
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.freshness.isStale).toBe(false);
+    expect(res.body.health.status).toBe("current");
+  });
+
+  it("GET / returns rebuilding when pending debounce", async () => {
+    markAtlasRebuildPending("tenant-1");
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(
+      atlasFixture({
+        materializedAt: "2026-09-07T14:00:00.000Z",
+        sourceMaxUpdatedAt: "2026-09-07T14:00:00.000Z"
+      })
+    );
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.health).toMatchObject({
+      status: "rebuilding",
+      pendingRebuild: true,
+      compiling: false
+    });
+  });
+
+  it("GET / returns rebuilding when compile in flight", async () => {
+    markAtlasCompileStarted("tenant-1");
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(
+      atlasFixture({
+        materializedAt: "2026-09-07T14:00:00.000Z",
+        sourceMaxUpdatedAt: "2026-09-07T14:00:00.000Z"
+      })
+    );
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.health).toMatchObject({
+      status: "rebuilding",
+      pendingRebuild: false,
+      compiling: true
+    });
+  });
+
+  it("GET / returns error after failed compile (idle)", async () => {
+    markAtlasCompileFailed("tenant-1", "EACCES write atlas");
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(
+      atlasFixture({
+        materializedAt: "2026-09-07T14:00:00.000Z",
+        sourceMaxUpdatedAt: "2026-09-07T14:00:00.000Z"
+      })
+    );
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.health).toMatchObject({
+      status: "error",
+      lastErrorMessage: "EACCES write atlas",
+      compiling: false
+    });
+  });
+
+  it("GET / prefers rebuilding over stale when pending", async () => {
+    markAtlasRebuildPending("tenant-1");
+    hoisted.readWorkspaceAtlas.mockResolvedValueOnce(sampleAtlas);
+    const res = await request(makeApp()).get("/api/workspace-atlas");
+    expect(res.body.freshness.isStale).toBe(true);
+    expect(res.body.health.status).toBe("rebuilding");
   });
 
   it("GET /objects/:type/:id returns shard", async () => {

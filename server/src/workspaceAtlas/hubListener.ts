@@ -2,6 +2,7 @@ import { env } from "../env.js";
 import type { HubChangeEventPayload } from "../services/hubChangeHub.js";
 import { subscribeAllHubChanges } from "../services/hubChangeHub.js";
 import { compileWorkspaceAtlasForTenant } from "./compiler.js";
+import { clearAtlasRebuildPending, markAtlasRebuildPending } from "./rebuildState.js";
 
 /**
  * Returns a handler suitable for `subscribeAllHubChanges`: debounces `compile(tenantId)` per tenant.
@@ -15,11 +16,14 @@ export function createWorkspaceAtlasHubRebuildScheduler(options: {
   const { debounceMs, compile } = options;
   return (event: HubChangeEventPayload) => {
     const tenantId = event.tenantId;
+    markAtlasRebuildPending(tenantId);
     const prev = debounceTimers.get(tenantId);
     if (prev) clearTimeout(prev);
     const t = setTimeout(() => {
       debounceTimers.delete(tenantId);
+      // compile() clears pending via markAtlasCompileStarted; if it never runs, clear pending.
       void compile(tenantId).catch((err) => {
+        clearAtlasRebuildPending(tenantId);
         console.error("[workspace-atlas] debounced rebuild failed for tenant", tenantId, err);
       });
     }, debounceMs);

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
+import { computeAtlasHealth } from "../workspaceAtlas/rebuildState.js";
 import { objectShardObjectType } from "../workspaceAtlas/zodSchemas.js";
 import { readObjectShard, readWorkspaceAtlas } from "../workspaceAtlas/store.js";
 
@@ -25,10 +26,25 @@ workspaceAtlasRouter.get("/", async (req, res) => {
   const tenantId = getTenantId(req);
   const atlas = await readWorkspaceAtlas(tenantId);
   if (!atlas) {
-    res.json({ atlas: null, compiled: false, freshness: null });
+    res.json({
+      atlas: null,
+      compiled: false,
+      freshness: null,
+      health: computeAtlasHealth({ tenantId, compiled: false, isStale: false })
+    });
     return;
   }
-  res.json({ atlas, compiled: true, freshness: computeFreshness(atlas) });
+  const freshness = computeFreshness(atlas);
+  res.json({
+    atlas,
+    compiled: true,
+    freshness,
+    health: computeAtlasHealth({
+      tenantId,
+      compiled: true,
+      isStale: freshness.isStale
+    })
+  });
 });
 
 const objectTypeParam = z.object({
