@@ -130,7 +130,9 @@ describe("App /t/:slug gate (active workspace, no membership)", () => {
 
     expect(screen.getByText("Nakam API")).toBeInTheDocument();
     expect(mockGetTenantBySlug).toHaveBeenCalledWith("nakamapi");
-    expect(mockGetMyWorkspaceAccessRequest).toHaveBeenCalledWith("nakamapi");
+    await waitFor(() => {
+      expect(mockGetMyWorkspaceAccessRequest).toHaveBeenCalledWith("nakamapi");
+    });
     expect(mockSwitchTenant).not.toHaveBeenCalled();
   });
 
