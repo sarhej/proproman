@@ -47,7 +47,13 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "deepmerge-ts": "8.0.2",
     "express-rate-limit": "^8.3.0",
     "helmet": "^8.1.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "esbuild": "0.28.2",
+    "qs": "6.16.0"
   }
 }
