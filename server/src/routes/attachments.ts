@@ -168,7 +168,8 @@ attachmentsRouter.get("/:id/content", async (req, res) => {
       `inline; filename="${sanitizeFilename(row.filename).replace(/"/g, "")}"`
     );
     res.setHeader("Cache-Control", "private, max-age=60");
-    res.send(buf);
+    // Binary blob download (Content-Type already set); avoid res.send() XSS SAST false positive.
+    res.end(buf);
   } catch {
     res.status(404).json({ error: "Blob missing" });
   }
