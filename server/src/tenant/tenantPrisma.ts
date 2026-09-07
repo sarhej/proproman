@@ -47,7 +47,8 @@ export const TENANT_SCOPED_MODELS = new Set([
   "Release",
   "Attachment",
   "AttachmentLink",
-  "AttachmentBackupJob"
+  "AttachmentBackupJob",
+  "IntakeSession"
 ]);
 
 function isTenantScoped(model: string): boolean {

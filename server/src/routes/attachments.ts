@@ -213,6 +213,11 @@ attachmentsRouter.post(
 
     const linkTarget = pickLinkTarget(parsed.data);
     if (linkTarget) {
+      const sessionErr = await assertIntakeSessionExists(linkTarget.intakeSessionId);
+      if (sessionErr) {
+        res.status(400).json({ error: sessionErr });
+        return;
+      }
       const linkErr = await assertLinkQuota(linkTarget);
       if (linkErr) {
         res.status(400).json({ error: linkErr });
@@ -509,6 +514,15 @@ function pickLinkTarget(data: {
   const intakeSessionId = data.intakeSessionId ?? null;
   if (!featureId && !requirementId && !initiativeId && !demandId && !intakeSessionId) return null;
   return { featureId, requirementId, initiativeId, demandId, intakeSessionId };
+}
+
+async function assertIntakeSessionExists(intakeSessionId: string | null): Promise<string | null> {
+  if (!intakeSessionId) return null;
+  const row = await prisma.intakeSession.findFirst({
+    where: { id: intakeSessionId },
+    select: { id: true }
+  });
+  return row ? null : "Intake session not found";
 }
 
 async function assertLinkQuota(target: {

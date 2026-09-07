@@ -46,6 +46,8 @@ type Props = {
   onInitiativeFeaturesReordered?: (initiativeId: string, features: Feature[]) => void;
   /** True while an initiative row is being dragged (suppresses hub-driven list refresh). */
   onExplorerDragActiveChange?: (active: boolean) => void;
+  /** Open AI product intake (Create Bug / Create Feature). */
+  onOpenIntake?: (args: { mode: "BUG" | "FEATURE"; productId: string; productName: string }) => void;
 };
 
 function avgImpact(initiative: Initiative): number {
@@ -974,7 +976,8 @@ function ProductRow({
   onInitiativeFeaturesReordered,
   expandAllSignal,
   collapseAllSignal,
-  searchActive
+  searchActive,
+  onOpenIntake
 }: {
   product: ProductWithHierarchy;
   hierarchySource: ProductWithHierarchy[];
@@ -995,6 +998,7 @@ function ProductRow({
   expandAllSignal?: number;
   collapseAllSignal?: number;
   searchActive?: boolean;
+  onOpenIntake?: (args: { mode: "BUG" | "FEATURE"; productId: string; productName: string }) => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(true);
@@ -1102,6 +1106,32 @@ function ProductRow({
             </select>
           ) : null}
           <div className="mt-2 flex flex-col gap-1">
+            {canCreateInitiative && onOpenIntake ? (
+              <div className="mb-1 flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-red-700"
+                  onClick={() =>
+                    onOpenIntake({ mode: "BUG", productId: product.id, productName: product.name })
+                  }
+                >
+                  {t("intake.createBug")}
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-blue-700"
+                  onClick={() =>
+                    onOpenIntake({
+                      mode: "FEATURE",
+                      productId: product.id,
+                      productName: product.name
+                    })
+                  }
+                >
+                  {t("intake.createFeature")}
+                </button>
+              </div>
+            ) : null}
             {(product.executionBoards?.length ?? 0) > 0 ? (
               <>
                 <span className="text-[10px] text-slate-500">
@@ -1205,7 +1235,8 @@ export function ProductTree({
   onProductInitiativesReordered,
   onInitiativeFeaturesReordered,
   onExplorerDragActiveChange,
-  onAddProduct
+  onAddProduct,
+  onOpenIntake
 }: Props & { onAddProduct?: (name: string) => Promise<void> }) {
   const { t } = useTranslation();
   const w = useWorkspaceLinkBuilder();
@@ -1312,6 +1343,7 @@ export function ProductTree({
                 onRequirementUpdated={onRequirementUpdated}
                 onProductInitiativesReordered={onProductInitiativesReordered}
                 onInitiativeFeaturesReordered={onInitiativeFeaturesReordered}
+                onOpenIntake={onOpenIntake}
               />
             ))}
             {products.length === 0 && (

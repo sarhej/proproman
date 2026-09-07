@@ -89,6 +89,7 @@ import { attachmentsRouter } from "./routes/attachments.js";
 import { voiceRouter } from "./routes/voice.js";
 import { attachmentLinksRouter } from "./routes/attachment-links.js";
 import { attachmentBackupsRouter } from "./routes/attachment-backups.js";
+import { intakeSessionsRouter } from "./routes/intake-sessions.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -328,6 +329,7 @@ mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachments", 
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/voice", voiceRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-links", attachmentLinksRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/attachment-backups", attachmentBackupsRouter);
+mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/intake-sessions", intakeSessionsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/requirements", requirementsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/assignments", assignmentsRouter);
 mountTenantScopedLegacyAndWorkspace(app, mountTenantScoped, "/api/timeline", timelineRouter);

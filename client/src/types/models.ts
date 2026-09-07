@@ -264,6 +264,41 @@ export type AttachmentBackupJob = {
   createdAt: string;
 };
 
+export type IntakeMode = "BUG" | "FEATURE";
+
+export type IntakeSessionStatus =
+  | "CAPTURING"
+  | "ANALYZING"
+  | "CLARIFYING"
+  | "PLAN_READY"
+  | "DRAFTING"
+  | "REVIEWING"
+  | "COMMITTING"
+  | "COMMITTED"
+  | "FAILED"
+  | "ABANDONED";
+
+export type IntakeSession = {
+  id: string;
+  tenantId?: string | null;
+  productId: string;
+  mode: IntakeMode;
+  status: IntakeSessionStatus;
+  rawText: string;
+  rawExcerptHash?: string | null;
+  sourceChannel?: string | null;
+  sourceMeta?: unknown;
+  clarification?: unknown;
+  creationPlan?: unknown;
+  drafts?: unknown;
+  analyzeError?: string | null;
+  confidence?: number | null;
+  createdById?: string | null;
+  committedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UseCase = {
   id: string;
   title: string;

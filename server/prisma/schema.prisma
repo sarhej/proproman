@@ -536,6 +536,7 @@ model User {
   attachmentsRetired        Attachment[]                   @relation("AttachmentRetiredBy")
   attachmentLinksCreated    AttachmentLink[]               @relation("AttachmentLinkCreatedBy")
   attachmentBackupJobs      AttachmentBackupJob[]          @relation("AttachmentBackupCreatedBy")
+  intakeSessionsCreated     IntakeSession[]                @relation("IntakeSessionCreatedBy")
   preferredLocale           String?
   createdAt                 DateTime                       @default(now())
   updatedAt                 DateTime                       @updatedAt
@@ -608,6 +609,7 @@ model Product {
   initiatives     Initiative[]
   executionBoards ExecutionBoard[]
   useCases          UseCase[]
+  intakeSessions  IntakeSession[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -1580,6 +1582,54 @@ model McpRefreshToken {
   @@index([token])
   @@index([familyId])
   @@index([userId, clientId])
+}
+
+enum IntakeMode {
+  BUG
+  FEATURE
+}
+
+enum IntakeSessionStatus {
+  CAPTURING
+  ANALYZING
+  CLARIFYING
+  PLAN_READY
+  DRAFTING
+  REVIEWING
+  COMMITTING
+  COMMITTED
+  FAILED
+  ABANDONED
+}
+
+/// Product-scoped AI intake session (Create Bug / Create Feature). No hub writes until commit.
+model IntakeSession {
+  id             String              @id @default(cuid())
+  tenantId       String?
+  productId      String
+  mode           IntakeMode
+  status         IntakeSessionStatus @default(CAPTURING)
+  rawText        String              @default("")
+  rawExcerptHash String?
+  sourceChannel  String?
+  sourceMeta     Json?
+  clarification  Json?
+  creationPlan   Json?
+  drafts         Json?
+  analyzeError   String?
+  confidence     Float?
+  createdById    String?
+  committedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("IntakeSessionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@index([tenantId, status])
+  @@index([createdById])
 }
 
 /// Workspace artifact library — durable blob metadata (one blob, many AttachmentLinks).
