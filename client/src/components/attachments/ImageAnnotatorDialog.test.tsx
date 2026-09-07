@@ -112,6 +112,8 @@ describe("ImageAnnotatorDialog", () => {
     });
     const canvas = document.querySelector("canvas");
     expect(canvas).toBeTruthy();
-    expect(drawImage).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(drawImage).toHaveBeenCalled();
+    });
   });
 });

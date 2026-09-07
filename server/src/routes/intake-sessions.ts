@@ -7,6 +7,8 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
+import { creationPlanSchema, normalizeCreationPlan } from "../intake/creationPlanSchema.js";
+import { planIntake } from "../intake/planner.js";
 
 export const intakeSessionsRouter = Router();
 intakeSessionsRouter.use(requireAuth);
@@ -20,6 +22,16 @@ const patchSchema = z.object({
   rawText: z.string().max(100_000).optional(),
   sourceChannel: z.string().max(64).nullable().optional(),
   status: z.enum(["CAPTURING", "ABANDONED", "FAILED"]).optional()
+});
+
+const clarifySchema = z.object({
+  answers: z.record(z.string(), z.string().max(2000)).refine((o) => Object.keys(o).length > 0, {
+    message: "At least one answer required"
+  })
+});
+
+const planPatchSchema = z.object({
+  creationPlan: creationPlanSchema
 });
 
 function hashRawText(rawText: string): string {
@@ -66,6 +78,10 @@ function serializeSession(row: {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   };
+}
+
+function isLocked(status: IntakeSessionStatus): boolean {
+  return status === IntakeSessionStatus.COMMITTED || status === IntakeSessionStatus.COMMITTING;
 }
 
 intakeSessionsRouter.post("/", requireWorkspaceContentWrite(), async (req, res) => {
@@ -138,10 +154,7 @@ intakeSessionsRouter.patch("/:id", requireWorkspaceContentWrite(), async (req, r
     res.status(404).json({ error: "Intake session not found" });
     return;
   }
-  if (
-    existing.status === IntakeSessionStatus.COMMITTED ||
-    existing.status === IntakeSessionStatus.COMMITTING
-  ) {
+  if (isLocked(existing.status)) {
     res.status(409).json({ error: "Intake session is locked after commit" });
     return;
   }
@@ -170,12 +183,175 @@ intakeSessionsRouter.patch("/:id", requireWorkspaceContentWrite(), async (req, r
   res.json({ session: serializeSession(session) });
 });
 
-/**
- * Phase 1 stub: no LLM, no hub writes.
- * Clears analyzeError, stays CAPTURING with null plan so UI can continue to manual form.
- */
 intakeSessionsRouter.post("/:id/analyze", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId },
+    include: { product: { select: { name: true } } }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (isLocked(existing.status)) {
+    res.status(409).json({ error: "Intake session already committed" });
+    return;
+  }
+
+  try {
+    await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: { status: IntakeSessionStatus.ANALYZING, analyzeError: null }
+    });
+
+    const clarification =
+      existing.clarification && typeof existing.clarification === "object" && !Array.isArray(existing.clarification)
+        ? (existing.clarification as Record<string, string>)
+        : null;
+
+    const { plan, source } = await planIntake({
+      mode: existing.mode,
+      rawText: existing.rawText,
+      productName: existing.product.name,
+      clarificationAnswers: clarification
+    });
+
+    const nextStatus = plan.needsClarification
+      ? IntakeSessionStatus.CLARIFYING
+      : IntakeSessionStatus.PLAN_READY;
+
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: nextStatus,
+        creationPlan: plan as Prisma.InputJsonValue,
+        confidence: plan.confidence,
+        analyzeError: null,
+        rawExcerptHash: hashRawText(existing.rawText),
+        sourceMeta: {
+          ...(typeof existing.sourceMeta === "object" && existing.sourceMeta && !Array.isArray(existing.sourceMeta)
+            ? (existing.sourceMeta as Record<string, unknown>)
+            : {}),
+          channel: existing.sourceChannel ?? "ui_product",
+          lastAnalyzedAt: new Date().toISOString(),
+          plannerSource: source,
+          hadRawText: existing.rawText.trim().length > 0
+        }
+      }
+    });
+
+    res.json({
+      session: serializeSession(session),
+      analyze: {
+        stub: false,
+        source,
+        needsClarification: Boolean(plan.needsClarification),
+        creationPlan: plan,
+        confidence: plan.confidence,
+        message: plan.needsClarification
+          ? "Need a bit more context before locking the creation plan."
+          : `Creation plan ready (${source}). Review items, then continue.`
+      }
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Analyze failed";
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: IntakeSessionStatus.FAILED,
+        analyzeError: message.slice(0, 500)
+      }
+    });
+    res.status(500).json({
+      error: message,
+      session: serializeSession(session),
+      analyze: {
+        stub: false,
+        source: "heuristic",
+        needsClarification: false,
+        creationPlan: null,
+        confidence: null,
+        message
+      }
+    });
+  }
+});
+
+intakeSessionsRouter.post("/:id/clarify", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const parsed = clarifySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId },
+    include: { product: { select: { name: true } } }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (isLocked(existing.status)) {
+    res.status(409).json({ error: "Intake session already committed" });
+    return;
+  }
+
+  const prior =
+    existing.clarification && typeof existing.clarification === "object" && !Array.isArray(existing.clarification)
+      ? (existing.clarification as Record<string, string>)
+      : {};
+  const answers = { ...prior, ...parsed.data.answers };
+
+  const { plan, source } = await planIntake({
+    mode: existing.mode,
+    rawText: existing.rawText,
+    productName: existing.product.name,
+    clarificationAnswers: answers
+  });
+
+  const session = await prisma.intakeSession.update({
+    where: { id: existing.id },
+    data: {
+      clarification: answers,
+      creationPlan: plan as Prisma.InputJsonValue,
+      confidence: plan.confidence,
+      status: plan.needsClarification ? IntakeSessionStatus.CLARIFYING : IntakeSessionStatus.PLAN_READY,
+      analyzeError: null,
+      sourceMeta: {
+        ...(typeof existing.sourceMeta === "object" && existing.sourceMeta && !Array.isArray(existing.sourceMeta)
+          ? (existing.sourceMeta as Record<string, unknown>)
+          : {}),
+        lastClarifiedAt: new Date().toISOString(),
+        plannerSource: source
+      }
+    }
+  });
+
+  res.json({
+    session: serializeSession(session),
+    analyze: {
+      stub: false,
+      source,
+      needsClarification: Boolean(plan.needsClarification),
+      creationPlan: plan,
+      confidence: plan.confidence,
+      message: plan.needsClarification
+        ? "Still unclear — answer remaining questions or edit the plan manually."
+        : "Clarification applied. Review the creation plan."
+    }
+  });
+});
+
+intakeSessionsRouter.patch("/:id/plan", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const parsed = planPatchSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
   const tenantId = getTenantId(req);
   const existing = await prisma.intakeSession.findFirst({
     where: { id, tenantId }
@@ -184,45 +360,27 @@ intakeSessionsRouter.post("/:id/analyze", requireWorkspaceContentWrite(), async 
     res.status(404).json({ error: "Intake session not found" });
     return;
   }
-  if (
-    existing.status === IntakeSessionStatus.COMMITTED ||
-    existing.status === IntakeSessionStatus.COMMITTING
-  ) {
+  if (isLocked(existing.status)) {
     res.status(409).json({ error: "Intake session already committed" });
     return;
   }
 
-  const rawText = existing.rawText.trim();
+  const plan = normalizeCreationPlan({
+    ...parsed.data.creationPlan,
+    needsClarification: false
+  });
+
   const session = await prisma.intakeSession.update({
     where: { id: existing.id },
     data: {
-      status: IntakeSessionStatus.CAPTURING,
-      analyzeError: null,
-      creationPlan: Prisma.DbNull,
-      confidence: null,
-      rawExcerptHash: hashRawText(existing.rawText),
-      sourceMeta: {
-        ...(typeof existing.sourceMeta === "object" && existing.sourceMeta && !Array.isArray(existing.sourceMeta)
-          ? (existing.sourceMeta as Record<string, unknown>)
-          : {}),
-        channel: existing.sourceChannel ?? "ui_product",
-        lastAnalyzedAt: new Date().toISOString(),
-        analyzeStub: true,
-        hadRawText: rawText.length > 0
-      }
+      creationPlan: plan as Prisma.InputJsonValue,
+      confidence: plan.confidence,
+      status: IntakeSessionStatus.PLAN_READY,
+      analyzeError: null
     }
   });
 
-  res.json({
-    session: serializeSession(session),
-    analyze: {
-      stub: true,
-      needsClarification: false,
-      creationPlan: null,
-      confidence: null,
-      message: rawText.length
-        ? "Analyze stub: planner not enabled yet. Continue with manual form or wait for Phase 2."
-        : "Add text or attachments, then Analyze again."
-    }
-  });
+  await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, { fields: ["creationPlan"] });
+
+  res.json({ session: serializeSession(session) });
 });

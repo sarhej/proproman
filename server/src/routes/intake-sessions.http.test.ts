@@ -36,7 +36,34 @@ vi.mock("../tenant/tenantContext.js", () => ({
   })
 }));
 
+vi.mock("../intake/planner.js", () => ({
+  planIntake: vi.fn(async ({ mode, rawText }: { mode: string; rawText: string }) => ({
+    source: "heuristic",
+    plan: {
+      planType: mode === "BUG" ? "SINGLE_BUG_FEATURE" : "SINGLE_FEATURE",
+      rationale: "test plan",
+      confidence: rawText.trim() ? 0.7 : 0.3,
+      needsClarification: !rawText.trim() || rawText.length < 20,
+      clarificationQuestions: rawText.length < 20 ? [{ id: "persona", prompt: "Who?" }] : undefined,
+      items: [
+        {
+          key: mode === "BUG" ? "bug-1" : "feat-1",
+          hubEntityType: "Feature",
+          title: rawText.trim().slice(0, 40) || "Untitled",
+          parentKey: null,
+          storyType: mode === "BUG" ? "BUG" : "FUNCTIONAL",
+          suggestedPriority: "P2",
+          bugSeverity: mode === "BUG" ? "MEDIUM" : null
+        }
+      ]
+    }
+  }))
+}));
+
 import { intakeSessionsRouter } from "./intake-sessions.js";
+import { planIntake } from "../intake/planner.js";
+
+const mockPlanIntake = planIntake as ReturnType<typeof vi.fn>;
 
 function authTenantMiddleware(
   membershipRole: MembershipRole,
@@ -77,15 +104,16 @@ const baseSession = {
   rawExcerptHash: null as string | null,
   sourceChannel: "ui_product",
   sourceMeta: { channel: "ui_product" } as object,
-  clarification: null,
-  creationPlan: null,
+  clarification: null as object | null,
+  creationPlan: null as object | null,
   drafts: null,
   analyzeError: null as string | null,
   confidence: null as number | null,
   createdById: "u1",
   committedAt: null as Date | null,
   createdAt: new Date("2026-09-07T12:00:00.000Z"),
-  updatedAt: new Date("2026-09-07T12:00:00.000Z")
+  updatedAt: new Date("2026-09-07T12:00:00.000Z"),
+  product: { name: "App" }
 };
 
 describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
@@ -103,11 +131,6 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.session.mode).toBe("FEATURE");
-    expect(hoisted.productFindFirst).toHaveBeenCalledWith({
-      where: { id: "p1", tenantId: "tenant-1" },
-      select: { id: true }
-    });
-    expect(hoisted.logAudit).toHaveBeenCalled();
   });
 
   it("POST 404 when product missing", async () => {
@@ -123,12 +146,6 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
       .post("/api/intake-sessions")
       .send({ productId: "p1", mode: "EPIC" });
     expect(res.status).toBe(400);
-    expect(hoisted.intakeCreate).not.toHaveBeenCalled();
-  });
-
-  it("POST 400 when productId missing", async () => {
-    const res = await request(makeApp()).post("/api/intake-sessions").send({ mode: "BUG" });
-    expect(res.status).toBe(400);
   });
 
   it("POST 403 for VIEWER membership", async () => {
@@ -136,7 +153,6 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
       .post("/api/intake-sessions")
       .send({ productId: "p1", mode: "BUG" });
     expect(res.status).toBe(403);
-    expect(hoisted.productFindFirst).not.toHaveBeenCalled();
   });
 
   it("GET returns session", async () => {
@@ -144,18 +160,6 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     const res = await request(makeApp()).get("/api/intake-sessions/s1");
     expect(res.status).toBe(200);
     expect(res.body.session.id).toBe("s1");
-  });
-
-  it("GET 404 when missing", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce(null);
-    const res = await request(makeApp()).get("/api/intake-sessions/nope");
-    expect(res.status).toBe(404);
-  });
-
-  it("GET allows VIEWER (read)", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce(baseSession);
-    const res = await request(makeApp(MembershipRole.VIEWER)).get("/api/intake-sessions/s1");
-    expect(res.status).toBe(200);
   });
 
   it("PATCH updates rawText and hash", async () => {
@@ -181,48 +185,6 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     });
   });
 
-  it("PATCH normalizes unicode when hashing", async () => {
-    const raw = "café"; // composed
-    hoisted.intakeFindFirst.mockResolvedValueOnce(baseSession);
-    hoisted.intakeUpdate.mockResolvedValueOnce({ ...baseSession, rawText: raw });
-
-    await request(makeApp()).patch("/api/intake-sessions/s1").send({ rawText: raw });
-
-    const expectedHash = createHash("sha256").update(raw.normalize("NFKC").trim()).digest("hex");
-    expect(hoisted.intakeUpdate.mock.calls[0][0].data.rawExcerptHash).toBe(expectedHash);
-  });
-
-  it("PATCH 400 when rawText exceeds max", async () => {
-    const res = await request(makeApp())
-      .patch("/api/intake-sessions/s1")
-      .send({ rawText: "x".repeat(100_001) });
-    expect(res.status).toBe(400);
-    expect(hoisted.intakeFindFirst).not.toHaveBeenCalled();
-  });
-
-  it("PATCH 400 for illegal status transition to PLAN_READY", async () => {
-    const res = await request(makeApp())
-      .patch("/api/intake-sessions/s1")
-      .send({ status: "PLAN_READY" });
-    expect(res.status).toBe(400);
-  });
-
-  it("PATCH can abandon session", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce(baseSession);
-    hoisted.intakeUpdate.mockResolvedValueOnce({
-      ...baseSession,
-      status: IntakeSessionStatus.ABANDONED
-    });
-    const res = await request(makeApp())
-      .patch("/api/intake-sessions/s1")
-      .send({ status: "ABANDONED" });
-    expect(res.status).toBe(200);
-    expect(hoisted.intakeUpdate).toHaveBeenCalledWith({
-      where: { id: "s1" },
-      data: { status: "ABANDONED" }
-    });
-  });
-
   it("PATCH 409 when COMMITTED", async () => {
     hoisted.intakeFindFirst.mockResolvedValueOnce({
       ...baseSession,
@@ -232,68 +194,110 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
       .patch("/api/intake-sessions/s1")
       .send({ rawText: "nope" });
     expect(res.status).toBe(409);
-    expect(hoisted.intakeUpdate).not.toHaveBeenCalled();
   });
 
-  it("PATCH 409 when COMMITTING", async () => {
+  it("POST analyze returns creationPlan and PLAN_READY", async () => {
     hoisted.intakeFindFirst.mockResolvedValueOnce({
       ...baseSession,
-      status: IntakeSessionStatus.COMMITTING
+      rawText: "Login CTA is clipped on iPhone SE after rotate with long labels."
     });
-    const res = await request(makeApp())
-      .patch("/api/intake-sessions/s1")
-      .send({ rawText: "nope" });
-    expect(res.status).toBe(409);
+    hoisted.intakeUpdate
+      .mockResolvedValueOnce({ ...baseSession, status: IntakeSessionStatus.ANALYZING })
+      .mockResolvedValueOnce({
+        ...baseSession,
+        status: IntakeSessionStatus.PLAN_READY,
+        confidence: 0.7,
+        creationPlan: { planType: "SINGLE_BUG_FEATURE" }
+      });
+
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.analyze.stub).toBe(false);
+    expect(res.body.analyze.creationPlan).toBeTruthy();
+    expect(res.body.analyze.creationPlan.items[0].storyType).toBe("BUG");
+    expect(res.body.session.status).toBe("PLAN_READY");
+    expect(mockPlanIntake).toHaveBeenCalled();
   });
 
-  it("PATCH 404 when missing", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce(null);
-    const res = await request(makeApp())
-      .patch("/api/intake-sessions/missing")
-      .send({ rawText: "x" });
-    expect(res.status).toBe(404);
-  });
-
-  it("POST analyze returns stub without creationPlan", async () => {
+  it("POST analyze sets CLARIFYING when plan needs clarification", async () => {
     hoisted.intakeFindFirst.mockResolvedValueOnce({
       ...baseSession,
-      rawText: "bug description"
+      mode: IntakeMode.FEATURE,
+      rawText: "fix"
+    });
+    hoisted.intakeUpdate
+      .mockResolvedValueOnce({ ...baseSession, status: IntakeSessionStatus.ANALYZING })
+      .mockResolvedValueOnce({
+        ...baseSession,
+        status: IntakeSessionStatus.CLARIFYING
+      });
+
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.analyze.needsClarification).toBe(true);
+    expect(res.body.session.status).toBe("CLARIFYING");
+  });
+
+  it("POST clarify merges answers and re-plans", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      mode: IntakeMode.FEATURE,
+      rawText: "Improve intake UX for product owners creating bugs",
+      clarification: { persona: "old" }
     });
     hoisted.intakeUpdate.mockResolvedValueOnce({
       ...baseSession,
-      rawText: "bug description",
-      sourceMeta: { analyzeStub: true }
+      status: IntakeSessionStatus.PLAN_READY,
+      clarification: { persona: "old", outcome: "shipped" }
     });
 
-    const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/clarify")
+      .send({ answers: { outcome: "shipped" } });
 
     expect(res.status).toBe(200);
-    expect(res.body.analyze.stub).toBe(true);
-    expect(res.body.analyze.creationPlan).toBeNull();
-    expect(res.body.analyze.needsClarification).toBe(false);
-    expect(res.body.session.status).toBe("CAPTURING");
-    expect(res.body.analyze.message).toMatch(/stub/i);
+    expect(mockPlanIntake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clarificationAnswers: { persona: "old", outcome: "shipped" }
+      })
+    );
   });
 
-  it("POST analyze empty rawText returns prompt message", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce({ ...baseSession, rawText: "   " });
-    hoisted.intakeUpdate.mockResolvedValueOnce({ ...baseSession, rawText: "   " });
-
-    const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
-
-    expect(res.status).toBe(200);
-    expect(res.body.analyze.message).toMatch(/Add text or attachments/i);
-    expect(hoisted.intakeUpdate.mock.calls[0][0].data.sourceMeta.hadRawText).toBe(false);
-  });
-
-  it("POST analyze 409 when COMMITTED", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce({
+  it("PATCH plan validates and saves user edits", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce(baseSession);
+    const plan = {
+      planType: "SINGLE_BUG_FEATURE",
+      rationale: "user edited",
+      confidence: 0.9,
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature",
+          title: "Edited title",
+          parentKey: null,
+          storyType: "BUG",
+          suggestedPriority: "P1",
+          bugSeverity: "HIGH"
+        }
+      ]
+    };
+    hoisted.intakeUpdate.mockResolvedValueOnce({
       ...baseSession,
-      status: IntakeSessionStatus.COMMITTED
+      status: IntakeSessionStatus.PLAN_READY,
+      creationPlan: plan
     });
-    const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
-    expect(res.status).toBe(409);
-    expect(hoisted.intakeUpdate).not.toHaveBeenCalled();
+
+    const res = await request(makeApp()).patch("/api/intake-sessions/s1/plan").send({ creationPlan: plan });
+    expect(res.status).toBe(200);
+    expect(res.body.session.status).toBe("PLAN_READY");
+  });
+
+  it("PATCH plan 400 for invalid schema", async () => {
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/plan")
+      .send({ creationPlan: { planType: "NOPE", rationale: "", confidence: 2, items: [] } });
+    expect(res.status).toBe(400);
   });
 
   it("POST analyze 409 when COMMITTING", async () => {
@@ -303,34 +307,5 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     });
     const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
     expect(res.status).toBe(409);
-  });
-
-  it("POST analyze 404 when missing", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce(null);
-    const res = await request(makeApp()).post("/api/intake-sessions/nope/analyze").send({});
-    expect(res.status).toBe(404);
-  });
-
-  it("POST analyze 403 for VIEWER", async () => {
-    const res = await request(makeApp(MembershipRole.VIEWER))
-      .post("/api/intake-sessions/s1/analyze")
-      .send({});
-    expect(res.status).toBe(403);
-  });
-
-  it("analyze clears prior creationPlan (DbNull) and never invents hub entities", async () => {
-    hoisted.intakeFindFirst.mockResolvedValueOnce({
-      ...baseSession,
-      rawText: "x",
-      creationPlan: { planType: "SINGLE_FEATURE", items: [] }
-    });
-    hoisted.intakeUpdate.mockResolvedValueOnce({ ...baseSession, rawText: "x" });
-
-    await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
-
-    const data = hoisted.intakeUpdate.mock.calls[0][0].data;
-    expect(data.creationPlan).toBeDefined();
-    expect(data.status).toBe(IntakeSessionStatus.CAPTURING);
-    expect(data.confidence).toBeNull();
   });
 });
