@@ -29,6 +29,7 @@ const hoisted = vi.hoisted(() => ({
   attachmentBackupJobUpdate: vi.fn(),
   attachmentBackupJobFindFirst: vi.fn(),
   attachmentBackupJobFindMany: vi.fn(),
+  intakeSessionFindFirst: vi.fn(),
   logAudit: vi.fn(),
   membershipRole: "OWNER" as string
 }));
@@ -55,6 +56,9 @@ vi.mock("../db.js", () => ({
       update: (...args: unknown[]) => hoisted.attachmentBackupJobUpdate(...args),
       findFirst: (...args: unknown[]) => hoisted.attachmentBackupJobFindFirst(...args),
       findMany: (...args: unknown[]) => hoisted.attachmentBackupJobFindMany(...args)
+    },
+    intakeSession: {
+      findFirst: (...args: unknown[]) => hoisted.intakeSessionFindFirst(...args)
     }
   }
 }));
@@ -231,6 +235,61 @@ describe("attachments HTTP", () => {
       "ATTACHMENT_LINK",
       "link1",
       expect.objectContaining({ unlinkOnly: true })
+    );
+  });
+
+  it("rejects upload linked to unknown intakeSessionId", async () => {
+    hoisted.intakeSessionFindFirst.mockResolvedValueOnce(null);
+    const res = await request(makeApp())
+      .post("/api/attachments")
+      .field("intakeSessionId", "missing-session")
+      .attach("file", PNG_1X1, { filename: "shot.png", contentType: "image/png" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Intake session not found/i);
+    expect(hoisted.attachmentCreate).not.toHaveBeenCalled();
+  });
+
+  it("auto-links upload to existing intakeSessionId", async () => {
+    hoisted.intakeSessionFindFirst.mockResolvedValueOnce({ id: "sess1" });
+    const created = {
+      id: "att-sess",
+      filename: "shot.png",
+      mimeType: "image/png",
+      byteSize: PNG_1X1.length,
+      checksum: "x",
+      storageKey: "pending",
+      status: AttachmentStatus.PENDING,
+      source: "UPLOAD",
+      kind: "ORIGINAL",
+      tenantId: "tenant-1"
+    };
+    hoisted.attachmentCreate.mockResolvedValueOnce(created);
+    hoisted.attachmentUpdate.mockResolvedValueOnce({
+      ...created,
+      storageKey: "tenants/tenant-1/attachments/2026/07/att-sess/shot.png",
+      status: AttachmentStatus.ACTIVE
+    });
+    hoisted.attachmentLinkCreate.mockResolvedValueOnce({
+      id: "link-sess",
+      attachmentId: "att-sess",
+      intakeSessionId: "sess1",
+      tenantId: "tenant-1"
+    });
+
+    const res = await request(makeApp())
+      .post("/api/attachments")
+      .field("intakeSessionId", "sess1")
+      .attach("file", PNG_1X1, { filename: "shot.png", contentType: "image/png" });
+
+    expect(res.status).toBe(201);
+    expect(hoisted.intakeSessionFindFirst).toHaveBeenCalledWith({
+      where: { id: "sess1" },
+      select: { id: true }
+    });
+    expect(hoisted.attachmentLinkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ intakeSessionId: "sess1", tenantId: "tenant-1" })
+      })
     );
   });
 

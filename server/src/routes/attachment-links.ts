@@ -67,6 +67,17 @@ attachmentLinksRouter.post("/", requireWorkspaceContentWrite(), async (req, res)
     return;
   }
 
+  if (p.intakeSessionId) {
+    const session = await prisma.intakeSession.findFirst({
+      where: { id: p.intakeSessionId },
+      select: { id: true }
+    });
+    if (!session) {
+      res.status(400).json({ error: "Intake session not found" });
+      return;
+    }
+  }
+
   const quotaWhere: Prisma.AttachmentLinkWhereInput = {};
   if (p.featureId) quotaWhere.featureId = p.featureId;
   else if (p.requirementId) quotaWhere.requirementId = p.requirementId;

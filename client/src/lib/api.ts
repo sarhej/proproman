@@ -45,6 +45,7 @@ import type {
   Attachment,
   AttachmentLink,
   AttachmentBackupJob,
+  IntakeSession,
   UseCase,
   SecurityTopic,
   ArchitectureTopic,
@@ -188,6 +189,35 @@ export const api = {
     request<{ initiative: Initiative }>("/api/initiatives", {
       method: "POST",
       body: JSON.stringify(body)
+    }),
+  createIntakeSession: async (body: { productId: string; mode: "BUG" | "FEATURE" }) =>
+    request<{ session: IntakeSession }>("/api/intake-sessions", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  getIntakeSession: async (id: string) =>
+    request<{ session: IntakeSession }>(`/api/intake-sessions/${id}`),
+  updateIntakeSession: async (
+    id: string,
+    body: { rawText?: string; sourceChannel?: string | null; status?: "CAPTURING" | "ABANDONED" | "FAILED" }
+  ) =>
+    request<{ session: IntakeSession }>(`/api/intake-sessions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body)
+    }),
+  analyzeIntakeSession: async (id: string) =>
+    request<{
+      session: IntakeSession;
+      analyze: {
+        stub: boolean;
+        needsClarification: boolean;
+        creationPlan: unknown;
+        confidence: number | null;
+        message: string;
+      };
+    }>(`/api/intake-sessions/${id}/analyze`, {
+      method: "POST",
+      body: JSON.stringify({})
     }),
   updateInitiative: async (id: string, body: unknown) =>
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {

@@ -12,12 +12,14 @@ vi.mock("../../lib/api", async (importOriginal) => {
     ...mod,
     api: {
       ...mod.api,
-      createExecutionBoard: vi.fn().mockResolvedValue({ board: { id: "nb" } })
+      createExecutionBoard: vi.fn().mockResolvedValue({ board: { id: "nb" } }),
+      createIntakeSession: vi.fn()
     }
   };
 });
 
 const mockCreateBoard = api.createExecutionBoard as ReturnType<typeof vi.fn>;
+const mockCreateIntake = api.createIntakeSession as ReturnType<typeof vi.fn>;
 
 const domain: Domain = { id: "d1", name: "Pillar", color: "#111", sortOrder: 0 };
 
@@ -158,5 +160,53 @@ describe("ProductTree – execution board entry points", () => {
       </MemoryRouter>
     );
     expect(screen.getByText("System")).toBeInTheDocument();
+  });
+
+  it("shows Create Bug and Create Feature when canCreateInitiative and calls onOpenIntake", () => {
+    const onOpenIntake = vi.fn();
+    renderWithWorkspaceHub(
+      <ProductTree
+        products={[baseProduct()]}
+        users={[]}
+        domains={[domain]}
+        isAdmin={false}
+        canCreateInitiative={true}
+        currentUserId={null}
+        onOpenInitiative={() => {}}
+        onRefresh={async () => {}}
+        onOpenIntake={onOpenIntake}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create bug/i }));
+    expect(onOpenIntake).toHaveBeenCalledWith({
+      mode: "BUG",
+      productId: "p1",
+      productName: "Product One"
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create feature/i }));
+    expect(onOpenIntake).toHaveBeenCalledWith({
+      mode: "FEATURE",
+      productId: "p1",
+      productName: "Product One"
+    });
+    expect(mockCreateIntake).not.toHaveBeenCalled();
+  });
+
+  it("hides intake buttons when canCreateInitiative is false", () => {
+    renderWithWorkspaceHub(
+      <ProductTree
+        products={[baseProduct()]}
+        users={[]}
+        domains={[domain]}
+        isAdmin={false}
+        canCreateInitiative={false}
+        currentUserId={null}
+        onOpenInitiative={() => {}}
+        onRefresh={async () => {}}
+        onOpenIntake={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole("button", { name: /create bug/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create feature/i })).not.toBeInTheDocument();
   });
 });

@@ -767,6 +767,26 @@
     "expandedWhileQuickFilter": "Tree is expanded for the quick filter. Clear the filter to fold rows manually.",
     "empty": "No products or systems found. Create one to get started."
   },
+  "intake": {
+    "createBug": "Create Bug",
+    "createFeature": "Create Feature",
+    "createBugTitle": "Create Bug",
+    "createFeatureTitle": "Create Feature",
+    "modeBug": "Bug",
+    "modeFeature": "Feature",
+    "composerPlaceholder": "Paste text, drop a screenshot, or describe the issue / idea…",
+    "attachments": "Attachments",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "manualForm": "Manual form",
+    "continue": "Continue",
+    "starting": "Starting intake session…",
+    "createFailed": "Could not start intake session.",
+    "analyzeFailed": "Analyze failed. You can continue with the manual form.",
+    "manualFallbackTitle": "Manual structured form",
+    "manualFallbackBody": "Planner is not enabled yet (Phase 1 foundation). Keep your text and attachments; hub create lands in a later phase.",
+    "continuePhase1Hint": "Phase 1 saves capture only. Draft plan / Create all ships in later features."
+  },
   "topLevelItem": {
     "product": "Product",
     "system": "System"

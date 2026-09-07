@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import type { BoardFilters } from "../hooks/useBoardData";
 import type { Domain, Feature, Initiative, InitiativeStatus, ProductWithHierarchy, Requirement, User } from "../types/models";
 import { ProductTree } from "../components/product-tree/ProductTree";
+import { ProductIntakeShell, type ProductIntakeOpenArgs } from "../components/intake/ProductIntakeShell";
 import { Label, Select } from "../components/ui/Field";
 
 type Props = {
@@ -78,6 +79,7 @@ export function ProductExplorerPage({
   const [impactFilter, setImpactFilter] = useState<"any" | "with">("any");
   const [terminology, setTerminology] = useState<Terminology>(getStoredTerminology);
   const [expandAllTick, setExpandAllTick] = useState(0);
+  const [intakeOpen, setIntakeOpen] = useState<ProductIntakeOpenArgs | null>(null);
   const [collapseAllTick, setCollapseAllTick] = useState(0);
 
   const load = useCallback(async () => {
@@ -367,7 +369,9 @@ export function ProductExplorerPage({
           await api.createProduct({ name, sortOrder: products.length + 1 });
           await load();
         }}
+        onOpenIntake={(args) => setIntakeOpen(args)}
       />
+      <ProductIntakeShell open={intakeOpen} onClose={() => setIntakeOpen(null)} />
     </div>
   );
 }
