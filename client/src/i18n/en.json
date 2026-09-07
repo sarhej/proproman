@@ -608,6 +608,16 @@
     "notCompiled": "No compiled atlas yet for this workspace.",
     "notCompiledHint": "The server warms atlases on startup and after hub edits. If this persists, an editor can run tymio_rebuild_workspace_atlas via MCP.",
     "freshness": "Freshness",
+    "freshnessHealth": "Freshness and health",
+    "healthStatus": {
+      "current": "Current",
+      "stale": "Stale",
+      "rebuilding": "Rebuilding",
+      "incomplete": "Incomplete",
+      "error": "Error"
+    },
+    "lastRebuildAt": "Last rebuild {{at}}",
+    "rebuildError": "Last rebuild failed: {{message}}",
     "counts": "Object counts",
     "countDomains": "Domains",
     "countProducts": "Products",

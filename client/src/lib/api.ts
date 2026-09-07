@@ -535,6 +535,13 @@ export const api = {
         isStale: boolean;
         ageMinutes: number;
       } | null;
+      health: {
+        status: "incomplete" | "rebuilding" | "error" | "stale" | "current";
+        pendingRebuild: boolean;
+        compiling: boolean;
+        lastRebuildAt: string | null;
+        lastErrorMessage: string | null;
+      };
     }>("/api/workspace-atlas"),
   getWorkspaceAtlasObject: async (objectType: string, id: string) =>
     request<{ shard: Record<string, unknown> }>(

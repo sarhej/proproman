@@ -7,6 +7,7 @@ import { getTenantContext, requireTenantContext } from "../tenant/tenantContext.
 import { compileWorkspaceAtlasForTenant } from "../workspaceAtlas/compiler.js";
 import { createWorkspaceAtlasLlmFromEnv } from "../workspaceAtlas/llm.js";
 import { workspaceAtlasMetrics } from "../workspaceAtlas/metrics.js";
+import { computeAtlasHealth } from "../workspaceAtlas/rebuildState.js";
 import { readObjectShard, readWorkspaceAtlas } from "../workspaceAtlas/store.js";
 import { searchWorkspaceAtlas } from "../workspaceAtlas/search.js";
 import { runAtlasCurator } from "../atlasCurator/run.js";
@@ -92,14 +93,28 @@ export function registerWorkspaceAtlasTools(server: McpServer): void {
               error: "not_built",
               message:
                 "Workspace atlas has not been compiled yet (no workspace-atlas.json on disk — common after deploy if the data directory is ephemeral). The server warms missing atlases on startup and rebuilds after hub changes; ask an editor to run tymio_rebuild_workspace_atlas once if this persists.",
-              metrics: workspaceAtlasMetrics
+              metrics: workspaceAtlasMetrics,
+              health: computeAtlasHealth({ tenantId, compiled: false, isStale: false })
             },
             null,
             2
           )
         );
       }
-      return textContent(JSON.stringify({ atlas, metrics: workspaceAtlasMetrics }, null, 2));
+      const materializedAt = new Date(atlas.materializedAt).getTime();
+      const sourceMaxUpdatedAt = new Date(atlas.sourceMaxUpdatedAt).getTime();
+      const isStale = materializedAt < sourceMaxUpdatedAt;
+      return textContent(
+        JSON.stringify(
+          {
+            atlas,
+            metrics: workspaceAtlasMetrics,
+            health: computeAtlasHealth({ tenantId, compiled: true, isStale })
+          },
+          null,
+          2
+        )
+      );
     }
   );
 

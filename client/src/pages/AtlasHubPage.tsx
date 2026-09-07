@@ -71,10 +71,34 @@ type FreshnessPayload = {
   ageMinutes: number;
 };
 
+type AtlasHealthPayload = {
+  status: "incomplete" | "rebuilding" | "error" | "stale" | "current";
+  pendingRebuild: boolean;
+  compiling: boolean;
+  lastRebuildAt: string | null;
+  lastErrorMessage: string | null;
+};
+
 type GitHealthConnection = Awaited<ReturnType<typeof api.getGitObserveHealth>>["connections"][number];
 type GitActivityRow = Awaited<ReturnType<typeof api.getGitObserveActivity>>["activities"][number];
 
 const TAB_IDS: AtlasTab[] = ["overview", "topics", "graph", "review", "connections"];
+
+function healthBadgeClass(status: AtlasHealthPayload["status"]): string {
+  switch (status) {
+    case "current":
+      return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200";
+    case "stale":
+      return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+    case "rebuilding":
+      return "bg-blue-50 text-blue-800 ring-1 ring-blue-200";
+    case "error":
+      return "bg-red-50 text-red-800 ring-1 ring-red-200";
+    case "incomplete":
+    default:
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }
+}
 
 function isAtlasTab(v: string | null): v is AtlasTab {
   return v != null && TAB_IDS.includes(v as AtlasTab);
@@ -99,6 +123,7 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [topicShard, setTopicShard] = useState<ObjectShardPayload | null>(null);
   const [freshness, setFreshness] = useState<FreshnessPayload | null>(null);
+  const [health, setHealth] = useState<AtlasHealthPayload | null>(null);
   const [gitHealth, setGitHealth] = useState<GitHealthConnection[]>([]);
   const [gitActivity, setGitActivity] = useState<GitActivityRow[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(false);
@@ -116,6 +141,7 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
       setCompiled(res.compiled);
       setAtlas(res.atlas as WorkspaceAtlasPayload | null);
       setFreshness(res.freshness);
+      setHealth(res.health);
     } finally {
       setLoadingAtlas(false);
     }
@@ -206,28 +232,56 @@ export function AtlasHubPage({ isAdmin, initiatives }: Props) {
             <Card className="p-4">
               <p className="text-sm text-slate-700">{t("atlasHub.notCompiled")}</p>
               <p className="mt-2 text-xs text-slate-500">{t("atlasHub.notCompiledHint")}</p>
+              {health ? (
+                <p className="mt-3">
+                  <span
+                    className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${healthBadgeClass(health.status)}`}
+                  >
+                    {t(`atlasHub.healthStatus.${health.status}`)}
+                  </span>
+                </p>
+              ) : null}
             </Card>
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Card className="p-3">
                   <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {t("atlasHub.freshness")}
+                    {t("atlasHub.freshnessHealth")}
                   </h2>
+                  {health ? (
+                    <p className="mt-2">
+                      <span
+                        className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${healthBadgeClass(health.status)}`}
+                      >
+                        {t(`atlasHub.healthStatus.${health.status}`)}
+                      </span>
+                    </p>
+                  ) : null}
                   <p className="mt-2 font-mono text-xs text-slate-700">
                     {freshness?.materializedAt ?? atlas.materializedAt}
                   </p>
                   <p className="mt-1 font-mono text-xs text-slate-500">
                     {freshness?.sourceMaxUpdatedAt ?? atlas.sourceMaxUpdatedAt}
                   </p>
-                  {freshness?.isStale ? (
+                  {health?.status === "stale" || freshness?.isStale ? (
                     <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
                       {t("atlasHub.staleWarning")}
+                    </p>
+                  ) : null}
+                  {health?.status === "error" && health.lastErrorMessage ? (
+                    <p className="mt-2 rounded bg-red-50 px-2 py-1 text-xs text-red-800">
+                      {t("atlasHub.rebuildError", { message: health.lastErrorMessage })}
                     </p>
                   ) : null}
                   {freshness ? (
                     <p className="mt-1 text-xs text-slate-500">
                       {t("atlasHub.ageMinutes", { n: freshness.ageMinutes })}
+                    </p>
+                  ) : null}
+                  {health?.lastRebuildAt ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {t("atlasHub.lastRebuildAt", { at: health.lastRebuildAt })}
                     </p>
                   ) : null}
                 </Card>

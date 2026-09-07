@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720">
+  <title>Atlas freshness and rebuild health wireframes</title>
+  <desc>
+    Slice A closeout for Living Project Atlas core. Extend Overview Freshness card to expose status:
+    current | stale | rebuilding | incomplete | error. Show last rebuild time and last error when present.
+    Workspace Settings (Slice B) is already shipped; hub status closeout only.
+  </desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1; }
+      .tabOn { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; }
+      .tabOff { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+      .hdr { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+      .sub { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 11px; font-weight: 600; fill: #334155; }
+      .txt { font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 10px; fill: #475569; }
+      .mono { font-family: ui-monospace, monospace; font-size: 9px; fill: #64748b; }
+      .card { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+      .ok { fill: #ecfdf5; stroke: #10b981; }
+      .warn { fill: #fffbeb; stroke: #d97706; }
+      .err { fill: #fef2f2; stroke: #ef4444; }
+      .info { fill: #eff6ff; stroke: #2563eb; }
+      .note { fill: #fffbeb; stroke: #d97706; stroke-width: 1; }
+    ]]></style>
+  </defs>
+
+  <text x="480" y="28" text-anchor="middle" class="hdr" font-size="16">Atlas Overview - freshness and rebuild health</text>
+  <text x="480" y="46" text-anchor="middle" class="txt">Feature: Atlas freshness and health visibility &#183; Route: /atlas?tab=overview &#183; GET /api/workspace-atlas</text>
+
+  <!-- Shell -->
+  <rect class="frame" x="24" y="64" width="912" height="280" rx="8"/>
+  <text x="40" y="90" class="hdr">Project atlas</text>
+  <text x="40" y="108" class="txt">Compiled workspace truth for humans and agents.</text>
+  <rect class="tabOn" x="40" y="120" width="72" height="24" rx="4"/>
+  <text x="76" y="136" text-anchor="middle" class="sub" fill="#1d4ed8">Overview</text>
+  <rect class="tabOff" x="118" y="120" width="56" height="24" rx="4"/>
+  <text x="146" y="136" text-anchor="middle" class="txt">Topics</text>
+  <rect class="tabOff" x="180" y="120" width="52" height="24" rx="4"/>
+  <text x="206" y="136" text-anchor="middle" class="txt">Graph</text>
+
+  <!-- Health card CURRENT -->
+  <rect class="card ok" x="40" y="160" width="210" height="150" rx="6"/>
+  <text x="52" y="182" class="sub">Freshness and health</text>
+  <rect class="ok" x="52" y="192" width="64" height="18" rx="4"/>
+  <text x="84" y="205" text-anchor="middle" class="txt" fill="#047857">Current</text>
+  <text x="52" y="228" class="mono">materializedAt</text>
+  <text x="52" y="244" class="mono">sourceMaxUpdatedAt</text>
+  <text x="52" y="264" class="txt">Compiled 3 minutes ago</text>
+  <text x="52" y="284" class="txt">Last rebuild OK</text>
+
+  <!-- Object counts remain -->
+  <rect class="card" x="264" y="160" width="400" height="150" rx="6"/>
+  <text x="276" y="182" class="sub">Object counts</text>
+  <text x="276" y="206" class="txt">domains &#183; products &#183; initiatives &#183; features &#183; requirements &#183; topics</text>
+  <text x="276" y="230" class="txt">Unchanged from existing Overview layout.</text>
+
+  <!-- Ontology -->
+  <rect class="card" x="680" y="160" width="236" height="150" rx="6"/>
+  <text x="692" y="182" class="sub">Ontology pointers</text>
+  <text x="692" y="206" class="txt">Capability brief (MCP)</text>
+  <text x="692" y="224" class="txt">Backlog spine reference</text>
+
+  <!-- Status variants -->
+  <text x="40" y="380" class="hdr">Status badge variants (same card)</text>
+
+  <rect class="card warn" x="40" y="396" width="210" height="100" rx="6"/>
+  <text x="52" y="418" class="sub">Stale</text>
+  <text x="52" y="440" class="txt">Hub changed after last compile.</text>
+  <text x="52" y="458" class="txt">Debounced rebuild pending or lag.</text>
+
+  <rect class="card info" x="264" y="396" width="210" height="100" rx="6"/>
+  <text x="276" y="418" class="sub">Rebuilding</text>
+  <text x="276" y="440" class="txt">Compile scheduled or running.</text>
+  <text x="276" y="458" class="txt">Client may poll / refresh.</text>
+
+  <rect class="card" x="488" y="396" width="210" height="100" rx="6"/>
+  <text x="500" y="418" class="sub">Incomplete</text>
+  <text x="500" y="440" class="txt">No workspace-atlas.json yet.</text>
+  <text x="500" y="458" class="txt">Same empty state as today.</text>
+
+  <rect class="card err" x="712" y="396" width="224" height="100" rx="6"/>
+  <text x="724" y="418" class="sub">Error</text>
+  <text x="724" y="440" class="txt">Last compile failed for tenant.</text>
+  <text x="724" y="458" class="mono">lastErrorMessage (truncated)</text>
+
+  <!-- Notes -->
+  <rect class="note" x="24" y="520" width="912" height="170" rx="8"/>
+  <text x="40" y="548" class="sub">Implementation notes</text>
+  <text x="40" y="570" class="txt">1. GET /api/workspace-atlas returns health: { status, pendingRebuild, lastRebuildAt, lastErrorMessage } plus existing freshness.</text>
+  <text x="40" y="590" class="txt">2. Status priority: incomplete &gt; rebuilding &gt; error &gt; stale &gt; current.</text>
+  <text x="40" y="610" class="txt">3. Track pending debounce + in-flight compile per tenantId (in-memory process state).</text>
+  <text x="40" y="630" class="txt">4. MCP tymio_get_workspace_atlas includes the same health object for agents.</text>
+  <text x="40" y="650" class="txt">5. Graph compiler feature: already satisfies AC (deterministic compile + indices + repo/work artifact auxiliary). Mark DONE; no UI change.</text>
+  <text x="40" y="670" class="txt">6. Slice B Workspace Settings: sidebar Admin item + i18n already shipped; hub status closeout only.</text>
+</svg>

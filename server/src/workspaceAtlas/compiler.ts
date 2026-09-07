@@ -5,6 +5,11 @@ import { prisma } from "../db.js";
 import { WORKSPACE_ATLAS_SCHEMA_VERSION } from "./constants.js";
 import { workspaceAtlasMetrics } from "./metrics.js";
 import { ensureTenantAtlasDirs, tenantAtlasDir } from "./paths.js";
+import {
+  markAtlasCompileFailed,
+  markAtlasCompileStarted,
+  markAtlasCompileSucceeded
+} from "./rebuildState.js";
 import { writeObjectShard, writeWorkspaceAtlas } from "./store.js";
 import type { ObjectShard, WorkspaceAtlas } from "./zodSchemas.js";
 import {
@@ -73,6 +78,7 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
   const started = Date.now();
   workspaceAtlasMetrics.rebuildTotal += 1;
   workspaceAtlasMetrics.lastRebuildTenantId = tenantId;
+  markAtlasCompileStarted(tenantId);
 
   try {
     const tenant = await prisma.tenant.findUnique({
@@ -446,12 +452,14 @@ export async function compileWorkspaceAtlasForTenant(tenantId: string): Promise<
 
     workspaceAtlasMetrics.lastRebuildAt = new Date().toISOString();
     workspaceAtlasMetrics.lastErrorMessage = null;
+    markAtlasCompileSucceeded(tenantId);
     console.log(
       `[workspace-atlas] compiled tenant=${tenant.slug} in ${Date.now() - started}ms (objects=${atlas.objectCounts.initiative} inits, ${atlas.objectCounts.feature} features)`
     );
   } catch (err) {
     workspaceAtlasMetrics.rebuildErrors += 1;
     workspaceAtlasMetrics.lastErrorMessage = err instanceof Error ? err.message : String(err);
+    markAtlasCompileFailed(tenantId, workspaceAtlasMetrics.lastErrorMessage);
     console.error("[workspace-atlas] compile failed:", err);
     throw err;
   }
