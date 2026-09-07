@@ -14,9 +14,9 @@ jobs:
     name: Build gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: npm
@@ -35,7 +35,7 @@ jobs:
     outputs:
       should_deploy: ${{ steps.paths.outputs.should_deploy }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 2
       - id: paths
@@ -62,7 +62,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Wait for Railway deploy SHA
         env:
           DEPLOY_VERIFY_ATTEMPTS: "60"
@@ -80,5 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
+          set -euo pipefail
           echo "Build gate passed. Commit only touches non-Railway paths; production SHA verify skipped."
-          curl -sf https://tymio.app/api/health | python3 -m json.tool
+          curl -sf https://tymio.app/api/health -o /tmp/tymio-health.json
+          python3 -m json.tool </tmp/tymio-health.json
