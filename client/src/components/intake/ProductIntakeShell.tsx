@@ -70,7 +70,12 @@ export function ProductIntakeShell({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      const id = sessionIdRef.current;
+      if (id) {
+        void api.updateIntakeSession(id, { status: "ABANDONED" }).catch(() => undefined);
+      }
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

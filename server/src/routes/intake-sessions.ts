@@ -184,7 +184,10 @@ intakeSessionsRouter.post("/:id/analyze", requireWorkspaceContentWrite(), async 
     res.status(404).json({ error: "Intake session not found" });
     return;
   }
-  if (existing.status === IntakeSessionStatus.COMMITTED) {
+  if (
+    existing.status === IntakeSessionStatus.COMMITTED ||
+    existing.status === IntakeSessionStatus.COMMITTING
+  ) {
     res.status(409).json({ error: "Intake session already committed" });
     return;
   }
