@@ -46,6 +46,7 @@ import type {
   AttachmentLink,
   AttachmentBackupJob,
   IntakeSession,
+  CreationPlan,
   UseCase,
   SecurityTopic,
   ArchitectureTopic,
@@ -210,14 +211,35 @@ export const api = {
       session: IntakeSession;
       analyze: {
         stub: boolean;
+        source?: string;
         needsClarification: boolean;
-        creationPlan: unknown;
+        creationPlan: CreationPlan | null;
         confidence: number | null;
         message: string;
       };
     }>(`/api/intake-sessions/${id}/analyze`, {
       method: "POST",
       body: JSON.stringify({})
+    }),
+  clarifyIntakeSession: async (id: string, answers: Record<string, string>) =>
+    request<{
+      session: IntakeSession;
+      analyze: {
+        stub: boolean;
+        source?: string;
+        needsClarification: boolean;
+        creationPlan: CreationPlan | null;
+        confidence: number | null;
+        message: string;
+      };
+    }>(`/api/intake-sessions/${id}/clarify`, {
+      method: "POST",
+      body: JSON.stringify({ answers })
+    }),
+  updateIntakePlan: async (id: string, creationPlan: CreationPlan) =>
+    request<{ session: IntakeSession }>(`/api/intake-sessions/${id}/plan`, {
+      method: "PATCH",
+      body: JSON.stringify({ creationPlan })
     }),
   updateInitiative: async (id: string, body: unknown) =>
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {

@@ -289,7 +289,7 @@ export type IntakeSession = {
   sourceChannel?: string | null;
   sourceMeta?: unknown;
   clarification?: unknown;
-  creationPlan?: unknown;
+  creationPlan?: CreationPlan | null;
   drafts?: unknown;
   analyzeError?: string | null;
   confidence?: number | null;
@@ -297,6 +297,30 @@ export type IntakeSession = {
   committedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CreationPlanItem = {
+  key: string;
+  hubEntityType: "Initiative" | "Feature" | "Requirement";
+  title: string;
+  parentKey?: string | null;
+  storyType?: "FUNCTIONAL" | "BUG" | "TECH_DEBT" | "RESEARCH" | null;
+  suggestedPriority?: "P0" | "P1" | "P2" | "P3" | "DISCOVERY" | null;
+  bugSeverity?: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | null;
+  routeHint?: {
+    initiativeId?: string | null;
+    featureId?: string | null;
+    rationale?: string;
+  };
+};
+
+export type CreationPlan = {
+  planType: "SINGLE_FEATURE" | "SINGLE_BUG_FEATURE" | "MULTI_ITEMS" | "INITIATIVE_TREE" | "MIXED";
+  rationale: string;
+  confidence: number;
+  needsClarification?: boolean;
+  clarificationQuestions?: Array<{ id: string; prompt: string; choices?: string[] }>;
+  items: CreationPlanItem[];
 };
 
 export type UseCase = {
