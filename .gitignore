@@ -9,4 +9,9 @@ playwright-report/
 test-results/
 # Local attachment blob storage (dev / Railway volume)
 server/data/attachments/
+# Local atlas compile cache (do not commit tenant shards)
+server/data/workspace-atlas/
 tmp/
+# Cloudflare Worker local tooling
+workers/**/.wrangler/
+workers/**/node_modules/
