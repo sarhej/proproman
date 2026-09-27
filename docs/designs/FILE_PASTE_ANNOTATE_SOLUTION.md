@@ -1,10 +1,24 @@
 # File paste / upload / annotate — solution design
 
-**Status:** Implemented (v0 library + annotate + admin) — original kept; annotated is a separate sibling PNG  
-**Date:** 2026-07-16 (updated 2026-07-16)  
-**Related:** `AI_PRODUCT_INTAKE_PARSER_SCHEMAS.md`, `AI_PRODUCT_INTAKE_WIREFRAMES.svg`  
+**Status:** Shipped through durable R2 (2026-09-27) — library + annotate + admin + private object storage  
+**Date:** 2026-07-16 (updated 2026-09-27)  
+**Related:** `AI_PRODUCT_INTAKE_PARSER_SCHEMAS.md`, `AI_PRODUCT_INTAKE_WIREFRAMES.svg`, `../ATTACHMENT_STORAGE.md`  
 **Wireframes:** `FILE_PASTE_ANNOTATE_WIREFRAMES.svg`  
-**Reference studied:** `/Users/supersergio/projects/cursor-mobile` (patterns only)
+**Reference studied:** `/Users/supersergio/projects/cursor-mobile` (patterns only)  
+**Hub epic:** Workspace files & artifacts library (KB) — workspace `tymio`
+
+### Shipped (production)
+
+| Slice | Status |
+|-------|--------|
+| `Attachment` + `AttachmentLink` + `/api/attachments` | Done |
+| Paste / upload / annotate (ORIGINAL + ANNOTATED siblings) | Done |
+| AttachmentPanel on Initiative / Feature / Requirement | Done |
+| Admin Artifacts console (browse / retire / restore / purge) | Done |
+| Durable blobs: Cloudflare R2 via Worker (`ATTACHMENT_STORAGE_DRIVER=worker`) | Done (2026-09-27; PRs #43–#44) |
+| Agent / MCP attachment tools; full backup archive zip | Not yet (v2) |
+
+Ops details: [`docs/ATTACHMENT_STORAGE.md`](../ATTACHMENT_STORAGE.md).
 
 ### Implemented annotation model
 
@@ -16,6 +30,8 @@
 ---
 
 ## 0. Executive recommendation (read first)
+
+> **Historical note:** Sections below retain the 2026-07 research framing. Platform primitives and durable R2 storage are now in production; see **Shipped** above.
 
 Tymio today has **no binary attachment system**. Links (PR/Figma/URLs), plain-text notes/comments, and marketing `Asset.url` fields exist — not blob storage, not paste-of-screenshot, not markup.
 
@@ -77,15 +93,15 @@ No screenshot capture or markup UI exists.
 
 ### 1.5 Storage, MIME, size limits
 
-| Layer | Finding |
-|-------|---------|
-| Object storage (S3 / R2 / MinIO) | **No** app integration / env conventions for user files |
-| Atlas on disk | `WORKSPACE_ATLAS_DATA_DIR` — compiled JSON shards, **not** user uploads; ephemeral PaaS disks need a volume or rebuild |
-| Express body | `express.json({ limit: "10mb" })` — JSON only; would not correctly serve multipart uploads |
-| MIME allowlists | **None** for uploads (nothing to allowlist) |
-| Privacy / ToS | Mentions uploads/attachments as possible personal data / abuse vector — anticipates capability, doesn’t define it |
+| Layer | Finding (2026-07 research) | 2026-09 status |
+|-------|---------------------------|----------------|
+| Object storage (S3 / R2 / MinIO) | No app integration | **R2** via Worker; also `local` / `s3` drivers |
+| Atlas on disk | Compiled JSON shards, not user uploads | Unchanged |
+| Express multipart | Needed for uploads | Multer memory upload + MIME/size validation |
+| MIME allowlists | None | Images + audio (voice) + transcript text |
+| Tenant key prefix | N/A | `tenants/{tenantId}/attachments/...` asserted in API + Worker |
 
-**Implication:** any real attachment feature needs a **new storage choice** (R2 / S3 / Railway volume + local FS for small deployments) and **new authz** (tenant + membership on every byte).
+**Implication (resolved):** production uses private Cloudflare R2; browsers never hold R2 credentials — Tymio API streams after tenant auth.
 
 ### 1.6 Design docs & hub (intake / attachments)
 
@@ -367,13 +383,15 @@ Do **not** overload `WorkArtifactLink` / `DesignArtifactLink` / marketing `Asset
 
 ### 7.2 Object storage
 
-| Option | Fit |
-|--------|-----|
-| **Cloudflare R2** | Strong if already on CF; S3 API; cheap egress |
-| **S3 / compatible** | Universal |
-| **Railway volume + local FS** | OK for single-tenant/dev; weak for multi-region and signed CDN |
+| Option | Fit | Production choice |
+|--------|-----|-------------------|
+| **Cloudflare R2** | Strong if already on CF; S3 API; cheap egress | **Chosen** — private bucket `tymio-attachments-prod` |
+| **S3 / compatible** | Universal | Supported via `ATTACHMENT_STORAGE_DRIVER=s3` |
+| **Railway volume + local FS** | OK for single-tenant/dev; weak for multi-region | Dev / fallback (`local`) |
 
-**Recommend:** S3-compatible (R2 or S3) with keys:
+**Production path (Phase 1):** `ATTACHMENT_STORAGE_DRIVER=worker` — Railway calls Cloudflare Worker `tymio-attachments` (R2 binding + shared Bearer secret). No S3 API tokens on Railway. Uploads/downloads are **API-proxied** (Worker returns null for signed URLs).
+
+Keys:
 
 `tenants/{tenantId}/attachments/{yyyy}/{mm}/{attachmentId}/{filename}`
 
@@ -381,14 +399,16 @@ Backup artifacts (manifests / archives) under a sibling prefix:
 
 `tenants/{tenantId}/attachment-backups/{jobId}/...`
 
+See [`docs/ATTACHMENT_STORAGE.md`](../ATTACHMENT_STORAGE.md).
+
 ### 7.3 AuthZ & safety
 
 - All APIs under existing tenant resolver + membership.
 - **Read (preview/download ACTIVE):** MEMBER+ (or VIEWER — **decide with user**).
 - **Upload / link / annotate:** EDITOR+.
 - **Admin library, retire, restore, backup, hard-delete:** ADMIN+ (SUPER_ADMIN for purge-all / cross-tenant never).
-- **Presigned PUT** (preferred) or authenticated multipart via API; never anonymous upload.
-- **Signed GET** with short TTL for previews; no permanent public URLs by default.
+- **Phase 1 (shipped):** authenticated multipart via API; never anonymous upload; no permanent public URLs.
+- **Later:** optional short-TTL signed PUT/GET if direct-to-R2 is needed (Worker currently returns null for signed URLs).
 - Retired attachments: metadata visible to ADMIN; downloads only via admin restore or explicit “download retired” (audit-logged).
 - Allowlist MIME v0: `image/png`, `image/jpeg`, `image/webp` (+ `image/gif` optional).
 - Caps (starting point): **10 MiB / file**, **10 links / entity**, **20 / intake session**, soft **quota per tenant** (visible in Admin).
@@ -474,24 +494,22 @@ Annotated PNG is the default model input (arrows/rects visible). Keep original f
 | **v2** | **Backup jobs** (manifest ± archive) + MCP tools + agent upload + vision intake | Admin can export; agents attach by id |
 | **v3** | Scheduled backups, purge policies, PDF, virus scan, editable overlay | Enterprise-ready |
 
-**Explicit:** **NO IMPLEMENTATION YET — awaiting approval** of this design (library-first model, admin surfaces, storage vendor, annotate bake strategy, RBAC).
+**Explicit (2026-09):** Library, annotate, admin, and durable R2 are **shipped**. Remaining open items are mainly **v2** (MCP/agent tools, full backup archive, PDF, scheduled purge).
 
 ---
 
 ## 11. Open questions for the user
 
-1. **Primary capture home for v0:** Intake-only first, or Feature/Requirement attachments first (or both in one PR)?
-2. **Object storage:** R2 vs S3 vs Railway volume for MVP — any existing vendor preference / account?
+1. **Primary capture home for v0:** Resolved — Feature/Requirement/Initiative panels + intake hooks.
+2. **Object storage:** Resolved — Cloudflare R2 + Worker (`docs/ATTACHMENT_STORAGE.md`).
 3. **RBAC:** Can VIEWER download ACTIVE files? Upload = EDITOR+? Admin library/retire/backup = ADMIN+ only (recommended)?
-4. **Annotation persistence:** Confirm **original + baked PNG** for v1 (vs vector overlay)?
-5. **Global ⌘V overlay:** defer (recommended) or want magic paste in v1?
-6. **Non-image files in v0:** images only, or also PDF?
-7. **Retire grace:** soft retire only until v2 backup exists, or allow hard delete in v0.5 with double confirm?
+4. **Annotation persistence:** Resolved — original + baked PNG sibling.
+5. **Global Cmd+V overlay:** defer (recommended) or want magic paste in v1?
+6. **Non-image files:** images + voice audio/transcript shipped; PDF still open.
+7. **Retire / hard delete:** hard delete with confirm shipped; grace/backup policy still open for v2.
 8. **Backup format:** manifest-only first (cheap) vs full blob archive in first backup ship?
 9. **Nav placement:** Admin → Artifacts under existing Admin menu — OK?
-10. **Hub:** create/refine a Feature+Requirements under the AI Product Intake initiative once design is approved?
-
----
+10. **Hub:** create/refine Features under AI Product Intake once design is approved?
 
 ## 12. Suggested implementation notes (post-approval only)
 
@@ -507,18 +525,19 @@ Annotated PNG is the default model input (arrows/rects visible). Keep original f
 
 | Capability | Today | Needed |
 |------------|-------|--------|
-| Paste image | No | Yes (context-bound) |
-| Drag-drop files | No | Yes |
-| File picker upload | No | Yes |
-| Annotate screenshot | No | Yes (v1) |
-| Durable blob store | No | Yes |
-| Workspace artifact library | No | Yes (first-class Attachment) |
-| Reuse across objects | No | Yes (AttachmentLink many) |
-| Admin manage / retire | No | Yes (v0.5) |
-| Backup / export | No | Yes (v2) |
-| Attach to Feature/Requirement | Links only | Binary AttachmentLink |
-| Intake attachments | Schema only | Implement with real storage |
-| MCP attach | No | v2 |
+| Paste image | No | **Yes** |
+| Drag-drop files | No | **Yes** |
+| File picker upload | No | **Yes** |
+| Annotate screenshot | No | **Yes** |
+| Durable blob store | No | **Yes (R2 Worker, 2026-09)** |
+| Workspace artifact library | No | **Yes** |
+| Reuse across objects | No | **Yes (AttachmentLink)** |
+| Admin manage / retire | No | **Yes** |
+| Backup / export | No | Partial (manifest job); full archive **v2** |
+| Attach to Feature/Requirement | Links only | **Yes** |
+| Agent / MCP attachment tools | No | **v2** |
+| Intake attachments | Schema only | Partial (real Attachment storage; full intake UX ongoing) |
+| MCP attach | No | **v2** |
 | Clipboard copy text | Yes | Keep |
 
 ## Appendix B — Alignment with AI Product Intake
