@@ -28,7 +28,8 @@ export class WorkerAttachmentStorage implements AttachmentStorage {
     const res = await fetch(this.objectUrl(key), {
       method: "PUT",
       headers: this.headers(contentType),
-      body
+      // Node fetch typings reject Buffer; Uint8Array is a valid BodyInit.
+      body: new Uint8Array(body)
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
