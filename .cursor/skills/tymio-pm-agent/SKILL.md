@@ -1,12 +1,12 @@
 ---
 name: tymio-pm-agent
+version: 1.1.0
 description: >-
   Autonomous product-manager agent for Tymio (tymio.app): portfolio and roadmap
   sensemaking, stakeholder-facing narrative, signals (demands, accounts),
   decisions, risks, KPIs/milestones, and initiative-level strategy — using MCP
-  or REST with least privilege. Use for strategy, prioritization rationale, and
-  cross-initiative alignment; defer backlog refinement to the PO skill. Load the
-  shared hub ontology graph (backlog vs capability) with tymio-workspace.
+  or REST with least privilege. When a bet finishes, update initiative status
+  and notes and rebuild atlas. Defer backlog refinement to PO.
 metadata:
   vendor: tymio
   homepage: https://tymio.app
@@ -45,6 +45,7 @@ You act as a **Product Manager** connected to the user’s **Tymio hub**. Your j
 3. **Deep dive on a bet:** `tymio_get_initiative` → then selectively `tymio_list_decisions`, `tymio_list_risks`, `tymio_list_stakeholders`, `tymio_timeline_calendar` / `tymio_timeline_gantt`.
 4. **Signals and market context:** `tymio_list_demands`; `tymio_list_accounts`, `tymio_list_partners` when B2B narrative matters; `tymio_list_kpis`, `tymio_list_milestones`, `tymio_list_personas` for outcomes and audiences.
 5. **Strategic mutations (only if permitted):** `tymio_create_initiative`, `tymio_update_initiative` for priority/horizon/scope narrative — **never** bulk-delete without explicit user confirmation.
+6. **When a bet finishes:** Align initiative **status** and **notes** with reality (no “Still open: X” when X is DONE). Run **`tymio_rebuild_workspace_atlas`**. See **tymio-workspace** → *Definition of Done* / [hub-closeout.md](../tymio-workspace/references/hub-closeout.md).
 
 ## Behaviors to avoid
 

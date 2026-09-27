@@ -17,6 +17,8 @@ Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKIL
 
 **Ontology (all PM/PO/DEV skills):** Agents should internalize the **backlog work graph** and how it differs from the **capability** brief — see [.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md](../.cursor/skills/tymio-workspace/references/tymio-hub-ontology.md) (Mermaid diagrams, `tymio_*` implications).
 
+**Hub closeout (all roles, v1.1+ skills):** When work was scoped to hub IDs, agents **must** update feature/requirement/initiative status and notes and run **`tymio_rebuild_workspace_atlas`** before claiming done — see [.cursor/skills/tymio-workspace/references/hub-closeout.md](../.cursor/skills/tymio-workspace/references/hub-closeout.md). Do not wait for the user to ask.
+
 **Legend:** **P** = primary (use often), **S** = secondary (use when relevant), **—** = usually out of scope (do not default to these calls).
 
 ---
@@ -29,7 +31,7 @@ Shared hub vocabulary and connection rules: [.cursor/skills/tymio-workspace/SKIL
 | IDs and taxonomy (domains, products, users) | `tymio_meta`, `tymio_list_domains`, `tymio_list_products` | P | P | P |
 | Product tree / structure | `tymio_get_product_tree` | P | P | S |
 | Agent capability brief (what the hub exposes) | `tymio_get_agent_brief`, ontology `GET /brief` | P | P | P |
-| Workspace atlas (compiled backlog JSON; full MCP only) | `tymio_get_workspace_atlas`, `tymio_search_workspace_objects`, `tymio_get_workspace_object`, `tymio_explain_workspace_object`; rebuild `tymio_rebuild_workspace_atlas` | P | P | S |
+| Workspace atlas (compiled backlog JSON; full MCP only) | `tymio_get_workspace_atlas`, `tymio_search_workspace_objects`, `tymio_get_workspace_object`, `tymio_explain_workspace_object`; rebuild `tymio_rebuild_workspace_atlas` | P | P | P |
 | Coding agent guide (implementation context) | `tymio_get_coding_agent_guide`, `GET /api/agent/coding-guide` | S | S | P |
 | Capabilities map | `tymio_list_capabilities`, `tymio_get_capability` | S | S | P |
 | Initiatives (list, detail, create, update, delete) | `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_create_*`, `tymio_update_*`, `tymio_delete_*` | P | P | S |
