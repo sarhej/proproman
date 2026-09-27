@@ -1,0 +1,8 @@
+name = "tymio-attachments"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+account_id = "fdaf1e9e1ecceb7fa8fd4ed322dc14a4"
+
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "tymio-attachments-prod"

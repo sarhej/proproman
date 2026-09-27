@@ -2,11 +2,12 @@
  * Object storage adapter for workspace attachments.
  *
  * Env (document in ops notes; do not commit secrets):
- * - ATTACHMENT_STORAGE_DRIVER=local|s3 (default: local)
+ * - ATTACHMENT_STORAGE_DRIVER=local|s3|worker (default: local)
  * - ATTACHMENT_STORAGE_DIR — local FS root (default: server/data/attachments)
  * - ATTACHMENT_S3_BUCKET, ATTACHMENT_S3_REGION, ATTACHMENT_S3_ENDPOINT (optional for R2/MinIO)
  * - ATTACHMENT_S3_ACCESS_KEY_ID, ATTACHMENT_S3_SECRET_ACCESS_KEY
  * - ATTACHMENT_S3_FORCE_PATH_STYLE=true for MinIO
+ * - ATTACHMENT_WORKER_URL, ATTACHMENT_WORKER_SECRET — Cloudflare Worker + R2 (prod path)
  */
 
 export interface AttachmentStorage {

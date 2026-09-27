@@ -106,10 +106,12 @@ const envSchema = z.object({
   /** Optional: GitLab instance origin for OAuth/token (default https://gitlab.com). */
   VCS_GITLAB_BASE_URL: optionalString,
   /**
-   * Attachment blob storage driver: `local` (default, FS under ATTACHMENT_STORAGE_DIR) or `s3`.
-   * S3-compatible (R2/MinIO): set ATTACHMENT_S3_* — never commit secrets.
+   * Attachment blob storage driver:
+   * - `local` (default) — FS under ATTACHMENT_STORAGE_DIR
+   * - `s3` — S3-compatible (R2/MinIO) via ATTACHMENT_S3_*
+   * - `worker` — Cloudflare Worker + R2 binding via ATTACHMENT_WORKER_URL + ATTACHMENT_WORKER_SECRET
    */
-  ATTACHMENT_STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
+  ATTACHMENT_STORAGE_DRIVER: z.enum(["local", "s3", "worker"]).default("local"),
   /** Local FS root for attachment blobs (default: server/data/attachments). */
   ATTACHMENT_STORAGE_DIR: optionalString,
   ATTACHMENT_S3_BUCKET: optionalString,
@@ -121,6 +123,10 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true" || v === "1" || v === "yes"),
+  /** Base URL of tymio-attachments Worker (no trailing slash required). */
+  ATTACHMENT_WORKER_URL: optionalString,
+  /** Shared Bearer secret for Worker (must match Worker SHARED_SECRET). */
+  ATTACHMENT_WORKER_SECRET: optionalString,
   /**
    * Voice STT (Whisper). Default on unless explicitly disabled.
    * Uses SPEECH_OPENAI_API_KEY, else WORKSPACE_ATLAS_OPENAI_API_KEY.
