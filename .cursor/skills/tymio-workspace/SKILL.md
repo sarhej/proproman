@@ -1,14 +1,16 @@
 ---
 name: tymio-workspace
+version: 1.1.0
 description: >-
   Works with Tymio (tymio.app) via MCP or REST — connect, authenticate (OAuth
   first; never assume an authenticated session), map everyday language to hub
   entities (Product, Initiative, Feature, Requirement), use ontology briefs,
-  the backlog entity graph, and backlog tools safely. Use when the user mentions
-  Tymio, tymio.app, tymio_* MCP tools, workspace hub,
-  initiatives, roadmap MCP, OAuth / mcp_auth for Tymio, tymio-mcp login,
-  multiple workspaces / tenants / switching workspace, or connecting an AI agent
-  to their product hub.
+  the backlog entity graph, and backlog tools safely. Enforces hub closeout
+  (status, notes, atlas) when agents ship hub-scoped work. Use when the user
+  mentions Tymio, tymio.app, tymio_* MCP tools, workspace hub, initiatives,
+  roadmap MCP, OAuth / mcp_auth for Tymio, tymio-mcp login, multiple
+  workspaces / tenants / switching workspace, or connecting an AI agent to
+  their product hub.
 metadata:
   vendor: tymio
   homepage: https://tymio.app
@@ -160,6 +162,22 @@ Agents work better when they separate **two** notions:
 5. `tymio_meta` or `GET /meta` — resolve `domainId`, `productId`, etc., after auth (tenant-scoped — same IDs are invalid in another workspace).
 6. List/update work: `tymio_list_initiatives`, `tymio_get_initiative`, `tymio_list_features`, `tymio_list_requirements`, and matching `tymio_update_*` or REST PATCH.
 7. After shipping product/API changes that affect agents, remind admins to refresh ontology bindings and recompile briefs when applicable.
+8. **Closeout (mandatory when hub-scoped):** Before claiming done, follow [references/hub-closeout.md](references/hub-closeout.md) — update feature/requirement/initiative status and notes, then **`tymio_rebuild_workspace_atlas`**. Do not wait for the user to ask.
+
+## Definition of Done (hub-scoped work)
+
+If the session used hub IDs (or you shipped against a named epic/feature), **refuse** to end with “done” until this checklist is done — or you explicitly report the blocker (auth, role, wrong MCP URL). Full write-up: [references/hub-closeout.md](references/hub-closeout.md) (monorepo); the rules below ship inside this skill for catalog installs.
+
+**Mandatory when hub-scoped (do not wait for the user to ask):**
+
+1. Update shipped **features** / **requirements** to accurate status (`DONE`, `deployedToStage` when production).
+2. Put **what shipped** (PR/commit/verification) in feature description or initiative **notes**.
+3. Update parent **initiative** status/notes when the slice is complete (or leave `IN_PROGRESS` with honest follow-ups).
+4. Run **`tymio_rebuild_workspace_atlas`** after status/notes changes (EDITOR+).
+5. Update durable **repo ops/docs** if env/storage/integration changed.
+6. Never claim hub updates without a successful authenticated tool/REST response.
+
+**Do not** invent new backlog rows for ad-hoc chat work that had no hub IDs.
 
 ## Roles
 

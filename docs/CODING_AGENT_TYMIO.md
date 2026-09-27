@@ -177,11 +177,18 @@ Use this when the org has an existing product or backlog (docs, tickets, spreads
 2. Map hub IDs (initiative / feature / requirement) into **commit messages**, **PR descriptions**, or **issue links** in your tracker so traceability is bidirectional.
 3. After adding **routes, MCP tools, or Prisma models**, update hub **ontology** (Admin → Ontology) or run **`ontology:refresh`** so bindings stay true. For **new MCP tools**, also update **`registeredMcpToolNames.ts`** (see **§3.5**).
 
-### 6.3 Manage state in Tymio (after shipping)
+### 6.3 Manage state in Tymio (after shipping) — **mandatory if hub-scoped**
 
-1. Update **requirement** status / **isDone** via API or **`tymio_update_requirement`** (and related tools).
-2. Move **initiative** status (e.g. to DONE) when the epic closes.
-3. Record **decisions, risks, dependencies** if the team uses those modules (see MCP tools list).
+Do **not** wait for the user to ask “close the tasks / update the KB / rebuild atlas.”
+
+1. Update **feature** status (`DONE`, `deployedToStage` when production) via **`tymio_update_feature`**; update **requirements** via **`tymio_update_requirement`** / upsert as your team uses them.
+2. Write **what shipped** (PR/commit/verification) into feature **description** or initiative **notes**.
+3. Move **initiative** status when the epic slice closes; keep notes honest about follow-ups.
+4. Call **`tymio_rebuild_workspace_atlas`** after status/notes changes so agents do not read stale shards.
+5. Update durable **repo docs** if ops/integration changed (e.g. `docs/tymio.md`, ops guides).
+6. Record **decisions, risks, dependencies** if the team uses those modules.
+
+Canonical agent rule: `.cursor/skills/tymio-workspace/references/hub-closeout.md` (also summarized in **tymio-workspace** / **tymio-dev-agent** skills v1.1+).
 
 ### 6.4 If a shell view is “missing”
 
@@ -191,7 +198,9 @@ Non–super-admins may have **Navigation views** turned off. SUPER_ADMIN: **Admi
 
 ## 7. Checklist before closing an agent task
 
-- [ ] Initiative / feature / requirement IDs referenced or updated if the task was tracked in Tymio.
+- [ ] If hub-scoped: features/requirements updated to match reality (**not** left `PLANNED` after ship).
+- [ ] Initiative notes/status updated; **`tymio_rebuild_workspace_atlas`** run when hub rows changed.
+- [ ] Initiative / feature / requirement IDs cited in PR/summary.
 - [ ] Ontology refreshed or Admin compile run if you changed **API surface, routes, or tools**; for **new `registerTool` names**, **`registeredMcpToolNames.ts`** updated and Vitest drift test green (**§3.5**).
 - [ ] No assumption of SUPER_ADMIN unless the connected account is one.
 - [ ] Production DB: avoid destructive seeds and unreviewed **import** merges.

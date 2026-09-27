@@ -327,10 +327,14 @@ For production at **tymio.app**, the OAuth web client should include:
 
 ## 12. Checklist before closing an agent task
 
-- [ ] Tymio initiative/feature/requirement IDs cited or updated if the task was tracked in the hub.
+- [ ] If the task was hub-scoped: update feature/requirement **status** (and initiative notes) to match what shipped — do **not** wait for the user to ask.
+- [ ] After those hub updates: **`tymio_rebuild_workspace_atlas`** (EDITOR+) so atlas shards are not stale.
+- [ ] Tymio initiative/feature/requirement IDs cited in your summary/PR.
 - [ ] If the **API surface** changed, **ontology** updated: admin **Refresh default bindings** / **Compile** where applicable, or manual capability/binding edits (see **§5**).
 - [ ] No destructive demo seeds or unreviewed imports against **production**.
 - [ ] If MCP/REST was unavailable, you stated that clearly and gave the user **UI + API_KEY + MCP** setup options — you did **not** claim tenant data was created without a successful authenticated call.
+
+**Install skills v1.1+** (`tymio-workspace`, `tymio-dev-agent`, …) via `tymio-mcp bootstrap --skills` or `tymio_install_skill` so Cursor/Claude agents get the mandatory closeout DoD.
 
 ---
 

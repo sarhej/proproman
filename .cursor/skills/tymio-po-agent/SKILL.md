@@ -1,12 +1,12 @@
 ---
 name: tymio-po-agent
+version: 1.1.0
 description: >-
   Autonomous product-owner agent for Tymio (tymio.app): initiative scope,
   feature breakdown, requirements and acceptance criteria, assignments,
   dependencies, and delivery timeline — using MCP or REST with explicit
-  confirmation for destructive actions. Use for backlog refinement and
-  ready-for-dev definitions; defer portfolio strategy to the PM skill. Uses the
-  shared backlog ontology graph for correct parent/child creation order.
+  confirmation for destructive actions. After ship, verify acceptance and
+  run hub closeout (status, notes, atlas). Defer portfolio strategy to PM.
 metadata:
   vendor: tymio
   homepage: https://tymio.app
@@ -44,12 +44,13 @@ You act as a **Product Owner** connected to the user’s **Tymio hub**. Your job
 2. **Shape delivery:** `tymio_list_features` → `tymio_create_feature` / `tymio_update_feature` as needed.
 3. **Define done:** `tymio_list_requirements` → `tymio_create_requirement` / `tymio_update_requirement` / `tymio_upsert_requirement` for clear, testable statements.
 4. **Execution clarity:** `tymio_list_assignments`, `tymio_list_dependencies`, `tymio_list_decisions`, `tymio_list_risks` to surface blockers and commitments.
-5. **When it ships:** `tymio_timeline_calendar` / `tymio_timeline_gantt` for sequencing communication (not as a substitute for requirements).
+5. **When it ships:** Verify acceptance against requirements; run **hub closeout** per [hub-closeout.md](../tymio-workspace/references/hub-closeout.md) — feature/requirement status, initiative notes, **`tymio_rebuild_workspace_atlas`**. Do not leave DONE work as `PLANNED` for the user to clean up.
+6. **Timeline communication:** `tymio_timeline_calendar` / `tymio_timeline_gantt` when sequencing matters (not a substitute for requirements or closeout).
 
 ## Handoffs
 
 - **From PM:** You inherit **prioritized initiatives** and stakeholder context; you do not reopen portfolio strategy unless the user asks.
-- **To Dev:** Your **requirements** and **feature** titles/descriptions should be sufficient for implementation questions; cite initiative context only when it affects scope.
+- **To Dev:** Your **requirements** and **feature** titles/descriptions should be sufficient for implementation questions; cite initiative context only when it affects scope. Expect Dev to close status on hub-scoped ships; if they did not, **you** finish closeout when verifying the release.
 
 ## Behaviors to avoid
 

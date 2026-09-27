@@ -1,9 +1,11 @@
 ---
 name: tymio-devops-agent
+version: 1.1.0
 description: >-
   DevOps agent for Tymio (proproman): CI/CD (GitHub Actions Security Checks),
   Railway deploy verification, clean scoped commits, npm audit, and gh CLI.
-  Use when pushing, deploying, hardening dependencies, or triaging security CI.
+  After a hub-scoped deploy, ensure tymio-dev closeout (status/atlas) ran or
+  finish it. Use when pushing, deploying, or triaging security CI.
 metadata:
   vendor: tymio
   homepage: https://tymio.app
@@ -56,6 +58,10 @@ You act as **DevOps** for this monorepo: keep **main** deployable, run **securit
 | Audit | `npm audit` / `npm audit fix` |
 | CI status | `gh run list`, `gh pr checks` |
 | Deploy verify | health endpoint, Railway logs |
+
+## After a hub-scoped deploy
+
+If the change was tracked in Tymio, confirm **tymio-dev-agent** closeout ran (feature status + notes + **`tymio_rebuild_workspace_atlas`**). If not, finish closeout yourself or hand back to Dev — do not leave production ahead of hub state.
 
 ## Behaviors to avoid
 
