@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   ATTACHMENT_MAX_BYTES,
   ATTACHMENT_AUDIO_MAX_BYTES,
+  assertAttachmentStorageKey,
   buildAttachmentStorageKey,
   sanitizeFilename,
   sha256Hex,
@@ -83,6 +84,20 @@ describe("attachment constants", () => {
     expect(tenantIdFromAttachmentStorageKey(key)).toBe("t1");
     expect(tenantIdFromAttachmentStorageKey("pending")).toBeNull();
     expect(sha256Hex(PNG_1X1)).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("assertAttachmentStorageKey enforces tenant prefix", () => {
+    expect(() =>
+      assertAttachmentStorageKey("tenants/t1/attachments/2026/07/a1/x.png")
+    ).not.toThrow();
+    expect(() =>
+      assertAttachmentStorageKey("tenants/t1/attachments/2026/07/a1/x.png", "t1")
+    ).not.toThrow();
+    expect(() => assertAttachmentStorageKey("pending")).toThrow(/Invalid storage key/);
+    expect(() => assertAttachmentStorageKey("../escape")).toThrow(/Invalid storage key/);
+    expect(() =>
+      assertAttachmentStorageKey("tenants/t1/attachments/2026/07/a1/x.png", "other")
+    ).toThrow(/tenant mismatch/);
   });
 });
 

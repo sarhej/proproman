@@ -116,6 +116,23 @@ export function tenantIdFromAttachmentStorageKey(key: string): string | null {
   return m?.[1] ?? null;
 }
 
+/**
+ * Refuse blob ops on keys outside the tenant attachment prefix.
+ * Call before every put/get/delete (and from the Worker).
+ */
+export function assertAttachmentStorageKey(key: string, expectedTenantId?: string): void {
+  if (!key || key.includes("..") || key.includes("\\") || key.startsWith("/")) {
+    throw new Error("Invalid storage key");
+  }
+  const tenantId = tenantIdFromAttachmentStorageKey(key);
+  if (!tenantId) {
+    throw new Error("Invalid storage key: must be tenants/{tenantId}/attachments/...");
+  }
+  if (expectedTenantId && tenantId !== expectedTenantId) {
+    throw new Error("Storage key tenant mismatch");
+  }
+}
+
 export function buildBackupManifestKey(tenantId: string, jobId: string): string {
   return `tenants/${tenantId}/attachment-backups/${jobId}/manifest.json`;
 }
