@@ -319,13 +319,19 @@ Strict JSON validation on planner/parser outputs (Zod on server). On failure: se
 
 ## 7. Commit (Phase 5)
 
-`POST /:id/commit` creates only drafts with `approval=approved`, in parent-before-child order:
+`POST /:id/commit` body: `{ initiativeId?: string, createInitiative?: { title: string } }`.
 
-1. Initiatives  
-2. Features (with `storyType`, priority, metadata)  
-3. Requirements  
+Creates only drafts with `approval=approved`, in order Features → Requirements (new Initiative first if `createInitiative`).
 
-Link work artifacts / attachments from session → new entity ids. Set session `COMMITTED` + `committedAt`. Idempotent: second commit no-ops or returns already-created ids.
+**Mappings**
+
+- Bug → Feature `storyType: BUG` + `labels: { severity, priority, intakeSessionId }` + description from structured fields; AC lines → Requirements.
+- Feature → Feature with story type; `DISCOVERY` priority → `storyType: RESEARCH` + Requirement priority **P3**.
+- Attachments linked to intake session are also linked to each new Feature.
+
+Sets session `COMMITTED` + `committedAt`; stores `sourceMeta.commitResult` for idempotent re-POST.
+
+Gate: zero `pending`, ≥1 `approved`, resolved Initiative placement.
 
 ---
 

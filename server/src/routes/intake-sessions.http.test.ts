@@ -9,7 +9,8 @@ const hoisted = vi.hoisted(() => ({
   intakeCreate: vi.fn(),
   intakeFindFirst: vi.fn(),
   intakeUpdate: vi.fn(),
-  logAudit: vi.fn()
+  logAudit: vi.fn(),
+  commitIntakeDrafts: vi.fn()
 }));
 
 vi.mock("../db.js", () => ({
@@ -25,6 +26,10 @@ vi.mock("../db.js", () => ({
 
 vi.mock("../services/audit.js", () => ({
   logAudit: hoisted.logAudit
+}));
+
+vi.mock("../intake/commitDrafts.js", () => ({
+  commitIntakeDrafts: hoisted.commitIntakeDrafts
 }));
 
 vi.mock("../tenant/tenantContext.js", () => ({
@@ -664,5 +669,166 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     });
     const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
     expect(res.status).toBe(409);
+  });
+
+  it("POST commit creates hub rows when drafts approved", async () => {
+    const drafts = {
+      source: "heuristic",
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature",
+          storyType: "BUG",
+          approval: "approved",
+          fieldProvenance: {},
+          title: "Login clipped",
+          description: "CTA",
+          stepsToReproduce: [],
+          expected: "",
+          actual: "",
+          environment: "",
+          severity: "HIGH",
+          priority: "P1",
+          acceptanceCriteria: ["Visible"],
+          affectedArea: "",
+          route: { initiativeId: "init-1", featureId: null },
+          requirements: []
+        }
+      ]
+    };
+    const created = {
+      initiatives: [],
+      features: [{ draftKey: "bug-1", id: "f1", title: "Login clipped", storyType: "BUG" }],
+      requirements: [{ draftKey: "bug-1-ac-1", id: "r1", title: "Visible", featureId: "f1" }]
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts
+    });
+    hoisted.intakeUpdate
+      .mockResolvedValueOnce({ ...baseSession, status: IntakeSessionStatus.COMMITTING, drafts })
+      .mockResolvedValueOnce({
+        ...baseSession,
+        status: IntakeSessionStatus.COMMITTED,
+        drafts,
+        committedAt: new Date("2026-09-28T20:00:00.000Z"),
+        sourceMeta: { commitResult: created }
+      });
+    hoisted.commitIntakeDrafts.mockResolvedValueOnce({
+      ok: true,
+      result: created,
+      createdNewInitiative: false
+    });
+
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/commit")
+      .send({ initiativeId: "init-1" });
+    expect(res.status).toBe(200);
+    expect(res.body.created.features[0].id).toBe("f1");
+    expect(res.body.session.status).toBe("COMMITTED");
+    expect(hoisted.commitIntakeDrafts).toHaveBeenCalledWith(
+      expect.objectContaining({ initiativeId: "init-1", sessionId: "s1" })
+    );
+  });
+
+  it("POST commit 409 when pending drafts remain", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: {
+        items: [
+          {
+            key: "bug-1",
+            hubEntityType: "Feature",
+            storyType: "BUG",
+            approval: "pending",
+            fieldProvenance: {},
+            title: "X",
+            description: "",
+            stepsToReproduce: [],
+            expected: "",
+            actual: "",
+            environment: "",
+            severity: "LOW",
+            priority: "P3",
+            acceptanceCriteria: [],
+            affectedArea: "",
+            requirements: []
+          }
+        ]
+      }
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.COMMITTING
+    });
+    hoisted.commitIntakeDrafts.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      error: "All drafts must be approved or skipped before create (1 still need review)"
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING
+    });
+
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/commit").send({ initiativeId: "i1" });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/need review/i);
+  });
+
+  it("POST commit idempotent when already COMMITTED with commitResult", async () => {
+    const created = {
+      initiatives: [],
+      features: [{ draftKey: "bug-1", id: "f1", title: "Login clipped", storyType: "BUG" }],
+      requirements: []
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.COMMITTED,
+      sourceMeta: { commitResult: created },
+      drafts: { items: [] }
+    });
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/commit").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.created.features[0].id).toBe("f1");
+    expect(hoisted.commitIntakeDrafts).not.toHaveBeenCalled();
+  });
+
+  it("PATCH drafts approval to approved", async () => {
+    const draftItem = {
+      key: "bug-1",
+      hubEntityType: "Feature",
+      storyType: "BUG",
+      approval: "pending",
+      fieldProvenance: { title: "ai" },
+      title: "Login clipped",
+      description: "CTA",
+      stepsToReproduce: [],
+      expected: "",
+      actual: "",
+      environment: "",
+      severity: "HIGH",
+      priority: "P1",
+      acceptanceCriteria: [],
+      affectedArea: "",
+      requirements: []
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [draftItem], source: "heuristic" }
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [{ ...draftItem, approval: "approved" }] }
+    });
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/bug-1")
+      .send({ draft: { approval: "approved" } });
+    expect(res.status).toBe(200);
+    expect(res.body.draft.approval).toBe("approved");
   });
 });

@@ -6,9 +6,11 @@ import type {
   CreationPlan,
   CreationPlanItem,
   FeatureDraft,
+  IntakeCommitResult,
   IntakeDrafts,
   IntakeMode,
-  IntakeSession
+  IntakeSession,
+  Initiative
 } from "../../types/models";
 import { AttachmentPanel } from "../attachments/AttachmentPanel";
 import { Button } from "../ui/Button";
@@ -71,6 +73,12 @@ export function ProductIntakeShell({ open, onClose }: Props) {
   const [manualFallback, setManualFallback] = useState(false);
   const [plan, setPlan] = useState<CreationPlan | null>(null);
   const [drafts, setDrafts] = useState<IntakeDrafts | null>(null);
+  const [commitResult, setCommitResult] = useState<IntakeCommitResult | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [productInitiatives, setProductInitiatives] = useState<Initiative[]>([]);
+  const [placementInitiativeId, setPlacementInitiativeId] = useState<string>("");
+  const [placementMode, setPlacementMode] = useState<"existing" | "create">("existing");
+  const [newInitiativeTitle, setNewInitiativeTitle] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [clarifyAnswers, setClarifyAnswers] = useState<Record<string, string>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,6 +93,12 @@ export function ProductIntakeShell({ open, onClose }: Props) {
       setManualFallback(false);
       setPlan(null);
       setDrafts(null);
+      setCommitResult(null);
+      setCommitting(false);
+      setProductInitiatives([]);
+      setPlacementInitiativeId("");
+      setPlacementMode("existing");
+      setNewInitiativeTitle("");
       setSelectedKeys([]);
       setClarifyAnswers({});
       sessionIdRef.current = null;
@@ -121,14 +135,14 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       const id = sessionIdRef.current;
-      if (id) {
+      if (id && !commitResult) {
         void api.updateIntakeSession(id, { status: "ABANDONED" }).catch(() => undefined);
       }
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, commitResult]);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -143,9 +157,37 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     };
   }, [rawText, session?.id]);
 
+  useEffect(() => {
+    if (!open?.productId || !drafts) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { initiatives } = await api.getInitiatives(new URLSearchParams());
+        if (cancelled) return;
+        const forProduct = initiatives.filter((i) => i.productId === open.productId && !i.archivedAt);
+        setProductInitiatives(forProduct);
+        setPlacementInitiativeId((prev) => {
+          if (prev) return prev;
+          const fromDraft = drafts.items.find((d) => d.route?.initiativeId)?.route?.initiativeId;
+          if (fromDraft) return fromDraft;
+          return forProduct[0]?.id ?? "";
+        });
+        setNewInitiativeTitle((prev) =>
+          prev || drafts.items[0]?.title?.slice(0, 120) || open.productName
+        );
+      } catch {
+        /* placement optional until commit */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open?.productId, open?.productName, drafts]);
+
   if (!open) return null;
 
   const isBug = open.mode === "BUG";
+  const isCommitted = session?.status === "COMMITTED" || Boolean(commitResult);
   const clarifying = session?.status === "CLARIFYING" || Boolean(plan?.needsClarification);
   const planReady =
     (session?.status === "PLAN_READY" ||
@@ -153,7 +195,23 @@ export function ProductIntakeShell({ open, onClose }: Props) {
       session?.status === "DRAFTING") &&
     plan &&
     !plan.needsClarification;
-  const canGenerateDrafts = Boolean(planReady && !clarifying);
+  const canGenerateDrafts = Boolean(planReady && !clarifying && !isCommitted);
+  const approvedCount = drafts?.items.filter((d) => d.approval === "approved").length ?? 0;
+  const pendingCount = drafts?.items.filter((d) => d.approval === "pending").length ?? 0;
+  const skippedCount = drafts?.items.filter((d) => d.approval === "skipped").length ?? 0;
+  const placementReady =
+    placementMode === "create"
+      ? newInitiativeTitle.trim().length > 0
+      : Boolean(placementInitiativeId);
+  const canCommit = Boolean(
+    session &&
+      drafts &&
+      !committing &&
+      !isCommitted &&
+      pendingCount === 0 &&
+      approvedCount >= 1 &&
+      placementReady
+  );
 
   function applyAnalyzeResult(result: {
     session: IntakeSession;
@@ -251,7 +309,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
   }
 
   async function patchDraft(key: string, patch: Partial<BugDraft | FeatureDraft>) {
-    if (!session) return;
+    if (!session || isCommitted) return;
     setSavingDraft(true);
     setError(null);
     try {
@@ -263,6 +321,32 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     } finally {
       setSavingDraft(false);
     }
+  }
+
+  async function runCommit() {
+    if (!session || !canCommit) return;
+    setCommitting(true);
+    setError(null);
+    try {
+      const body =
+        placementMode === "create"
+          ? { createInitiative: { title: newInitiativeTitle.trim() } }
+          : { initiativeId: placementInitiativeId };
+      const result = await api.commitIntakeSession(session.id, body);
+      setSession(result.session);
+      setCommitResult(result.created);
+      setAnalyzeMessage(result.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("intake.commitFailed"));
+    } finally {
+      setCommitting(false);
+    }
+  }
+
+  function approvalLabel(approval: "pending" | "approved" | "skipped") {
+    if (approval === "approved") return t("intake.approvalReady");
+    if (approval === "skipped") return t("intake.approvalSkipped");
+    return t("intake.approvalNeedsReview");
   }
 
   function updateItem(key: string, patch: Partial<CreationPlanItem>) {
@@ -600,6 +684,41 @@ export function ProductIntakeShell({ open, onClose }: Props) {
               {drafts.items.map((draft) =>
                 isBugDraft(draft) ? (
                   <div key={draft.key} className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span
+                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                          draft.approval === "approved"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : draft.approval === "skipped"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-amber-100 text-amber-900"
+                        }`}
+                      >
+                        {approvalLabel(draft.approval)}
+                      </span>
+                      {!isCommitted ? (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={savingDraft}
+                            onClick={() => void patchDraft(draft.key, { approval: "skipped" })}
+                          >
+                            {t("intake.skipDraft")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={savingDraft}
+                            onClick={() => void patchDraft(draft.key, { approval: "approved" })}
+                          >
+                            {t("intake.approveDraft")}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <Input
                       value={draft.title}
                       aria-label={t("intake.draftsTitle")}
@@ -763,6 +882,41 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                   </div>
                 ) : (
                   <div key={draft.key} className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span
+                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                          draft.approval === "approved"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : draft.approval === "skipped"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-amber-100 text-amber-900"
+                        }`}
+                      >
+                        {approvalLabel(draft.approval)}
+                      </span>
+                      {!isCommitted ? (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={savingDraft}
+                            onClick={() => void patchDraft(draft.key, { approval: "skipped" })}
+                          >
+                            {t("intake.skipDraft")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={savingDraft}
+                            onClick={() => void patchDraft(draft.key, { approval: "approved" })}
+                          >
+                            {t("intake.approveDraft")}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <Input
                       value={draft.title}
                       aria-label={t("intake.featureDraftsTitle")}
@@ -958,6 +1112,67 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             </div>
           ) : null}
 
+          {drafts && !isCommitted ? (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+              <p className="text-xs font-semibold text-slate-800">{t("intake.placementLabel")}</p>
+              <p className="text-[11px] text-slate-600">{t("intake.placementHint")}</p>
+              <Select
+                value={placementMode === "create" ? "__create__" : placementInitiativeId}
+                aria-label={t("intake.placementLabel")}
+                onChange={(e) => {
+                  if (e.target.value === "__create__") {
+                    setPlacementMode("create");
+                  } else {
+                    setPlacementMode("existing");
+                    setPlacementInitiativeId(e.target.value);
+                  }
+                }}
+              >
+                <option value="">{t("intake.placementSelectExisting")}</option>
+                {productInitiatives.map((init) => (
+                  <option key={init.id} value={init.id}>
+                    {init.title}
+                  </option>
+                ))}
+                <option value="__create__">{t("intake.placementCreateNew")}</option>
+              </Select>
+              {placementMode === "create" ? (
+                <Input
+                  value={newInitiativeTitle}
+                  aria-label={t("intake.placementCreateNew")}
+                  onChange={(e) => setNewInitiativeTitle(e.target.value)}
+                />
+              ) : null}
+              <p className="text-[11px] text-slate-600">
+                {approvedCount} {t("intake.approvalReady").toLowerCase()} · {skippedCount}{" "}
+                {t("intake.approvalSkipped").toLowerCase()} · {pendingCount}{" "}
+                {t("intake.approvalNeedsReview").toLowerCase()}
+              </p>
+            </div>
+          ) : null}
+
+          {commitResult ? (
+            <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+              <p className="text-xs font-semibold text-slate-800">{t("intake.commitSuccessTitle")}</p>
+              <ul className="space-y-1 text-xs text-slate-700">
+                {commitResult.features.map((f) => (
+                  <li key={f.id}>
+                    Feature · {f.title}
+                    {f.storyType ? ` · ${f.storyType}` : ""}
+                  </li>
+                ))}
+              </ul>
+              {commitResult.requirements.length > 0 ? (
+                <p className="text-[11px] text-slate-600">
+                  {t("intake.commitRequirementsCount", { count: commitResult.requirements.length })}
+                </p>
+              ) : null}
+              <Button type="button" size="sm" onClick={() => onClose()}>
+                {t("intake.commitSuccessClose")}
+              </Button>
+            </div>
+          ) : null}
+
           {manualFallback ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="mb-2 text-xs font-semibold text-slate-700">{t("intake.manualFallbackTitle")}</p>
@@ -971,7 +1186,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={!session || analyzing || drafting}
+            disabled={!session || analyzing || drafting || isCommitted}
             onClick={() => void runAnalyze()}
           >
             {analyzing ? t("intake.analyzing") : t("intake.analyze")}
@@ -980,23 +1195,41 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={!session}
+            disabled={!session || isCommitted}
             onClick={() => setManualFallback(true)}
           >
             {t("intake.manualForm")}
           </Button>
           <div className="ml-auto flex gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={() => void abandonAndClose()}>
-              {t("common.cancel")}
-            </Button>
             <Button
               type="button"
+              variant="secondary"
               size="sm"
-              disabled={!session || drafting || !canGenerateDrafts}
-              onClick={() => void runGenerateDrafts()}
+              onClick={() => (isCommitted ? onClose() : void abandonAndClose())}
             >
-              {drafting ? t("intake.generatingDrafts") : t("intake.generateDrafts")}
+              {isCommitted ? t("intake.commitSuccessClose") : t("common.cancel")}
             </Button>
+            {drafts && !isCommitted ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!canCommit}
+                onClick={() => void runCommit()}
+              >
+                {committing
+                  ? t("intake.creatingInHub")
+                  : t("intake.createInHub", { count: approvedCount })}
+              </Button>
+            ) : !drafts ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!session || drafting || !canGenerateDrafts}
+                onClick={() => void runGenerateDrafts()}
+              >
+                {drafting ? t("intake.generatingDrafts") : t("intake.generateDrafts")}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
