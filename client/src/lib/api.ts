@@ -47,6 +47,8 @@ import type {
   AttachmentBackupJob,
   IntakeSession,
   CreationPlan,
+  BugDraft,
+  IntakeDrafts,
   UseCase,
   SecurityTopic,
   ArchitectureTopic,
@@ -241,6 +243,24 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ creationPlan })
     }),
+  generateIntakeDrafts: async (id: string) =>
+    request<{
+      session: IntakeSession;
+      drafts: IntakeDrafts;
+      source: string;
+      message: string;
+    }>(`/api/intake-sessions/${id}/drafts`, {
+      method: "POST",
+      body: JSON.stringify({})
+    }),
+  updateIntakeDraft: async (id: string, draftKey: string, draft: Partial<BugDraft>) =>
+    request<{ session: IntakeSession; draft: BugDraft; drafts: IntakeDrafts }>(
+      `/api/intake-sessions/${id}/drafts/${encodeURIComponent(draftKey)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ draft })
+      }
+    ),
   updateInitiative: async (id: string, body: unknown) =>
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {
       method: "PUT",

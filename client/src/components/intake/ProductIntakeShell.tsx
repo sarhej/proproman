@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
-import type { CreationPlan, CreationPlanItem, IntakeMode, IntakeSession } from "../../types/models";
+import type {
+  BugDraft,
+  CreationPlan,
+  CreationPlanItem,
+  IntakeDrafts,
+  IntakeMode,
+  IntakeSession
+} from "../../types/models";
 import { AttachmentPanel } from "../attachments/AttachmentPanel";
 import { Button } from "../ui/Button";
 import { Input, Select, Textarea } from "../ui/Field";
@@ -26,6 +33,13 @@ function asPlan(value: unknown): CreationPlan | null {
   return p;
 }
 
+function asDrafts(value: unknown): IntakeDrafts | null {
+  if (!value || typeof value !== "object") return null;
+  const d = value as IntakeDrafts;
+  if (!Array.isArray(d.items) || d.items.length === 0) return null;
+  return d;
+}
+
 function newItemKey(items: CreationPlanItem[]): string {
   const n = items.length + 1;
   return `item-${n}-${Math.random().toString(36).slice(2, 7)}`;
@@ -38,10 +52,13 @@ export function ProductIntakeShell({ open, onClose }: Props) {
   const [busy, setBusy] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analyzeMessage, setAnalyzeMessage] = useState<string | null>(null);
   const [manualFallback, setManualFallback] = useState(false);
   const [plan, setPlan] = useState<CreationPlan | null>(null);
+  const [drafts, setDrafts] = useState<IntakeDrafts | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [clarifyAnswers, setClarifyAnswers] = useState<Record<string, string>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,6 +72,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
       setAnalyzeMessage(null);
       setManualFallback(false);
       setPlan(null);
+      setDrafts(null);
       setSelectedKeys([]);
       setClarifyAnswers({});
       sessionIdRef.current = null;
@@ -117,7 +135,13 @@ export function ProductIntakeShell({ open, onClose }: Props) {
 
   const isBug = open.mode === "BUG";
   const clarifying = session?.status === "CLARIFYING" || Boolean(plan?.needsClarification);
-  const planReady = session?.status === "PLAN_READY" && plan && !plan.needsClarification;
+  const planReady =
+    (session?.status === "PLAN_READY" ||
+      session?.status === "REVIEWING" ||
+      session?.status === "DRAFTING") &&
+    plan &&
+    !plan.needsClarification;
+  const canGenerateDrafts = Boolean(isBug && planReady && !clarifying);
 
   function applyAnalyzeResult(result: {
     session: IntakeSession;
@@ -132,6 +156,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     setAnalyzeMessage(result.analyze.message);
     const nextPlan = asPlan(result.analyze.creationPlan ?? result.session.creationPlan);
     setPlan(nextPlan);
+    setDrafts(null);
     setSelectedKeys([]);
     setClarifyAnswers({});
     if (result.analyze.stub || !nextPlan) {
@@ -197,6 +222,41 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     }
   }
 
+  async function runGenerateDrafts() {
+    if (!session) return;
+    if (!isBug) {
+      setAnalyzeMessage(t("intake.generateDraftsHint"));
+      return;
+    }
+    setDrafting(true);
+    setError(null);
+    try {
+      const result = await api.generateIntakeDrafts(session.id);
+      setSession(result.session);
+      setDrafts(asDrafts(result.drafts) ?? asDrafts(result.session.drafts));
+      setAnalyzeMessage(result.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("intake.draftsFailed"));
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  async function patchDraft(key: string, patch: Partial<BugDraft>) {
+    if (!session) return;
+    setSavingDraft(true);
+    setError(null);
+    try {
+      const result = await api.updateIntakeDraft(session.id, key, patch);
+      setSession(result.session);
+      setDrafts(asDrafts(result.drafts) ?? asDrafts(result.session.drafts));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("intake.draftSaveFailed"));
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   function updateItem(key: string, patch: Partial<CreationPlanItem>) {
     if (!plan) return;
     void persistPlan({
@@ -224,7 +284,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     if (!plan) return;
     const item: CreationPlanItem = {
       key: newItemKey(plan.items),
-      hubEntityType: isBug ? "Feature" : "Feature",
+      hubEntityType: "Feature",
       title: t("intake.newItemTitle"),
       storyType: isBug ? "BUG" : "FUNCTIONAL",
       parentKey: null
@@ -332,7 +392,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
           <Textarea
             rows={5}
             value={rawText}
-            disabled={!session || analyzing}
+            disabled={!session || analyzing || drafting}
             placeholder={t("intake.composerPlaceholder")}
             onChange={(e) => setRawText(e.target.value)}
           />
@@ -516,6 +576,201 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             </div>
           ) : null}
 
+          {drafts ? (
+            <div className="space-y-3 rounded-lg border border-red-200 bg-red-50/40 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-slate-800">{t("intake.draftsTitle")}</p>
+                {savingDraft ? <span className="text-[11px] text-slate-500">{t("intake.savingPlan")}</span> : null}
+              </div>
+              <p className="text-[11px] text-slate-600">{t("intake.draftCommitHint")}</p>
+              {drafts.items.map((draft) => (
+                <div key={draft.key} className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+                  <Input
+                    value={draft.title}
+                    aria-label={t("intake.draftsTitle")}
+                    onChange={(e) => {
+                      const title = e.target.value;
+                      setDrafts((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              items: prev.items.map((d) =>
+                                d.key === draft.key ? { ...d, title } : d
+                              )
+                            }
+                          : prev
+                      );
+                    }}
+                    onBlur={(e) => {
+                      const title = e.target.value.trim() || draft.title;
+                      if (title !== draft.title) void patchDraft(draft.key, { title });
+                    }}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <label className="text-[11px] text-slate-600">
+                      {t("intake.draftSeverity")}
+                      <Select
+                        className="mt-1 block"
+                        value={draft.severity}
+                        aria-label={t("intake.draftSeverity")}
+                        onChange={(e) =>
+                          void patchDraft(draft.key, {
+                            severity: e.target.value as BugDraft["severity"]
+                          })
+                        }
+                      >
+                        <option value="CRITICAL">CRITICAL</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="LOW">LOW</option>
+                      </Select>
+                    </label>
+                    <label className="text-[11px] text-slate-600">
+                      {t("intake.draftPriority")}
+                      <Select
+                        className="mt-1 block"
+                        value={draft.priority}
+                        aria-label={t("intake.draftPriority")}
+                        onChange={(e) =>
+                          void patchDraft(draft.key, {
+                            priority: e.target.value as BugDraft["priority"]
+                          })
+                        }
+                      >
+                        <option value="P0">P0</option>
+                        <option value="P1">P1</option>
+                        <option value="P2">P2</option>
+                        <option value="P3">P3</option>
+                      </Select>
+                    </label>
+                  </div>
+                  <Textarea
+                    rows={3}
+                    value={draft.description}
+                    aria-label={t("intake.draftDescription")}
+                    onChange={(e) => {
+                      const description = e.target.value;
+                      setDrafts((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              items: prev.items.map((d) =>
+                                d.key === draft.key ? { ...d, description } : d
+                              )
+                            }
+                          : prev
+                      );
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value !== draft.description) {
+                        void patchDraft(draft.key, { description: e.target.value });
+                      }
+                    }}
+                  />
+                  <Textarea
+                    rows={3}
+                    value={draft.stepsToReproduce.join("\n")}
+                    aria-label={t("intake.draftSteps")}
+                    placeholder={t("intake.draftSteps")}
+                    onChange={(e) => {
+                      const stepsToReproduce = e.target.value.split("\n");
+                      setDrafts((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              items: prev.items.map((d) =>
+                                d.key === draft.key ? { ...d, stepsToReproduce } : d
+                              )
+                            }
+                          : prev
+                      );
+                    }}
+                    onBlur={(e) => {
+                      const stepsToReproduce = e.target.value
+                        .split("\n")
+                        .map((l) => l.trim())
+                        .filter(Boolean);
+                      void patchDraft(draft.key, { stepsToReproduce });
+                    }}
+                  />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Textarea
+                      rows={2}
+                      value={draft.expected}
+                      aria-label={t("intake.draftExpected")}
+                      placeholder={t("intake.draftExpected")}
+                      onBlur={(e) => {
+                        if (e.target.value !== draft.expected) {
+                          void patchDraft(draft.key, { expected: e.target.value });
+                        }
+                      }}
+                      onChange={(e) => {
+                        const expected = e.target.value;
+                        setDrafts((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                items: prev.items.map((d) =>
+                                  d.key === draft.key ? { ...d, expected } : d
+                                )
+                              }
+                            : prev
+                        );
+                      }}
+                    />
+                    <Textarea
+                      rows={2}
+                      value={draft.actual}
+                      aria-label={t("intake.draftActual")}
+                      placeholder={t("intake.draftActual")}
+                      onBlur={(e) => {
+                        if (e.target.value !== draft.actual) {
+                          void patchDraft(draft.key, { actual: e.target.value });
+                        }
+                      }}
+                      onChange={(e) => {
+                        const actual = e.target.value;
+                        setDrafts((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                items: prev.items.map((d) =>
+                                  d.key === draft.key ? { ...d, actual } : d
+                                )
+                              }
+                            : prev
+                        );
+                      }}
+                    />
+                  </div>
+                  <Input
+                    value={draft.environment}
+                    aria-label={t("intake.draftEnvironment")}
+                    placeholder={t("intake.draftEnvironment")}
+                    onBlur={(e) => {
+                      if (e.target.value !== draft.environment) {
+                        void patchDraft(draft.key, { environment: e.target.value });
+                      }
+                    }}
+                    onChange={(e) => {
+                      const environment = e.target.value;
+                      setDrafts((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              items: prev.items.map((d) =>
+                                d.key === draft.key ? { ...d, environment } : d
+                              )
+                            }
+                          : prev
+                      );
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {manualFallback ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="mb-2 text-xs font-semibold text-slate-700">{t("intake.manualFallbackTitle")}</p>
@@ -525,7 +780,13 @@ export function ProductIntakeShell({ open, onClose }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 px-4 py-3">
-          <Button type="button" variant="secondary" size="sm" disabled={!session || analyzing} onClick={() => void runAnalyze()}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={!session || analyzing || drafting}
+            onClick={() => void runAnalyze()}
+          >
             {analyzing ? t("intake.analyzing") : t("intake.analyze")}
           </Button>
           <Button
@@ -544,13 +805,11 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             <Button
               type="button"
               size="sm"
-              disabled={!session || !planReady}
-              title={t("intake.generateDraftsHint")}
-              onClick={() => {
-                setAnalyzeMessage(t("intake.generateDraftsHint"));
-              }}
+              disabled={!session || drafting || (isBug ? !canGenerateDrafts : !planReady)}
+              title={isBug ? undefined : t("intake.generateDraftsHint")}
+              onClick={() => void runGenerateDrafts()}
             >
-              {t("intake.generateDrafts")}
+              {drafting ? t("intake.generatingDrafts") : t("intake.generateDrafts")}
             </Button>
           </div>
         </div>

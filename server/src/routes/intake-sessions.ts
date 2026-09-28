@@ -9,6 +9,14 @@ import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
 import { creationPlanSchema, normalizeCreationPlan } from "../intake/creationPlanSchema.js";
 import { planIntake } from "../intake/planner.js";
+import {
+  bugDraftSchema,
+  normalizeBugDraft,
+  normalizeIntakeDrafts,
+  type BugDraft,
+  type IntakeDrafts
+} from "../intake/bugDraftSchema.js";
+import { parseBugDrafts } from "../intake/bugParser.js";
 
 export const intakeSessionsRouter = Router();
 intakeSessionsRouter.use(requireAuth);
@@ -32,6 +40,12 @@ const clarifySchema = z.object({
 
 const planPatchSchema = z.object({
   creationPlan: creationPlanSchema
+});
+
+const draftPatchSchema = z.object({
+  draft: bugDraftSchema.partial().extend({
+    key: z.string().min(1).optional()
+  })
 });
 
 function hashRawText(rawText: string): string {
@@ -383,4 +397,189 @@ intakeSessionsRouter.patch("/:id/plan", requireWorkspaceContentWrite(), async (r
   await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, { fields: ["creationPlan"] });
 
   res.json({ session: serializeSession(session) });
+});
+
+intakeSessionsRouter.post("/:id/drafts", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (isLocked(existing.status)) {
+    res.status(409).json({ error: "Intake session already committed" });
+    return;
+  }
+  if (existing.mode !== IntakeMode.BUG) {
+    res.status(501).json({
+      error: "Feature drafts are Phase 4. Bug drafts only in this release."
+    });
+    return;
+  }
+  if (
+    existing.status !== IntakeSessionStatus.PLAN_READY &&
+    existing.status !== IntakeSessionStatus.REVIEWING &&
+    existing.status !== IntakeSessionStatus.DRAFTING
+  ) {
+    res.status(409).json({ error: "Creation plan must be ready before generating drafts" });
+    return;
+  }
+
+  const planParsed = creationPlanSchema.safeParse(existing.creationPlan);
+  if (!planParsed.success) {
+    res.status(409).json({ error: "Session has no valid creationPlan" });
+    return;
+  }
+
+  try {
+    await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: { status: IntakeSessionStatus.DRAFTING, analyzeError: null }
+    });
+
+    const clarification =
+      existing.clarification && typeof existing.clarification === "object" && !Array.isArray(existing.clarification)
+        ? (existing.clarification as Record<string, string>)
+        : null;
+
+    const { drafts, source } = await parseBugDrafts({
+      rawText: existing.rawText,
+      creationPlan: planParsed.data,
+      clarificationAnswers: clarification
+    });
+
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: IntakeSessionStatus.REVIEWING,
+        drafts: drafts as Prisma.InputJsonValue,
+        analyzeError: null,
+        sourceMeta: {
+          ...(typeof existing.sourceMeta === "object" && existing.sourceMeta && !Array.isArray(existing.sourceMeta)
+            ? (existing.sourceMeta as Record<string, unknown>)
+            : {}),
+          lastDraftsAt: new Date().toISOString(),
+          draftSource: source
+        }
+      }
+    });
+
+    await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, { fields: ["drafts"], source });
+
+    res.json({
+      session: serializeSession(session),
+      drafts,
+      source,
+      message: `Bug drafts ready (${source}). Review fields, then continue in a later phase to create hub rows.`
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Draft generation failed";
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: IntakeSessionStatus.FAILED,
+        analyzeError: message.slice(0, 500)
+      }
+    });
+    res.status(500).json({ error: message, session: serializeSession(session) });
+  }
+});
+
+intakeSessionsRouter.patch("/:id/drafts/:draftKey", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const draftKey = String(req.params.draftKey);
+  const parsed = draftPatchSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (isLocked(existing.status)) {
+    res.status(409).json({ error: "Intake session already committed" });
+    return;
+  }
+  if (existing.mode !== IntakeMode.BUG) {
+    res.status(501).json({ error: "Feature draft edits are Phase 4" });
+    return;
+  }
+
+  const draftsParsed = z
+    .object({ items: z.array(z.unknown()) })
+    .safeParse(existing.drafts);
+  if (!draftsParsed.success) {
+    res.status(409).json({ error: "No drafts to edit — generate drafts first" });
+    return;
+  }
+
+  const items = draftsParsed.data.items as BugDraft[];
+  const idx = items.findIndex((d) => d && typeof d === "object" && (d as BugDraft).key === draftKey);
+  if (idx < 0) {
+    res.status(404).json({ error: "Draft not found" });
+    return;
+  }
+
+  const current = bugDraftSchema.parse(items[idx]);
+  const patch = parsed.data.draft;
+  const provenance = { ...current.fieldProvenance };
+  for (const field of Object.keys(patch) as (keyof typeof patch)[]) {
+    if (field === "key" || field === "hubEntityType" || field === "storyType" || field === "fieldProvenance") {
+      continue;
+    }
+    if (patch[field] !== undefined) {
+      const provKey = field as keyof typeof provenance;
+      if (provKey in provenance || ["title", "description", "severity", "priority", "stepsToReproduce", "expected", "actual", "environment", "acceptanceCriteria", "affectedArea"].includes(field)) {
+        (provenance as Record<string, string>)[field] = "user";
+      }
+    }
+  }
+
+  const merged = normalizeBugDraft(
+    bugDraftSchema.parse({
+      ...current,
+      ...patch,
+      key: current.key,
+      hubEntityType: "Feature",
+      storyType: "BUG",
+      fieldProvenance: provenance
+    })
+  );
+
+  const nextItems = [...items];
+  nextItems[idx] = merged;
+  const drafts: IntakeDrafts = normalizeIntakeDrafts({
+    items: nextItems.map((d) => bugDraftSchema.parse(d)),
+    source:
+      existing.drafts && typeof existing.drafts === "object" && !Array.isArray(existing.drafts)
+        ? ((existing.drafts as { source?: "heuristic" | "llm" }).source ?? "heuristic")
+        : "heuristic",
+    generatedAt:
+      existing.drafts && typeof existing.drafts === "object" && !Array.isArray(existing.drafts)
+        ? (existing.drafts as { generatedAt?: string }).generatedAt
+        : undefined
+  });
+
+  const session = await prisma.intakeSession.update({
+    where: { id: existing.id },
+    data: {
+      drafts: drafts as Prisma.InputJsonValue,
+      status: IntakeSessionStatus.REVIEWING
+    }
+  });
+
+  await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, {
+    fields: ["drafts"],
+    draftKey
+  });
+
+  res.json({ session: serializeSession(session), draft: merged, drafts });
 });
