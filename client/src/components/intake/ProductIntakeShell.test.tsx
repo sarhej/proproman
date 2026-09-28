@@ -226,6 +226,126 @@ describe("ProductIntakeShell", () => {
     );
   });
 
+  it("FEATURE mode Generate drafts shows Phase 4 hint without calling generate API", async () => {
+    mockCreate.mockResolvedValue({ session: session({ mode: "FEATURE" }) });
+    const featurePlan = samplePlan({
+      planType: "SINGLE_FEATURE",
+      items: [
+        {
+          key: "feat-1",
+          hubEntityType: "Feature",
+          title: "Better filters",
+          storyType: "FUNCTIONAL"
+        }
+      ]
+    });
+    mockAnalyze.mockResolvedValueOnce({
+      session: session({ mode: "FEATURE", status: "PLAN_READY", creationPlan: featurePlan }),
+      analyze: {
+        stub: false,
+        source: "heuristic",
+        needsClarification: false,
+        creationPlan: featurePlan,
+        confidence: 0.7,
+        message: "plan ready"
+      }
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "FEATURE", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /^analyze$/i }));
+    await waitFor(() => expect(mockAnalyze).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /generate drafts/i }));
+    expect(mockGenerateDrafts).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Feature drafts ship in Phase 4/i)).toBeInTheDocument();
+  });
+
+  it("bug draft field blur saves via updateIntakeDraft", async () => {
+    const drafts = {
+      source: "heuristic" as const,
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature" as const,
+          storyType: "BUG" as const,
+          approval: "pending" as const,
+          fieldProvenance: { title: "ai" as const },
+          title: "Old title",
+          description: "Old desc",
+          stepsToReproduce: ["a"],
+          expected: "e1",
+          actual: "a1",
+          environment: "env1",
+          severity: "MEDIUM" as const,
+          priority: "P2" as const,
+          acceptanceCriteria: [],
+          affectedArea: "",
+          requirements: []
+        }
+      ]
+    };
+    mockGenerateDrafts.mockResolvedValueOnce({
+      session: session({ status: "REVIEWING", creationPlan: samplePlan(), drafts }),
+      drafts,
+      source: "heuristic",
+      message: "ready"
+    });
+    mockUpdateDraft.mockResolvedValue({
+      session: session({ status: "REVIEWING", drafts }),
+      draft: drafts.items[0],
+      drafts
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "BUG", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /^analyze$/i }));
+    await waitFor(() => expect(mockAnalyze).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /generate drafts/i }));
+    expect(await screen.findByDisplayValue("Old desc")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/^Description$/i), { target: { value: "New desc" } });
+    fireEvent.blur(screen.getByLabelText(/^Description$/i));
+    await waitFor(() =>
+      expect(mockUpdateDraft).toHaveBeenCalledWith(
+        "s1",
+        "bug-1",
+        expect.objectContaining({ description: "New desc" })
+      )
+    );
+
+    fireEvent.change(screen.getByLabelText(/^Expected$/i), { target: { value: "new expected" } });
+    fireEvent.blur(screen.getByLabelText(/^Expected$/i));
+    await waitFor(() =>
+      expect(mockUpdateDraft).toHaveBeenCalledWith(
+        "s1",
+        "bug-1",
+        expect.objectContaining({ expected: "new expected" })
+      )
+    );
+
+    fireEvent.change(screen.getByLabelText(/^Steps to reproduce$/i), {
+      target: { value: "one\ntwo" }
+    });
+    fireEvent.blur(screen.getByLabelText(/^Steps to reproduce$/i));
+    await waitFor(() =>
+      expect(mockUpdateDraft).toHaveBeenCalledWith(
+        "s1",
+        "bug-1",
+        expect.objectContaining({ stepsToReproduce: ["one", "two"] })
+      )
+    );
+  });
+
   it("Analyze clarification path shows questions", async () => {
     const clarifyPlan = samplePlan({
       needsClarification: true,

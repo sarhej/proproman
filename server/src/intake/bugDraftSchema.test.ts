@@ -31,16 +31,38 @@ describe("normalizeBugDraft", () => {
     expect(n.priority).toBe("P1");
   });
 
-  it("keeps user-overridden priority", () => {
+  it("keeps user-overridden priority when severity changes", () => {
     const n = normalizeBugDraft(
       bugDraftSchema.parse({
         ...base,
+        severity: "LOW",
         priority: "P0",
-        fieldProvenance: { priority: "user", severity: "ai" }
+        fieldProvenance: { priority: "user", severity: "user" }
       })
     );
     expect(n.priority).toBe("P0");
-    expect(n.severity).toBe("HIGH");
+    expect(n.severity).toBe("LOW");
+  });
+
+  it("treats missing priority provenance as AI and remaps", () => {
+    const n = normalizeBugDraft(
+      bugDraftSchema.parse({
+        ...base,
+        severity: "CRITICAL",
+        priority: "P3",
+        fieldProvenance: {}
+      })
+    );
+    expect(n.priority).toBe("P0");
+  });
+
+  it("rejects invalid severity via schema", () => {
+    expect(() =>
+      bugDraftSchema.parse({
+        ...base,
+        severity: "URGENTE"
+      })
+    ).toThrow();
   });
 
   it("normalizeIntakeDrafts validates list", () => {
