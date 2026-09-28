@@ -1,0 +1,56 @@
+---
+description: Sync .cursor/skills changes to the public tymioapp/agent-skills mirror before closing the task
+globs:
+  - ".cursor/skills/**"
+alwaysApply: false
+---
+
+# Agent skills public mirror (mandatory)
+
+Canonical skill bodies live in **`.cursor/skills/tymio-*`**. The public mirror is **https://github.com/tymioapp/agent-skills** (`tymioapp/agent-skills`).
+
+## When this applies
+
+After **creating, editing, renaming, or deleting** anything under `.cursor/skills/` (including `references/`), you MUST publish the same change to the mirror **before** claiming the task done.
+
+Also regenerate the hub catalog when skill bodies change:
+
+```bash
+npm run generate-skills-catalog --workspace server
+```
+
+Commit that generated artifact with the monorepo change as usual.
+
+## Sync procedure (do not skip)
+
+1. Ensure monorepo skill folders are final (and catalog regenerated if needed).
+2. Clone or update a working copy of `tymioapp/agent-skills` (temp dir is fine).
+3. Mirror **only** these top-level skill dirs (replace contents; keep mirror `LICENSE` / `README.md` unless the task explicitly updates them):
+
+   - `tymio-workspace`
+   - `tymio-dev-agent`
+   - `tymio-po-agent`
+   - `tymio-pm-agent`
+   - `tymio-devops-agent`
+
+   Example:
+
+   ```bash
+   rsync -a --delete \
+     .cursor/skills/tymio-workspace \
+     .cursor/skills/tymio-dev-agent \
+     .cursor/skills/tymio-po-agent \
+     .cursor/skills/tymio-pm-agent \
+     .cursor/skills/tymio-devops-agent \
+     /path/to/agent-skills/
+   ```
+
+4. If skill versions or the skill set changed, update the skills table in the mirror `README.md`.
+5. Commit and **push to `main`** on `tymioapp/agent-skills` with a message that matches the skill change (include version bumps when present).
+6. Confirm the push succeeded (`git status` clean / GitHub shows the commit).
+
+## Do not
+
+- Ship monorepo skill edits without a mirror push in the same task closeout.
+- Rewrite mirror history or force-push unless the user explicitly requests it.
+- Leave the mirror on an old version while hub/catalog already serves new bodies.
