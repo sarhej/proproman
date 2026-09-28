@@ -17,6 +17,14 @@ import {
   type IntakeDrafts
 } from "../intake/bugDraftSchema.js";
 import { parseBugDrafts } from "../intake/bugParser.js";
+import {
+  featureDraftSchema,
+  normalizeFeatureDraft,
+  normalizeFeatureIntakeDrafts,
+  type FeatureDraft,
+  type FeatureIntakeDrafts
+} from "../intake/featureDraftSchema.js";
+import { parseFeatureDrafts } from "../intake/featureParser.js";
 
 export const intakeSessionsRouter = Router();
 intakeSessionsRouter.use(requireAuth);
@@ -43,9 +51,7 @@ const planPatchSchema = z.object({
 });
 
 const draftPatchSchema = z.object({
-  draft: bugDraftSchema.partial().extend({
-    key: z.string().min(1).optional()
-  })
+  draft: z.record(z.string(), z.unknown())
 });
 
 function hashRawText(rawText: string): string {
@@ -413,9 +419,9 @@ intakeSessionsRouter.post("/:id/drafts", requireWorkspaceContentWrite(), async (
     res.status(409).json({ error: "Intake session already committed" });
     return;
   }
-  if (existing.mode !== IntakeMode.BUG) {
+  if (existing.mode !== IntakeMode.BUG && existing.mode !== IntakeMode.FEATURE) {
     res.status(501).json({
-      error: "Feature drafts are Phase 4. Bug drafts only in this release."
+      error: "Unsupported intake mode for drafts"
     });
     return;
   }
@@ -445,11 +451,20 @@ intakeSessionsRouter.post("/:id/drafts", requireWorkspaceContentWrite(), async (
         ? (existing.clarification as Record<string, string>)
         : null;
 
-    const { drafts, source } = await parseBugDrafts({
-      rawText: existing.rawText,
-      creationPlan: planParsed.data,
-      clarificationAnswers: clarification
-    });
+    const parsed =
+      existing.mode === IntakeMode.BUG
+        ? await parseBugDrafts({
+            rawText: existing.rawText,
+            creationPlan: planParsed.data,
+            clarificationAnswers: clarification
+          })
+        : await parseFeatureDrafts({
+            rawText: existing.rawText,
+            creationPlan: planParsed.data,
+            clarificationAnswers: clarification
+          });
+
+    const { drafts, source } = parsed;
 
     const session = await prisma.intakeSession.update({
       where: { id: existing.id },
@@ -469,11 +484,12 @@ intakeSessionsRouter.post("/:id/drafts", requireWorkspaceContentWrite(), async (
 
     await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, { fields: ["drafts"], source });
 
+    const label = existing.mode === IntakeMode.BUG ? "Bug" : "Feature";
     res.json({
       session: serializeSession(session),
       drafts,
       source,
-      message: `Bug drafts ready (${source}). Review fields, then continue in a later phase to create hub rows.`
+      message: `${label} drafts ready (${source}). Review fields, then continue in a later phase to create hub rows.`
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Draft generation failed";
@@ -508,8 +524,8 @@ intakeSessionsRouter.patch("/:id/drafts/:draftKey", requireWorkspaceContentWrite
     res.status(409).json({ error: "Intake session already committed" });
     return;
   }
-  if (existing.mode !== IntakeMode.BUG) {
-    res.status(501).json({ error: "Feature draft edits are Phase 4" });
+  if (existing.mode !== IntakeMode.BUG && existing.mode !== IntakeMode.FEATURE) {
+    res.status(501).json({ error: "Unsupported intake mode for draft edits" });
     return;
   }
 
@@ -521,51 +537,84 @@ intakeSessionsRouter.patch("/:id/drafts/:draftKey", requireWorkspaceContentWrite
     return;
   }
 
-  const items = draftsParsed.data.items as BugDraft[];
-  const idx = items.findIndex((d) => d && typeof d === "object" && (d as BugDraft).key === draftKey);
+  const items = draftsParsed.data.items as Array<BugDraft | FeatureDraft>;
+  const idx = items.findIndex((d) => d && typeof d === "object" && d.key === draftKey);
   if (idx < 0) {
     res.status(404).json({ error: "Draft not found" });
     return;
   }
 
-  const current = bugDraftSchema.parse(items[idx]);
   const patch = parsed.data.draft;
-  const provenance = { ...current.fieldProvenance };
-  for (const field of Object.keys(patch) as (keyof typeof patch)[]) {
-    if (field === "key" || field === "hubEntityType" || field === "storyType" || field === "fieldProvenance") {
-      continue;
-    }
-    if (patch[field] !== undefined) {
-      const provKey = field as keyof typeof provenance;
-      if (provKey in provenance || ["title", "description", "severity", "priority", "stepsToReproduce", "expected", "actual", "environment", "acceptanceCriteria", "affectedArea"].includes(field)) {
+  const skipKeys = new Set(["key", "hubEntityType", "storyType", "fieldProvenance"]);
+  const sourceMeta =
+    existing.drafts && typeof existing.drafts === "object" && !Array.isArray(existing.drafts)
+      ? (existing.drafts as { source?: "heuristic" | "llm"; generatedAt?: string })
+      : {};
+
+  if (existing.mode === IntakeMode.BUG) {
+    const current = bugDraftSchema.parse(items[idx]);
+    const provenance = { ...current.fieldProvenance };
+    for (const field of Object.keys(patch)) {
+      if (skipKeys.has(field)) continue;
+      if (patch[field] !== undefined) {
         (provenance as Record<string, string>)[field] = "user";
       }
     }
+    const merged = normalizeBugDraft(
+      bugDraftSchema.parse({
+        ...current,
+        ...patch,
+        key: current.key,
+        hubEntityType: "Feature",
+        storyType: "BUG",
+        fieldProvenance: provenance
+      })
+    );
+    const nextItems = [...(items as BugDraft[])];
+    nextItems[idx] = merged;
+    const drafts: IntakeDrafts = normalizeIntakeDrafts({
+      items: nextItems.map((d) => bugDraftSchema.parse(d)),
+      source: sourceMeta.source ?? "heuristic",
+      generatedAt: sourceMeta.generatedAt
+    });
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        drafts: drafts as Prisma.InputJsonValue,
+        status: IntakeSessionStatus.REVIEWING
+      }
+    });
+    await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, {
+      fields: ["drafts"],
+      draftKey
+    });
+    res.json({ session: serializeSession(session), draft: merged, drafts });
+    return;
   }
 
-  const merged = normalizeBugDraft(
-    bugDraftSchema.parse({
+  const current = featureDraftSchema.parse(items[idx]);
+  const provenance = { ...current.fieldProvenance };
+  for (const field of Object.keys(patch)) {
+    if (skipKeys.has(field)) continue;
+    if (patch[field] !== undefined) {
+      (provenance as Record<string, string>)[field] = "user";
+    }
+  }
+  const merged = normalizeFeatureDraft(
+    featureDraftSchema.parse({
       ...current,
       ...patch,
       key: current.key,
       hubEntityType: "Feature",
-      storyType: "BUG",
       fieldProvenance: provenance
     })
   );
-
-  const nextItems = [...items];
+  const nextItems = [...(items as FeatureDraft[])];
   nextItems[idx] = merged;
-  const drafts: IntakeDrafts = normalizeIntakeDrafts({
-    items: nextItems.map((d) => bugDraftSchema.parse(d)),
-    source:
-      existing.drafts && typeof existing.drafts === "object" && !Array.isArray(existing.drafts)
-        ? ((existing.drafts as { source?: "heuristic" | "llm" }).source ?? "heuristic")
-        : "heuristic",
-    generatedAt:
-      existing.drafts && typeof existing.drafts === "object" && !Array.isArray(existing.drafts)
-        ? (existing.drafts as { generatedAt?: string }).generatedAt
-        : undefined
+  const drafts: FeatureIntakeDrafts = normalizeFeatureIntakeDrafts({
+    items: nextItems.map((d) => featureDraftSchema.parse(d)),
+    source: sourceMeta.source ?? "heuristic",
+    generatedAt: sourceMeta.generatedAt
   });
 
   const session = await prisma.intakeSession.update({

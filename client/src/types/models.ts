@@ -349,8 +349,36 @@ export type BugDraft = {
   }>;
 };
 
+export type FeatureDraft = {
+  key: string;
+  hubEntityType: "Feature";
+  storyType: "FUNCTIONAL" | "TECH_DEBT" | "RESEARCH";
+  approval: "pending" | "approved" | "skipped";
+  fieldProvenance: Record<string, "ai" | "user" | undefined>;
+  title: string;
+  problem: string;
+  solution: string;
+  personas: string[];
+  businessValue: string;
+  priority: "P0" | "P1" | "P2" | "P3" | "DISCOVERY";
+  priorityRationale: string;
+  missingInputs: string[];
+  acceptanceCriteria: string[];
+  dependencies: string[];
+  risks: string[];
+  openQuestions: string[];
+  parentKey?: string | null;
+  route?: { initiativeId?: string | null; featureId?: string | null };
+  requirements: Array<{
+    key: string;
+    title: string;
+    description?: string;
+    approval?: "pending" | "approved" | "skipped";
+  }>;
+};
+
 export type IntakeDrafts = {
-  items: BugDraft[];
+  items: Array<BugDraft | FeatureDraft>;
   source?: "heuristic" | "llm";
   generatedAt?: string;
 };

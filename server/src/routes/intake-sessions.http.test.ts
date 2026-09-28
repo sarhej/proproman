@@ -92,12 +92,48 @@ vi.mock("../intake/bugParser.js", () => ({
   }))
 }));
 
+vi.mock("../intake/featureParser.js", () => ({
+  parseFeatureDrafts: vi.fn(async () => ({
+    source: "heuristic",
+    drafts: {
+      source: "heuristic",
+      generatedAt: "2026-09-28T18:00:00.000Z",
+      items: [
+        {
+          key: "feat-1",
+          hubEntityType: "Feature",
+          storyType: "FUNCTIONAL",
+          approval: "pending",
+          fieldProvenance: { title: "ai", priority: "ai" },
+          title: "Better filters",
+          problem: "Hard to find initiatives",
+          solution: "Add filter chips",
+          personas: ["PO"],
+          businessValue: "Faster triage",
+          priority: "P2",
+          priorityRationale: "Common ask",
+          missingInputs: [],
+          acceptanceCriteria: ["Filter by label"],
+          dependencies: [],
+          risks: [],
+          openQuestions: [],
+          parentKey: null,
+          route: { initiativeId: null, featureId: null },
+          requirements: []
+        }
+      ]
+    }
+  }))
+}));
+
 import { intakeSessionsRouter } from "./intake-sessions.js";
 import { planIntake } from "../intake/planner.js";
 import { parseBugDrafts } from "../intake/bugParser.js";
+import { parseFeatureDrafts } from "../intake/featureParser.js";
 
 const mockPlanIntake = planIntake as ReturnType<typeof vi.fn>;
 const mockParseBugDrafts = parseBugDrafts as ReturnType<typeof vi.fn>;
+const mockParseFeatureDrafts = parseFeatureDrafts as ReturnType<typeof vi.fn>;
 
 function authTenantMiddleware(
   membershipRole: MembershipRole,
@@ -383,15 +419,90 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     expect(mockParseBugDrafts).toHaveBeenCalled();
   });
 
-  it("POST drafts 501 for FEATURE mode", async () => {
+  it("POST drafts generates feature drafts when FEATURE + PLAN_READY", async () => {
+    const featurePlan = {
+      planType: "SINGLE_FEATURE",
+      rationale: "test",
+      confidence: 0.7,
+      items: [
+        {
+          key: "feat-1",
+          hubEntityType: "Feature",
+          title: "Better filters",
+          parentKey: null,
+          storyType: "FUNCTIONAL",
+          suggestedPriority: "P2"
+        }
+      ]
+    };
     hoisted.intakeFindFirst.mockResolvedValueOnce({
       ...baseSession,
       mode: IntakeMode.FEATURE,
       status: IntakeSessionStatus.PLAN_READY,
-      creationPlan: readyPlan
+      rawText: "Better product filters for labels",
+      creationPlan: featurePlan
     });
+    hoisted.intakeUpdate
+      .mockResolvedValueOnce({ ...baseSession, mode: IntakeMode.FEATURE, status: IntakeSessionStatus.DRAFTING })
+      .mockResolvedValueOnce({
+        ...baseSession,
+        mode: IntakeMode.FEATURE,
+        status: IntakeSessionStatus.REVIEWING,
+        drafts: { items: [] }
+      });
+
     const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(200);
+    expect(res.body.drafts.items[0].priority).toBe("P2");
+    expect(res.body.drafts.items[0].problem).toMatch(/initiatives/i);
+    expect(res.body.session.status).toBe("REVIEWING");
+    expect(mockParseFeatureDrafts).toHaveBeenCalled();
+  });
+
+  it("PATCH feature drafts/:key stamps provenance user", async () => {
+    const draftItem = {
+      key: "feat-1",
+      hubEntityType: "Feature",
+      storyType: "FUNCTIONAL",
+      approval: "pending",
+      fieldProvenance: { title: "ai", priority: "ai", problem: "ai" },
+      title: "Better filters",
+      problem: "Hard to find",
+      solution: "",
+      personas: [],
+      businessValue: "",
+      priority: "P2",
+      priorityRationale: "",
+      missingInputs: [],
+      acceptanceCriteria: ["Filter by label"],
+      dependencies: [],
+      risks: [],
+      openQuestions: [],
+      parentKey: null,
+      route: { initiativeId: null, featureId: null },
+      requirements: []
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      mode: IntakeMode.FEATURE,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [draftItem], source: "heuristic" }
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      mode: IntakeMode.FEATURE,
+      status: IntakeSessionStatus.REVIEWING
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/feat-1")
+      .send({ draft: { priority: "DISCOVERY", problem: "Updated problem" } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.draft.priority).toBe("DISCOVERY");
+    expect(res.body.draft.problem).toBe("Updated problem");
+    expect(res.body.draft.fieldProvenance.priority).toBe("user");
+    expect(res.body.draft.fieldProvenance.problem).toBe("user");
   });
 
   it("POST drafts 409 without PLAN_READY", async () => {
