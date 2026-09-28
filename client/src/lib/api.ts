@@ -50,6 +50,7 @@ import type {
   BugDraft,
   FeatureDraft,
   IntakeDrafts,
+  IntakeCommitResult,
   UseCase,
   SecurityTopic,
   ArchitectureTopic,
@@ -262,6 +263,18 @@ export const api = {
         body: JSON.stringify({ draft })
       }
     ),
+  commitIntakeSession: async (
+    id: string,
+    body: { initiativeId?: string | null; createInitiative?: { title: string } | null } = {}
+  ) =>
+    request<{
+      session: IntakeSession;
+      created: IntakeCommitResult;
+      message: string;
+    }>(`/api/intake-sessions/${id}/commit`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
   updateInitiative: async (id: string, body: unknown) =>
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {
       method: "PUT",

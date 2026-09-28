@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1680" viewBox="0 0 1600 1680">
+  <title>Phase 5 intake commit wireframes</title>
+  <desc>
+    Phase 5 draft review and Create in hub. Annotated screens: what the user sees,
+    what each field means, and what Approve / Skip / Create do.
+  </desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #f1f5f9; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .panel { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .panel-soft { fill: #f0fdf4; stroke: #86efac; stroke-width: 1; }
+      .panel-warn { fill: #fffbeb; stroke: #fbbf24; stroke-width: 1; }
+      .panel-info { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1; }
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; fill: #1e293b; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 12px; fill: #334155; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 11px; fill: #475569; }
+      .tiny { font-family: Arial, Helvetica, sans-serif; font-size: 10px; fill: #64748b; }
+      .hint { font-family: Arial, Helvetica, sans-serif; font-size: 10px; fill: #0369a1; font-style: italic; }
+      .chip-bug { fill: #fee2e2; stroke: #f87171; stroke-width: 1; }
+      .chip-feat { fill: #dbeafe; stroke: #60a5fa; stroke-width: 1; }
+      .chip-good { fill: #dcfce7; stroke: #4ade80; stroke-width: 1; }
+      .chip-warn { fill: #fef3c7; stroke: #fcd34d; stroke-width: 1; }
+      .chip-muted { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .button-primary { fill: #2563eb; stroke: #2563eb; stroke-width: 1.2; }
+      .button-disabled { fill: #e2e8f0; stroke: #cbd5e1; stroke-width: 1.2; }
+      .button-danger { fill: #ffffff; stroke: #f87171; stroke-width: 1.2; }
+      .input { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .row { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+      .row-ok { fill: #f0fdf4; stroke: #86efac; stroke-width: 1; }
+      .row-skip { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+    ]]></style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1680" />
+  <text x="40" y="34" class="title">Phase 5 &#x2014; Review drafts and create in hub</text>
+  <text x="40" y="54" class="text">After AI drafts exist, you decide what becomes real backlog. Nothing is written to the hub until you click Create in hub.</text>
+
+  <!-- Glossary -->
+  <rect class="panel-info" x="40" y="70" width="1520" height="88" rx="10" ry="10" />
+  <text x="60" y="95" class="section">Status words (on each draft card)</text>
+  <text x="60" y="118" class="small"><tspan font-weight="700" fill="#92400e">Needs review</tspan> &#x2014; still deciding; must Approve or Skip before create.</text>
+  <text x="520" y="118" class="small"><tspan font-weight="700" fill="#166534">Ready to create</tspan> &#x2014; you approved; will become a Feature (and Requirements) in the hub.</text>
+  <text x="60" y="140" class="small"><tspan font-weight="700" fill="#475569">Left out</tspan> &#x2014; you skipped; not created this time (partial create). You can switch back to Needs review before creating.</text>
+
+  <!-- ========== SCREEN 1 ========== -->
+  <rect class="page" x="40" y="180" width="760" height="720" rx="14" ry="14" />
+  <text x="60" y="210" class="section">Screen 1 &#x2014; Review each draft</text>
+  <text x="60" y="232" class="hint">Job: check AI-filled fields, edit if wrong, then Approve (include) or Skip (exclude).</text>
+
+  <rect class="chip-bug" x="60" y="250" width="48" height="20" rx="5" ry="5" />
+  <text x="70" y="264" class="tiny">BUG</text>
+  <text x="120" y="264" class="label">Create Bug &#xB7; Demo App</text>
+  <text x="60" y="290" class="tiny">Same shell as Phases 3&#x2013;4. Draft cards appear after Generate drafts.</text>
+
+  <!-- Draft card annotated -->
+  <rect class="row" x="60" y="305" width="700" height="380" rx="10" ry="10" />
+  <text x="80" y="330" class="label">Draft card (one per proposed Feature)</text>
+  <rect class="chip-warn" x="580" y="312" width="100" height="22" rx="5" ry="5" />
+  <text x="592" y="327" class="tiny">Needs review</text>
+
+  <text x="80" y="358" class="tiny">Title</text>
+  <text x="200" y="358" class="hint">Hub Feature name after create</text>
+  <rect class="input" x="80" y="365" width="660" height="28" rx="5" ry="5" />
+  <text x="92" y="384" class="small">Login CTA clipped on rotate</text>
+
+  <text x="80" y="415" class="tiny">Severity</text>
+  <text x="200" y="415" class="hint">Bug impact (CRITICAL&#x2026;LOW)</text>
+  <rect class="input" x="80" y="422" width="120" height="26" rx="5" ry="5" />
+  <text x="95" y="440" class="small">HIGH</text>
+  <text x="220" y="415" class="tiny">Priority</text>
+  <text x="320" y="415" class="hint">Backlog urgency (P0&#x2013;P3)</text>
+  <rect class="input" x="220" y="422" width="80" height="26" rx="5" ry="5" />
+  <text x="245" y="440" class="small">P1</text>
+
+  <text x="80" y="470" class="tiny">Description / steps / expected / actual / environment</text>
+  <text x="80" y="486" class="hint">Same fields as Phase 3 editor &#x2014; still editable; blur saves to session only.</text>
+  <rect class="input" x="80" y="495" width="660" height="50" rx="5" ry="5" />
+  <text x="92" y="515" class="tiny">Steps: Open login &#x2192; Rotate. Expected: CTA visible. Actual: clipped.</text>
+
+  <text x="80" y="570" class="tiny">Acceptance criteria (optional lines)</text>
+  <text x="80" y="586" class="hint">Each line becomes a Requirement under the Feature when you create.</text>
+  <rect class="input" x="80" y="595" width="660" height="36" rx="5" ry="5" />
+  <text x="92" y="617" class="tiny">CTA fully visible after rotate on iPhone SE</text>
+
+  <rect class="button-danger" x="80" y="650" width="130" height="32" rx="6" ry="6" />
+  <text x="115" y="671" class="tiny">Skip this</text>
+  <rect class="button-primary" x="230" y="650" width="180" height="32" rx="6" ry="6" />
+  <text x="255" y="671" class="tiny" fill="#ffffff">Approve for create</text>
+  <text x="80" y="705" class="hint">Skip this = leave out of hub this run. Approve for create = include when you click Create in hub.</text>
+
+  <rect class="chip-warn" x="60" y="700" width="200" height="24" rx="6" ry="6" />
+  <text x="75" y="716" class="tiny">Summary: 0 ready &#xB7; 1 needs review</text>
+  <rect class="button-disabled" x="420" y="695" width="280" height="36" rx="8" ry="8" />
+  <text x="455" y="718" class="tiny">Create in hub (0 ready)</text>
+  <text x="60" y="755" class="tiny">Create stays disabled until every draft is either Ready to create or Left out (no Needs review left).</text>
+  <text x="60" y="775" class="tiny">You need at least one Ready to create.</text>
+  <text x="60" y="860" class="tiny">&#xA0;</text>
+
+  <!-- ========== SCREEN 2 ========== -->
+  <rect class="page" x="820" y="180" width="740" height="720" rx="14" ry="14" />
+  <text x="840" y="210" class="section">Screen 2 &#x2014; Ready to create in hub</text>
+  <text x="840" y="232" class="hint">Job: pick where Features live (Initiative), then create only the approved drafts.</text>
+
+  <rect class="chip-feat" x="840" y="250" width="70" height="20" rx="5" ry="5" />
+  <text x="850" y="264" class="tiny">FEATURE</text>
+  <text x="925" y="264" class="label">Create Feature &#xB7; Demo App</text>
+
+  <rect class="row-ok" x="840" y="285" width="700" height="95" rx="8" ry="8" />
+  <text x="855" y="310" class="label">Facet filters for search</text>
+  <rect class="chip-good" x="1320" y="293" width="110" height="22" rx="5" ry="5" />
+  <text x="1332" y="308" class="tiny">Ready to create</text>
+  <text x="855" y="335" class="tiny">Priority on draft: DISCOVERY</text>
+  <text x="855" y="355" class="hint">On create: Feature story type becomes RESEARCH; child Requirements get priority P3.</text>
+
+  <rect class="row-skip" x="840" y="395" width="700" height="70" rx="8" ry="8" />
+  <text x="855" y="420" class="label">Nice-to-have: dark mode</text>
+  <rect class="chip-muted" x="1340" y="403" width="80" height="22" rx="5" ry="5" />
+  <text x="1358" y="418" class="tiny">Left out</text>
+  <text x="855" y="445" class="hint">Skipped &#x2014; will not be created. Click status or Approve again if you change your mind.</text>
+
+  <rect class="panel-warn" x="840" y="485" width="700" height="130" rx="8" ry="8" />
+  <text x="855" y="512" class="label">Where should these Features go?</text>
+  <text x="855" y="535" class="small">Every Feature in Tymio must sit under an Initiative on this product.</text>
+  <text x="855" y="555" class="tiny">Field: Initiative</text>
+  <rect class="input" x="855" y="562" width="400" height="30" rx="5" ry="5" />
+  <text x="868" y="582" class="small">Product roadmap &#x25BE;</text>
+  <text x="855" y="610" class="hint">Or choose &#x201C;Create new Initiative&#x2026;&#x201D; (title defaults from first draft / product name).</text>
+
+  <rect class="chip-good" x="840" y="640" width="200" height="24" rx="6" ry="6" />
+  <text x="855" y="656" class="tiny">1 ready to create &#xB7; 1 left out</text>
+  <rect class="button-primary" x="1080" y="635" width="300" height="36" rx="8" ry="8" />
+  <text x="1135" y="658" class="tiny" fill="#ffffff">Create in hub (1 ready)</text>
+  <text x="840" y="700" class="tiny">Primary action creates only Ready drafts. Session becomes locked (COMMITTED).</text>
+  <text x="840" y="720" class="tiny">Attachments from this intake are linked to the new Feature(s) for provenance.</text>
+  <text x="840" y="860" class="tiny">&#xA0;</text>
+
+  <!-- ========== SCREEN 3 ========== -->
+  <rect class="page" x="40" y="930" width="760" height="420" rx="14" ry="14" />
+  <text x="60" y="965" class="section">Screen 3 &#x2014; Created successfully</text>
+  <text x="60" y="987" class="hint">Job: confirm what landed in the hub; leave intake.</text>
+
+  <rect class="panel-soft" x="60" y="1005" width="700" height="280" rx="10" ry="10" />
+  <text x="80" y="1035" class="label">Created in hub</text>
+  <text x="80" y="1065" class="small">Feature &#xB7; Facet filters for search &#xB7; story type RESEARCH</text>
+  <text x="80" y="1085" class="hint">Open in Product Explorer (link) &#x2014; under the Initiative you chose.</text>
+  <text x="80" y="1115" class="small">Requirements (2) from acceptance criteria</text>
+  <text x="80" y="1135" class="tiny">&#x201C;User can filter by label&#x201D; &#xB7; &#x201C;Filter state persists in URL&#x201D;</text>
+  <text x="80" y="1165" class="small">Screenshots / files from intake linked to the Feature</text>
+  <text x="80" y="1195" class="tiny">This intake session is finished. Creating again returns the same hub ids (no duplicates).</text>
+  <rect class="button-primary" x="80" y="1225" width="160" height="36" rx="8" ry="8" />
+  <text x="125" y="1248" class="tiny" fill="#ffffff">Close</text>
+  <text x="260" y="1248" class="tiny">Closes the intake dialog. Drafts are no longer editable.</text>
+
+  <!-- ========== FIELD LEGEND ========== -->
+  <rect class="page" x="820" y="930" width="740" height="420" rx="14" ry="14" />
+  <text x="840" y="965" class="section">Field &#x26; action cheat sheet</text>
+
+  <text x="840" y="1000" class="label">Actions</text>
+  <text x="840" y="1022" class="small">Approve for create &#x2014; mark this draft Ready; it will be written on Create in hub.</text>
+  <text x="840" y="1042" class="small">Skip this &#x2014; mark Left out; not written this run (you can undo before create).</text>
+  <text x="840" y="1062" class="small">Create in hub (N ready) &#x2014; write N approved Features (+ Requirements) now.</text>
+  <text x="840" y="1082" class="small">Initiative &#x2014; parent epic/bet for new Features on this product.</text>
+
+  <text x="840" y="1115" class="label">What lands in the hub (mapping)</text>
+  <text x="840" y="1137" class="tiny">Bug draft &#x2192; Feature (storyType BUG) + labels {severity, priority} + Requirements from AC</text>
+  <text x="840" y="1157" class="tiny">Feature draft &#x2192; Feature (FUNCTIONAL / TECH_DEBT / RESEARCH) + description from problem/solution</text>
+  <text x="840" y="1177" class="tiny">DISCOVERY priority &#x2192; storyType RESEARCH + Requirement priority P3 (explore, not ship)</text>
+  <text x="840" y="1197" class="tiny">Edits before create stay on the intake session only; after create, edit Features in Product Explorer.</text>
+
+  <text x="840" y="1230" class="label">Still session-only until Create</text>
+  <text x="840" y="1252" class="tiny">Title, severity, priority, problem, solution, AC, attachments &#x2014; autosaved on draft, not hub yet.</text>
+  <text x="840" y="1275" class="tiny">Docs: AI_PRODUCT_INTAKE_COMMIT_SOLUTION.md &#xB7; Hub feature cmpblwcf5000lms0q0jb3dfv5</text>
+  <rect class="chip-warn" x="840" y="1295" width="320" height="26" rx="6" ry="6" />
+  <text x="855" y="1312" class="tiny">Awaiting approval of copy + decisions before coding</text>
+
+  <!-- Footer flow -->
+  <rect class="panel" x="40" y="1380" width="1520" height="260" rx="12" ry="12" />
+  <text x="60" y="1415" class="section">End-to-end in one sentence</text>
+  <text x="60" y="1445" class="text">Paste messy input &#x2192; Analyze/plan &#x2192; Generate drafts &#x2192; edit fields &#x2192; Approve or Skip each card &#x2192; choose Initiative &#x2192; Create in hub &#x2192; Features appear under that Initiative.</text>
+
+  <text x="60" y="1485" class="label">Example microcopy (i18n)</text>
+  <text x="60" y="1510" class="tiny">intake.approvalNeedsReview = &#x201C;Needs review&#x201D;</text>
+  <text x="60" y="1530" class="tiny">intake.approvalReady = &#x201C;Ready to create&#x201D;</text>
+  <text x="60" y="1550" class="tiny">intake.approvalSkipped = &#x201C;Left out&#x201D;</text>
+  <text x="60" y="1570" class="tiny">intake.approveDraft = &#x201C;Approve for create&#x201D; &#xB7; intake.skipDraft = &#x201C;Skip this&#x201D;</text>
+  <text x="60" y="1590" class="tiny">intake.createInHub = &#x201C;Create in hub ({{count}} ready)&#x201D; &#xB7; intake.placementLabel = &#x201C;Where should these Features go?&#x201D;</text>
+  <text x="60" y="1610" class="tiny">intake.placementHint = &#x201C;Every Feature must sit under an Initiative on this product.&#x201D;</text>
+  <text x="60" y="1630" class="tiny">intake.commitSuccessTitle = &#x201C;Created in hub&#x201D; &#xB7; intake.draftCommitHint (update) = &#x201C;Approve each draft, then Create in hub. Edits stay on this session until then.&#x201D;</text>
+</svg>

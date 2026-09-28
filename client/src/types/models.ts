@@ -383,6 +383,12 @@ export type IntakeDrafts = {
   generatedAt?: string;
 };
 
+export type IntakeCommitResult = {
+  initiatives: Array<{ draftKey: string | null; id: string; title: string }>;
+  features: Array<{ draftKey: string | null; id: string; title: string; storyType: string | null }>;
+  requirements: Array<{ draftKey: string; id: string; title: string; featureId: string }>;
+};
+
 export type UseCase = {
   id: string;
   title: string;

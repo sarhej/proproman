@@ -17,6 +17,8 @@ vi.mock("../../lib/api", async (importOriginal) => {
       updateIntakePlan: vi.fn(),
       generateIntakeDrafts: vi.fn(),
       updateIntakeDraft: vi.fn(),
+      commitIntakeSession: vi.fn(),
+      getInitiatives: vi.fn().mockResolvedValue({ initiatives: [] }),
       getAttachmentLinks: vi.fn().mockResolvedValue({ links: [] }),
       uploadAttachment: vi.fn()
     }
@@ -36,6 +38,8 @@ const mockClarify = api.clarifyIntakeSession as ReturnType<typeof vi.fn>;
 const mockUpdatePlan = api.updateIntakePlan as ReturnType<typeof vi.fn>;
 const mockGenerateDrafts = api.generateIntakeDrafts as ReturnType<typeof vi.fn>;
 const mockUpdateDraft = api.updateIntakeDraft as ReturnType<typeof vi.fn>;
+const mockCommit = api.commitIntakeSession as ReturnType<typeof vi.fn>;
+const mockGetInitiatives = api.getInitiatives as ReturnType<typeof vi.fn>;
 
 function samplePlan(overrides?: Partial<CreationPlan>): CreationPlan {
   return {
@@ -89,6 +93,34 @@ describe("ProductIntakeShell", () => {
     mockUpdatePlan.mockImplementation(async (_id: string, creationPlan: CreationPlan) => ({
       session: session({ status: "PLAN_READY", creationPlan })
     }));
+    mockGetInitiatives.mockResolvedValue({
+      initiatives: [
+        {
+          id: "init-1",
+          title: "Product roadmap",
+          productId: "p1",
+          domainId: "d1",
+          domain: { id: "d1", name: "Platform", color: "#000", sortOrder: 0 },
+          priority: "P2",
+          horizon: "NOW",
+          status: "IN_PROGRESS",
+          commercialType: "CARE_QUALITY",
+          isGap: false,
+          isEpic: true,
+          sortOrder: 0,
+          personaImpacts: [],
+          revenueWeights: [],
+          features: [],
+          decisions: [],
+          risks: [],
+          demandLinks: [],
+          assignments: [],
+          milestones: [],
+          kpis: [],
+          stakeholders: []
+        }
+      ]
+    });
   });
 
   afterEach(() => {
@@ -532,6 +564,85 @@ describe("ProductIntakeShell", () => {
       expect(mockUpdate).toHaveBeenCalledWith("s1", { status: "ABANDONED" })
     );
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("Approve for create enables Create in hub and commits", async () => {
+    const drafts = {
+      source: "heuristic" as const,
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature" as const,
+          storyType: "BUG" as const,
+          approval: "pending" as const,
+          fieldProvenance: {},
+          title: "Login clipped on rotate",
+          description: "CTA clipped",
+          stepsToReproduce: ["Open login"],
+          expected: "Visible",
+          actual: "Clipped",
+          environment: "iOS",
+          severity: "HIGH" as const,
+          priority: "P1" as const,
+          acceptanceCriteria: ["CTA visible"],
+          affectedArea: "",
+          requirements: []
+        }
+      ]
+    };
+    mockGenerateDrafts.mockResolvedValueOnce({
+      session: session({ status: "REVIEWING", creationPlan: samplePlan(), drafts }),
+      drafts,
+      source: "heuristic",
+      message: "ready"
+    });
+    mockUpdateDraft.mockImplementation(async (_id: string, _key: string, patch: Record<string, unknown>) => {
+      const next = { ...drafts.items[0]!, ...patch };
+      const nextDrafts = { ...drafts, items: [next] };
+      return {
+        session: session({ status: "REVIEWING", drafts: nextDrafts }),
+        draft: next,
+        drafts: nextDrafts
+      };
+    });
+    mockCommit.mockResolvedValueOnce({
+      session: session({ status: "COMMITTED", drafts }),
+      created: {
+        initiatives: [],
+        features: [{ draftKey: "bug-1", id: "f1", title: "Login clipped on rotate", storyType: "BUG" }],
+        requirements: [{ draftKey: "bug-1-ac-1", id: "r1", title: "CTA visible", featureId: "f1" }]
+      },
+      message: "Created 1 Feature(s) in the hub."
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "BUG", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /^analyze$/i }));
+    await waitFor(() => expect(mockAnalyze).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /generate drafts/i }));
+    expect(await screen.findByText("Needs review", { exact: true })).toBeInTheDocument();
+
+    const createBtn = screen.getByRole("button", { name: /Create in hub/i });
+    expect(createBtn).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Approve for create/i }));
+    await waitFor(() => expect(mockUpdateDraft).toHaveBeenCalledWith("s1", "bug-1", { approval: "approved" }));
+    await waitFor(() => expect(createBtn).toBeEnabled());
+
+    fireEvent.click(createBtn);
+    await waitFor(() =>
+      expect(mockCommit).toHaveBeenCalledWith(
+        "s1",
+        expect.objectContaining({ initiativeId: "init-1" })
+      )
+    );
+    expect(await screen.findByText("Created in hub", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText(/Login clipped on rotate/i)).toBeInTheDocument();
   });
 
   it("renders nothing when closed", () => {

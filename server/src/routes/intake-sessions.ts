@@ -25,6 +25,10 @@ import {
   type FeatureIntakeDrafts
 } from "../intake/featureDraftSchema.js";
 import { parseFeatureDrafts } from "../intake/featureParser.js";
+import {
+  commitIntakeDrafts,
+  type CommitResult
+} from "../intake/commitDrafts.js";
 
 export const intakeSessionsRouter = Router();
 intakeSessionsRouter.use(requireAuth);
@@ -52,6 +56,16 @@ const planPatchSchema = z.object({
 
 const draftPatchSchema = z.object({
   draft: z.record(z.string(), z.unknown())
+});
+
+const commitSchema = z.object({
+  initiativeId: z.string().min(1).nullable().optional(),
+  createInitiative: z
+    .object({
+      title: z.string().min(1).max(500)
+    })
+    .nullable()
+    .optional()
 });
 
 function hashRawText(rawText: string): string {
@@ -98,6 +112,20 @@ function serializeSession(row: {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   };
+}
+
+function readCommitResult(sourceMeta: Prisma.JsonValue | null): CommitResult | null {
+  if (!sourceMeta || typeof sourceMeta !== "object" || Array.isArray(sourceMeta)) return null;
+  const cr = (sourceMeta as Record<string, unknown>).commitResult;
+  if (!cr || typeof cr !== "object") return null;
+  return cr as CommitResult;
+}
+
+function asSourceMetaRecord(sourceMeta: Prisma.JsonValue | null): Record<string, unknown> {
+  if (sourceMeta && typeof sourceMeta === "object" && !Array.isArray(sourceMeta)) {
+    return { ...(sourceMeta as Record<string, unknown>) };
+  }
+  return {};
 }
 
 function isLocked(status: IntakeSessionStatus): boolean {
@@ -489,7 +517,7 @@ intakeSessionsRouter.post("/:id/drafts", requireWorkspaceContentWrite(), async (
       session: serializeSession(session),
       drafts,
       source,
-      message: `${label} drafts ready (${source}). Review fields, then continue in a later phase to create hub rows.`
+      message: `${label} drafts ready (${source}). Approve or skip each draft, then Create in hub.`
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Draft generation failed";
@@ -631,4 +659,114 @@ intakeSessionsRouter.patch("/:id/drafts/:draftKey", requireWorkspaceContentWrite
   });
 
   res.json({ session: serializeSession(session), draft: merged, drafts });
+});
+
+
+intakeSessionsRouter.post("/:id/commit", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const parsed = commitSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (existing.status === IntakeSessionStatus.COMMITTED) {
+    const prior = readCommitResult(existing.sourceMeta);
+    if (prior) {
+      res.json({
+        session: serializeSession(existing),
+        created: prior,
+        message: "Already committed — returning previous create result."
+      });
+      return;
+    }
+    res.status(409).json({ error: "Intake session already committed" });
+    return;
+  }
+  if (existing.status === IntakeSessionStatus.COMMITTING) {
+    res.status(409).json({ error: "Intake session commit already in progress" });
+    return;
+  }
+  if (existing.mode !== IntakeMode.BUG && existing.mode !== IntakeMode.FEATURE) {
+    res.status(501).json({ error: "Unsupported intake mode for commit" });
+    return;
+  }
+  if (!existing.drafts) {
+    res.status(409).json({ error: "No drafts to commit — generate drafts first" });
+    return;
+  }
+
+  await prisma.intakeSession.update({
+    where: { id: existing.id },
+    data: { status: IntakeSessionStatus.COMMITTING, analyzeError: null }
+  });
+
+  try {
+    const outcome = await commitIntakeDrafts({
+      sessionId: existing.id,
+      tenantId,
+      productId: existing.productId,
+      mode: existing.mode,
+      drafts: existing.drafts as IntakeDrafts | FeatureIntakeDrafts,
+      userId: req.user!.id,
+      initiativeId: parsed.data.initiativeId ?? null,
+      createInitiative: parsed.data.createInitiative ?? null
+    });
+
+    if (!outcome.ok) {
+      await prisma.intakeSession.update({
+        where: { id: existing.id },
+        data: {
+          status: IntakeSessionStatus.REVIEWING,
+          analyzeError: outcome.error.slice(0, 500)
+        }
+      });
+      res.status(outcome.status).json({ error: outcome.error });
+      return;
+    }
+
+    const committedAt = new Date();
+    const sourceMeta = {
+      ...asSourceMetaRecord(existing.sourceMeta),
+      commitResult: outcome.result,
+      committedAt: committedAt.toISOString()
+    };
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: IntakeSessionStatus.COMMITTED,
+        committedAt,
+        analyzeError: null,
+        sourceMeta: sourceMeta as Prisma.InputJsonValue
+      }
+    });
+
+    await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, {
+      fields: ["commit"],
+      featureCount: outcome.result.features.length
+    });
+
+    res.json({
+      session: serializeSession(session),
+      created: outcome.result,
+      message: `Created ${outcome.result.features.length} Feature(s) in the hub.`
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Commit failed";
+    await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        status: IntakeSessionStatus.REVIEWING,
+        analyzeError: message.slice(0, 500)
+      }
+    });
+    res.status(500).json({ error: message });
+  }
 });

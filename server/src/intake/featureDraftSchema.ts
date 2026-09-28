@@ -5,17 +5,32 @@ export const featurePrioritySchema = z.enum(["P0", "P1", "P2", "P3", "DISCOVERY"
 export const featureStoryTypeSchema = z.enum(["FUNCTIONAL", "TECH_DEBT", "RESEARCH"]);
 
 /**
- * Phase 5 commit mapping (documented here; applied only on commit):
- * DISCOVERY draft priority → Feature storyType RESEARCH, priority P3.
+ * Phase 5 commit mapping:
+ * DISCOVERY draft priority → Feature storyType RESEARCH, hub priority P3.
+ * Otherwise keep draft storyType and P0–P3 priority for Requirements/labels.
  */
+export function resolveFeatureCommitStoryAndPriority(draft: {
+  priority: z.infer<typeof featurePrioritySchema>;
+  storyType: z.infer<typeof featureStoryTypeSchema>;
+}): {
+  storyType: z.infer<typeof featureStoryTypeSchema>;
+  hubPriority: "P0" | "P1" | "P2" | "P3";
+} {
+  if (draft.priority === "DISCOVERY") {
+    return { storyType: "RESEARCH", hubPriority: "P3" };
+  }
+  return { storyType: draft.storyType, hubPriority: draft.priority };
+}
+
+/** @deprecated use resolveFeatureCommitStoryAndPriority */
 export function discoveryCommitMapping(priority: z.infer<typeof featurePrioritySchema>): {
   storyType: z.infer<typeof featureStoryTypeSchema>;
   hubPriority: "P0" | "P1" | "P2" | "P3";
 } {
-  if (priority === "DISCOVERY") {
-    return { storyType: "RESEARCH", hubPriority: "P3" };
-  }
-  return { storyType: "FUNCTIONAL", hubPriority: priority };
+  return resolveFeatureCommitStoryAndPriority({
+    priority,
+    storyType: priority === "DISCOVERY" ? "RESEARCH" : "FUNCTIONAL"
+  });
 }
 
 export const featureRequirementDraftSchema = z.object({
