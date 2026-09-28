@@ -445,4 +445,113 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     expect(res.body.draft.fieldProvenance.priority).toBe("user");
     expect(res.body.draft.fieldProvenance.severity).toBe("user");
   });
+
+  it("PATCH drafts/:key remaps priority when only severity changes and priority is AI", async () => {
+    const draftItem = {
+      key: "bug-1",
+      hubEntityType: "Feature",
+      storyType: "BUG",
+      approval: "pending",
+      fieldProvenance: { severity: "ai", priority: "ai", title: "ai" },
+      title: "Login clipped",
+      description: "x",
+      stepsToReproduce: [],
+      expected: "",
+      actual: "",
+      environment: "",
+      severity: "HIGH",
+      priority: "P1",
+      acceptanceCriteria: [],
+      affectedArea: "",
+      parentKey: null,
+      route: { initiativeId: null, featureId: null },
+      requirements: []
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [draftItem], source: "heuristic" }
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/bug-1")
+      .send({ draft: { severity: "CRITICAL" } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.draft.severity).toBe("CRITICAL");
+    expect(res.body.draft.priority).toBe("P0");
+    expect(res.body.draft.fieldProvenance.severity).toBe("user");
+    expect(res.body.draft.fieldProvenance.priority).toBe("ai");
+  });
+
+  it("PATCH drafts/:key 404 for unknown draftKey", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: {
+        items: [
+          {
+            key: "bug-1",
+            hubEntityType: "Feature",
+            storyType: "BUG",
+            approval: "pending",
+            fieldProvenance: {},
+            title: "x",
+            description: "",
+            stepsToReproduce: [],
+            expected: "",
+            actual: "",
+            environment: "",
+            severity: "MEDIUM",
+            priority: "P2",
+            acceptanceCriteria: [],
+            affectedArea: "",
+            requirements: []
+          }
+        ]
+      }
+    });
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/missing")
+      .send({ draft: { title: "Nope" } });
+    expect(res.status).toBe(404);
+  });
+
+  it("PATCH drafts/:key 409 when no drafts yet", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.PLAN_READY,
+      drafts: null
+    });
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/bug-1")
+      .send({ draft: { title: "Nope" } });
+    expect(res.status).toBe(409);
+  });
+
+  it("PATCH drafts/:key 409 when COMMITTED", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.COMMITTED,
+      drafts: { items: [] }
+    });
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/bug-1")
+      .send({ draft: { title: "Nope" } });
+    expect(res.status).toBe(409);
+  });
+
+  it("POST drafts 409 when COMMITTING", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.COMMITTING,
+      creationPlan: readyPlan
+    });
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
+    expect(res.status).toBe(409);
+  });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { buildHeuristicBugDrafts } from "./bugParser.js";
 import type { CreationPlan } from "./creationPlanSchema.js";
 
@@ -89,5 +89,62 @@ CTA should remain fully visible after rotate.`;
     expect(drafts.items).toHaveLength(1);
     expect(drafts.items[0]!.storyType).toBe("BUG");
     expect(drafts.items[0]!.title).toMatch(/Broken export/i);
+  });
+
+  it("infers CRITICAL from blocker language without structured headers", () => {
+    const drafts = buildHeuristicBugDrafts({
+      rawText: "Critical data loss when saving profile — cannot recover previous values",
+      creationPlan: {
+        ...bugPlan,
+        items: [{ ...bugPlan.items[0]!, bugSeverity: null, title: "Save fails" }]
+      }
+    });
+    expect(drafts.items[0]!.severity).toBe("CRITICAL");
+    expect(drafts.items[0]!.priority).toBe("P0");
+    expect(drafts.items[0]!.stepsToReproduce).toEqual([]);
+  });
+
+  it("handles empty rawText without throwing", () => {
+    const drafts = buildHeuristicBugDrafts({
+      rawText: "   ",
+      creationPlan: bugPlan
+    });
+    expect(drafts.items).toHaveLength(1);
+    expect(drafts.items[0]!.title).toBeTruthy();
+    expect(drafts.items[0]!.severity).toBe("HIGH");
+  });
+
+  it("emits one draft per BUG plan feature", () => {
+    const multi: CreationPlan = {
+      planType: "MULTI_ITEMS",
+      rationale: "two bugs",
+      confidence: 0.6,
+      items: [
+        {
+          key: "bug-a",
+          hubEntityType: "Feature",
+          title: "Bug A",
+          storyType: "BUG",
+          bugSeverity: "LOW"
+        },
+        {
+          key: "bug-b",
+          hubEntityType: "Feature",
+          title: "Bug B",
+          storyType: "BUG",
+          bugSeverity: "MEDIUM"
+        }
+      ]
+    };
+    const drafts = buildHeuristicBugDrafts({
+      rawText: "Two issues reported in one paste",
+      creationPlan: multi
+    });
+    expect(drafts.items).toHaveLength(2);
+    expect(drafts.items.map((d) => d.key)).toEqual(["bug-a", "bug-b"]);
+    expect(drafts.items[0]!.severity).toBe("LOW");
+    expect(drafts.items[0]!.priority).toBe("P3");
+    expect(drafts.items[1]!.severity).toBe("MEDIUM");
+    expect(drafts.items[1]!.priority).toBe("P2");
   });
 });

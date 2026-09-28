@@ -603,7 +603,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                     }}
                     onBlur={(e) => {
                       const title = e.target.value.trim() || draft.title;
-                      if (title !== draft.title) void patchDraft(draft.key, { title });
+                      void patchDraft(draft.key, { title });
                     }}
                   />
                   <div className="flex flex-wrap gap-2">
@@ -662,9 +662,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                       );
                     }}
                     onBlur={(e) => {
-                      if (e.target.value !== draft.description) {
-                        void patchDraft(draft.key, { description: e.target.value });
-                      }
+                      void patchDraft(draft.key, { description: e.target.value });
                     }}
                   />
                   <Textarea
@@ -700,9 +698,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                       aria-label={t("intake.draftExpected")}
                       placeholder={t("intake.draftExpected")}
                       onBlur={(e) => {
-                        if (e.target.value !== draft.expected) {
-                          void patchDraft(draft.key, { expected: e.target.value });
-                        }
+                        void patchDraft(draft.key, { expected: e.target.value });
                       }}
                       onChange={(e) => {
                         const expected = e.target.value;
@@ -724,9 +720,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                       aria-label={t("intake.draftActual")}
                       placeholder={t("intake.draftActual")}
                       onBlur={(e) => {
-                        if (e.target.value !== draft.actual) {
-                          void patchDraft(draft.key, { actual: e.target.value });
-                        }
+                        void patchDraft(draft.key, { actual: e.target.value });
                       }}
                       onChange={(e) => {
                         const actual = e.target.value;
@@ -748,9 +742,7 @@ export function ProductIntakeShell({ open, onClose }: Props) {
                     aria-label={t("intake.draftEnvironment")}
                     placeholder={t("intake.draftEnvironment")}
                     onBlur={(e) => {
-                      if (e.target.value !== draft.environment) {
-                        void patchDraft(draft.key, { environment: e.target.value });
-                      }
+                      void patchDraft(draft.key, { environment: e.target.value });
                     }}
                     onChange={(e) => {
                       const environment = e.target.value;
