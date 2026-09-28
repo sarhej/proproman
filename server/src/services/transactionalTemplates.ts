@@ -39,6 +39,9 @@ function footHtml(locale: TransactionalLocale): string {
   return `<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p style="font-size:12px;color:#64748b">${escapeHtml(f.brand)}</p><p style="font-size:12px;color:#64748b">${escapeHtml(f.unsub)}</p>`;
 }
 
+/** E1 outcome: pending needs review; auto_approved is informational after provision. */
+export type E1Outcome = "pending_review" | "auto_approved";
+
 /** E1 — new workspace request (super admins). */
 export function buildE1NewWorkspaceRequestEmail(input: {
   locale: TransactionalLocale;
@@ -47,30 +50,26 @@ export function buildE1NewWorkspaceRequestEmail(input: {
   contactEmail: string;
   contactName: string;
   requestId: string;
+  /** Defaults to pending_review (manual approval path). */
+  outcome?: E1Outcome;
 }): { subject: string; text: string; html: string } {
+  const outcome: E1Outcome = input.outcome ?? "pending_review";
   const t = E1_COPY[input.locale];
   const team = input.teamName;
   const slug = input.slug;
-  const sub = t.subject(team);
+  const sub = t.subject(team, outcome);
   const baseUrl = origin();
-  const text =
-    t.bodyText({
-      team,
-      slug,
-      contactEmail: input.contactEmail,
-      contactName: input.contactName,
-      requestId: input.requestId,
-      baseUrl,
-    }) + footText(input.locale);
-  const html =
-    t.bodyHtml({
-      team,
-      slug,
-      contactEmail: input.contactEmail,
-      contactName: input.contactName,
-      requestId: input.requestId,
-      baseUrl,
-    }) + footHtml(input.locale);
+  const payload = {
+    team,
+    slug,
+    contactEmail: input.contactEmail,
+    contactName: input.contactName,
+    requestId: input.requestId,
+    baseUrl,
+    outcome,
+  };
+  const text = t.bodyText(payload) + footText(input.locale);
+  const html = t.bodyHtml(payload) + footHtml(input.locale);
   return { subject: sub, text, html };
 }
 
@@ -132,96 +131,162 @@ Transactional email — unsubscribe not applicable.
   return { subject: sub, text, html };
 }
 
-type E1Strings = {
-  subject: (team: string) => string;
-  bodyText: (p: {
-    team: string;
-    slug: string;
-    contactEmail: string;
-    contactName: string;
-    requestId: string;
-    baseUrl: string;
-  }) => string;
-  bodyHtml: (p: {
-    team: string;
-    slug: string;
-    contactEmail: string;
-    contactName: string;
-    requestId: string;
-    baseUrl: string;
-  }) => string;
+type E1BodyParams = {
+  team: string;
+  slug: string;
+  contactEmail: string;
+  contactName: string;
+  requestId: string;
+  baseUrl: string;
+  outcome: E1Outcome;
 };
+
+type E1Strings = {
+  subject: (team: string, outcome: E1Outcome) => string;
+  bodyText: (p: E1BodyParams) => string;
+  bodyHtml: (p: E1BodyParams) => string;
+};
+
+function e1DetailsText(p: E1BodyParams): string {
+  return `Team: ${p.team}
+Slug: ${p.slug}
+Contact: ${p.contactName} <${p.contactEmail}>
+Request ID: ${p.requestId}`;
+}
+
+function e1DetailsHtml(p: E1BodyParams): string {
+  return `<ul><li><strong>Team:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Contact:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>Request ID:</strong> ${escapeHtml(p.requestId)}</li></ul>`;
+}
 
 const E1_COPY: Record<TransactionalLocale, E1Strings> = {
   en: {
-    subject: (team) => `New workspace request: ${team}`,
-    bodyText: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `A new workspace registration request needs review.
+    subject: (team, outcome) =>
+      outcome === "auto_approved" ? `New workspace created: ${team}` : `New workspace request: ${team}`,
+    bodyText: (p) =>
+      p.outcome === "auto_approved"
+        ? `A new workspace was auto-approved and provisioned.
 
-Team: ${team}
-Slug: ${slug}
-Contact: ${contactName} <${contactEmail}>
-Request ID: ${requestId}
+${e1DetailsText(p)}
 
-Open the platform admin to review: ${baseUrl}/`,
-    bodyHtml: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `<p>A new workspace registration request needs review.</p><ul><li><strong>Team:</strong> ${escapeHtml(team)}</li><li><strong>Slug:</strong> ${escapeHtml(slug)}</li><li><strong>Contact:</strong> ${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</li><li><strong>Request ID:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(baseUrl)}/">Open Tymio</a> to review in the platform admin.</p>`,
+Open the workspace: ${p.baseUrl}/t/${p.slug}
+Platform admin: ${p.baseUrl}/`
+        : `A new workspace registration request needs review.
+
+${e1DetailsText(p)}
+
+Open the platform admin to review: ${p.baseUrl}/`,
+    bodyHtml: (p) =>
+      p.outcome === "auto_approved"
+        ? `<p>A new workspace was <strong>auto-approved</strong> and provisioned.</p>${e1DetailsHtml(p)}<p><a href="${escapeHtml(p.baseUrl)}/t/${escapeHtml(p.slug)}">Open workspace</a> · <a href="${escapeHtml(p.baseUrl)}/">Platform admin</a></p>`
+        : `<p>A new workspace registration request needs review.</p>${e1DetailsHtml(p)}<p><a href="${escapeHtml(p.baseUrl)}/">Open Tymio</a> to review in the platform admin.</p>`,
   },
   cs: {
-    subject: (team) => `Nová žádost o workspace: ${team}`,
-    bodyText: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `Nová žádost o registraci workspace čeká na schválení.
+    subject: (team, outcome) =>
+      outcome === "auto_approved" ? `Nový workspace vytvořen: ${team}` : `Nová žádost o workspace: ${team}`,
+    bodyText: (p) =>
+      p.outcome === "auto_approved"
+        ? `Nový workspace byl automaticky schválen a provisionován.
 
-Tým: ${team}
-Slug: ${slug}
-Kontakt: ${contactName} <${contactEmail}>
-ID žádosti: ${requestId}
+Tým: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID žádosti: ${p.requestId}
 
-Otevřete administraci: ${baseUrl}/`,
-    bodyHtml: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `<p>Nová žádost o registraci workspace čeká na schválení.</p><ul><li><strong>Tým:</strong> ${escapeHtml(team)}</li><li><strong>Slug:</strong> ${escapeHtml(slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</li><li><strong>ID žádosti:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(baseUrl)}/">Otevřít Tymio</a></p>`,
+Workspace: ${p.baseUrl}/t/${p.slug}
+Administrace: ${p.baseUrl}/`
+        : `Nová žádost o registraci workspace čeká na schválení.
+
+Tým: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID žádosti: ${p.requestId}
+
+Otevřete administraci: ${p.baseUrl}/`,
+    bodyHtml: (p) =>
+      p.outcome === "auto_approved"
+        ? `<p>Nový workspace byl <strong>automaticky schválen</strong> a provisionován.</p><ul><li><strong>Tým:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID žádosti:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/t/${escapeHtml(p.slug)}">Otevřít workspace</a> · <a href="${escapeHtml(p.baseUrl)}/">Administrace</a></p>`
+        : `<p>Nová žádost o registraci workspace čeká na schválení.</p><ul><li><strong>Tým:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID žádosti:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/">Otevřít Tymio</a></p>`,
   },
   sk: {
-    subject: (team) => `Nová žiadosť o workspace: ${team}`,
-    bodyText: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `Nová žiadosť o registráciu workspace čaká na schválenie.
+    subject: (team, outcome) =>
+      outcome === "auto_approved" ? `Nový workspace vytvorený: ${team}` : `Nová žiadosť o workspace: ${team}`,
+    bodyText: (p) =>
+      p.outcome === "auto_approved"
+        ? `Nový workspace bol automaticky schválený a provisionovaný.
 
-Tím: ${team}
-Slug: ${slug}
-Kontakt: ${contactName} <${contactEmail}>
-ID žiadosti: ${requestId}
+Tím: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID žiadosti: ${p.requestId}
 
-Otvorte administráciu: ${baseUrl}/`,
-    bodyHtml: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `<p>Nová žiadosť o registráciu workspace čaká na schválenie.</p><ul><li><strong>Tím:</strong> ${escapeHtml(team)}</li><li><strong>Slug:</strong> ${escapeHtml(slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</li><li><strong>ID žiadosti:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(baseUrl)}/">Otvoriť Tymio</a></p>`,
+Workspace: ${p.baseUrl}/t/${p.slug}
+Administrácia: ${p.baseUrl}/`
+        : `Nová žiadosť o registráciu workspace čaká na schválenie.
+
+Tím: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID žiadosti: ${p.requestId}
+
+Otvorte administráciu: ${p.baseUrl}/`,
+    bodyHtml: (p) =>
+      p.outcome === "auto_approved"
+        ? `<p>Nový workspace bol <strong>automaticky schválený</strong> a provisionovaný.</p><ul><li><strong>Tím:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID žiadosti:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/t/${escapeHtml(p.slug)}">Otvoriť workspace</a> · <a href="${escapeHtml(p.baseUrl)}/">Administrácia</a></p>`
+        : `<p>Nová žiadosť o registráciu workspace čaká na schválenie.</p><ul><li><strong>Tím:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID žiadosti:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/">Otvoriť Tymio</a></p>`,
   },
   pl: {
-    subject: (team) => `Nowy wniosek o workspace: ${team}`,
-    bodyText: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `Nowy wniosek o rejestrację workspace oczekuje na przegląd.
+    subject: (team, outcome) =>
+      outcome === "auto_approved" ? `Nowy workspace utworzony: ${team}` : `Nowy wniosek o workspace: ${team}`,
+    bodyText: (p) =>
+      p.outcome === "auto_approved"
+        ? `Nowy workspace został automatycznie zatwierdzony i provisionowany.
 
-Zespół: ${team}
-Slug: ${slug}
-Kontakt: ${contactName} <${contactEmail}>
-ID wniosku: ${requestId}
+Zespół: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID wniosku: ${p.requestId}
 
-Otwórz panel administracyjny: ${baseUrl}/`,
-    bodyHtml: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `<p>Nowy wniosek o rejestrację workspace oczekuje na przegląd.</p><ul><li><strong>Zespół:</strong> ${escapeHtml(team)}</li><li><strong>Slug:</strong> ${escapeHtml(slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</li><li><strong>ID wniosku:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(baseUrl)}/">Otwórz Tymio</a></p>`,
+Workspace: ${p.baseUrl}/t/${p.slug}
+Panel admin: ${p.baseUrl}/`
+        : `Nowy wniosek o rejestrację workspace oczekuje na przegląd.
+
+Zespół: ${p.team}
+Slug: ${p.slug}
+Kontakt: ${p.contactName} <${p.contactEmail}>
+ID wniosku: ${p.requestId}
+
+Otwórz panel administracyjny: ${p.baseUrl}/`,
+    bodyHtml: (p) =>
+      p.outcome === "auto_approved"
+        ? `<p>Nowy workspace został <strong>automatycznie zatwierdzony</strong> i provisionowany.</p><ul><li><strong>Zespół:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID wniosku:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/t/${escapeHtml(p.slug)}">Otwórz workspace</a> · <a href="${escapeHtml(p.baseUrl)}/">Panel admin</a></p>`
+        : `<p>Nowy wniosek o rejestrację workspace oczekuje na przegląd.</p><ul><li><strong>Zespół:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Kontakt:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID wniosku:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/">Otwórz Tymio</a></p>`,
   },
   uk: {
-    subject: (team) => `Новий запит на workspace: ${team}`,
-    bodyText: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `Новий запит на реєстрацію workspace очікує розгляду.
+    subject: (team, outcome) =>
+      outcome === "auto_approved" ? `Новий workspace створено: ${team}` : `Новий запит на workspace: ${team}`,
+    bodyText: (p) =>
+      p.outcome === "auto_approved"
+        ? `Новий workspace було автоматично схвалено та створено.
 
-Команда: ${team}
-Slug: ${slug}
-Контакт: ${contactName} <${contactEmail}>
-ID запиту: ${requestId}
+Команда: ${p.team}
+Slug: ${p.slug}
+Контакт: ${p.contactName} <${p.contactEmail}>
+ID запиту: ${p.requestId}
 
-Відкрийте адмін-панель: ${baseUrl}/`,
-    bodyHtml: ({ team, slug, contactEmail, contactName, requestId, baseUrl }) =>
-      `<p>Новий запит на реєстрацію workspace очікує розгляду.</p><ul><li><strong>Команда:</strong> ${escapeHtml(team)}</li><li><strong>Slug:</strong> ${escapeHtml(slug)}</li><li><strong>Контакт:</strong> ${escapeHtml(contactName)} &lt;${escapeHtml(contactEmail)}&gt;</li><li><strong>ID запиту:</strong> ${escapeHtml(requestId)}</li></ul><p><a href="${escapeHtml(baseUrl)}/">Відкрити Tymio</a></p>`,
+Workspace: ${p.baseUrl}/t/${p.slug}
+Адмін-панель: ${p.baseUrl}/`
+        : `Новий запит на реєстрацію workspace очікує розгляду.
+
+Команда: ${p.team}
+Slug: ${p.slug}
+Контакт: ${p.contactName} <${p.contactEmail}>
+ID запиту: ${p.requestId}
+
+Відкрийте адмін-панель: ${p.baseUrl}/`,
+    bodyHtml: (p) =>
+      p.outcome === "auto_approved"
+        ? `<p>Новий workspace було <strong>автоматично схвалено</strong> та створено.</p><ul><li><strong>Команда:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Контакт:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID запиту:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/t/${escapeHtml(p.slug)}">Відкрити workspace</a> · <a href="${escapeHtml(p.baseUrl)}/">Адмін-панель</a></p>`
+        : `<p>Новий запит на реєстрацію workspace очікує розгляду.</p><ul><li><strong>Команда:</strong> ${escapeHtml(p.team)}</li><li><strong>Slug:</strong> ${escapeHtml(p.slug)}</li><li><strong>Контакт:</strong> ${escapeHtml(p.contactName)} &lt;${escapeHtml(p.contactEmail)}&gt;</li><li><strong>ID запиту:</strong> ${escapeHtml(p.requestId)}</li></ul><p><a href="${escapeHtml(p.baseUrl)}/">Відкрити Tymio</a></p>`,
   },
 };
 

@@ -29,8 +29,9 @@ This document ties together **product behavior**, **APIs**, **admin approval**, 
 ## Auto-approve (`AUTO_APPROVE_WORKSPACE_REQUESTS=true`)
 
 - **Default is off.** Set `AUTO_APPROVE_WORKSPACE_REQUESTS=true` in the host env (e.g. Railway) if you want immediate provisioning after `POST /api/tenant-requests`. If the flag is unset or false, every request stays **PENDING** until a super-admin approves.
-- **E2 (approval email):** When auto-approve **succeeds**, the server runs the same `approveTenantRequestRecord` path as manual approval, including **E2** to the requester’s contact email, provided `isTransactionalEmailEnabled()` / Resend are configured (same as manual). **E1** (notify admins of a new pending request) is skipped because the request never stays pending.
-- **Failure:** If provisioning throws after create, the request remains **PENDING** and the API includes `emailNotifications.autoApproveFailed: true`. Admins can still get **E1** on that path. Check server logs for `[tenant-requests] AUTO_APPROVE_WORKSPACE_REQUESTS failed` or success lines with `requesterEmailed`.
+- **E1 (super-admin notify):** Still sent on successful auto-approve, with **outcome `auto_approved`** (subject like “New workspace created”, informational — no review action required). Same recipients as pending E1 (`SUPER_ADMIN` emails; preferred To `s@strt.vc`).
+- **E2 (approval email):** When auto-approve **succeeds**, the server runs the same `approveTenantRequestRecord` path as manual approval, including **E2** to the requester’s contact email, provided `isTransactionalEmailEnabled()` / Resend are configured (same as manual).
+- **Failure:** If provisioning throws after create, the request remains **PENDING** and the API includes `emailNotifications.autoApproveFailed: true`. Admins still get **E1** with **outcome `pending_review`** on that path. Check server logs for `[tenant-requests] AUTO_APPROVE_WORKSPACE_REQUESTS failed` or success lines with `requesterEmailed` / `adminsNotifiedOnSubmit`.
 
 ## Flow A — Requester: magic link only (no Google)
 

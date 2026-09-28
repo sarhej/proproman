@@ -37,10 +37,30 @@ describe("transactionalTemplates", () => {
       contactName: "Jane",
       requestId: "req1",
     });
+    expect(subject).toContain("New workspace request");
     expect(subject).toContain("Acme");
     expect(html).toContain("Acme &lt;Inc&gt;");
     expect(html).toContain("req1");
+    expect(html).toContain("needs review");
     expect(html).toContain("Tymio App");
+  });
+
+  it("buildE1 auto_approved outcome uses created copy and workspace link", () => {
+    const { subject, text, html } = buildE1NewWorkspaceRequestEmail({
+      locale: "en",
+      teamName: "Auto Co",
+      slug: "auto-co",
+      contactEmail: "a@b.co",
+      contactName: "Jane",
+      requestId: "req-auto",
+      outcome: "auto_approved",
+    });
+    expect(subject).toBe("New workspace created: Auto Co");
+    expect(text).toContain("auto-approved");
+    expect(text).toContain("/t/auto-co");
+    expect(html).toContain("auto-approved");
+    expect(html).toContain("/t/auto-co");
+    expect(html).not.toContain("needs review");
   });
 
   it("buildE2 includes workspace link with encoded slug", () => {

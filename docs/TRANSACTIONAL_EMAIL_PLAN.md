@@ -24,7 +24,7 @@ This document defines scope, architecture, environment, rollout phases, and **fu
 
 | # | Event | Recipients | MVP? | Trigger location (planned) |
 |---|--------|------------|------|----------------------------|
-| E1 | New `TenantRequest` created (`POST /api/tenant-requests`) | All `User` with `role === SUPER_ADMIN` (unique emails) | **Yes** | After successful `create` in [`tenant-requests.ts`](../server/src/routes/tenant-requests.ts) |
+| E1 | New `TenantRequest` created (`POST /api/tenant-requests`) — **pending review** or **auto-approved** (same event, `outcome` tag / template variant) | All `User` with `role === SUPER_ADMIN` (unique emails) | **Yes** | After successful `create` in [`tenant-requests.ts`](../server/src/routes/tenant-requests.ts); also after successful auto-approve (informational copy) |
 | E2 | Tenant request **approved** | `contactEmail` on request | **Yes** | After successful approve in `POST .../review` ([`tenant-requests.ts`](../server/src/routes/tenant-requests.ts)) |
 | E3 | Tenant request **rejected** | `contactEmail` | **Yes** | Same handler, reject branch |
 | E4 | Platform role changed **from** `PENDING` **to** non-PENDING | That user’s primary email | **Yes** | After `user.update` in [`admin.ts`](../server/src/routes/admin.ts) `PUT /users/:id` when `existing.role === PENDING` and `data.role` is set and not `PENDING` (SUPER_ADMIN actor only for safest first cut, or any admin — decide in §5.3) |
