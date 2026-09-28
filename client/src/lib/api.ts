@@ -48,6 +48,7 @@ import type {
   IntakeSession,
   CreationPlan,
   BugDraft,
+  FeatureDraft,
   IntakeDrafts,
   UseCase,
   SecurityTopic,
@@ -253,8 +254,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({})
     }),
-  updateIntakeDraft: async (id: string, draftKey: string, draft: Partial<BugDraft>) =>
-    request<{ session: IntakeSession; draft: BugDraft; drafts: IntakeDrafts }>(
+  updateIntakeDraft: async (id: string, draftKey: string, draft: Partial<BugDraft | FeatureDraft>) =>
+    request<{ session: IntakeSession; draft: BugDraft | FeatureDraft; drafts: IntakeDrafts }>(
       `/api/intake-sessions/${id}/drafts/${encodeURIComponent(draftKey)}`,
       {
         method: "PATCH",

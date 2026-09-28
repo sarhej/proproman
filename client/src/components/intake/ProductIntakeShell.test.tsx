@@ -226,7 +226,7 @@ describe("ProductIntakeShell", () => {
     );
   });
 
-  it("FEATURE mode Generate drafts shows Phase 4 hint without calling generate API", async () => {
+  it("FEATURE mode Generate drafts loads feature draft editor", async () => {
     mockCreate.mockResolvedValue({ session: session({ mode: "FEATURE" }) });
     const featurePlan = samplePlan({
       planType: "SINGLE_FEATURE",
@@ -250,6 +250,51 @@ describe("ProductIntakeShell", () => {
         message: "plan ready"
       }
     });
+    const drafts = {
+      source: "heuristic" as const,
+      items: [
+        {
+          key: "feat-1",
+          hubEntityType: "Feature" as const,
+          storyType: "FUNCTIONAL" as const,
+          approval: "pending" as const,
+          fieldProvenance: { priority: "ai" as const },
+          title: "Better filters",
+          problem: "Users cannot narrow results",
+          solution: "Add facet filters",
+          personas: ["PM"],
+          businessValue: "Faster findability",
+          priority: "DISCOVERY" as const,
+          priorityRationale: "Needs research",
+          missingInputs: ["Success metrics"],
+          acceptanceCriteria: ["Filters apply"],
+          dependencies: [],
+          risks: [],
+          openQuestions: [],
+          requirements: []
+        }
+      ]
+    };
+    mockGenerateDrafts.mockResolvedValueOnce({
+      session: session({
+        mode: "FEATURE",
+        status: "REVIEWING",
+        creationPlan: featurePlan,
+        drafts
+      }),
+      drafts,
+      source: "heuristic",
+      message: "Feature drafts ready (heuristic)."
+    });
+    mockUpdateDraft.mockImplementation(async (_id: string, _key: string, patch: Record<string, unknown>) => {
+      const next = { ...drafts.items[0]!, ...patch };
+      const nextDrafts = { ...drafts, items: [next] };
+      return {
+        session: session({ mode: "FEATURE", status: "REVIEWING", drafts: nextDrafts }),
+        draft: next,
+        drafts: nextDrafts
+      };
+    });
 
     render(
       <ProductIntakeShell
@@ -261,8 +306,21 @@ describe("ProductIntakeShell", () => {
     fireEvent.click(screen.getByRole("button", { name: /^analyze$/i }));
     await waitFor(() => expect(mockAnalyze).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /generate drafts/i }));
-    expect(mockGenerateDrafts).not.toHaveBeenCalled();
-    expect(await screen.findByText(/Feature drafts ship in Phase 4/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockGenerateDrafts).toHaveBeenCalledWith("s1"));
+    expect(await screen.findByDisplayValue("Users cannot narrow results")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Priority$/i)).toHaveValue("DISCOVERY");
+    expect(screen.getByLabelText(/^Problem$/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^Problem$/i), {
+      target: { value: "Updated problem statement" }
+    });
+    fireEvent.blur(screen.getByLabelText(/^Problem$/i));
+    await waitFor(() =>
+      expect(mockUpdateDraft).toHaveBeenCalledWith(
+        "s1",
+        "feat-1",
+        expect.objectContaining({ problem: "Updated problem statement" })
+      )
+    );
   });
 
   it("bug draft field blur saves via updateIntakeDraft", async () => {

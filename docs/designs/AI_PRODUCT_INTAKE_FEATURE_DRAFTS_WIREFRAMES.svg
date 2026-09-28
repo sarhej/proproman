@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1100" viewBox="0 0 1400 1100">
+  <title>Phase 4 Feature intake drafts wireframes</title>
+  <desc>
+    Phase 4: FEATURE mode Generate drafts + editable feature draft panel.
+    Discovery priority stays on draft until Phase 5 commit (maps to RESEARCH).
+    No hub Create all in this phase.
+  </desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #f8fafc; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .panel { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .panel-soft { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1; }
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 700; fill: #334155; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 12px; fill: #334155; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 11px; fill: #475569; }
+      .tiny { font-family: Arial, Helvetica, sans-serif; font-size: 10px; fill: #64748b; }
+      .chip-feat { fill: #dbeafe; stroke: #60a5fa; stroke-width: 1; }
+      .chip-warn { fill: #fef3c7; stroke: #fcd34d; stroke-width: 1; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .button-primary { fill: #2563eb; stroke: #2563eb; stroke-width: 1.2; }
+      .input { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .note { fill: #fff7ed; stroke: #fdba74; stroke-width: 1.2; }
+    ]]></style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1400" height="1100" />
+  <text x="40" y="36" class="title">Phase 4 &#x2014; Create Feature drafts</text>
+  <text x="40" y="56" class="text">Hub feature cmpblwb08000jms0q4gnp69wp &#xB7; req cmpblwjx0000xms0qadjm8fpb &#xB7; mirror Phase 3 bug drafts; no hub writes</text>
+
+  <!-- Flow -->
+  <rect class="page" x="40" y="80" width="1320" height="90" rx="12" ry="12" />
+  <text x="60" y="110" class="section">Flow</text>
+  <text x="60" y="135" class="small">Create Feature &#x2192; Analyze (+ clarify if vague) &#x2192; plan ready &#x2192; Generate drafts &#x2192; edit problem/solution/personas/priority/AC &#x2192; Phase 5 Create all later</text>
+  <text x="60" y="155" class="tiny">Locked: Discovery is a draft priority; commit (Phase 5) maps DISCOVERY &#x2192; storyType RESEARCH (+ default P3).</text>
+
+  <!-- Shell -->
+  <rect class="page" x="40" y="190" width="620" height="860" rx="14" ry="14" />
+  <text x="60" y="225" class="section">A. Intake shell &#x2014; FEATURE mode</text>
+  <rect class="chip-feat" x="60" y="245" width="80" height="22" rx="6" ry="6" />
+  <text x="72" y="260" class="tiny">FEATURE</text>
+  <text x="155" y="260" class="label">Create Feature &#xB7; Demo App</text>
+
+  <rect class="input" x="60" y="280" width="560" height="70" rx="8" ry="8" />
+  <text x="75" y="305" class="small">Paste idea / problem statement&#x2026;</text>
+  <text x="75" y="325" class="tiny">Attachments panel (unchanged)</text>
+
+  <rect class="panel-soft" x="60" y="365" width="560" height="100" rx="8" ry="8" />
+  <text x="75" y="390" class="label">Clarify (when vague)</text>
+  <text x="75" y="412" class="small">Who is the primary persona?</text>
+  <text x="75" y="432" class="small">What outcome when done?</text>
+  <text x="75" y="452" class="tiny">Bug / Feature / Discovery &#x2014; submit answers &#x2192; re-plan</text>
+
+  <rect class="panel" x="60" y="480" width="560" height="120" rx="8" ry="8" />
+  <text x="75" y="505" class="label">Creation plan &#xB7; SINGLE_FEATURE &#xB7; 72%</text>
+  <text x="75" y="528" class="small">Feature &#xB7; FUNCTIONAL &#xB7; Better product filters</text>
+  <text x="75" y="548" class="tiny">Edit / add / split / merge (Phase 2) unchanged</text>
+  <rect class="button-primary" x="400" y="560" width="200" height="28" rx="6" ry="6" />
+  <text x="430" y="579" class="tiny" fill="#ffffff">Generate drafts</text>
+
+  <rect class="note" x="60" y="620" width="560" height="50" rx="8" ry="8" />
+  <text x="75" y="642" class="tiny">Phase 4: Generate drafts enabled for FEATURE (was 501).</text>
+  <text x="75" y="658" class="tiny">Bug mode path unchanged. Hub Create all still Phase 5.</text>
+
+  <rect class="button" x="60" y="980" width="100" height="32" rx="6" ry="6" />
+  <text x="85" y="1000" class="tiny">Analyze</text>
+  <rect class="button" x="175" y="980" width="110" height="32" rx="6" ry="6" />
+  <text x="190" y="1000" class="tiny">Manual form</text>
+  <rect class="button-primary" x="420" y="980" width="200" height="32" rx="6" ry="6" />
+  <text x="455" y="1000" class="tiny" fill="#ffffff">Generate drafts</text>
+
+  <!-- Draft panel -->
+  <rect class="page" x="690" y="190" width="670" height="860" rx="14" ry="14" />
+  <text x="710" y="225" class="section">B. Feature draft editor</text>
+  <rect class="chip-warn" x="710" y="245" width="280" height="22" rx="6" ry="6" />
+  <text x="725" y="260" class="tiny">Saved on session only &#x2014; no hub write</text>
+
+  <rect class="input" x="710" y="285" width="630" height="36" rx="6" ry="6" />
+  <text x="725" y="308" class="small">Title: Better product filters</text>
+
+  <text x="710" y="350" class="tiny">Priority</text>
+  <rect class="input" x="710" y="358" width="140" height="32" rx="6" ry="6" />
+  <text x="725" y="379" class="small">DISCOVERY</text>
+  <text x="870" y="350" class="tiny">Story type (display)</text>
+  <rect class="input" x="870" y="358" width="160" height="32" rx="6" ry="6" />
+  <text x="885" y="379" class="small">FUNCTIONAL</text>
+
+  <text x="710" y="420" class="tiny">Priority rationale</text>
+  <rect class="input" x="710" y="428" width="630" height="40" rx="6" ry="6" />
+  <text x="725" y="452" class="small">Problem space unclear; ship as Discovery spike first</text>
+
+  <text x="710" y="495" class="tiny">Problem</text>
+  <rect class="input" x="710" y="503" width="630" height="48" rx="6" ry="6" />
+  <text x="725" y="530" class="small">Users cannot find initiatives by label&#x2026;</text>
+
+  <text x="710" y="580" class="tiny">Solution</text>
+  <rect class="input" x="710" y="588" width="630" height="48" rx="6" ry="6" />
+  <text x="725" y="615" class="small">Add filter chips for labels + owner on explorer</text>
+
+  <text x="710" y="665" class="tiny">Personas (one per line)</text>
+  <rect class="input" x="710" y="673" width="300" height="48" rx="6" ry="6" />
+  <text x="725" y="700" class="small">Product owner</text>
+  <text x="1030" y="665" class="tiny">Business value</text>
+  <rect class="input" x="1030" y="673" width="310" height="48" rx="6" ry="6" />
+  <text x="1045" y="700" class="small">Faster triage</text>
+
+  <text x="710" y="750" class="tiny">Acceptance criteria (default on)</text>
+  <rect class="input" x="710" y="758" width="630" height="56" rx="6" ry="6" />
+  <text x="725" y="780" class="small">User can filter by label</text>
+  <text x="725" y="798" class="small">Filter state persists in URL</text>
+
+  <text x="710" y="845" class="tiny">Missing inputs / open questions / risks / deps</text>
+  <rect class="input" x="710" y="853" width="630" height="70" rx="6" ry="6" />
+  <text x="725" y="875" class="small">Missing: success metric</text>
+  <text x="725" y="893" class="small">Risk: filter perf on large trees</text>
+  <text x="725" y="911" class="tiny">Blur / change &#x2192; PATCH /drafts/:key &#xB7; fieldProvenance=user</text>
+
+  <rect class="note" x="710" y="950" width="630" height="70" rx="8" ry="8" />
+  <text x="725" y="975" class="label">Impl notes</text>
+  <text x="725" y="995" class="tiny">Zod featureDraftSchema &#xA7;4.2 &#xB7; featureParser heuristic/LLM &#xB7; POST drafts mode=FEATURE</text>
+  <text x="725" y="1012" class="tiny">Tests: unit + HTTP + shell + Playwright FEATURE smoke</text>
+</svg>
