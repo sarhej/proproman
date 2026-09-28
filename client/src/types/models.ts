@@ -290,7 +290,7 @@ export type IntakeSession = {
   sourceMeta?: unknown;
   clarification?: unknown;
   creationPlan?: CreationPlan | null;
-  drafts?: unknown;
+  drafts?: IntakeDrafts | null;
   analyzeError?: string | null;
   confidence?: number | null;
   createdById?: string | null;
@@ -321,6 +321,38 @@ export type CreationPlan = {
   needsClarification?: boolean;
   clarificationQuestions?: Array<{ id: string; prompt: string; choices?: string[] }>;
   items: CreationPlanItem[];
+};
+
+export type BugDraft = {
+  key: string;
+  hubEntityType: "Feature";
+  storyType: "BUG";
+  approval: "pending" | "approved" | "skipped";
+  fieldProvenance: Record<string, "ai" | "user" | undefined>;
+  title: string;
+  description: string;
+  stepsToReproduce: string[];
+  expected: string;
+  actual: string;
+  environment: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  priority: "P0" | "P1" | "P2" | "P3";
+  acceptanceCriteria: string[];
+  affectedArea: string;
+  parentKey?: string | null;
+  route?: { initiativeId?: string | null; featureId?: string | null };
+  requirements: Array<{
+    key: string;
+    title: string;
+    description?: string;
+    approval?: "pending" | "approved" | "skipped";
+  }>;
+};
+
+export type IntakeDrafts = {
+  items: BugDraft[];
+  source?: "heuristic" | "llm";
+  generatedAt?: string;
 };
 
 export type UseCase = {

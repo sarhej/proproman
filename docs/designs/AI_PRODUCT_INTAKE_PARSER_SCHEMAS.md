@@ -103,9 +103,11 @@ All under workspace auth + product scope. Prefix: `/api/intake-sessions` (and `/
 | `POST` | `/:id/analyze` | Run analyze now (also server debounce helper optional) | 1 stub / 2–4 real |
 | `POST` | `/:id/clarify` | Submit clarification answers | 3–4 |
 | `PATCH` | `/:id/plan` | User edits to `creationPlan` | 2 |
-| `POST` | `/:id/drafts` | Generate full drafts from plan | 5 |
-| `PATCH` | `/:id/drafts/:draftKey` | Edit / approve / skip one draft | 5 |
+| `POST` | `/:id/drafts` | Generate drafts from plan (**BUG mode live** in Phase 3; FEATURE → 501 until Phase 4) | 3 / 5 |
+| `PATCH` | `/:id/drafts/:draftKey` | Edit one draft (severity/priority provenance); no hub write | 3 / 5 |
 | `POST` | `/:id/commit` | Persist approved drafts to hub | 5 |
+
+**Phase 3 note:** Bug drafts populate `session.drafts` via heuristic/LLM parser. Screenshot OCR/vision is deferred. Hub Create all remains Phase 5.
 
 **Phase 1 analyze stub:** returns `{ status: "PLAN_READY", creationPlan: null, needsClarification: false, confidence: null }` or a deterministic empty single-item plan **without** writing Initiative/Feature/Requirement rows. Prefer `needsClarification: false` and leave plan null so UI can show manual form path without fake ontology.
 

@@ -15,6 +15,8 @@ vi.mock("../../lib/api", async (importOriginal) => {
       analyzeIntakeSession: vi.fn(),
       clarifyIntakeSession: vi.fn(),
       updateIntakePlan: vi.fn(),
+      generateIntakeDrafts: vi.fn(),
+      updateIntakeDraft: vi.fn(),
       getAttachmentLinks: vi.fn().mockResolvedValue({ links: [] }),
       uploadAttachment: vi.fn()
     }
@@ -32,6 +34,8 @@ const mockUpdate = api.updateIntakeSession as ReturnType<typeof vi.fn>;
 const mockAnalyze = api.analyzeIntakeSession as ReturnType<typeof vi.fn>;
 const mockClarify = api.clarifyIntakeSession as ReturnType<typeof vi.fn>;
 const mockUpdatePlan = api.updateIntakePlan as ReturnType<typeof vi.fn>;
+const mockGenerateDrafts = api.generateIntakeDrafts as ReturnType<typeof vi.fn>;
+const mockUpdateDraft = api.updateIntakeDraft as ReturnType<typeof vi.fn>;
 
 function samplePlan(overrides?: Partial<CreationPlan>): CreationPlan {
   return {
@@ -165,6 +169,61 @@ describe("ProductIntakeShell", () => {
     expect(await screen.findByDisplayValue("Login clipped on rotate")).toBeInTheDocument();
     expect(screen.getByText(/SINGLE_BUG_FEATURE/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /generate drafts/i })).toBeEnabled();
+  });
+
+  it("Generate drafts loads bug draft editor", async () => {
+    const drafts = {
+      source: "heuristic" as const,
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature" as const,
+          storyType: "BUG" as const,
+          approval: "pending" as const,
+          fieldProvenance: { severity: "ai" as const, priority: "ai" as const },
+          title: "Login clipped on rotate",
+          description: "CTA clipped",
+          stepsToReproduce: ["Open login", "Rotate"],
+          expected: "Visible",
+          actual: "Clipped",
+          environment: "iOS",
+          severity: "HIGH" as const,
+          priority: "P1" as const,
+          acceptanceCriteria: [],
+          affectedArea: "",
+          requirements: []
+        }
+      ]
+    };
+    mockGenerateDrafts.mockResolvedValueOnce({
+      session: session({ status: "REVIEWING", creationPlan: samplePlan(), drafts }),
+      drafts,
+      source: "heuristic",
+      message: "Bug drafts ready (heuristic)."
+    });
+    mockUpdateDraft.mockImplementation(async (_id: string, _key: string, patch: Record<string, unknown>) => {
+      const next = { ...drafts.items[0]!, ...patch };
+      const nextDrafts = { ...drafts, items: [next] };
+      return { session: session({ status: "REVIEWING", drafts: nextDrafts }), draft: next, drafts: nextDrafts };
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "BUG", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /^analyze$/i }));
+    await waitFor(() => expect(mockAnalyze).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /generate drafts/i }));
+    await waitFor(() => expect(mockGenerateDrafts).toHaveBeenCalledWith("s1"));
+    expect(await screen.findByDisplayValue("CTA clipped")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Severity$/i)).toHaveValue("HIGH");
+    fireEvent.change(screen.getByLabelText(/^Severity$/i), { target: { value: "LOW" } });
+    await waitFor(() =>
+      expect(mockUpdateDraft).toHaveBeenCalledWith("s1", "bug-1", expect.objectContaining({ severity: "LOW" }))
+    );
   });
 
   it("Analyze clarification path shows questions", async () => {

@@ -60,10 +60,44 @@ vi.mock("../intake/planner.js", () => ({
   }))
 }));
 
+vi.mock("../intake/bugParser.js", () => ({
+  parseBugDrafts: vi.fn(async () => ({
+    source: "heuristic",
+    drafts: {
+      source: "heuristic",
+      generatedAt: "2026-09-28T18:00:00.000Z",
+      items: [
+        {
+          key: "bug-1",
+          hubEntityType: "Feature",
+          storyType: "BUG",
+          approval: "pending",
+          fieldProvenance: { title: "ai", severity: "ai", priority: "ai" },
+          title: "Login clipped",
+          description: "CTA clipped on rotate",
+          stepsToReproduce: ["Open login", "Rotate"],
+          expected: "Visible",
+          actual: "Clipped",
+          environment: "iOS",
+          severity: "HIGH",
+          priority: "P1",
+          acceptanceCriteria: ["CTA visible after rotate"],
+          affectedArea: "",
+          parentKey: null,
+          route: { initiativeId: null, featureId: null },
+          requirements: []
+        }
+      ]
+    }
+  }))
+}));
+
 import { intakeSessionsRouter } from "./intake-sessions.js";
 import { planIntake } from "../intake/planner.js";
+import { parseBugDrafts } from "../intake/bugParser.js";
 
 const mockPlanIntake = planIntake as ReturnType<typeof vi.fn>;
+const mockParseBugDrafts = parseBugDrafts as ReturnType<typeof vi.fn>;
 
 function authTenantMiddleware(
   membershipRole: MembershipRole,
@@ -307,5 +341,108 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
     });
     const res = await request(makeApp()).post("/api/intake-sessions/s1/analyze").send({});
     expect(res.status).toBe(409);
+  });
+
+  const readyPlan = {
+    planType: "SINGLE_BUG_FEATURE",
+    rationale: "test",
+    confidence: 0.7,
+    items: [
+      {
+        key: "bug-1",
+        hubEntityType: "Feature",
+        title: "Login clipped",
+        parentKey: null,
+        storyType: "BUG",
+        suggestedPriority: "P1",
+        bugSeverity: "HIGH"
+      }
+    ]
+  };
+
+  it("POST drafts generates bug drafts when PLAN_READY", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.PLAN_READY,
+      rawText: "Login clipped on rotate",
+      creationPlan: readyPlan
+    });
+    hoisted.intakeUpdate
+      .mockResolvedValueOnce({ ...baseSession, status: IntakeSessionStatus.DRAFTING })
+      .mockResolvedValueOnce({
+        ...baseSession,
+        status: IntakeSessionStatus.REVIEWING,
+        drafts: { items: [] }
+      });
+
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.drafts.items[0].storyType).toBe("BUG");
+    expect(res.body.drafts.items[0].priority).toBe("P1");
+    expect(res.body.session.status).toBe("REVIEWING");
+    expect(mockParseBugDrafts).toHaveBeenCalled();
+  });
+
+  it("POST drafts 501 for FEATURE mode", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      mode: IntakeMode.FEATURE,
+      status: IntakeSessionStatus.PLAN_READY,
+      creationPlan: readyPlan
+    });
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
+    expect(res.status).toBe(501);
+  });
+
+  it("POST drafts 409 without PLAN_READY", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.CAPTURING
+    });
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/drafts").send({});
+    expect(res.status).toBe(409);
+  });
+
+  it("PATCH drafts/:key marks provenance user and keeps priority override", async () => {
+    const draftItem = {
+      key: "bug-1",
+      hubEntityType: "Feature",
+      storyType: "BUG",
+      approval: "pending",
+      fieldProvenance: { severity: "ai", priority: "ai", title: "ai" },
+      title: "Login clipped",
+      description: "x",
+      stepsToReproduce: [],
+      expected: "",
+      actual: "",
+      environment: "",
+      severity: "HIGH",
+      priority: "P1",
+      acceptanceCriteria: [],
+      affectedArea: "",
+      parentKey: null,
+      route: { initiativeId: null, featureId: null },
+      requirements: []
+    };
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [draftItem], source: "heuristic" }
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.REVIEWING,
+      drafts: { items: [draftItem] }
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/intake-sessions/s1/drafts/bug-1")
+      .send({ draft: { severity: "LOW", priority: "P0" } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.draft.severity).toBe("LOW");
+    expect(res.body.draft.priority).toBe("P0");
+    expect(res.body.draft.fieldProvenance.priority).toBe("user");
+    expect(res.body.draft.fieldProvenance.severity).toBe("user");
   });
 });

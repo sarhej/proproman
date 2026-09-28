@@ -805,7 +805,21 @@
     "planNeedsItem": "Plan must keep at least one item.",
     "planSaveFailed": "Could not save plan edits.",
     "generateDrafts": "Generate drafts",
-    "generateDraftsHint": "Draft generation ships in a later phase. Review and edit the plan for now."
+    "generateDraftsHint": "Feature drafts ship in Phase 4. Use Generate drafts in Bug mode after the plan is ready.",
+    "generatingDrafts": "Generating drafts…",
+    "draftsFailed": "Could not generate bug drafts.",
+    "draftSaveFailed": "Could not save draft edits.",
+    "draftsTitle": "Bug drafts",
+    "draftSeverity": "Severity",
+    "draftPriority": "Priority",
+    "draftSteps": "Steps to reproduce",
+    "draftExpected": "Expected",
+    "draftActual": "Actual",
+    "draftEnvironment": "Environment",
+    "draftDescription": "Description",
+    "draftAffectedArea": "Affected area",
+    "draftAcceptance": "Acceptance criteria",
+    "draftCommitHint": "Hub Create all ships in Phase 5. Edits are saved on this session only."
   },
   "topLevelItem": {
     "product": "Product",
