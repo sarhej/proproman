@@ -22,10 +22,59 @@ import {
   buildE3WorkspaceRejectedEmail,
   buildE5WorkspaceInviteEmail,
   normalizeTransactionalLocale,
+  type E1Outcome,
 } from "../services/transactionalTemplates.js";
 import { provisionTenant } from "../tenant/tenantProvisioning.js";
 
 export const tenantRequestsRouter = Router();
+
+/**
+ * Notify SUPER_ADMINs (E1). Used for both pending review and auto-approved provision.
+ * Never throws — failures are logged; HTTP path must not fail on mail.
+ */
+async function notifySuperAdminsOfWorkspaceRequest(
+  tenantRequest: TenantRequest,
+  outcome: E1Outcome
+): Promise<boolean> {
+  if (!isTransactionalEmailEnabled() || !isTransactionalEmailReady()) {
+    return false;
+  }
+  try {
+    const ordered = await getSuperAdminEmailsOrdered();
+    const layout = layoutE1Recipients(ordered);
+    if (!layout) {
+      logTransactionalEmail("E1", { ok: false, reason: "no_recipients", outcome });
+      return false;
+    }
+    const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
+    const mail = buildE1NewWorkspaceRequestEmail({
+      locale,
+      teamName: tenantRequest.teamName,
+      slug: tenantRequest.slug,
+      contactEmail: tenantRequest.contactEmail,
+      contactName: tenantRequest.contactName,
+      requestId: tenantRequest.id,
+      outcome,
+    });
+    await sendTransactionalEmail({
+      to: layout.to,
+      cc: layout.cc.length > 0 ? layout.cc : undefined,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      tags: [
+        { name: "event", value: "E1" },
+        { name: "outcome", value: outcome },
+      ],
+    });
+    logTransactionalEmail("E1", { ok: true, requestId: tenantRequest.id, outcome });
+    return true;
+  } catch (err) {
+    console.error("[transactional-email] E1 send failed:", err);
+    logTransactionalEmail("E1", { ok: false, requestId: tenantRequest.id, outcome });
+    return false;
+  }
+}
 
 const slugRegex = /^[a-z0-9-]+$/;
 
@@ -291,17 +340,23 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
           reviewedBy: null,
           reviewNote: "auto-approved",
         });
+        const adminsNotifiedOnSubmit = await notifySuperAdminsOfWorkspaceRequest(
+          tenantRequest,
+          "auto_approved"
+        );
         console.log("[tenant-requests] AUTO_APPROVE_WORKSPACE_REQUESTS succeeded", {
           requestId: tenantRequest.id,
           slug: tenantRequest.slug,
           tenantId: approved.createdTenant.id,
           requesterEmailed: approved.emailNotifications.requesterNotifiedOnDecision,
+          adminsNotifiedOnSubmit,
         });
         res.status(201).json({
           ...approved.updated,
           tenant: approved.provisionedTenant ?? approved.createdTenant,
           emailNotifications: {
             autoApproved: true,
+            adminsNotifiedOnSubmit,
             decisionEmailsConfigured,
             requesterNotifiedOnDecision: approved.emailNotifications.requesterNotifiedOnDecision,
             inviteesNotifiedCount: approved.emailNotifications.inviteesNotifiedCount,
@@ -313,39 +368,10 @@ tenantRequestsRouter.post("/", async (req, res, next) => {
       }
     }
 
-    let adminsNotifiedOnSubmit = false;
-    if (isTransactionalEmailEnabled() && isTransactionalEmailReady()) {
-      try {
-        const ordered = await getSuperAdminEmailsOrdered();
-        const layout = layoutE1Recipients(ordered);
-        if (layout) {
-          const locale = normalizeTransactionalLocale(tenantRequest.preferredLocale);
-          const mail = buildE1NewWorkspaceRequestEmail({
-            locale,
-            teamName: tenantRequest.teamName,
-            slug: tenantRequest.slug,
-            contactEmail: tenantRequest.contactEmail,
-            contactName: tenantRequest.contactName,
-            requestId: tenantRequest.id,
-          });
-          await sendTransactionalEmail({
-            to: layout.to,
-            cc: layout.cc.length > 0 ? layout.cc : undefined,
-            subject: mail.subject,
-            text: mail.text,
-            html: mail.html,
-            tags: [{ name: "event", value: "E1" }],
-          });
-          adminsNotifiedOnSubmit = true;
-          logTransactionalEmail("E1", { ok: true, requestId: tenantRequest.id });
-        } else {
-          logTransactionalEmail("E1", { ok: false, reason: "no_recipients" });
-        }
-      } catch (err) {
-        console.error("[transactional-email] E1 send failed:", err);
-        logTransactionalEmail("E1", { ok: false, requestId: tenantRequest.id });
-      }
-    }
+    const adminsNotifiedOnSubmit = await notifySuperAdminsOfWorkspaceRequest(
+      tenantRequest,
+      "pending_review"
+    );
 
     res.status(201).json({
       ...tenantRequest,

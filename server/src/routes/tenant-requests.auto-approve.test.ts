@@ -5,12 +5,25 @@ import { UserRole } from "@prisma/client";
 
 const autoApproveEnv = vi.hoisted(() => ({
   AUTO_APPROVE_WORKSPACE_REQUESTS: true,
+  CLIENT_URL: "https://app.test",
 }));
 
-const { mockProvisionTenant, mockApplyWorkspaceInviteSideEffects } = vi.hoisted(() => ({
-  mockProvisionTenant: vi.fn(),
-  mockApplyWorkspaceInviteSideEffects: vi.fn().mockResolvedValue(undefined),
-}));
+const { mockProvisionTenant, mockApplyWorkspaceInviteSideEffects, mockMail, mockRecipients } = vi.hoisted(
+  () => ({
+    mockProvisionTenant: vi.fn(),
+    mockApplyWorkspaceInviteSideEffects: vi.fn().mockResolvedValue(undefined),
+    mockMail: {
+      isEnabled: vi.fn(() => false),
+      isReady: vi.fn(() => false),
+      log: vi.fn(),
+      send: vi.fn().mockResolvedValue(undefined),
+    },
+    mockRecipients: {
+      getOrdered: vi.fn().mockResolvedValue([]),
+      layout: vi.fn().mockReturnValue(null),
+    },
+  })
+);
 
 vi.mock("../env.js", () => ({
   env: autoApproveEnv,
@@ -25,15 +38,15 @@ vi.mock("../lib/workspaceInviteSideEffects.js", () => ({
 }));
 
 vi.mock("../services/transactionalMail.js", () => ({
-  isTransactionalEmailEnabled: () => false,
-  isTransactionalEmailReady: () => false,
-  logTransactionalEmail: vi.fn(),
-  sendTransactionalEmail: vi.fn().mockResolvedValue(undefined),
+  isTransactionalEmailEnabled: (...args: unknown[]) => mockMail.isEnabled(...args),
+  isTransactionalEmailReady: (...args: unknown[]) => mockMail.isReady(...args),
+  logTransactionalEmail: (...args: unknown[]) => mockMail.log(...args),
+  sendTransactionalEmail: (...args: unknown[]) => mockMail.send(...args),
 }));
 
 vi.mock("../services/transactionalRecipients.js", () => ({
-  getSuperAdminEmailsOrdered: vi.fn().mockResolvedValue([]),
-  layoutE1Recipients: vi.fn().mockReturnValue(null),
+  getSuperAdminEmailsOrdered: (...args: unknown[]) => mockRecipients.getOrdered(...args),
+  layoutE1Recipients: (...args: unknown[]) => mockRecipients.layout(...args),
 }));
 
 vi.mock("../db.js", () => ({
@@ -110,6 +123,10 @@ describe("POST /api/tenant-requests AUTO_APPROVE_WORKSPACE_REQUESTS", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     autoApproveEnv.AUTO_APPROVE_WORKSPACE_REQUESTS = true;
+    mockMail.isEnabled.mockReturnValue(false);
+    mockMail.isReady.mockReturnValue(false);
+    mockRecipients.getOrdered.mockResolvedValue([]);
+    mockRecipients.layout.mockReturnValue(null);
     mockProvisionTenant.mockResolvedValue(undefined);
     mockApplyWorkspaceInviteSideEffects.mockResolvedValue(undefined);
     mockPrismaTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn(prisma));
@@ -290,5 +307,104 @@ describe("POST /api/tenant-requests AUTO_APPROVE_WORKSPACE_REQUESTS", () => {
     expect(res.body.tenant).toBeUndefined();
     expect(mockProvisionTenant).not.toHaveBeenCalled();
     expect(res.body.emailNotifications?.autoApproveFailed).toBeUndefined();
+  });
+
+  it("sends E1 to super-admins with auto_approved outcome when mail is ready", async () => {
+    mockMail.isEnabled.mockReturnValue(true);
+    mockMail.isReady.mockReturnValue(true);
+    mockRecipients.getOrdered.mockResolvedValue(["s@strt.vc", "ops@example.com"]);
+    mockRecipients.layout.mockReturnValue({ to: "s@strt.vc", cc: ["ops@example.com"] });
+
+    const createdRequest = {
+      id: "tr-auto-mail",
+      status: "PENDING",
+      teamName: "Mail Co",
+      slug: "mail-co",
+      contactEmail: "owner@mail.com",
+      contactName: "Owner",
+      message: null,
+      preferredLocale: "en",
+      inviteEmails: null,
+      trustCompanyDomain: false,
+      trustedEmailDomain: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: null,
+      tenantId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    mockTenant.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "ten-mail",
+        name: "Mail Co",
+        slug: "mail-co",
+        status: "ACTIVE",
+      });
+    mockTenantRequest.findUnique.mockResolvedValue(null);
+    mockTenantRequest.create.mockResolvedValue(createdRequest);
+    mockTenant.create.mockResolvedValue({
+      id: "ten-mail",
+      name: "Mail Co",
+      slug: "mail-co",
+      status: "PROVISIONING",
+    });
+    mockUser.findUnique.mockResolvedValue({
+      id: "u-mail",
+      email: "owner@mail.com",
+      name: "Owner",
+      role: UserRole.PENDING,
+      activeTenantId: null,
+    });
+    mockUser.update.mockResolvedValue({
+      id: "u-mail",
+      email: "owner@mail.com",
+      role: UserRole.ADMIN,
+      activeTenantId: "ten-mail",
+    });
+    mockTenantMembership.upsert.mockResolvedValue({});
+    mockTenantRequest.update.mockResolvedValue({
+      ...createdRequest,
+      status: "APPROVED",
+      tenantId: "ten-mail",
+      reviewedBy: null,
+      reviewNote: "auto-approved",
+    });
+
+    const res = await request(app).post("/api/tenant-requests").send({
+      teamName: "Mail Co",
+      slug: "mail-co",
+      contactEmail: "owner@mail.com",
+      contactName: "Owner",
+      locale: "en",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("APPROVED");
+    expect(res.body.emailNotifications?.autoApproved).toBe(true);
+    expect(res.body.emailNotifications?.adminsNotifiedOnSubmit).toBe(true);
+    const e1Call = mockMail.send.mock.calls.find(
+      (c: unknown[]) =>
+        Array.isArray((c[0] as { tags?: { name: string; value: string }[] }).tags) &&
+        (c[0] as { tags: { name: string; value: string }[] }).tags.some(
+          (t) => t.name === "event" && t.value === "E1"
+        )
+    );
+    expect(e1Call).toBeDefined();
+    expect(e1Call![0]).toEqual(
+      expect.objectContaining({
+        to: "s@strt.vc",
+        cc: ["ops@example.com"],
+        subject: expect.stringContaining("New workspace created"),
+        tags: expect.arrayContaining([
+          { name: "event", value: "E1" },
+          { name: "outcome", value: "auto_approved" },
+        ]),
+      })
+    );
+    expect((e1Call![0] as { text: string }).text).toContain("auto-approved");
+    expect((e1Call![0] as { html: string }).html).toContain("/t/mail-co");
   });
 });
