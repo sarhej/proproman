@@ -18,6 +18,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
       generateIntakeDrafts: vi.fn(),
       updateIntakeDraft: vi.fn(),
       commitIntakeSession: vi.fn(),
+      fetchIntakeUrl: vi.fn(),
       getInitiatives: vi.fn().mockResolvedValue({ initiatives: [] }),
       getAttachmentLinks: vi.fn().mockResolvedValue({ links: [] }),
       uploadAttachment: vi.fn()
@@ -39,6 +40,7 @@ const mockUpdatePlan = api.updateIntakePlan as ReturnType<typeof vi.fn>;
 const mockGenerateDrafts = api.generateIntakeDrafts as ReturnType<typeof vi.fn>;
 const mockUpdateDraft = api.updateIntakeDraft as ReturnType<typeof vi.fn>;
 const mockCommit = api.commitIntakeSession as ReturnType<typeof vi.fn>;
+const mockFetchUrl = api.fetchIntakeUrl as ReturnType<typeof vi.fn>;
 const mockGetInitiatives = api.getInitiatives as ReturnType<typeof vi.fn>;
 
 function samplePlan(overrides?: Partial<CreationPlan>): CreationPlan {
@@ -671,5 +673,73 @@ describe("ProductIntakeShell", () => {
       resolveCreate({ session: session({ id: "late" }) });
     });
     expect(screen.queryByTestId("attachment-panel")).not.toBeInTheDocument();
+  });
+
+  it("fetches URL and shows success banner", async () => {
+    mockCreate.mockResolvedValue({ session: session() });
+    mockFetchUrl.mockResolvedValue({
+      session: session({
+        rawText: "Source: https://example.com/spec\n\nHello",
+        sourceChannel: "url_fetch"
+      }),
+      urlFetch: {
+        url: "https://example.com/spec",
+        status: "ok",
+        provider: "generic",
+        httpStatus: 200,
+        fetchedAt: "2026-09-29T12:00:00.000Z",
+        normalizedTextRef: "att-1",
+        error: null
+      },
+      attachment: { id: "att-1", filename: "fetched-example.com-spec.txt", mimeType: "text/plain" }
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "BUG", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByLabelText(/link \(optional\)/i)).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/link \(optional\)/i), {
+      target: { value: "https://example.com/spec" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add from link/i }));
+
+    await waitFor(() => expect(mockFetchUrl).toHaveBeenCalledWith("s1", "https://example.com/spec"));
+    expect(await screen.findByText(/Added text from example.com/i)).toBeInTheDocument();
+  });
+
+  it("shows calm paste fallback when link cannot be opened", async () => {
+    mockCreate.mockResolvedValue({ session: session() });
+    mockFetchUrl.mockResolvedValue({
+      session: session(),
+      urlFetch: {
+        url: "https://www.notion.so/acme/page",
+        status: "needs_auth",
+        provider: "notion",
+        httpStatus: null,
+        fetchedAt: "2026-09-29T12:00:00.000Z",
+        normalizedTextRef: null,
+        error: "We could not open that link automatically. Paste the page text below — you can keep going."
+      }
+    });
+
+    render(
+      <ProductIntakeShell
+        open={{ mode: "BUG", productId: "p1", productName: "App" }}
+        onClose={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByLabelText(/link \(optional\)/i)).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/link \(optional\)/i), {
+      target: { value: "https://www.notion.so/acme/page" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add from link/i }));
+
+    expect(await screen.findByText(/paste the page text/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sign-in/i)).not.toBeInTheDocument();
   });
 });

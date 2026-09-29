@@ -845,7 +845,16 @@
     "discoveryCommitHint": "On create: story type becomes RESEARCH; requirements get priority P3.",
     "commitSuccessTitle": "Created in hub",
     "commitSuccessClose": "Close",
-    "commitRequirementsCount": "{{count}} Requirements from acceptance criteria"
+    "commitRequirementsCount": "{{count}} Requirements from acceptance criteria",
+    "urlFieldLabel": "Link (optional)",
+    "urlFieldHint": "Paste a link and we will pull the text when we can. If not, paste the text in the box above — either way works.",
+    "urlFetch": "Add from link",
+    "urlFetching": "Reading link…",
+    "urlFetchOk": "Added text from {{host}}",
+    "urlFetchFailed": "We could not open that link automatically. Paste the page text above — you can keep going.",
+    "urlFetchNeedsAuth": "We could not open that link automatically. Paste the page text above — you can keep going.",
+    "urlFetchUnsupported": "We could not use that link. Paste the page text above — you can keep going.",
+    "urlFetchTooLarge": "That page is too large to pull in. Paste a shorter excerpt above."
   },
   "topLevelItem": {
     "product": "Product",

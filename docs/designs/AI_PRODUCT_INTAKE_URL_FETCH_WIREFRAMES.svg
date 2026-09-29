@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1580" viewBox="0 0 1600 1580">
+  <title>Phase 6 intake URL fetch wireframes</title>
+  <desc>
+    Phase 6 external URL fetch for product intake. Capture URL, fetch states,
+    success artifact, and failure paste fallback. Annotated for implementation.
+  </desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #f1f5f9; }
+      .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .panel { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .panel-soft { fill: #f0fdf4; stroke: #86efac; stroke-width: 1; }
+      .panel-warn { fill: #fffbeb; stroke: #fbbf24; stroke-width: 1; }
+      .panel-info { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1; }
+      .panel-err { fill: #fef2f2; stroke: #fca5a5; stroke-width: 1; }
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; fill: #0f172a; }
+      .section { font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; fill: #1e293b; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 12px; fill: #334155; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 11px; fill: #475569; }
+      .tiny { font-family: Arial, Helvetica, sans-serif; font-size: 10px; fill: #64748b; }
+      .hint { font-family: Arial, Helvetica, sans-serif; font-size: 10px; fill: #0369a1; font-style: italic; }
+      .chip-bug { fill: #fee2e2; stroke: #f87171; stroke-width: 1; }
+      .chip-good { fill: #dcfce7; stroke: #4ade80; stroke-width: 1; }
+      .chip-warn { fill: #fef3c7; stroke: #fcd34d; stroke-width: 1; }
+      .chip-muted { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1; }
+      .button { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .button-primary { fill: #2563eb; stroke: #2563eb; stroke-width: 1.2; }
+      .input { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .row { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+    ]]></style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1580" />
+  <text x="40" y="34" class="title">Phase 6 &#x2014; Fetch link content into intake</text>
+  <text x="40" y="54" class="text">Paste a public https link; Tymio fetches and stores text on the session. Failures never block &#x2014; paste content instead.</text>
+
+  <!-- Glossary -->
+  <rect class="panel-info" x="40" y="70" width="1520" height="78" rx="10" ry="10" />
+  <text x="60" y="95" class="section">Fetch statuses (session audit: sourceMeta.urlFetches)</text>
+  <text x="60" y="118" class="small"><tspan font-weight="700" fill="#166534">ok</tspan> &#x2014; text stored as Attachment (source url_fetch).</text>
+  <text x="420" y="118" class="small"><tspan font-weight="700" fill="#92400e">failed / skipped</tspan> &#x2014; show banner; user pastes content.</text>
+  <text x="820" y="118" class="small"><tspan font-weight="700" fill="#475569">could not open</tspan> &#x2014; calm paste prompt; intake continues (no sign-in scare).</text>
+  <text x="60" y="136" class="tiny">Tries any safe https URL including public Notion/Docs shares. No OAuth required. Max 1 MB / 10s / rate-limited.</text>
+
+  <!-- ========== SCREEN 1 ========== -->
+  <rect class="page" x="40" y="170" width="740" height="620" rx="14" ry="14" />
+  <text x="60" y="200" class="section">Screen 1 &#x2014; Capture + optional link</text>
+  <text x="60" y="222" class="hint">Job: paste a link; we pull text when we can. Otherwise paste into the box — either way works.</text>
+
+  <rect class="chip-bug" x="60" y="240" width="48" height="20" rx="5" ry="5" />
+  <text x="70" y="254" class="tiny">BUG</text>
+  <text x="120" y="254" class="label">Create Bug &#xB7; Demo App</text>
+
+  <text x="60" y="290" class="tiny">Describe the issue (rawText)</text>
+  <rect class="input" x="60" y="298" width="700" height="90" rx="6" ry="6" />
+  <text x="72" y="322" class="small">Login button clipped on iPhone rotate&#x2026;</text>
+  <text x="72" y="342" class="tiny">(existing capture textarea from Phase 1)</text>
+
+  <text x="60" y="420" class="label">Link (optional)</text>
+  <text x="200" y="420" class="hint">Paste https URL &#x2014; auto-read if the paste is URL-only</text>
+  <rect class="input" x="60" y="428" width="520" height="32" rx="6" ry="6" />
+  <text x="72" y="448" class="small">https://docs.example.com/login-bug</text>
+  <rect class="button-primary" x="595" y="428" width="100" height="32" rx="8" ry="8" />
+  <text x="608" y="448" class="tiny" fill="#ffffff">Add from link</text>
+
+  <text x="60" y="490" class="tiny">Attachments</text>
+  <rect class="row" x="60" y="500" width="700" height="48" rx="6" ry="6" />
+  <text x="76" y="522" class="small">shot.png &#xB7; image/png &#xB7; upload</text>
+  <text x="76" y="538" class="tiny">Existing AttachmentPanel unchanged</text>
+
+  <rect class="button" x="60" y="580" width="100" height="32" rx="8" ry="8" />
+  <text x="85" y="600" class="tiny">Analyze</text>
+  <text x="180" y="600" class="hint">Same Analyze as Phases 2&#x2013;4; uses rawText + fetched attachment text</text>
+
+  <text x="60" y="650" class="tiny">API: POST /api/intake-sessions/:id/fetch-url { url }</text>
+  <text x="60" y="670" class="tiny">Guards: https only &#xB7; block private IPs &#xB7; 10s timeout &#xB7; 1 MB &#xB7; rate limit</text>
+
+  <!-- ========== SCREEN 2 ========== -->
+  <rect class="page" x="820" y="170" width="740" height="620" rx="14" ry="14" />
+  <text x="840" y="200" class="section">Screen 2 &#x2014; Fetch succeeded</text>
+  <text x="840" y="222" class="hint">Job: confirm artifact; continue to Analyze / drafts / Create in hub.</text>
+
+  <rect class="panel-soft" x="840" y="245" width="700" height="56" rx="8" ry="8" />
+  <rect class="chip-good" x="856" y="258" width="110" height="22" rx="5" ry="5" />
+  <text x="870" y="273" class="tiny">Added text</text>
+  <text x="980" y="273" class="small">from docs.example.com &#xB7; stored as session attachment</text>
+
+  <text x="840" y="340" class="label">Link to fetch</text>
+  <rect class="input" x="840" y="348" width="520" height="32" rx="6" ry="6" />
+  <text x="852" y="368" class="small">https://docs.example.com/login-bug</text>
+  <rect class="button" x="1375" y="348" width="100" height="32" rx="8" ry="8" />
+  <text x="1395" y="368" class="tiny">Re-fetch</text>
+
+  <text x="840" y="415" class="tiny">Attachments (after fetch)</text>
+  <rect class="row" x="840" y="425" width="700" height="70" rx="6" ry="6" />
+  <text x="856" y="450" class="small">fetched-docs.example.com-login-bug.md</text>
+  <text x="856" y="470" class="tiny">source: url_fetch &#xB7; text/markdown &#xB7; linked to IntakeSession</text>
+
+  <text x="840" y="530" class="tiny">rawText gains a short source stub + excerpt (D3) so Analyze works immediately:</text>
+  <rect class="input" x="840" y="540" width="700" height="70" rx="6" ry="6" />
+  <text x="852" y="562" class="tiny">Source: https://docs.example.com/login-bug</text>
+  <text x="852" y="580" class="tiny"># Login bug notes&#x2026; (normalized excerpt)</text>
+
+  <text x="840" y="645" class="tiny">sourceMeta.urlFetches[] += { url, status: ok, provider: generic, httpStatus: 200, normalizedTextRef }</text>
+  <text x="840" y="665" class="tiny">Next steps unchanged: Analyze &#x2192; plan &#x2192; drafts &#x2192; Approve &#x2192; Create in hub</text>
+
+  <!-- ========== SCREEN 3 ========== -->
+  <rect class="page" x="40" y="820" width="740" height="520" rx="14" ry="14" />
+  <text x="60" y="850" class="section">Screen 3 &#x2014; Could not open link (paste and continue)</text>
+  <text x="60" y="872" class="hint">Job: never scare or block; explain softly; user pastes text.</text>
+
+  <rect class="panel-warn" x="60" y="895" width="700" height="70" rx="8" ry="8" />
+  <rect class="chip-warn" x="76" y="910" width="120" height="22" rx="5" ry="5" />
+  <text x="90" y="925" class="tiny">Keep going</text>
+  <text x="210" y="925" class="small">We could not open that link automatically. Paste the page text above.</text>
+  <text x="76" y="948" class="tiny">Same tone for timeout, private pages, login walls, too large, unsupported.</text>
+
+  <text x="60" y="1000" class="label">Link to fetch</text>
+  <rect class="input" x="60" y="1008" width="520" height="32" rx="6" ry="6" />
+  <text x="72" y="1028" class="small">https://www.notion.so/acme/private-page-&#x2026;</text>
+  <rect class="button-primary" x="595" y="1008" width="100" height="32" rx="8" ry="8" />
+  <text x="618" y="1028" class="tiny" fill="#ffffff">Fetch link</text>
+
+  <rect class="chip-muted" x="60" y="1060" width="100" height="22" rx="5" ry="5" />
+  <text x="72" y="1075" class="tiny">paste path</text>
+  <text x="175" y="1075" class="hint">No OAuth / credentials required for a useful intake</text>
+
+  <text x="60" y="1120" class="tiny">Describe the issue (paste content here)</text>
+  <rect class="input" x="60" y="1128" width="700" height="100" rx="6" ry="6" />
+  <text x="72" y="1152" class="small">[pasted export from Notion&#x2026;]</text>
+  <text x="72" y="1172" class="tiny">Cursor/focus returns here after failed fetch</text>
+
+  <text x="60" y="1265" class="tiny">Audit still records failed attempt (status failed|needs_auth|skipped) with error string &#x2014; no body logged.</text>
+  <text x="60" y="1285" class="tiny">Analyze remains available on whatever rawText + uploads the user already has.</text>
+
+  <!-- ========== SCREEN 4 / NOTES ========== -->
+  <rect class="page" x="820" y="820" width="740" height="520" rx="14" ry="14" />
+  <text x="840" y="850" class="section">Notes &#x2014; scope &#x26; security</text>
+
+  <rect class="panel-info" x="840" y="875" width="700" height="200" rx="8" ry="8" />
+  <text x="860" y="900" class="label">In Phase 6 (v1)</text>
+  <text x="860" y="925" class="small">&#x2022; Try safe public URLs (incl. share links)</text>
+  <text x="860" y="945" class="small">&#x2022; Normalize to text Attachment + rawText stub</text>
+  <text x="860" y="965" class="small">&#x2022; Calm paste prompt when link cannot open</text>
+  <text x="860" y="985" class="small">&#x2022; SSRF / size / timeout / rate limits</text>
+  <text x="860" y="1005" class="small">&#x2022; urlFetches audit on sourceMeta</text>
+  <text x="860" y="1025" class="small">&#x2022; Unit + HTTP + Playwright (mocked fetch)</text>
+  <text x="860" y="1050" class="label">Out of this PR</text>
+  <text x="860" y="1070" class="small">OAuth for private Notion / Google / Jira / Slack &#xB7; OCR</text>
+
+  <rect class="panel-err" x="840" y="1100" width="700" height="100" rx="8" ry="8" />
+  <text x="860" y="1125" class="label">SSRF hard rules</text>
+  <text x="860" y="1150" class="small">Block loopback, RFC1918, link-local, cloud metadata IPs.</text>
+  <text x="860" y="1170" class="small">Max 3 redirects; each hop re-checked. No internal error detail in UI.</text>
+  <text x="860" y="1190" class="tiny">Docs: AI_PRODUCT_INTAKE_URL_FETCH_SOLUTION.md (D1&#x2013;D9 + test matrix)</text>
+
+  <rect class="panel-soft" x="840" y="1220" width="700" height="90" rx="8" ry="8" />
+  <text x="860" y="1245" class="label">Hub</text>
+  <text x="860" y="1270" class="small">Feature: External content fetch for intake URLs (IN_PROGRESS)</text>
+  <text x="860" y="1290" class="tiny">Req: URL detect + server fetch + session artifact &#xB7; approve D1&#x2013;D9 then implement</text>
+</svg>
