@@ -1,4 +1,12 @@
-import { IntakeMode, IntakeSessionStatus, Prisma } from "@prisma/client";
+import {
+  AttachmentKind,
+  AttachmentLinkRole,
+  AttachmentSource,
+  AttachmentStatus,
+  IntakeMode,
+  IntakeSessionStatus,
+  Prisma
+} from "@prisma/client";
 import { createHash } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
@@ -7,6 +15,12 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceContentWrite } from "../middleware/workspaceAuth.js";
 import { getTenantId } from "../tenant/requireTenant.js";
 import { logAudit } from "../services/audit.js";
+import { getAttachmentStorage } from "../attachments/storageFactory.js";
+import {
+  buildAttachmentStorageKey,
+  sanitizeFilename,
+  sha256Hex
+} from "../attachments/constants.js";
 import { creationPlanSchema, normalizeCreationPlan } from "../intake/creationPlanSchema.js";
 import { planIntake } from "../intake/planner.js";
 import {
@@ -29,6 +43,14 @@ import {
   commitIntakeDrafts,
   type CommitResult
 } from "../intake/commitDrafts.js";
+import {
+  URL_FETCH_MAX_PER_SESSION_HOUR,
+  URL_FETCH_RAW_TEXT_EXCERPT,
+  countRecentUrlFetches,
+  fetchUrlContent,
+  mergeRawTextWithFetch,
+  type UrlFetchRecord
+} from "../intake/urlFetch.js";
 
 export const intakeSessionsRouter = Router();
 intakeSessionsRouter.use(requireAuth);
@@ -66,6 +88,10 @@ const commitSchema = z.object({
     })
     .nullable()
     .optional()
+});
+
+const fetchUrlSchema = z.object({
+  url: z.string().min(1).max(2048)
 });
 
 function hashRawText(rawText: string): string {
@@ -661,6 +687,149 @@ intakeSessionsRouter.patch("/:id/drafts/:draftKey", requireWorkspaceContentWrite
   res.json({ session: serializeSession(session), draft: merged, drafts });
 });
 
+
+intakeSessionsRouter.post("/:id/fetch-url", requireWorkspaceContentWrite(), async (req, res) => {
+  const id = String(req.params.id);
+  const parsed = fetchUrlSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const existing = await prisma.intakeSession.findFirst({
+    where: { id, tenantId }
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Intake session not found" });
+    return;
+  }
+  if (isLocked(existing.status)) {
+    res.status(409).json({ error: "Intake session is locked" });
+    return;
+  }
+
+  const meta = asSourceMetaRecord(existing.sourceMeta);
+  const priorFetches = Array.isArray(meta.urlFetches) ? [...(meta.urlFetches as unknown[])] : [];
+  if (countRecentUrlFetches(priorFetches) >= URL_FETCH_MAX_PER_SESSION_HOUR) {
+    res.status(429).json({ error: "Too many URL fetches for this session. Try again later." });
+    return;
+  }
+
+  const outcome = await fetchUrlContent(parsed.data.url);
+  const fetchedAt = new Date().toISOString();
+
+  if (!outcome.ok) {
+    const urlFetch: UrlFetchRecord = {
+      url: parsed.data.url,
+      status: outcome.status,
+      provider: outcome.provider,
+      httpStatus: outcome.httpStatus,
+      fetchedAt,
+      normalizedTextRef: null,
+      error: outcome.error
+    };
+    const sourceMeta = {
+      ...meta,
+      urlFetches: [...priorFetches, urlFetch]
+    };
+    const session = await prisma.intakeSession.update({
+      where: { id: existing.id },
+      data: {
+        sourceMeta: sourceMeta as Prisma.InputJsonValue,
+        sourceChannel: existing.sourceChannel === "ui_product" ? "url_fetch" : existing.sourceChannel
+      }
+    });
+    await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, {
+      fields: ["urlFetch"],
+      status: urlFetch.status
+    });
+    res.json({ session: serializeSession(session), urlFetch });
+    return;
+  }
+
+  const buf = Buffer.from(outcome.normalizedText, "utf8");
+  const filename = sanitizeFilename(outcome.filename);
+  const attachment = await prisma.attachment.create({
+    data: {
+      tenantId,
+      createdByUserId: req.user!.id,
+      filename,
+      mimeType: "text/plain",
+      byteSize: buf.length,
+      checksum: sha256Hex(buf),
+      storageKey: "pending",
+      source: AttachmentSource.URL_FETCH,
+      kind: AttachmentKind.ORIGINAL,
+      status: AttachmentStatus.PENDING
+    }
+  });
+
+  const storageKey = buildAttachmentStorageKey(tenantId, attachment.id, filename);
+  try {
+    await getAttachmentStorage().put(storageKey, buf, "text/plain");
+  } catch {
+    await prisma.attachment.delete({ where: { id: attachment.id } }).catch(() => undefined);
+    res.status(500).json({ error: "Failed to store fetched content" });
+    return;
+  }
+
+  const active = await prisma.attachment.update({
+    where: { id: attachment.id },
+    data: { storageKey, status: AttachmentStatus.ACTIVE, tenantId }
+  });
+
+  await prisma.attachmentLink.create({
+    data: {
+      tenantId,
+      attachmentId: active.id,
+      createdByUserId: req.user!.id,
+      role: AttachmentLinkRole.EVIDENCE,
+      intakeSessionId: existing.id
+    }
+  });
+
+  const excerpt = outcome.normalizedText.slice(0, URL_FETCH_RAW_TEXT_EXCERPT);
+  const nextRaw = mergeRawTextWithFetch(existing.rawText, parsed.data.url, excerpt);
+  const urlFetch: UrlFetchRecord = {
+    url: parsed.data.url,
+    status: "ok",
+    provider: outcome.provider,
+    httpStatus: outcome.httpStatus,
+    fetchedAt,
+    normalizedTextRef: active.id,
+    error: null
+  };
+  const sourceMeta = {
+    ...meta,
+    urlFetches: [...priorFetches, urlFetch],
+    channel: "url_fetch"
+  };
+
+  const session = await prisma.intakeSession.update({
+    where: { id: existing.id },
+    data: {
+      rawText: nextRaw,
+      rawExcerptHash: hashRawText(nextRaw),
+      sourceChannel: "url_fetch",
+      sourceMeta: sourceMeta as Prisma.InputJsonValue
+    }
+  });
+
+  await logAudit(req.user!.id, "CREATED", "ATTACHMENT", active.id, {
+    via: "intake-url-fetch",
+    intakeSessionId: existing.id
+  });
+  await logAudit(req.user!.id, "UPDATED", "INTAKE_SESSION", session.id, {
+    fields: ["urlFetch", "rawText"],
+    status: "ok"
+  });
+
+  res.json({
+    session: serializeSession(session),
+    urlFetch,
+    attachment: { id: active.id, filename: active.filename, mimeType: active.mimeType }
+  });
+});
 
 intakeSessionsRouter.post("/:id/commit", requireWorkspaceContentWrite(), async (req, res) => {
   const id = String(req.params.id);

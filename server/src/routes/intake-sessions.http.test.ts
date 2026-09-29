@@ -10,7 +10,13 @@ const hoisted = vi.hoisted(() => ({
   intakeFindFirst: vi.fn(),
   intakeUpdate: vi.fn(),
   logAudit: vi.fn(),
-  commitIntakeDrafts: vi.fn()
+  commitIntakeDrafts: vi.fn(),
+  fetchUrlContent: vi.fn(),
+  attachmentCreate: vi.fn(),
+  attachmentUpdate: vi.fn(),
+  attachmentDelete: vi.fn(),
+  attachmentLinkCreate: vi.fn(),
+  storagePut: vi.fn()
 }));
 
 vi.mock("../db.js", () => ({
@@ -20,6 +26,14 @@ vi.mock("../db.js", () => ({
       create: hoisted.intakeCreate,
       findFirst: hoisted.intakeFindFirst,
       update: hoisted.intakeUpdate
+    },
+    attachment: {
+      create: hoisted.attachmentCreate,
+      update: hoisted.attachmentUpdate,
+      delete: hoisted.attachmentDelete
+    },
+    attachmentLink: {
+      create: hoisted.attachmentLinkCreate
     }
   }
 }));
@@ -30,6 +44,20 @@ vi.mock("../services/audit.js", () => ({
 
 vi.mock("../intake/commitDrafts.js", () => ({
   commitIntakeDrafts: hoisted.commitIntakeDrafts
+}));
+
+vi.mock("../intake/urlFetch.js", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../intake/urlFetch.js")>();
+  return {
+    ...mod,
+    fetchUrlContent: hoisted.fetchUrlContent
+  };
+});
+
+vi.mock("../attachments/storageFactory.js", () => ({
+  getAttachmentStorage: () => ({
+    put: hoisted.storagePut
+  })
 }));
 
 vi.mock("../tenant/tenantContext.js", () => ({
@@ -830,5 +858,114 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
       .send({ draft: { approval: "approved" } });
     expect(res.status).toBe(200);
     expect(res.body.draft.approval).toBe("approved");
+  });
+
+  it("POST fetch-url stores attachment and merges rawText on ok", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      rawText: "user note",
+      sourceMeta: { channel: "ui_product", urlFetches: [] }
+    });
+    hoisted.fetchUrlContent.mockResolvedValueOnce({
+      ok: true,
+      provider: "generic",
+      httpStatus: 200,
+      contentType: "text/html",
+      normalizedText: "Fetched page body",
+      filename: "fetched-example.com-page.txt"
+    });
+    hoisted.attachmentCreate.mockResolvedValueOnce({
+      id: "att-1",
+      filename: "fetched-example.com-page.txt"
+    });
+    hoisted.storagePut.mockResolvedValueOnce(undefined);
+    hoisted.attachmentUpdate.mockResolvedValueOnce({
+      id: "att-1",
+      filename: "fetched-example.com-page.txt",
+      mimeType: "text/plain"
+    });
+    hoisted.attachmentLinkCreate.mockResolvedValueOnce({ id: "link-1" });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      rawText: "user note\n\n---\n\nSource: https://example.com/page\n\nFetched page body",
+      sourceChannel: "url_fetch",
+      sourceMeta: {
+        channel: "url_fetch",
+        urlFetches: [{ status: "ok", normalizedTextRef: "att-1" }]
+      }
+    });
+
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/fetch-url")
+      .send({ url: "https://example.com/page" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.urlFetch.status).toBe("ok");
+    expect(res.body.urlFetch.normalizedTextRef).toBe("att-1");
+    expect(res.body.attachment.id).toBe("att-1");
+    expect(hoisted.storagePut).toHaveBeenCalled();
+    expect(hoisted.attachmentLinkCreate).toHaveBeenCalled();
+  });
+
+  it("POST fetch-url records needs_auth without attachment", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      sourceMeta: { channel: "ui_product", urlFetches: [] }
+    });
+    hoisted.fetchUrlContent.mockResolvedValueOnce({
+      ok: false,
+      status: "needs_auth",
+      provider: "notion",
+      httpStatus: null,
+      error: "This page needs sign-in"
+    });
+    hoisted.intakeUpdate.mockResolvedValueOnce({
+      ...baseSession,
+      sourceMeta: {
+        channel: "ui_product",
+        urlFetches: [{ status: "needs_auth", provider: "notion" }]
+      }
+    });
+
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/fetch-url")
+      .send({ url: "https://www.notion.so/acme/page" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.urlFetch.status).toBe("needs_auth");
+    expect(hoisted.attachmentCreate).not.toHaveBeenCalled();
+  });
+
+  it("POST fetch-url 400 on empty url", async () => {
+    const res = await request(makeApp()).post("/api/intake-sessions/s1/fetch-url").send({ url: "" });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST fetch-url 429 when rate limited", async () => {
+    const many = Array.from({ length: 10 }, (_, i) => ({
+      url: `https://example.com/${i}`,
+      status: "ok",
+      fetchedAt: new Date().toISOString()
+    }));
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      sourceMeta: { channel: "ui_product", urlFetches: many }
+    });
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/fetch-url")
+      .send({ url: "https://example.com/more" });
+    expect(res.status).toBe(429);
+    expect(hoisted.fetchUrlContent).not.toHaveBeenCalled();
+  });
+
+  it("POST fetch-url 409 when session locked", async () => {
+    hoisted.intakeFindFirst.mockResolvedValueOnce({
+      ...baseSession,
+      status: IntakeSessionStatus.COMMITTED
+    });
+    const res = await request(makeApp())
+      .post("/api/intake-sessions/s1/fetch-url")
+      .send({ url: "https://example.com/x" });
+    expect(res.status).toBe(409);
   });
 });

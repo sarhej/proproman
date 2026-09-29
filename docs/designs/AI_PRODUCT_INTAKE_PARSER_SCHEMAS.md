@@ -106,8 +106,9 @@ All under workspace auth + product scope. Prefix: `/api/intake-sessions` (and `/
 | `POST` | `/:id/drafts` | Generate drafts from plan (**BUG + FEATURE modes live**; no hub write) | 3–4 / 5 |
 | `PATCH` | `/:id/drafts/:draftKey` | Edit one draft (severity/priority provenance); no hub write | 3–4 / 5 |
 | `POST` | `/:id/commit` | Persist approved drafts to hub | 5 |
+| `POST` | `/:id/fetch-url` | Fetch public URL → Attachment + `sourceMeta.urlFetches` + rawText stub | 6 |
 
-**Phase 3 note:** Bug drafts populate `session.drafts` via heuristic/LLM parser. Screenshot OCR/vision is deferred. Hub Create all remains Phase 5.
+**Phase 6 note:** v1 fetches public `http(s)` only (SSRF/size/rate guarded). Notion / Google Docs / Jira / Slack hosts return `needs_auth` with paste fallback (no OAuth UI in this phase).
 
 **Phase 4 note:** Feature drafts populate `session.drafts` the same way (`featureParser` + `featureDraftSchema`). Draft priority may be `DISCOVERY` in the editor; commit (Phase 5) maps Discovery → Feature `RESEARCH` + P3 (or equivalent). No hub Create-all until Phase 5.
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import type {
@@ -28,6 +28,7 @@ type Props = {
 };
 
 const ANALYZE_DEBOUNCE_MS = 800;
+const URL_FETCH_DEBOUNCE_MS = 400;
 
 function asPlan(value: unknown): CreationPlan | null {
   if (!value || typeof value !== "object") return null;
@@ -59,6 +60,30 @@ function newItemKey(items: CreationPlanItem[]): string {
   return `item-${n}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+/** True when clipboard/field text is a single http(s) URL (optional trailing whitespace). */
+function isStandaloneUrl(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed || /\s/.test(trimmed)) return false;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function hostFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "link";
+  }
+}
+
+type UrlFetchBanner =
+  | { kind: "ok"; host: string }
+  | { kind: "failed" | "needs_auth" | "unsupported" | "too_large"; message?: string };
+
 export function ProductIntakeShell({ open, onClose }: Props) {
   const { t } = useTranslation();
   const [session, setSession] = useState<IntakeSession | null>(null);
@@ -81,8 +106,17 @@ export function ProductIntakeShell({ open, onClose }: Props) {
   const [newInitiativeTitle, setNewInitiativeTitle] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [clarifyAnswers, setClarifyAnswers] = useState<Record<string, string>>({});
+  const [urlInput, setUrlInput] = useState("");
+  const [urlFetching, setUrlFetching] = useState(false);
+  const [urlBanner, setUrlBanner] = useState<UrlFetchBanner | null>(null);
+  const [attachmentPanelKey, setAttachmentPanelKey] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const urlDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+
+  function focusRawText() {
+    document.getElementById("intake-raw-text")?.focus();
+  }
 
   useEffect(() => {
     if (!open) {
@@ -101,6 +135,10 @@ export function ProductIntakeShell({ open, onClose }: Props) {
       setNewInitiativeTitle("");
       setSelectedKeys([]);
       setClarifyAnswers({});
+      setUrlInput("");
+      setUrlFetching(false);
+      setUrlBanner(null);
+      setAttachmentPanelKey(0);
       sessionIdRef.current = null;
       return;
     }
@@ -250,6 +288,67 @@ export function ProductIntakeShell({ open, onClose }: Props) {
     } finally {
       setAnalyzing(false);
     }
+  }
+
+  async function runUrlFetch(urlOverride?: string) {
+    if (!session || urlFetching || isCommitted) return;
+    const url = (urlOverride ?? urlInput).trim();
+    if (!url) return;
+    setUrlFetching(true);
+    setError(null);
+    try {
+      const result = await api.fetchIntakeUrl(session.id, url);
+      setSession(result.session);
+      setRawText(result.session.rawText ?? "");
+      setUrlInput(url);
+      const status = result.urlFetch.status;
+      if (status === "ok") {
+        setUrlBanner({ kind: "ok", host: hostFromUrl(url) });
+        setAttachmentPanelKey((k) => k + 1);
+      } else if (status === "needs_auth") {
+        setUrlBanner({ kind: "needs_auth" });
+        focusRawText();
+      } else if (status === "skipped") {
+        setUrlBanner({ kind: "unsupported" });
+        focusRawText();
+      } else {
+        const err = result.urlFetch.error ?? "";
+        if (/too large/i.test(err)) {
+          setUrlBanner({ kind: "too_large" });
+        } else {
+          setUrlBanner({ kind: "failed", message: err || undefined });
+        }
+        focusRawText();
+      }
+    } catch (e) {
+      setUrlBanner({
+        kind: "failed",
+        message: e instanceof Error ? e.message : undefined
+      });
+      focusRawText();
+    } finally {
+      setUrlFetching(false);
+    }
+  }
+
+  function onUrlInputChange(value: string) {
+    setUrlInput(value);
+    if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current);
+    if (!session || !isStandaloneUrl(value)) return;
+    urlDebounceRef.current = setTimeout(() => {
+      void runUrlFetch(value.trim());
+    }, URL_FETCH_DEBOUNCE_MS);
+  }
+
+  function onRawTextPaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = e.clipboardData.getData("text");
+    if (!session || !isStandaloneUrl(pasted)) return;
+    // Let the paste land in the field, then also populate URL + fetch.
+    setUrlInput(pasted.trim());
+    if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current);
+    urlDebounceRef.current = setTimeout(() => {
+      void runUrlFetch(pasted.trim());
+    }, URL_FETCH_DEBOUNCE_MS);
   }
 
   async function submitClarification() {
@@ -481,20 +580,81 @@ export function ProductIntakeShell({ open, onClose }: Props) {
             <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">{analyzeMessage}</p>
           ) : null}
 
+          {urlBanner?.kind === "ok" ? (
+            <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+              {t("intake.urlFetchOk", { host: urlBanner.host })}
+            </p>
+          ) : null}
+          {urlBanner?.kind === "failed" ? (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {urlBanner.message || t("intake.urlFetchFailed")}
+            </p>
+          ) : null}
+          {urlBanner?.kind === "needs_auth" ? (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {t("intake.urlFetchNeedsAuth")}
+            </p>
+          ) : null}
+          {urlBanner?.kind === "unsupported" ? (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {t("intake.urlFetchUnsupported")}
+            </p>
+          ) : null}
+          {urlBanner?.kind === "too_large" ? (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {t("intake.urlFetchTooLarge")}
+            </p>
+          ) : null}
+
           <Textarea
+            id="intake-raw-text"
             rows={5}
             value={rawText}
-            disabled={!session || analyzing || drafting}
+            disabled={!session || analyzing || drafting || isCommitted}
             placeholder={t("intake.composerPlaceholder")}
             onChange={(e) => setRawText(e.target.value)}
+            onPaste={onRawTextPaste}
           />
+
+          {session ? (
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-600" htmlFor="intake-url-fetch">
+                {t("intake.urlFieldLabel")}
+              </label>
+              <p className="text-[10px] text-slate-500">{t("intake.urlFieldHint")}</p>
+              <div className="flex gap-2">
+                <Input
+                  id="intake-url-fetch"
+                  type="url"
+                  value={urlInput}
+                  disabled={urlFetching || analyzing || drafting || isCommitted}
+                  placeholder="https://"
+                  onChange={(e) => onUrlInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void runUrlFetch();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!urlInput.trim() || urlFetching || analyzing || drafting || isCommitted}
+                  onClick={() => void runUrlFetch()}
+                >
+                  {urlFetching ? t("intake.urlFetching") : t("intake.urlFetch")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {session ? (
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-2">
               <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">
                 {t("intake.attachments")}
               </p>
-              <AttachmentPanel target={{ intakeSessionId: session.id }} />
+              <AttachmentPanel key={attachmentPanelKey} target={{ intakeSessionId: session.id }} />
             </div>
           ) : null}
 

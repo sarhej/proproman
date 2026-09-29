@@ -275,6 +275,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body)
     }),
+  fetchIntakeUrl: async (id: string, url: string) =>
+    request<{
+      session: IntakeSession;
+      urlFetch: {
+        url: string;
+        status: "ok" | "failed" | "skipped" | "needs_auth";
+        provider: string;
+        httpStatus: number | null;
+        fetchedAt: string;
+        normalizedTextRef: string | null;
+        error: string | null;
+      };
+      attachment?: { id: string; filename: string; mimeType: string };
+    }>(`/api/intake-sessions/${id}/fetch-url`, {
+      method: "POST",
+      body: JSON.stringify({ url })
+    }),
   updateInitiative: async (id: string, body: unknown) =>
     request<{ initiative: Initiative }>(`/api/initiatives/${id}`, {
       method: "PUT",
