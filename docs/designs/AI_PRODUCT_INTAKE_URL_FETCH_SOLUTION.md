@@ -4,7 +4,7 @@
 **Wireframe:** `docs/designs/AI_PRODUCT_INTAKE_URL_FETCH_WIREFRAMES.svg`  
 **Schemas:** `docs/designs/AI_PRODUCT_INTAKE_PARSER_SCHEMAS.md` (§1 `urlFetches`, §2 REST)
 
-Status: **implementing** (D1–D9 confirmed 2026-09-29).
+Status: **PR open** — https://github.com/sarhej/proproman/pull/53 (D1–D9 confirmed 2026-09-29).
 
 ---
 
