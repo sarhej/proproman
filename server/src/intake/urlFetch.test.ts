@@ -86,17 +86,25 @@ describe("fetchUrlContent", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns needs_auth for Notion without attempting network", async () => {
-    const fetchMock = vi.fn();
-    const out = await fetchUrlContent("https://www.notion.so/acme/secret-page", {
+  it("tries Notion URLs over the network (public shares may succeed)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      headers: {
+        get: (k: string) => (k.toLowerCase() === "content-type" ? "text/html" : null)
+      },
+      body: null,
+      arrayBuffer: async () =>
+        Buffer.from(
+          "<html><title>Public notes</title><body><p>Shared backlog ideas for Q3</p><p>More detail here</p></body></html>"
+        )
+    });
+    const out = await fetchUrlContent("https://www.notion.so/acme/shared-page", {
       fetchImpl: fetchMock as unknown as typeof fetch
     });
-    expect(out.ok).toBe(false);
-    if (!out.ok) {
-      expect(out.status).toBe("needs_auth");
-      expect(out.provider).toBe("notion");
-    }
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.normalizedText).toContain("Shared backlog");
   });
 
   it("fetches public HTML and normalizes", async () => {
@@ -121,6 +129,42 @@ describe("fetchUrlContent", () => {
     }
   });
 
+  it("maps 403 to soft paste hint (needs_auth for known hosts)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 403,
+      ok: false,
+      headers: { get: () => null },
+      body: null,
+      arrayBuffer: async () => Buffer.alloc(0)
+    });
+    const out = await fetchUrlContent("https://example.com/private", {
+      fetchImpl: fetchMock as unknown as typeof fetch
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.status).toBe("failed");
+      expect(out.error).toMatch(/paste the page text/i);
+    }
+  });
+
+  it("treats login-wall HTML as soft failure", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      headers: {
+        get: (k: string) => (k.toLowerCase() === "content-type" ? "text/html" : null)
+      },
+      body: null,
+      arrayBuffer: async () =>
+        Buffer.from("<html><body><h1>Sign in</h1><p>Log in to continue</p></body></html>")
+    });
+    const out = await fetchUrlContent("https://example.com/gate", {
+      fetchImpl: fetchMock as unknown as typeof fetch
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.error).toMatch(/paste the page text/i);
+  });
+
   it("fails on oversized content-length", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 200,
@@ -142,21 +186,6 @@ describe("fetchUrlContent", () => {
     if (!out.ok) expect(out.error).toMatch(/too large/i);
   });
 
-  it("maps 403 to needs_auth", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 403,
-      ok: false,
-      headers: { get: () => null },
-      body: null,
-      arrayBuffer: async () => Buffer.alloc(0)
-    });
-    const out = await fetchUrlContent("https://example.com/private", {
-      fetchImpl: fetchMock as unknown as typeof fetch
-    });
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.status).toBe("needs_auth");
-  });
-
   it("rejects redirect to private IP", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 302,
@@ -171,6 +200,9 @@ describe("fetchUrlContent", () => {
       fetchImpl: fetchMock as unknown as typeof fetch
     });
     expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.status).toBe("skipped");
+    if (!out.ok) {
+      expect(out.status).toBe("skipped");
+      expect(out.error).toMatch(/paste the page text/i);
+    }
   });
 });

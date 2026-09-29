@@ -60,15 +60,15 @@ If fetch fails (private page, login wall, blocked host, timeout), you see a clea
 
 | Key | Copy |
 |-----|------|
-| `intake.urlFieldLabel` | Link to fetch |
-| `intake.urlFieldHint` | Paste a public https link. Private Notion / Docs / Jira / Slack need paste if we cannot sign in. |
-| `intake.urlFetch` | Fetch link |
-| `intake.urlFetching` | Fetching… |
-| `intake.urlFetchOk` | Fetched from {{host}} |
-| `intake.urlFetchFailed` | Could not fetch this link. Paste the content below instead. |
-| `intake.urlFetchNeedsAuth` | This page needs sign-in. Paste the content below, or connect credentials later. |
-| `intake.urlFetchUnsupported` | This link type is not fetched automatically. Paste the content instead. |
-| `intake.urlFetchTooLarge` | Content is too large to fetch. Paste a shorter excerpt instead. |
+| `intake.urlFieldLabel` | Link (optional) |
+| `intake.urlFieldHint` | Paste a link and we will pull the text when we can. If not, paste the text in the box above — either way works. |
+| `intake.urlFetch` | Add from link |
+| `intake.urlFetching` | Reading link… |
+| `intake.urlFetchOk` | Added text from {{host}} |
+| `intake.urlFetchFailed` | We could not open that link automatically. Paste the page text above — you can keep going. |
+| `intake.urlFetchNeedsAuth` | (same calm paste copy; kept for API status mapping) |
+| `intake.urlFetchUnsupported` | We could not use that link. Paste the page text above — you can keep going. |
+| `intake.urlFetchTooLarge` | That page is too large to pull in. Paste a shorter excerpt above. |
 
 ---
 
@@ -88,14 +88,14 @@ If fetch fails (private page, login wall, blocked host, timeout), you see a clea
 
 | ID | Decision | Recommendation |
 |----|----------|----------------|
-| **D1** | Provider depth | **v1 = public URL fetch + host detection.** Label Notion/GDocs/Jira/Slack as “needs auth → paste” unless env credentials exist later. Do **not** build OAuth install UI in this PR. |
+| **D1** | Provider depth | **Try every safe public URL** (including Notion/Docs share links). No OAuth UI. Private pages → calm paste prompt. |
 | **D2** | Endpoint | `POST /api/intake-sessions/:id/fetch-url` body `{ url: string }`. |
 | **D3** | rawText vs attachment-only | **Both:** store full normalized text as Attachment; **append** a short source header + up to N chars into `rawText` so Analyze works without new attachment-text extractors. |
 | **D4** | Auto-fetch on paste | **Yes** when pasted string is a single URL (or URL-only line); else user clicks Fetch. Debounce ~400ms. |
 | **D5** | SSRF | Allow only `http:`/`https:`; block loopback, link-local, private RFC1918, metadata IPs; no redirects to blocked hosts; max redirect hops 3. |
 | **D6** | Limits | Max response **1 MB** body; timeout **10s**; **10 fetches / session / hour** (tunable). |
 | **D7** | HTML → text | Strip scripts/styles; prefer `text/plain` / markdown; else simple HTML→text (title + body text). PDF/binary: reject with “upload file instead”. |
-| **D8** | Credentials (future) | Optional server env / tenant secrets keyed by provider; if missing → `needs_auth` status, not hard fail of intake. |
+| **D8** | Credentials (future) | Optional later; not required for a useful v1. Soft paste prompt if a page stays private. |
 | **D9** | Out of scope | OCR; Slack Events adapter; browser extension; storing third-party OAuth tokens in this slice. |
 
 ---

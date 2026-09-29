@@ -305,17 +305,14 @@ export function ProductIntakeShell({ open, onClose }: Props) {
       if (status === "ok") {
         setUrlBanner({ kind: "ok", host: hostFromUrl(url) });
         setAttachmentPanelKey((k) => k + 1);
-      } else if (status === "needs_auth") {
-        setUrlBanner({ kind: "needs_auth" });
-        focusRawText();
-      } else if (status === "skipped") {
-        setUrlBanner({ kind: "unsupported" });
-        focusRawText();
       } else {
         const err = result.urlFetch.error ?? "";
         if (/too large/i.test(err)) {
           setUrlBanner({ kind: "too_large" });
+        } else if (status === "skipped") {
+          setUrlBanner({ kind: "unsupported", message: err || undefined });
         } else {
+          // failed | needs_auth — same calm paste path (no sign-in scare)
           setUrlBanner({ kind: "failed", message: err || undefined });
         }
         focusRawText();
@@ -585,24 +582,13 @@ export function ProductIntakeShell({ open, onClose }: Props) {
               {t("intake.urlFetchOk", { host: urlBanner.host })}
             </p>
           ) : null}
-          {urlBanner?.kind === "failed" ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              {urlBanner.message || t("intake.urlFetchFailed")}
-            </p>
-          ) : null}
-          {urlBanner?.kind === "needs_auth" ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              {t("intake.urlFetchNeedsAuth")}
-            </p>
-          ) : null}
-          {urlBanner?.kind === "unsupported" ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              {t("intake.urlFetchUnsupported")}
-            </p>
-          ) : null}
-          {urlBanner?.kind === "too_large" ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              {t("intake.urlFetchTooLarge")}
+          {urlBanner && urlBanner.kind !== "ok" ? (
+            <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-700">
+              {urlBanner.kind === "too_large"
+                ? t("intake.urlFetchTooLarge")
+                : urlBanner.kind === "unsupported"
+                  ? urlBanner.message || t("intake.urlFetchUnsupported")
+                  : urlBanner.message || t("intake.urlFetchFailed")}
             </p>
           ) : null}
 

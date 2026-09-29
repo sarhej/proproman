@@ -53,7 +53,11 @@ const AUTH_PROVIDERS: ReadonlySet<UrlFetchProvider> = new Set([
   "slack"
 ]);
 
-/** Detect known hosts for messaging; v1 treats auth providers as needs_auth. */
+/** Soft user-facing reason when fetch did not yield usable text (no "sign in" scare). */
+export const URL_FETCH_PASTE_HINT =
+  "We could not open that link automatically. Paste the page text below — you can keep going.";
+
+/** Detect known hosts for audit / messaging. Public shares are still fetched. */
 export function detectUrlProvider(hostname: string): UrlFetchProvider {
   const h = hostname.toLowerCase();
   if (h === "notion.so" || h.endsWith(".notion.so") || h.endsWith(".notion.site")) {
@@ -260,7 +264,8 @@ type FetchLike = typeof fetch;
 
 /**
  * Fetch and normalize remote content for intake.
- * Auth-gated providers return needs_auth without attempting OAuth (v1).
+ * Tries any safe public http(s) URL (including Notion/Docs share links).
+ * If the page is private or empty, returns a soft failure so the user can paste text.
  */
 export async function fetchUrlContent(
   urlString: string,
@@ -274,21 +279,11 @@ export async function fetchUrlContent(
       status: safe.status,
       provider: safe.provider,
       httpStatus: null,
-      error: safe.error
+      error: URL_FETCH_PASTE_HINT
     };
   }
 
   const { url, provider } = safe;
-
-  if (AUTH_PROVIDERS.has(provider)) {
-    return {
-      ok: false,
-      status: "needs_auth",
-      provider,
-      httpStatus: null,
-      error: "This page needs sign-in"
-    };
-  }
 
   let current = url;
   let httpStatus: number | null = null;
@@ -303,7 +298,7 @@ export async function fetchUrlContent(
         status: "skipped",
         provider,
         httpStatus: null,
-        error: hopSafe.error
+        error: URL_FETCH_PASTE_HINT
       };
     }
     current = hopSafe.url;
@@ -328,7 +323,7 @@ export async function fetchUrlContent(
         status: "failed",
         provider,
         httpStatus: null,
-        error: aborted ? "Fetch timed out" : "Could not fetch this link"
+        error: aborted ? "That link took too long. Paste the text below instead." : URL_FETCH_PASTE_HINT
       };
     } finally {
       clearTimeout(timer);
@@ -344,7 +339,7 @@ export async function fetchUrlContent(
           status: "failed",
           provider,
           httpStatus,
-          error: "Redirect without location"
+          error: URL_FETCH_PASTE_HINT
         };
       }
       try {
@@ -355,7 +350,7 @@ export async function fetchUrlContent(
           status: "failed",
           provider,
           httpStatus,
-          error: "Invalid redirect"
+          error: URL_FETCH_PASTE_HINT
         };
       }
       continue;
@@ -364,10 +359,10 @@ export async function fetchUrlContent(
     if (res.status === 401 || res.status === 403) {
       return {
         ok: false,
-        status: "needs_auth",
+        status: AUTH_PROVIDERS.has(provider) ? "needs_auth" : "failed",
         provider,
         httpStatus,
-        error: "This page needs sign-in"
+        error: URL_FETCH_PASTE_HINT
       };
     }
 
@@ -377,7 +372,7 @@ export async function fetchUrlContent(
         status: "failed",
         provider,
         httpStatus,
-        error: `Could not fetch (HTTP ${res.status})`
+        error: URL_FETCH_PASTE_HINT
       };
     }
 
@@ -389,7 +384,7 @@ export async function fetchUrlContent(
         status: "failed",
         provider,
         httpStatus,
-        error: "Content is too large to fetch"
+        error: "That page is too large to pull in. Paste a shorter excerpt below."
       };
     }
 
@@ -413,7 +408,7 @@ export async function fetchUrlContent(
               status: "failed",
               provider,
               httpStatus,
-              error: "Content is too large to fetch"
+              error: "That page is too large to pull in. Paste a shorter excerpt below."
             };
           }
           chunks.push(value);
@@ -428,7 +423,7 @@ export async function fetchUrlContent(
           status: "failed",
           provider,
           httpStatus,
-          error: "Content is too large to fetch"
+          error: "That page is too large to pull in. Paste a shorter excerpt below."
         };
       }
       bodyBuf = Buffer.from(ab);
@@ -442,7 +437,7 @@ export async function fetchUrlContent(
       status: "failed",
       provider,
       httpStatus,
-      error: "Too many redirects"
+      error: URL_FETCH_PASTE_HINT
     };
   }
 
@@ -460,7 +455,7 @@ export async function fetchUrlContent(
       status: "failed",
       provider,
       httpStatus,
-      error: "Binary content is not fetched — upload the file instead"
+      error: "That link is a file we cannot read here. Upload it as an attachment instead."
     };
   }
 
@@ -477,13 +472,13 @@ export async function fetchUrlContent(
     normalized = raw.trim();
   }
 
-  if (!normalized) {
+  if (!normalized || looksLikeLoginWall(normalized)) {
     return {
       ok: false,
-      status: "failed",
+      status: AUTH_PROVIDERS.has(provider) ? "needs_auth" : "failed",
       provider,
       httpStatus,
-      error: "Fetched page had no usable text"
+      error: URL_FETCH_PASTE_HINT
     };
   }
 
@@ -495,4 +490,17 @@ export async function fetchUrlContent(
     normalizedText: normalized.slice(0, URL_FETCH_MAX_BYTES),
     filename: buildFetchedFilename(current, ext)
   };
+}
+
+/** Heuristic: short page text that is mostly a login / access gate. */
+export function looksLikeLoginWall(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t) return true;
+  if (t.length > 800) return false;
+  const gate =
+    /\b(sign in|log in|log into|login to|create an account|request access|you need permission|access denied|unauthorized)\b/.test(
+      t
+    );
+  // Only treat as a wall when gate language dominates a short page.
+  return gate && t.length < 600;
 }

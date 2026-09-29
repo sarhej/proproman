@@ -108,7 +108,7 @@ All under workspace auth + product scope. Prefix: `/api/intake-sessions` (and `/
 | `POST` | `/:id/commit` | Persist approved drafts to hub | 5 |
 | `POST` | `/:id/fetch-url` | Fetch public URL → Attachment + `sourceMeta.urlFetches` + rawText stub | 6 |
 
-**Phase 6 note:** v1 fetches public `http(s)` only (SSRF/size/rate guarded). Notion / Google Docs / Jira / Slack hosts return `needs_auth` with paste fallback (no OAuth UI in this phase).
+**Phase 6 note:** Fetches any safe public `http(s)` URL (including public Notion/Docs shares) with SSRF/size/rate guards. If the page is private or empty, intake stays open with a calm “paste the text” prompt — no OAuth required for usefulness.
 
 **Phase 4 note:** Feature drafts populate `session.drafts` the same way (`featureParser` + `featureDraftSchema`). Draft priority may be `DISCOVERY` in the editor; commit (Phase 5) maps Discovery → Feature `RESEARCH` + P3 (or equivalent). No hub Create-all until Phase 5.
 

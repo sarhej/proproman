@@ -173,7 +173,7 @@ async function mockApi(page: import("@playwright/test").Page) {
               httpStatus: null,
               fetchedAt: new Date().toISOString(),
               normalizedTextRef: null,
-              error: "This page needs sign-in",
+              error: "We could not open that link automatically. Paste the page text below — you can keep going.",
             },
           }),
         });
@@ -258,21 +258,22 @@ test.describe("Product intake URL fetch (mocked API)", () => {
     await page.getByRole("button", { name: /Create Bug/i }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText(/Starting intake session/i)).toBeHidden({ timeout: 15_000 });
-    await expect(page.getByLabel(/Link to fetch/i)).toBeVisible();
-    await page.getByLabel(/Link to fetch/i).fill("https://example.com/spec");
-    await page.getByRole("button", { name: /Fetch link/i }).click();
-    await expect(page.getByText(/Fetched from example.com/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByLabel(/Link \(optional\)/i)).toBeVisible();
+    await page.getByLabel(/Link \(optional\)/i).fill("https://example.com/spec");
+    await page.getByRole("button", { name: /Add from link/i }).click();
+    await expect(page.getByText(/Added text from example.com/i)).toBeVisible({ timeout: 15_000 });
   });
 
-  test("shows paste fallback when fetch needs auth", async ({ page }) => {
+  test("shows calm paste fallback when link cannot be opened", async ({ page }) => {
     test.setTimeout(60_000);
     await mockApi(page);
     await page.goto("/t/tymio/product-explorer");
     await page.getByRole("button", { name: /Create Bug/i }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText(/Starting intake session/i)).toBeHidden({ timeout: 15_000 });
-    await page.getByLabel(/Link to fetch/i).fill("https://www.notion.so/acme/private");
-    await page.getByRole("button", { name: /Fetch link/i }).click();
-    await expect(page.getByText(/needs sign-in/i)).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel(/Link \(optional\)/i).fill("https://www.notion.so/acme/private");
+    await page.getByRole("button", { name: /Add from link/i }).click();
+    await expect(page.getByText(/paste the page text/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/connect credentials/i)).toHaveCount(0);
   });
 });

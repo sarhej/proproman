@@ -701,17 +701,17 @@ describe("ProductIntakeShell", () => {
       />
     );
 
-    await waitFor(() => expect(screen.getByLabelText(/link to fetch/i)).toBeInTheDocument());
-    fireEvent.change(screen.getByLabelText(/link to fetch/i), {
+    await waitFor(() => expect(screen.getByLabelText(/link \(optional\)/i)).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/link \(optional\)/i), {
       target: { value: "https://example.com/spec" }
     });
-    fireEvent.click(screen.getByRole("button", { name: /fetch link/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add from link/i }));
 
     await waitFor(() => expect(mockFetchUrl).toHaveBeenCalledWith("s1", "https://example.com/spec"));
-    expect(await screen.findByText(/Fetched from example.com/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Added text from example.com/i)).toBeInTheDocument();
   });
 
-  it("shows paste fallback banner on needs_auth", async () => {
+  it("shows calm paste fallback when link cannot be opened", async () => {
     mockCreate.mockResolvedValue({ session: session() });
     mockFetchUrl.mockResolvedValue({
       session: session(),
@@ -722,7 +722,7 @@ describe("ProductIntakeShell", () => {
         httpStatus: null,
         fetchedAt: "2026-09-29T12:00:00.000Z",
         normalizedTextRef: null,
-        error: "This page needs sign-in"
+        error: "We could not open that link automatically. Paste the page text below — you can keep going."
       }
     });
 
@@ -733,13 +733,13 @@ describe("ProductIntakeShell", () => {
       />
     );
 
-    await waitFor(() => expect(screen.getByLabelText(/link to fetch/i)).toBeInTheDocument());
-    fireEvent.change(screen.getByLabelText(/link to fetch/i), {
+    await waitFor(() => expect(screen.getByLabelText(/link \(optional\)/i)).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/link \(optional\)/i), {
       target: { value: "https://www.notion.so/acme/page" }
     });
-    // Avoid waiting for auto-fetch debounce: click explicitly after clearing timers path
-    fireEvent.click(screen.getByRole("button", { name: /fetch link/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add from link/i }));
 
-    expect(await screen.findByText(/needs sign-in/i)).toBeInTheDocument();
+    expect(await screen.findByText(/paste the page text/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sign-in/i)).not.toBeInTheDocument();
   });
 });

@@ -917,7 +917,7 @@ describe("intakeSessionsRouter HTTP (mocked prisma)", () => {
       status: "needs_auth",
       provider: "notion",
       httpStatus: null,
-      error: "This page needs sign-in"
+      error: "We could not open that link automatically. Paste the page text below — you can keep going."
     });
     hoisted.intakeUpdate.mockResolvedValueOnce({
       ...baseSession,

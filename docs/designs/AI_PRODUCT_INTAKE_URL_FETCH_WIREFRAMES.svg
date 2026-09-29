@@ -41,13 +41,13 @@
   <text x="60" y="95" class="section">Fetch statuses (session audit: sourceMeta.urlFetches)</text>
   <text x="60" y="118" class="small"><tspan font-weight="700" fill="#166534">ok</tspan> &#x2014; text stored as Attachment (source url_fetch).</text>
   <text x="420" y="118" class="small"><tspan font-weight="700" fill="#92400e">failed / skipped</tspan> &#x2014; show banner; user pastes content.</text>
-  <text x="820" y="118" class="small"><tspan font-weight="700" fill="#1d4ed8">needs_auth</tspan> &#x2014; private Notion/Docs/Jira/Slack (v1: paste; no OAuth UI).</text>
-  <text x="60" y="136" class="tiny">v1 = public HTTP(S) only + host detection. SSRF blocked. Max 1 MB / 10s / rate-limited.</text>
+  <text x="820" y="118" class="small"><tspan font-weight="700" fill="#475569">could not open</tspan> &#x2014; calm paste prompt; intake continues (no sign-in scare).</text>
+  <text x="60" y="136" class="tiny">Tries any safe https URL including public Notion/Docs shares. No OAuth required. Max 1 MB / 10s / rate-limited.</text>
 
   <!-- ========== SCREEN 1 ========== -->
   <rect class="page" x="40" y="170" width="740" height="620" rx="14" ry="14" />
-  <text x="60" y="200" class="section">Screen 1 &#x2014; Capture + link field</text>
-  <text x="60" y="222" class="hint">Job: add a URL; Fetch pulls content into this session before Analyze.</text>
+  <text x="60" y="200" class="section">Screen 1 &#x2014; Capture + optional link</text>
+  <text x="60" y="222" class="hint">Job: paste a link; we pull text when we can. Otherwise paste into the box — either way works.</text>
 
   <rect class="chip-bug" x="60" y="240" width="48" height="20" rx="5" ry="5" />
   <text x="70" y="254" class="tiny">BUG</text>
@@ -58,12 +58,12 @@
   <text x="72" y="322" class="small">Login button clipped on iPhone rotate&#x2026;</text>
   <text x="72" y="342" class="tiny">(existing capture textarea from Phase 1)</text>
 
-  <text x="60" y="420" class="label">Link to fetch</text>
-  <text x="200" y="420" class="hint">Paste https URL &#x2014; auto-fetch if the paste is URL-only</text>
+  <text x="60" y="420" class="label">Link (optional)</text>
+  <text x="200" y="420" class="hint">Paste https URL &#x2014; auto-read if the paste is URL-only</text>
   <rect class="input" x="60" y="428" width="520" height="32" rx="6" ry="6" />
   <text x="72" y="448" class="small">https://docs.example.com/login-bug</text>
   <rect class="button-primary" x="595" y="428" width="100" height="32" rx="8" ry="8" />
-  <text x="618" y="448" class="tiny" fill="#ffffff">Fetch link</text>
+  <text x="608" y="448" class="tiny" fill="#ffffff">Add from link</text>
 
   <text x="60" y="490" class="tiny">Attachments</text>
   <rect class="row" x="60" y="500" width="700" height="48" rx="6" ry="6" />
@@ -84,7 +84,7 @@
 
   <rect class="panel-soft" x="840" y="245" width="700" height="56" rx="8" ry="8" />
   <rect class="chip-good" x="856" y="258" width="110" height="22" rx="5" ry="5" />
-  <text x="870" y="273" class="tiny">Fetched (ok)</text>
+  <text x="870" y="273" class="tiny">Added text</text>
   <text x="980" y="273" class="small">from docs.example.com &#xB7; stored as session attachment</text>
 
   <text x="840" y="340" class="label">Link to fetch</text>
@@ -108,14 +108,14 @@
 
   <!-- ========== SCREEN 3 ========== -->
   <rect class="page" x="40" y="820" width="740" height="520" rx="14" ry="14" />
-  <text x="60" y="850" class="section">Screen 3 &#x2014; Could not fetch (paste fallback)</text>
-  <text x="60" y="872" class="hint">Job: never block intake; explain why; let user paste content.</text>
+  <text x="60" y="850" class="section">Screen 3 &#x2014; Could not open link (paste and continue)</text>
+  <text x="60" y="872" class="hint">Job: never scare or block; explain softly; user pastes text.</text>
 
   <rect class="panel-warn" x="60" y="895" width="700" height="70" rx="8" ry="8" />
   <rect class="chip-warn" x="76" y="910" width="120" height="22" rx="5" ry="5" />
-  <text x="90" y="925" class="tiny">Could not fetch</text>
-  <text x="210" y="925" class="small">Private page or login wall. Paste the content below instead.</text>
-  <text x="76" y="948" class="tiny">Also used for timeout, HTTP errors, too large, unsupported host.</text>
+  <text x="90" y="925" class="tiny">Keep going</text>
+  <text x="210" y="925" class="small">We could not open that link automatically. Paste the page text above.</text>
+  <text x="76" y="948" class="tiny">Same tone for timeout, private pages, login walls, too large, unsupported.</text>
 
   <text x="60" y="1000" class="label">Link to fetch</text>
   <rect class="input" x="60" y="1008" width="520" height="32" rx="6" ry="6" />
@@ -124,8 +124,8 @@
   <text x="618" y="1028" class="tiny" fill="#ffffff">Fetch link</text>
 
   <rect class="chip-muted" x="60" y="1060" width="100" height="22" rx="5" ry="5" />
-  <text x="72" y="1075" class="tiny">needs_auth</text>
-  <text x="175" y="1075" class="hint">Provider detected (notion) &#x2014; v1 has no OAuth; paste is the path</text>
+  <text x="72" y="1075" class="tiny">paste path</text>
+  <text x="175" y="1075" class="hint">No OAuth / credentials required for a useful intake</text>
 
   <text x="60" y="1120" class="tiny">Describe the issue (paste content here)</text>
   <rect class="input" x="60" y="1128" width="700" height="100" rx="6" ry="6" />
@@ -141,14 +141,14 @@
 
   <rect class="panel-info" x="840" y="875" width="700" height="200" rx="8" ry="8" />
   <text x="860" y="900" class="label">In Phase 6 (v1)</text>
-  <text x="860" y="925" class="small">&#x2022; Detect URL; POST fetch-url; public HTTP(S) fetch</text>
-  <text x="860" y="945" class="small">&#x2022; Normalize to text/markdown Attachment + rawText stub</text>
-  <text x="860" y="965" class="small">&#x2022; UI chips, banners, paste fallback, i18n</text>
+  <text x="860" y="925" class="small">&#x2022; Try safe public URLs (incl. share links)</text>
+  <text x="860" y="945" class="small">&#x2022; Normalize to text Attachment + rawText stub</text>
+  <text x="860" y="965" class="small">&#x2022; Calm paste prompt when link cannot open</text>
   <text x="860" y="985" class="small">&#x2022; SSRF / size / timeout / rate limits</text>
   <text x="860" y="1005" class="small">&#x2022; urlFetches audit on sourceMeta</text>
   <text x="860" y="1025" class="small">&#x2022; Unit + HTTP + Playwright (mocked fetch)</text>
   <text x="860" y="1050" class="label">Out of this PR</text>
-  <text x="860" y="1070" class="small">OAuth for Notion / Google / Jira / Slack &#xB7; OCR &#xB7; Slack Events adapter</text>
+  <text x="860" y="1070" class="small">OAuth for private Notion / Google / Jira / Slack &#xB7; OCR</text>
 
   <rect class="panel-err" x="840" y="1100" width="700" height="100" rx="8" ry="8" />
   <text x="860" y="1125" class="label">SSRF hard rules</text>
